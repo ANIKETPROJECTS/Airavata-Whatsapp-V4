@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { routes } from './routes';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Privacy from './pages/Privacy';
 
 const queryClient = new QueryClient();
 
@@ -55,9 +56,11 @@ function AppRouter() {
 
   return (
     <Switch>
-      {/* Public auth routes — redirect to dashboard if already logged in */}
+      {/* Public routes — no auth required */}
       <Route path="/login" component={() => (user ? <Redirect to="/dashboard" /> : <Login />)} />
       <Route path="/signup" component={() => (user ? <Redirect to="/dashboard" /> : <Signup />)} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/privacy/deletion-status" component={Privacy} />
       {/* Everything else is protected */}
       <Route component={ProtectedRouter} />
     </Switch>
