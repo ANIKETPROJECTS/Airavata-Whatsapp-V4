@@ -12,6 +12,7 @@ import campaignsRouter from "./campaigns";
 import billingRouter from "./billing";
 import phoneNumbersRouter from "./phonenumbers";
 import metaComplianceRouter from "./meta-compliance";
+import integrationRouter from "./integration";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(conversationsRouter);
 router.use(campaignsRouter);
 router.use(billingRouter);
 router.use(phoneNumbersRouter);
+router.use(integrationRouter);
 
 export default router;

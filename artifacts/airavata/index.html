@@ -16,6 +16,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Facebook JS SDK for WhatsApp Embedded Signup -->
+    <script>
+      window.fbAsyncInit = function () {
+        FB.init({
+          appId: '1324395306544610',
+          autoLogAppEvents: true,
+          xfbml: true,
+          version: 'v21.0',
+        });
+      };
+    </script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
   </head>
   <body>
     <div id="root"></div>

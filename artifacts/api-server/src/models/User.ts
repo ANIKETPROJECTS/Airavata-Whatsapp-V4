@@ -9,6 +9,11 @@ const userSchema = new Schema(
     timezone: { type: String, default: "Asia/Kolkata" },
     creditBalance: { type: Number, default: 0 },
     metaPhoneNumberId: { type: String, index: true, sparse: true },
+    // Embedded Signup — set when a business connects their WABA via Connect Facebook
+    metaWabaConnected: { type: Boolean, default: false },
+    metaWabaId: { type: String },
+    metaWabaAccessToken: { type: String },     // system-user token from Embedded Signup
+    metaEmbeddedSignupCode: { type: String },  // fallback: raw code if APP_SECRET not set
   },
   { timestamps: true },
 );
