@@ -24,6 +24,8 @@ module.exports = {
         META_PHONE_NUMBER_ID: "1273577662499310",
         META_WABA_ID: "1546864506819232",
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
+        META_APP_ID: "1324395306544610",
+        META_APP_SECRET: "243bddb176eec328c00240a40a0752fb",
       },
     },
   ],
