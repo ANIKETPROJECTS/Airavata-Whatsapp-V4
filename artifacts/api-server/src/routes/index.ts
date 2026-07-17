@@ -11,12 +11,13 @@ import conversationsRouter from "./conversations";
 import campaignsRouter from "./campaigns";
 import billingRouter from "./billing";
 import phoneNumbersRouter from "./phonenumbers";
+import metaComplianceRouter from "./meta-compliance";
 
 const router: IRouter = Router();
 
-// Webhook MUST come first — it has no auth and must not be intercepted
-// by the router.use(authenticate) present in the other sub-routers below.
+// These routers MUST come first — they have no auth and must not be intercepted.
 router.use(webhookRouter);
+router.use(metaComplianceRouter);
 
 router.use(healthRouter);
 router.use(authRouter);
