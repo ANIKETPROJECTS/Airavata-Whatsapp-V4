@@ -165,7 +165,11 @@ router.delete("/templates/:id", authenticate, async (req: AuthRequest, res) => {
  */
 router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { templateId, to } = req.body as { templateId: string; to: string };
+    const { templateId, to, variables } = req.body as {
+      templateId: string;
+      to: string;
+      variables?: string[];
+    };
 
     if (!templateId || !to) {
       return res.status(400).json({ error: "templateId and to are required" });
@@ -181,7 +185,23 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       return res.status(400).json({ error: "Only APPROVED templates can be sent" });
     }
 
-    const result = await sendTemplateMessage(to, template.name, template.language ?? "en_US");
+    // Build body component parameters if variables were supplied
+    const components =
+      variables && variables.length > 0
+        ? [
+            {
+              type: "body",
+              parameters: variables.map((v) => ({ type: "text", text: v })),
+            },
+          ]
+        : undefined;
+
+    const result = await sendTemplateMessage(
+      to,
+      template.name,
+      template.language ?? "en_US",
+      components,
+    );
     res.json({ ok: true, messageId: result.messages?.[0]?.id ?? null });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });

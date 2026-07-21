@@ -27,6 +27,21 @@ interface TemplateRecord {
 
 // ── Send-Test Dialog ───────────────────────────────────────────────────────────
 
+/** Extract sorted unique variable indices from a template body, e.g. {{1}}, {{2}} → [1, 2] */
+function extractVars(body: string): number[] {
+  const matches = [...body.matchAll(/\{\{(\d+)\}\}/g)];
+  const indices = [...new Set(matches.map(m => parseInt(m[1]!, 10)))].sort((a, b) => a - b);
+  return indices;
+}
+
+/** Replace {{1}}, {{2}} placeholders with the filled-in values for the preview */
+function fillPreview(body: string, values: string[]): string {
+  return body.replace(/\{\{(\d+)\}\}/g, (_, idx) => {
+    const val = values[parseInt(idx, 10) - 1];
+    return val?.trim() ? val.trim() : `{{${idx}}}`;
+  });
+}
+
 function SendTestDialog({
   template,
   onClose,
@@ -34,20 +49,28 @@ function SendTestDialog({
   template: TemplateRecord;
   onClose: () => void;
 }) {
+  const varIndices = extractVars(template.body);
   const [to, setTo] = useState('');
+  const [varValues, setVarValues] = useState<string[]>(varIndices.map(() => ''));
   const [sending, setSending] = useState(false);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!to.trim()) { toast.error('Enter a phone number'); return; }
+    for (let i = 0; i < varIndices.length; i++) {
+      if (!varValues[i]?.trim()) {
+        toast.error(`Fill in variable {{${varIndices[i]}}}`);
+        return;
+      }
+    }
     setSending(true);
     try {
       const res = await api.post<{ ok: boolean; messageId: string | null }>(
         '/templates/send-test',
-        { templateId: template.id, to: to.trim() },
+        { templateId: template.id, to: to.trim(), variables: varValues.map(v => v.trim()) },
       );
       if (res.ok) {
-        toast.success(`Test message sent! Message ID: ${res.messageId ?? 'n/a'}`);
+        toast.success('Template message sent!');
         onClose();
       }
     } catch (err: unknown) {
@@ -57,18 +80,51 @@ function SendTestDialog({
     }
   };
 
+  const preview = fillPreview(template.body, varValues);
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Send Test Message</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Template: <code className="bg-gray-100 px-1 rounded">{template.name}</code></p>
+            <h2 className="text-lg font-semibold text-gray-900">Send Template Message</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Template: <code className="bg-gray-100 px-1 rounded text-xs">{template.name}</code></p>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
 
-        <form onSubmit={handleSend} className="space-y-4">
+        {/* Live preview */}
+        <div className="bg-[#efeae2] rounded-lg p-3">
+          <div className="bg-white rounded-lg p-3 shadow-sm text-sm text-gray-800 whitespace-pre-wrap">
+            {preview}
+          </div>
+        </div>
+
+        <form onSubmit={handleSend} className="space-y-3">
+          {/* Variable inputs */}
+          {varIndices.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fill in variables</p>
+              {varIndices.map((idx, pos) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0 text-gray-600">{`{{${idx}}}`}</span>
+                  <input
+                    type="text"
+                    value={varValues[pos] ?? ''}
+                    onChange={e => {
+                      const next = [...varValues];
+                      next[pos] = e.target.value;
+                      setVarValues(next);
+                    }}
+                    placeholder={`Value for {{${idx}}}`}
+                    className="flex-1 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Phone number */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">Recipient phone number</label>
             <input
@@ -76,13 +132,13 @@ function SendTestDialog({
               value={to}
               onChange={e => setTo(e.target.value)}
               placeholder="+919876543210"
-              autoFocus
+              autoFocus={varIndices.length === 0}
               className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
-            <p className="text-xs text-gray-500">Include country code, e.g. +91 for India. Must be a registered WhatsApp number.</p>
+            <p className="text-xs text-gray-500">Include country code, e.g. +91 for India.</p>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
               Cancel
             </button>
