@@ -177,6 +177,8 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       groupIds = [],
       variableValues = {},
       scheduledAt,
+      phoneNumbers = [],
+      tagId,
     } = req.body as {
       name: string;
       templateId: string;
@@ -184,6 +186,8 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       groupIds?: string[];
       variableValues?: Record<string, string>;
       scheduledAt?: string;
+      phoneNumbers?: string[];
+      tagId?: string;
     };
 
     if (!name || !templateId) {
@@ -197,7 +201,31 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "Only APPROVED templates can be used in campaigns" });
     }
 
-    const recipients = await resolveRecipients(userId, contactIds, groupIds);
+    // Resolve contacts by raw phone numbers (Quick / Tags / Flow campaigns)
+    let phoneContactIds: string[] = [];
+    if (phoneNumbers.length > 0) {
+      const byPhone = await ContactModel.find({
+        userId,
+        phone: { $in: phoneNumbers },
+        status: "active",
+      }).select("_id").lean();
+      phoneContactIds = byPhone.map((c) => String(c._id));
+    }
+
+    // Resolve contacts by tag
+    let tagContactIds: string[] = [];
+    if (tagId) {
+      const byTag = await ContactModel.find({
+        userId,
+        tags: new mongoose.Types.ObjectId(tagId),
+        status: "active",
+      }).select("_id").lean();
+      tagContactIds = byTag.map((c) => String(c._id));
+    }
+
+    const allContactIds = [...new Set([...contactIds, ...phoneContactIds, ...tagContactIds])];
+
+    const recipients = await resolveRecipients(userId, allContactIds, groupIds);
     if (recipients.length === 0) {
       return res.status(400).json({ error: "No active contacts found for the selected audience" });
     }

@@ -1,446 +1,682 @@
 /**
- * Module 8: Create Campaign — wired to real templates, groups, and campaign API.
+ * Create Campaign — type-selector landing + per-type sub-forms.
+ * Matches the reference design (Quick / CSV / Groups / Tags / Flow).
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { CheckCircle2, ChevronRight, Users, Megaphone, Calendar, Loader2, AlertCircle } from 'lucide-react';
+import {
+  Zap, FileSpreadsheet, Users, Tag, Workflow,
+  ChevronDown, Upload, Loader2, AlertCircle, AlertTriangle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { api } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  body: string;
-  status: string;
-  language: string;
+type CampaignView = 'select' | 'quick' | 'csv' | 'groups' | 'tags' | 'flow';
+
+interface Template { id: string; name: string; body: string; status: string; language: string; }
+interface Group    { id: string; name: string; memberCount?: number; }
+interface TagItem  { id: string; name: string; color?: string; }
+
+// ── Country codes ─────────────────────────────────────────────────────────────
+
+const COUNTRY_CODES = [
+  { label: 'United States (+1)',    code: '+1'   },
+  { label: 'United Kingdom (+44)',  code: '+44'  },
+  { label: 'India (+91)',           code: '+91'  },
+  { label: 'Australia (+61)',       code: '+61'  },
+  { label: 'Germany (+49)',         code: '+49'  },
+  { label: 'France (+33)',          code: '+33'  },
+  { label: 'Brazil (+55)',          code: '+55'  },
+  { label: 'Mexico (+52)',          code: '+52'  },
+  { label: 'UAE (+971)',            code: '+971' },
+  { label: 'Singapore (+65)',       code: '+65'  },
+  { label: 'Malaysia (+60)',        code: '+60'  },
+  { label: 'Nigeria (+234)',        code: '+234' },
+  { label: 'Kenya (+254)',          code: '+254' },
+  { label: 'South Africa (+27)',    code: '+27'  },
+  { label: 'Pakistan (+92)',        code: '+92'  },
+  { label: 'Bangladesh (+880)',     code: '+880' },
+  { label: 'Philippines (+63)',     code: '+63'  },
+  { label: 'Indonesia (+62)',       code: '+62'  },
+  { label: 'Canada (+1)',           code: '+1'   },
+  { label: 'Saudi Arabia (+966)',   code: '+966' },
+];
+
+// ── Number parser ─────────────────────────────────────────────────────────────
+
+function parseNumbers(raw: string, countryCode: string) {
+  const entries = raw.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+  const normalised: string[] = [];
+
+  for (const entry of entries) {
+    let n = entry.replace(/[\s\-\(\)\.]/g, '');
+    if (!n.startsWith('+') && countryCode) n = countryCode + n;
+    normalised.push(n);
+  }
+
+  const valid: string[]    = [];
+  const invalid: string[]  = [];
+  const seen    = new Set<string>();
+  const dupeSet = new Set<string>();
+
+  for (const n of normalised) {
+    if (/^\+?\d{7,15}$/.test(n)) {
+      if (seen.has(n)) dupeSet.add(n);
+      else { seen.add(n); valid.push(n); }
+    } else {
+      invalid.push(n);
+    }
+  }
+
+  return { valid, invalid, duplicates: dupeSet.size };
 }
 
-interface Group {
-  id: string;
-  name: string;
-  memberCount?: number;
+// ── Shared form fields ────────────────────────────────────────────────────────
+
+function ConfigRow({
+  templates, tmplLoading, templateId, setTemplateId,
+  campaignName, setCampaignName,
+  countryCode, setCountryCode,
+  extra,
+}: {
+  templates: Template[];
+  tmplLoading: boolean;
+  templateId: string;
+  setTemplateId: (v: string) => void;
+  campaignName: string;
+  setCampaignName: (v: string) => void;
+  countryCode: string;
+  setCountryCode: (v: string) => void;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white border rounded-xl p-4 flex flex-wrap gap-3 items-center">
+      {/* Template */}
+      <div className="relative min-w-[200px] flex-1">
+        <select
+          value={templateId}
+          onChange={e => setTemplateId(e.target.value)}
+          disabled={tmplLoading}
+          className="w-full appearance-none border rounded-lg px-3 py-2 pr-8 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+        >
+          <option value="">Select approved template</option>
+          {templates.map(t => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      </div>
+
+      {/* Campaign name */}
+      <input
+        type="text"
+        value={campaignName}
+        onChange={e => setCampaignName(e.target.value)}
+        placeholder="Campaign name..."
+        className="flex-1 min-w-[160px] border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+      />
+
+      {/* Optional extra (group / tag selector) */}
+      {extra}
+
+      {/* Country code */}
+      <div className="relative">
+        <select
+          value={countryCode}
+          onChange={e => setCountryCode(e.target.value)}
+          className="appearance-none border rounded-lg pl-2 pr-7 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="">select country</option>
+          {COUNTRY_CODES.map(c => (
+            <option key={c.label} value={c.code}>{c.label}</option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+      </div>
+    </div>
+  );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function NumbersSection({
+  value, onChange, countryCode, placeholder = 'Enter numbers separated by comma...',
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  countryCode: string;
+  placeholder?: string;
+}) {
+  const { valid, invalid, duplicates } = useMemo(
+    () => parseNumbers(value, countryCode),
+    [value, countryCode],
+  );
 
-/** Extract variable indices {{1}}, {{2}} … from a template body string */
-function extractVarIndices(text: string): number[] {
-  const matches = [...text.matchAll(/\{\{(\d+)\}\}/g)];
-  return [...new Set(matches.map(m => parseInt(m[1]!, 10)))].sort((a, b) => a - b);
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-gray-700">Numbers</p>
+      <div className="flex gap-4 items-start">
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={6}
+          className="flex-1 border rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+        />
+        <div className="flex flex-col gap-1.5 shrink-0 w-48">
+          <div className="bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg text-center">
+            Valid Numbers:&nbsp;{valid.length}
+          </div>
+          <div className="bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded-lg text-center">
+            Invalid Numbers:&nbsp;{invalid.length}
+          </div>
+          <div className="bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg text-center">
+            Duplicate Numbers:&nbsp;{duplicates}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionButtons({
+  validCount,
+  onSchedule,
+  onSend,
+  loading,
+}: {
+  validCount: number;
+  onSchedule: () => void;
+  onSend: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3 bg-white border rounded-xl p-4 w-fit">
+      <button
+        onClick={onSchedule}
+        className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+      >
+        Schedule Campaign
+      </button>
+      <button
+        onClick={onSend}
+        disabled={validCount === 0 || loading}
+        className="px-5 py-2.5 bg-gray-300 text-gray-500 text-sm font-semibold rounded-lg disabled:opacity-60 enabled:bg-gray-900 enabled:text-white enabled:hover:bg-gray-800 transition-colors flex items-center gap-2"
+      >
+        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+        Create &amp; Start Campaign ({validCount} recipients)
+      </button>
+    </div>
+  );
+}
+
+// ── Sub-view wrapper ──────────────────────────────────────────────────────────
+
+function SubViewShell({
+  title,
+  onBack,
+  children,
+}: {
+  title: string;
+  onBack: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="h-full flex flex-col bg-gray-50">
+      <div className="px-6 py-5 flex items-center justify-between shrink-0">
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <button
+          onClick={onBack}
+          className="px-4 py-1.5 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors"
+        >
+          Back
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-5">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function CreateCampaign() {
-  const { user } = useAuth();
   const [, navigate] = useLocation();
-  const [step, setStep] = useState(1);
+  const [view, setView] = useState<CampaignView>('select');
 
-  // Form state
+  // Shared form state
+  const [templateId, setTemplateId]     = useState('');
   const [campaignName, setCampaignName] = useState('');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
-  const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now');
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
+  const [countryCode, setCountryCode]   = useState('');
+  const [numbers, setNumbers]           = useState('');
+  const [groupId, setGroupId]           = useState('');
+  const [tagId, setTagId]               = useState('');
+  const [csvFile, setCsvFile]           = useState<File | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
-  // Load approved templates
+  // Schedule modal state (simple — just stores a datetime string)
+  const [scheduledAt, setScheduledAt] = useState('');
+
+  // ── Data fetching ──────────────────────────────────────────────────────────
+
   const { data: tmplData, isLoading: tmplLoading } = useQuery<{ templates: Template[] }>({
     queryKey: ['templates'],
     queryFn: () => api.get('/templates'),
+    enabled: view !== 'select',
   });
   const approvedTemplates = (tmplData?.templates ?? []).filter(
     t => String(t.status).toUpperCase() === 'APPROVED',
   );
-  const selectedTemplate = approvedTemplates.find(t => t.id === selectedTemplateId) ?? null;
-  const varIndices = useMemo(
-    () => (selectedTemplate ? extractVarIndices(selectedTemplate.body) : []),
-    [selectedTemplate],
-  );
 
-  // Load groups
-  const { data: groupsData, isLoading: groupsLoading } = useQuery<{ groups: Group[] }>({
+  const { data: groupsData } = useQuery<{ groups: Group[] }>({
     queryKey: ['groups'],
     queryFn: () => api.get('/groups'),
+    enabled: view === 'groups',
   });
   const groups = groupsData?.groups ?? [];
 
-  // Launch campaign
+  const { data: tagsData } = useQuery<{ tags: TagItem[] }>({
+    queryKey: ['tags'],
+    queryFn: () => api.get('/tags'),
+    enabled: view === 'tags',
+  });
+  const tags = tagsData?.tags ?? [];
+
+  // ── Parsed numbers ─────────────────────────────────────────────────────────
+
+  const parsed = useMemo(() => parseNumbers(numbers, countryCode), [numbers, countryCode]);
+
+  // ── Campaign mutation ──────────────────────────────────────────────────────
+
   const launchMutation = useMutation({
-    mutationFn: () => {
-      const payload: Record<string, unknown> = {
-        name: campaignName,
-        templateId: selectedTemplateId,
-        groupIds: selectedGroupIds,
-        variableValues,
-      };
-      if (scheduleMode === 'later' && scheduledDate && scheduledTime) {
-        payload.scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
-      }
-      return api.post('/campaigns', payload);
-    },
+    mutationFn: (payload: Record<string, unknown>) => api.post('/campaigns', payload),
     onSuccess: () => {
-      toast.success('Campaign launched successfully!');
-      setTimeout(() => navigate('/campaigns-report'), 1500);
+      toast.success('Campaign created successfully!');
+      setTimeout(() => navigate('/campaigns-report'), 1200);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const handleLaunch = () => {
-    if (!campaignName.trim()) return toast.error('Please enter a campaign name');
-    if (!selectedTemplateId) return toast.error('Please select a template');
-    if (selectedGroupIds.length === 0) return toast.error('Please select at least one group');
-    launchMutation.mutate();
-  };
+  function validateCommon() {
+    if (!campaignName.trim()) { toast.error('Enter a campaign name'); return false; }
+    if (!templateId)          { toast.error('Select an approved template'); return false; }
+    return true;
+  }
 
-  const toggleGroup = (id: string) =>
-    setSelectedGroupIds(prev =>
-      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id],
-    );
+  function buildPayload(extra: Record<string, unknown> = {}, scheduled = false) {
+    return {
+      name: campaignName,
+      templateId,
+      ...(scheduled && scheduledAt ? { scheduledAt } : {}),
+      ...extra,
+    };
+  }
 
-  const steps = [
-    { num: 1, title: 'Basics', icon: Megaphone },
-    { num: 2, title: 'Audience', icon: Users },
-    { num: 3, title: 'Variables', icon: CheckCircle2 },
-    { num: 4, title: 'Schedule', icon: Calendar },
-    { num: 5, title: 'Review', icon: CheckCircle2 },
+  function handleQuickSend() {
+    if (!validateCommon()) return;
+    if (parsed.valid.length === 0) { toast.error('No valid phone numbers entered'); return; }
+    launchMutation.mutate(buildPayload({ phoneNumbers: parsed.valid }));
+  }
+
+  function handleGroupSend() {
+    if (!validateCommon()) return;
+    if (!groupId) { toast.error('Select a contact group'); return; }
+    launchMutation.mutate(buildPayload({ groupIds: [groupId] }));
+  }
+
+  function handleTagSend() {
+    if (!validateCommon()) return;
+    if (!tagId) { toast.error('Select a tag'); return; }
+    launchMutation.mutate(buildPayload({ tagId, phoneNumbers: parsed.valid }));
+  }
+
+  function handleSchedule(extra: Record<string, unknown> = {}) {
+    if (!validateCommon()) return;
+    const dt = prompt('Enter scheduled date/time (YYYY-MM-DDTHH:MM):');
+    if (!dt) return;
+    launchMutation.mutate(buildPayload({ scheduledAt: new Date(dt).toISOString(), ...extra }));
+  }
+
+  function resetAndGo(v: CampaignView) {
+    setTemplateId(''); setCampaignName(''); setCountryCode('');
+    setNumbers(''); setGroupId(''); setTagId(''); setCsvFile(null);
+    setView(v);
+  }
+
+  // ── Campaign type cards ────────────────────────────────────────────────────
+
+  const types = [
+    {
+      key: 'quick' as CampaignView,
+      title: 'Quick Campaign',
+      desc: 'Send a simple message to a single recipient or group. Perfect for quick communications or testing your setup.',
+      btnLabel: 'Start Quick Campaign',
+      btnClass: 'bg-primary text-white hover:bg-primary/90',
+    },
+    {
+      key: 'csv' as CampaignView,
+      title: 'CSV Campaign',
+      desc: 'Upload a CSV file with multiple recipients to send personalized messages at scale. Ideal for marketing or notifications.',
+      btnLabel: 'Start CSV Campaign',
+      btnClass: 'bg-blue-500 text-white hover:bg-blue-600',
+    },
+    {
+      key: 'groups' as CampaignView,
+      title: 'Groups Campaign',
+      desc: 'Send messages to predefined contact groups. Efficiently target segments of your audience with tailored communications.',
+      btnLabel: 'Start Groups Campaign',
+      btnClass: 'bg-amber-500 text-white hover:bg-amber-600',
+    },
+    {
+      key: 'tags' as CampaignView,
+      title: 'Tags Campaign',
+      desc: 'Target contacts by tags or attributes. Perfect for audience segmentation and personalized outreach based on specific criteria.',
+      btnLabel: 'Start Tags Campaign',
+      btnClass: 'bg-purple-600 text-white hover:bg-purple-700',
+    },
+    {
+      key: 'flow' as CampaignView,
+      title: 'Flow Campaign',
+      desc: 'Send interactive WhatsApp Flows to multiple recipients in bulk. Collect structured responses like forms, surveys, and registrations at scale.',
+      btnLabel: 'Start Flow Campaign',
+      btnClass: 'bg-primary text-white hover:bg-primary/90',
+    },
   ];
 
-  // Live preview of template body with variable substitution
-  const previewBody = useMemo(() => {
-    if (!selectedTemplate) return '';
-    let body = selectedTemplate.body;
-    varIndices.forEach(i => {
-      body = body.replace(new RegExp(`\\{\\{${i}\\}\\}`, 'g'), variableValues[String(i)] || `{{${i}}}`);
-    });
-    return body;
-  }, [selectedTemplate, variableValues, varIndices]);
+  // ── Select view ────────────────────────────────────────────────────────────
 
-  return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Header & Stepper */}
-      <div className="bg-white border-b px-6 py-4 shrink-0">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create Campaign</h1>
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          {steps.map((s, i) => (
-            <div key={s.num} className="flex flex-col items-center relative z-10 w-24">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-medium border-2 bg-white transition-colors ${
-                  step > s.num
-                    ? 'border-primary bg-primary text-white'
-                    : step === s.num
-                    ? 'border-primary text-primary'
-                    : 'border-gray-200 text-gray-400'
-                }`}
-              >
-                {step > s.num ? <CheckCircle2 className="w-5 h-5" /> : s.num}
-              </div>
-              <span className={`text-xs mt-2 font-medium ${step >= s.num ? 'text-gray-900' : 'text-gray-400'}`}>
-                {s.title}
-              </span>
-              {i < steps.length - 1 && (
-                <div
-                  className={`absolute top-5 left-1/2 h-[2px] -z-10 ${step > s.num ? 'bg-primary' : 'bg-gray-200'}`}
-                  style={{ width: 'calc(100% + 40px)', left: '50%' }}
-                />
-              )}
-            </div>
+  if (view === 'select') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 overflow-y-auto">
+        <div className="text-center py-10 px-6">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Create New Campaign</h1>
+          <p className="text-gray-500 text-base">Select a campaign type to get started with your WhatsApp messaging</p>
+        </div>
+
+        <div className="px-8 pb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto w-full">
+          {types.slice(0, 4).map(t => (
+            <CampaignTypeCard key={t.key} {...t} onStart={() => resetAndGo(t.key)} />
           ))}
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-3xl mx-auto bg-white rounded-xl border shadow-sm p-8">
-
-          {/* Step 1: Name + Template */}
-          {step === 1 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">Campaign Details</h2>
-                <p className="text-sm text-gray-500">Name your campaign and pick an approved template.</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Campaign Name</label>
-                <input
-                  type="text"
-                  value={campaignName}
-                  onChange={e => setCampaignName(e.target.value)}
-                  placeholder="e.g. Summer Sale 2024"
-                  className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 outline-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Select Template (Approved only)</label>
-                {tmplLoading ? (
-                  <div className="flex items-center gap-2 text-gray-400 py-4">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Loading templates…
-                  </div>
-                ) : approvedTemplates.length === 0 ? (
-                  <div className="flex items-center gap-2 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    No approved templates found. Create and submit a template for approval first.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {approvedTemplates.map(t => (
-                      <button
-                        key={t.id}
-                        onClick={() => { setSelectedTemplateId(t.id); setVariableValues({}); }}
-                        className={`text-left border rounded-lg p-4 transition-all ${
-                          selectedTemplateId === t.id
-                            ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                            : 'hover:border-primary hover:bg-primary/5'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-medium text-gray-900 text-sm">{t.name}</span>
-                          <div className={`w-4 h-4 rounded-full border-2 shrink-0 ml-2 ${
-                            selectedTemplateId === t.id ? 'border-primary bg-primary' : 'border-gray-300'
-                          }`} />
-                        </div>
-                        <p className="text-xs text-gray-500 line-clamp-2">{t.body}</p>
-                        <span className="text-xs mt-2 inline-block text-gray-400">{t.language} · {t.category}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Audience */}
-          {step === 2 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">Select Audience</h2>
-                <p className="text-sm text-gray-500">Choose one or more contact groups to send this campaign to.</p>
-              </div>
-
-              {groupsLoading ? (
-                <div className="flex items-center gap-2 text-gray-400">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Loading groups…
-                </div>
-              ) : groups.length === 0 ? (
-                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  No groups found. Create groups and add contacts first.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {groups.map(g => (
-                    <label
-                      key={g.id}
-                      className={`flex items-center gap-4 border rounded-lg p-4 cursor-pointer transition-colors ${
-                        selectedGroupIds.includes(g.id) ? 'border-primary bg-primary/5' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedGroupIds.includes(g.id)}
-                        onChange={() => toggleGroup(g.id)}
-                        className="accent-primary w-4 h-4"
-                      />
-                      <div>
-                        <h3 className="font-medium text-gray-900">{g.name}</h3>
-                        {g.memberCount !== undefined && (
-                          <p className="text-sm text-gray-500">{g.memberCount} contacts</p>
-                        )}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {selectedGroupIds.length > 0 && (
-                <p className="text-sm text-primary font-medium">
-                  {selectedGroupIds.length} group{selectedGroupIds.length > 1 ? 's' : ''} selected
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Variable values */}
-          {step === 3 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">Map Variables</h2>
-                <p className="text-sm text-gray-500">
-                  Fill in each template variable. Use <code className="bg-gray-100 px-1 rounded">{'{{name}}'}</code> to
-                  insert the contact's name dynamically.
-                </p>
-              </div>
-
-              {varIndices.length === 0 ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
-                  This template has no variables — it will be sent exactly as written.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {varIndices.map(i => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="w-14 shrink-0 text-sm font-mono font-medium text-gray-700 bg-gray-100 rounded px-2 py-1 text-center">{`{{${i}}}`}</div>
-                      <input
-                        type="text"
-                        placeholder={`Value for {{${i}}} — or use {{name}}, {{phone}}`}
-                        value={variableValues[String(i)] ?? ''}
-                        onChange={e =>
-                          setVariableValues(prev => ({ ...prev, [String(i)]: e.target.value }))
-                        }
-                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {selectedTemplate && (
-                <div className="mt-6">
-                  <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wider">Live Preview</p>
-                  <div className="bg-[#efeae2] rounded-xl p-4">
-                    <div className="bg-white rounded-lg rounded-tl-none shadow-sm p-3 max-w-xs">
-                      <p className="text-sm whitespace-pre-wrap text-gray-900">{previewBody}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 4: Schedule */}
-          {step === 4 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">Schedule</h2>
-                <p className="text-sm text-gray-500">When should this campaign be sent?</p>
-              </div>
-
-              <div className="space-y-4">
-                <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${scheduleMode === 'now' ? 'border-primary bg-primary/5' : ''}`}>
-                  <input
-                    type="radio"
-                    name="schedule"
-                    checked={scheduleMode === 'now'}
-                    onChange={() => setScheduleMode('now')}
-                  />
-                  <span className="font-medium text-gray-900">Send Immediately</span>
-                </label>
-
-                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${scheduleMode === 'later' ? 'border-primary bg-primary/5' : ''}`}>
-                  <input
-                    type="radio"
-                    name="schedule"
-                    checked={scheduleMode === 'later'}
-                    onChange={() => setScheduleMode('later')}
-                    className="mt-1"
-                  />
-                  <div>
-                    <span className="font-medium text-gray-900 block mb-3">Schedule for later</span>
-                    <div className="flex gap-3">
-                      <input
-                        type="date"
-                        value={scheduledDate}
-                        onChange={e => setScheduledDate(e.target.value)}
-                        className="p-2 border rounded text-sm bg-white"
-                        disabled={scheduleMode !== 'later'}
-                      />
-                      <input
-                        type="time"
-                        value={scheduledTime}
-                        onChange={e => setScheduledTime(e.target.value)}
-                        className="p-2 border rounded text-sm bg-white"
-                        disabled={scheduleMode !== 'later'}
-                      />
-                    </div>
-                  </div>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Review */}
-          {step === 5 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">Review & Confirm</h2>
-                <p className="text-sm text-gray-500">Check your details before launching.</p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-5 border space-y-4 text-sm">
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">Campaign Name</span>
-                  <span className="font-medium text-gray-900">{campaignName || '(untitled)'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">Template</span>
-                  <span className="font-medium text-gray-900">{selectedTemplate?.name ?? '—'}</span>
-                </div>
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">Audience</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedGroupIds.length} group{selectedGroupIds.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">Schedule</span>
-                  <span className="font-medium text-gray-900">
-                    {scheduleMode === 'now'
-                      ? 'Send immediately'
-                      : scheduledDate
-                      ? `${scheduledDate} at ${scheduledTime}`
-                      : 'Scheduled (date not set)'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Your credit balance</span>
-                  <span className="font-medium text-primary">{user?.creditBalance?.toLocaleString() ?? 0} credits</span>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                1 credit is deducted per recipient. The campaign will fail if you have insufficient credits.
-              </div>
-            </div>
-          )}
+        {/* Flow card — bottom-left, same width as top cards */}
+        <div className="px-8 pb-12 max-w-6xl mx-auto w-full">
+          <div className="max-w-[calc(25%-15px)]">
+            <CampaignTypeCard {...types[4]!} onStart={() => resetAndGo('flow')} />
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Footer Nav */}
-      <div className="bg-white border-t px-6 py-4 flex justify-between shrink-0">
-        <button
-          onClick={() => setStep(s => Math.max(s - 1, 1))}
-          disabled={step === 1}
-          className="px-6 py-2 border rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-        >
-          Back
-        </button>
-        {step < 5 ? (
+  // ── Quick Campaign ─────────────────────────────────────────────────────────
+
+  if (view === 'quick') {
+    return (
+      <SubViewShell title="Quick Campaign" onBack={() => setView('select')}>
+        <ConfigRow
+          templates={approvedTemplates} tmplLoading={tmplLoading}
+          templateId={templateId} setTemplateId={setTemplateId}
+          campaignName={campaignName} setCampaignName={setCampaignName}
+          countryCode={countryCode} setCountryCode={setCountryCode}
+        />
+        <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} />
+        <ActionButtons
+          validCount={parsed.valid.length}
+          onSchedule={() => handleSchedule({ phoneNumbers: parsed.valid })}
+          onSend={handleQuickSend}
+          loading={launchMutation.isPending}
+        />
+      </SubViewShell>
+    );
+  }
+
+  // ── CSV Campaign ───────────────────────────────────────────────────────────
+
+  if (view === 'csv') {
+    return (
+      <SubViewShell title="CSV Campaign" onBack={() => setView('select')}>
+        <ConfigRow
+          templates={approvedTemplates} tmplLoading={tmplLoading}
+          templateId={templateId} setTemplateId={setTemplateId}
+          campaignName={campaignName} setCampaignName={setCampaignName}
+          countryCode={countryCode} setCountryCode={setCountryCode}
+        />
+
+        {/* File upload */}
+        <input
+          ref={csvInputRef}
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          className="hidden"
+          onChange={e => setCsvFile(e.target.files?.[0] ?? null)}
+        />
+        <div>
           <button
-            onClick={() => setStep(s => Math.min(s + 1, 5))}
-            className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+            onClick={() => csvInputRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
           >
-            Continue <ChevronRight className="w-4 h-4" />
+            <Upload className="w-4 h-4" />
+            IMPORT FROM EXCEL
           </button>
-        ) : (
+          {csvFile && (
+            <p className="mt-2 text-sm text-gray-600">
+              Selected: <span className="font-medium">{csvFile.name}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 bg-white border rounded-xl p-4 w-fit">
           <button
-            onClick={handleLaunch}
-            disabled={launchMutation.isPending}
-            className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors shadow-sm flex items-center gap-2"
+            onClick={() => handleSchedule()}
+            className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Schedule Campaign
+          </button>
+        </div>
+      </SubViewShell>
+    );
+  }
+
+  // ── Groups Campaign ────────────────────────────────────────────────────────
+
+  if (view === 'groups') {
+    return (
+      <SubViewShell title="Group Campaign" onBack={() => setView('select')}>
+        <ConfigRow
+          templates={approvedTemplates} tmplLoading={tmplLoading}
+          templateId={templateId} setTemplateId={setTemplateId}
+          campaignName={campaignName} setCampaignName={setCampaignName}
+          countryCode={countryCode} setCountryCode={setCountryCode}
+          extra={
+            <div className="relative min-w-[180px] flex-1">
+              <select
+                value={groupId}
+                onChange={e => setGroupId(e.target.value)}
+                className="w-full appearance-none border rounded-lg px-3 py-2 pr-8 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Select a contact group</option>
+                {groups.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          }
+        />
+        <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} />
+        <ActionButtons
+          validCount={groupId ? (groups.find(g => g.id === groupId)?.memberCount ?? parsed.valid.length) : parsed.valid.length}
+          onSchedule={() => handleSchedule({ groupIds: [groupId] })}
+          onSend={handleGroupSend}
+          loading={launchMutation.isPending}
+        />
+      </SubViewShell>
+    );
+  }
+
+  // ── Tags Campaign ──────────────────────────────────────────────────────────
+
+  if (view === 'tags') {
+    return (
+      <SubViewShell title="Tag Campaign" onBack={() => setView('select')}>
+        <ConfigRow
+          templates={approvedTemplates} tmplLoading={tmplLoading}
+          templateId={templateId} setTemplateId={setTemplateId}
+          campaignName={campaignName} setCampaignName={setCampaignName}
+          countryCode={countryCode} setCountryCode={setCountryCode}
+        />
+
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-gray-700">Select Tag to Filter Contacts</p>
+          <div className="relative w-56">
+            <select
+              value={tagId}
+              onChange={e => setTagId(e.target.value)}
+              className="w-full appearance-none border rounded-lg px-3 py-2 pr-8 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="">Select a tag to filter contacts</option>
+              {tags.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+          <p className="text-xs text-gray-500">
+            Select a tag to automatically populate the numbers field with contacts that have this tag.
+            You can also manually enter or edit numbers in the field below.
+          </p>
+        </div>
+
+        <NumbersSection
+          value={numbers}
+          onChange={setNumbers}
+          countryCode={countryCode}
+          placeholder="Enter numbers separated by comma or select a tag above to filter contacts"
+        />
+        <ActionButtons
+          validCount={parsed.valid.length}
+          onSchedule={() => handleSchedule({ tagId, phoneNumbers: parsed.valid })}
+          onSend={handleTagSend}
+          loading={launchMutation.isPending}
+        />
+      </SubViewShell>
+    );
+  }
+
+  // ── Flow Campaign ──────────────────────────────────────────────────────────
+
+  if (view === 'flow') {
+    return (
+      <SubViewShell title="Flow Campaign" onBack={() => setView('select')}>
+        <p className="text-sm text-gray-500 -mt-2">Send a WhatsApp Flow to multiple recipients in bulk</p>
+
+        <div className="bg-white border rounded-xl p-6 space-y-6">
+          {/* Campaign name */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Campaign Name *</p>
+            <input
+              type="text"
+              value={campaignName}
+              onChange={e => setCampaignName(e.target.value)}
+              placeholder="e.g. May Lead Gen Campaign"
+              className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          {/* Select Flow */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Flow *</p>
+            <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm text-yellow-800">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-yellow-500" />
+              No published flows found. Publish a flow first from the Flow Builder.
+            </div>
+          </div>
+
+          {/* Country code */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Country Code <span className="normal-case font-normal">(Auto-prefix for local numbers)</span>
+            </p>
+            <div className="relative w-48">
+              <select
+                value={countryCode}
+                onChange={e => setCountryCode(e.target.value)}
+                className="w-full appearance-none border rounded-lg pl-3 pr-8 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Select Country</option>
+                {COUNTRY_CODES.map(c => (
+                  <option key={c.label} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Phone numbers */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Recipient Phone Numbers *</p>
+            <textarea
+              value={numbers}
+              onChange={e => setNumbers(e.target.value)}
+              placeholder="Enter phone numbers"
+              rows={5}
+              className="w-full border rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+            />
+            <p className="text-xs text-gray-400">
+              Include country code, no + prefix. Accepts one per line, comma, or semicolon separated.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 bg-white border rounded-xl p-4 w-fit">
+          <button
+            onClick={() => handleSchedule({ phoneNumbers: parsed.valid })}
+            className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Schedule Campaign
+          </button>
+          <button
+            disabled={parsed.valid.length === 0 || launchMutation.isPending}
+            className="px-5 py-2.5 bg-gray-300 text-gray-500 text-sm font-semibold rounded-lg disabled:opacity-60 enabled:bg-gray-900 enabled:text-white enabled:hover:bg-gray-800 transition-colors flex items-center gap-2"
           >
             {launchMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            {launchMutation.isPending ? 'Launching…' : 'Launch Campaign'}
+            Send Flow Campaign ({parsed.valid.length} recipients)
           </button>
-        )}
+        </div>
+      </SubViewShell>
+    );
+  }
+
+  return null;
+}
+
+// ── Campaign type card ────────────────────────────────────────────────────────
+
+function CampaignTypeCard({
+  title, desc, btnLabel, btnClass, onStart,
+}: {
+  title: string;
+  desc: string;
+  btnLabel: string;
+  btnClass: string;
+  onStart: () => void;
+}) {
+  return (
+    <div className="bg-white border rounded-2xl shadow-sm p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
+      <div className="flex-1">
+        <h2 className="text-lg font-bold text-gray-900 mb-2">{title}</h2>
+        <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
       </div>
+      <button
+        onClick={onStart}
+        className={`w-full py-2.5 text-sm font-bold rounded-lg transition-colors ${btnClass}`}
+      >
+        {btnLabel}
+      </button>
     </div>
   );
 }
