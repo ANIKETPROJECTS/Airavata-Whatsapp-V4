@@ -160,6 +160,12 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </main>
 
+      {/* Floating Chat Widget */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button className="w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-transform hover:scale-105">
+          <MessageCircle className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
 }
