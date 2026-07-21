@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MessageSquare, MoreVertical,
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
-  FileText, Image, Film, Music, X,
+  FileText, Image, Film, Music, X, FileImage, Mic,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -72,17 +72,22 @@ export default function LiveChat() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [search, setSearch] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachment, setAttachment] = useState<AttachmentFile | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Close emoji picker when clicking outside
+  // Close pickers when clicking outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
         setShowEmojiPicker(false);
+      }
+      if (attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
+        setShowAttachMenu(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -214,8 +219,15 @@ export default function LiveChat() {
       file,
       previewUrl: isImage ? URL.createObjectURL(file) : null,
     });
-    // Reset input so the same file can be re-selected
     e.target.value = '';
+  };
+
+  const openFilePicker = (accept: string) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = accept;
+      fileInputRef.current.click();
+    }
+    setShowAttachMenu(false);
   };
 
   const clearAttachment = () => {
@@ -478,21 +490,44 @@ export default function LiveChat() {
                       )}
                     </div>
 
-                    {/* Attachment button */}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`p-2 rounded-lg transition-colors ${attachment ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                      title="Attach file"
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
-                      onChange={handleFileChange}
-                    />
+                    {/* Attachment button + popup menu */}
+                    <div className="relative" ref={attachMenuRef}>
+                      <button
+                        onClick={() => setShowAttachMenu(p => !p)}
+                        className={`p-2 rounded-lg transition-colors ${attachment ? 'bg-primary/10 text-primary' : showAttachMenu ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        title="Attach"
+                      >
+                        <Paperclip className="w-5 h-5" />
+                      </button>
+
+                      {showAttachMenu && (
+                        <div className="absolute bottom-12 left-0 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 w-52 overflow-hidden">
+                          {[
+                            { label: 'Document', icon: FileText, color: 'bg-indigo-500', accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip' },
+                            { label: 'Photos & videos', icon: FileImage, color: 'bg-violet-500', accept: 'image/*,video/*' },
+                            { label: 'Audio', icon: Mic, color: 'bg-orange-400', accept: 'audio/*' },
+                          ].map(({ label, icon: Icon, color, accept }) => (
+                            <button
+                              key={label}
+                              onClick={() => openFilePicker(accept)}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                            >
+                              <span className={`w-9 h-9 rounded-full flex items-center justify-center ${color} shrink-0`}>
+                                <Icon className="w-4 h-4 text-white" />
+                              </span>
+                              <span className="text-sm font-medium text-gray-700">{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                    </div>
                   </div>
 
                   <textarea
