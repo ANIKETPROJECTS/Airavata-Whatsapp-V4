@@ -36,7 +36,11 @@ router.get("/groups", async (req: AuthRequest, res) => {
 // POST /api/groups
 router.post("/groups", async (req: AuthRequest, res) => {
   try {
-    const { name, description } = req.body as { name?: string; description?: string };
+    const { name, description, contactIds = [] } = req.body as {
+      name?: string;
+      description?: string;
+      contactIds?: string[];
+    };
     if (!name?.trim()) { res.status(400).json({ error: "name is required" }); return; }
 
     const group = await GroupModel.create({
@@ -45,8 +49,21 @@ router.post("/groups", async (req: AuthRequest, res) => {
       description: description?.trim(),
     });
 
+    // Assign selected contacts to this group
+    let memberCount = 0;
+    if (contactIds.length > 0) {
+      const result = await ContactModel.updateMany(
+        {
+          _id: { $in: contactIds.map(id => new mongoose.Types.ObjectId(id)) },
+          userId: req.user!.userId,
+        },
+        { groupId: group._id },
+      );
+      memberCount = result.modifiedCount;
+    }
+
     res.status(201).json({
-      group: { id: group._id, name: group.name, description: group.description ?? null, memberCount: 0, createdAt: group.createdAt },
+      group: { id: group._id, name: group.name, description: group.description ?? null, memberCount, createdAt: group.createdAt },
     });
   } catch {
     res.status(500).json({ error: "Internal server error" });
