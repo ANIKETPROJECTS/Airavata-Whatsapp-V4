@@ -1,15 +1,19 @@
 /**
  * Module 7: Live Chat — wired to real conversation & message data.
  * Polls for new messages every 5 seconds so incoming WhatsApp replies appear live.
+ * Supports emoji picker and media attachments (image, document, video, audio).
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, MessageSquare, Phone, MoreVertical,
-  Send, Paperclip, Smile, CheckCheck, Plus, Loader2, RefreshCw
+  Search, MessageSquare, MoreVertical,
+  Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
+  FileText, Image, Film, Music, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Picker from '@emoji-mart/react';
+import data from '@emoji-mart/data';
 import { api } from '@/lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -30,8 +34,32 @@ interface Message {
   id: string;
   direction: 'INBOUND' | 'OUTBOUND';
   body: string;
+  mediaType?: 'image' | 'video' | 'audio' | 'document';
+  mediaFilename?: string;
   status: string;
   createdAt: string;
+}
+
+interface AttachmentFile {
+  file: File;
+  previewUrl: string | null; // only for images
+}
+
+// ── Media icon helper ─────────────────────────────────────────────────────────
+
+function MediaBubble({ mediaType, filename }: { mediaType: string; filename?: string }) {
+  const Icon =
+    mediaType === 'image' ? Image :
+    mediaType === 'video' ? Film :
+    mediaType === 'audio' ? Music :
+    FileText;
+
+  return (
+    <div className="flex items-center gap-2 px-1 py-0.5 text-gray-600">
+      <Icon className="w-5 h-5 shrink-0" />
+      <span className="text-xs truncate max-w-[180px]">{filename ?? mediaType}</span>
+    </div>
+  );
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -43,7 +71,23 @@ export default function LiveChat() {
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [search, setSearch] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [attachment, setAttachment] = useState<AttachmentFile | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // ── Conversations list (poll every 10s) ──────────────────────────────────
 
@@ -79,7 +123,7 @@ export default function LiveChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  // ── Send message mutation ─────────────────────────────────────────────────
+  // ── Send text message mutation ────────────────────────────────────────────
 
   const sendMutation = useMutation({
     mutationFn: (body: string) =>
@@ -92,16 +136,93 @@ export default function LiveChat() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  // ── Send media mutation ───────────────────────────────────────────────────
+
+  const sendMediaMutation = useMutation({
+    mutationFn: async ({ file, caption }: { file: File; caption: string }) => {
+      const form = new FormData();
+      form.append('file', file);
+      if (caption) form.append('caption', caption);
+
+      const res = await fetch(`${import.meta.env.BASE_URL}api/conversations/${activeConvId}/media`, {
+        method: 'POST',
+        credentials: 'include',
+        body: form,
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({ error: 'Upload failed' }))) as { error?: string };
+        throw new Error(err.error ?? 'Upload failed');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setMessageInput('');
+      setAttachment(prev => {
+        if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+        return null;
+      });
+      qc.invalidateQueries({ queryKey: ['messages', activeConvId] });
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const isPending = sendMutation.isPending || sendMediaMutation.isPending;
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleSend = useCallback(() => {
-    if (!messageInput.trim() || !activeConvId || sendMutation.isPending) return;
-    sendMutation.mutate(messageInput.trim());
-  }, [messageInput, activeConvId, sendMutation]);
+    if (isPending || !activeConvId) return;
+    if (attachment) {
+      sendMediaMutation.mutate({ file: attachment.file, caption: messageInput.trim() });
+    } else if (messageInput.trim()) {
+      sendMutation.mutate(messageInput.trim());
+    }
+  }, [attachment, messageInput, activeConvId, isPending, sendMutation, sendMediaMutation]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleEmojiSelect = (emoji: { native: string }) => {
+    const ta = textareaRef.current;
+    if (!ta) {
+      setMessageInput(prev => prev + emoji.native);
+      return;
+    }
+    const start = ta.selectionStart ?? messageInput.length;
+    const end = ta.selectionEnd ?? messageInput.length;
+    const next = messageInput.slice(0, start) + emoji.native + messageInput.slice(end);
+    setMessageInput(next);
+    // Restore cursor after React re-render
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + emoji.native.length;
+      ta.setSelectionRange(pos, pos);
+    });
+    setShowEmojiPicker(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isImage = file.type.startsWith('image/');
+    setAttachment({
+      file,
+      previewUrl: isImage ? URL.createObjectURL(file) : null,
+    });
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+  };
+
+  const clearAttachment = () => {
+    setAttachment(prev => {
+      if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+      return null;
+    });
   };
 
   // ── Filter conversations ──────────────────────────────────────────────────
@@ -273,7 +394,14 @@ export default function LiveChat() {
                           : 'bg-white rounded-tl-none text-gray-900'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                      {msg.mediaType && (
+                        <MediaBubble mediaType={msg.mediaType} filename={msg.mediaFilename} />
+                      )}
+                      {msg.body && (
+                        <p className={`text-sm whitespace-pre-wrap ${msg.mediaType ? 'mt-1 text-gray-500 italic' : ''}`}>
+                          {msg.body}
+                        </p>
+                      )}
                       <div className="flex items-center justify-end gap-1 mt-1">
                         <span className="text-[10px] text-gray-400">{formatTime(msg.createdAt)}</span>
                         {msg.direction === 'OUTBOUND' && (
@@ -295,33 +423,99 @@ export default function LiveChat() {
           {/* Message Input */}
           <div className="p-4 bg-gray-50 border-t shrink-0">
             {activeConv.windowOpen ? (
-              <div className="max-w-3xl mx-auto flex items-end gap-2 bg-white border rounded-xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-                <div className="flex gap-1 pb-1">
-                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                    <Smile className="w-5 h-5" />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-                    <Paperclip className="w-5 h-5" />
-                  </button>
-                </div>
-                <textarea
-                  value={messageInput}
-                  onChange={e => setMessageInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type a message..."
-                  className="flex-1 max-h-32 min-h-[40px] resize-none border-none outline-none py-2 px-2 text-sm bg-transparent"
-                  rows={1}
-                />
-                <div className="pb-1">
-                  <button
-                    onClick={handleSend}
-                    disabled={!messageInput.trim() || sendMutation.isPending}
-                    className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                  >
-                    {sendMutation.isPending
-                      ? <Loader2 className="w-5 h-5 animate-spin" />
-                      : <Send className="w-5 h-5 ml-0.5" />}
-                  </button>
+              <div className="max-w-3xl mx-auto space-y-2">
+                {/* Attachment preview strip */}
+                {attachment && (
+                  <div className="flex items-center gap-3 bg-white border rounded-lg px-3 py-2 shadow-sm">
+                    {attachment.previewUrl ? (
+                      <img
+                        src={attachment.previewUrl}
+                        alt="preview"
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{attachment.file.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {(attachment.file.size / 1024).toFixed(0)} KB
+                      </p>
+                    </div>
+                    <button
+                      onClick={clearAttachment}
+                      className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Input row */}
+                <div className="relative flex items-end gap-2 bg-white border rounded-xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+                  <div className="flex gap-1 pb-1">
+                    {/* Emoji button */}
+                    <div className="relative" ref={emojiPickerRef}>
+                      <button
+                        onClick={() => setShowEmojiPicker(p => !p)}
+                        className={`p-2 rounded-lg transition-colors ${showEmojiPicker ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        title="Emoji"
+                      >
+                        <Smile className="w-5 h-5" />
+                      </button>
+                      {showEmojiPicker && (
+                        <div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
+                          <Picker
+                            data={data}
+                            onEmojiSelect={handleEmojiSelect}
+                            theme="light"
+                            previewPosition="none"
+                            skinTonePosition="none"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Attachment button */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`p-2 rounded-lg transition-colors ${attachment ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                      title="Attach file"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+                      onChange={handleFileChange}
+                    />
+                  </div>
+
+                  <textarea
+                    ref={textareaRef}
+                    value={messageInput}
+                    onChange={e => setMessageInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={attachment ? 'Add a caption (optional)...' : 'Type a message...'}
+                    className="flex-1 max-h-32 min-h-[40px] resize-none border-none outline-none py-2 px-2 text-sm bg-transparent"
+                    rows={1}
+                  />
+
+                  <div className="pb-1">
+                    <button
+                      onClick={handleSend}
+                      disabled={(!messageInput.trim() && !attachment) || isPending}
+                      className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                    >
+                      {isPending
+                        ? <Loader2 className="w-5 h-5 animate-spin" />
+                        : <Send className="w-5 h-5 ml-0.5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -338,56 +532,10 @@ export default function LiveChat() {
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-lg font-medium text-gray-900">Select a conversation</h3>
-            <p className="text-sm text-gray-500">Choose a contact from the list to start chatting.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Right Panel: Contact Info */}
-      {rightPanelOpen && activeConv && (
-        <div className="w-72 border-l bg-white flex flex-col shrink-0 overflow-y-auto">
-          <div className="p-6 text-center border-b">
-            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-2xl mx-auto mb-3">
-              {activeConv.contactName.charAt(0)}
-            </div>
-            <h3 className="font-semibold text-gray-900">{activeConv.contactName}</h3>
-            <p className="text-sm text-gray-500">{activeConv.contactPhone}</p>
-            <div className="flex gap-2 justify-center mt-4">
-              <button className="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200">
-                <Phone className="w-4 h-4" />
-              </button>
-              <button className="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200">
-                <Search className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-5 space-y-6">
-            <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">About</h4>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Phone</span>
-                  <span className="font-medium text-gray-900 text-xs">{activeConv.contactPhone}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Window</span>
-                  <span className={`text-xs font-medium ${activeConv.windowOpen ? 'text-green-600' : 'text-red-500'}`}>
-                    {activeConv.windowOpen ? 'Open' : 'Closed'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h4>
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50">
-                <Plus className="w-4 h-4" /> Add to Group
-              </button>
-            </div>
+          <div className="text-center text-gray-400">
+            <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="font-medium">Select a conversation</p>
+            <p className="text-sm mt-1">Choose a contact from the left to start chatting</p>
           </div>
         </div>
       )}

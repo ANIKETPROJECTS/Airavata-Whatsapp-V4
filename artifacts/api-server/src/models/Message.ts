@@ -7,6 +7,10 @@ const messageSchema = new Schema(
     campaignId: { type: Schema.Types.ObjectId, ref: "Campaign" },
     direction: { type: String, enum: ["OUTBOUND", "INBOUND"], required: true },
     body: { type: String },
+    mediaType: { type: String }, // "image" | "document" | "video" | "audio"
+    mediaUrl: { type: String },  // public URL from Meta (for display)
+    mediaId: { type: String },   // Meta media object ID
+    mediaFilename: { type: String },
     templateId: { type: Schema.Types.ObjectId, ref: "Template" },
     whatsappMessageId: { type: String, index: true },
     status: {

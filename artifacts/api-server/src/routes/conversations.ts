@@ -5,11 +5,17 @@
 
 import { Router } from "express";
 import mongoose from "mongoose";
+import multer from "multer";
 import { MessageModel } from "../models/Message";
 import { ContactModel } from "../models/Contact";
-import { sendTextMessage } from "../lib/whatsapp";
+import { sendTextMessage, uploadMedia, sendMediaMessage, mediaTypeFromMime } from "../lib/whatsapp";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 16 * 1024 * 1024 }, // 16 MB — Meta's limit
+});
 
 const router = Router();
 
@@ -110,6 +116,8 @@ router.get("/conversations/:contactId/messages", authenticate, async (req: AuthR
       id: String(m._id),
       direction: m.direction,
       body: m.body ?? "",
+      mediaType: m.mediaType ?? null,
+      mediaFilename: m.mediaFilename ?? null,
       status: m.status,
       whatsappMessageId: m.whatsappMessageId,
       sentAt: m.sentAt,
@@ -184,5 +192,82 @@ router.post("/conversations/:contactId/messages", authenticate, async (req: Auth
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
+
+// ── POST /api/conversations/:contactId/media
+// Upload and send a media message (image, document, video, audio)
+
+router.post(
+  "/conversations/:contactId/media",
+  authenticate,
+  upload.single("file"),
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user!.userId);
+      const contactId = new mongoose.Types.ObjectId(req.params.contactId);
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const contact = await ContactModel.findOne({ _id: contactId, userId }).lean();
+      if (!contact) return res.status(404).json({ error: "Contact not found" });
+
+      // Verify 24-hour window
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const lastInbound = await MessageModel.findOne({
+        userId,
+        contactId,
+        direction: "INBOUND",
+        createdAt: { $gte: twentyFourHoursAgo },
+      });
+      if (!lastInbound) {
+        return res.status(400).json({
+          error: "24-hour customer service window is closed. Use a template message instead.",
+        });
+      }
+
+      const { buffer, mimetype, originalname } = req.file;
+      const type = mediaTypeFromMime(mimetype);
+
+      // 1. Upload to Meta
+      const mediaId = await uploadMedia(buffer, mimetype, originalname);
+
+      // 2. Send via WhatsApp
+      const result = await sendMediaMessage(contact.phone, mediaId, type, originalname);
+      const waMessageId = result.messages?.[0]?.id ?? null;
+
+      // 3. Persist to MongoDB
+      const caption = (req.body as { caption?: string }).caption?.trim() ?? "";
+      const msg = await MessageModel.create({
+        userId,
+        contactId,
+        direction: "OUTBOUND",
+        body: caption || originalname,
+        mediaType: type,
+        mediaId,
+        mediaFilename: originalname,
+        whatsappMessageId: waMessageId,
+        status: "SENT",
+        sentAt: new Date(),
+      });
+
+      res.status(201).json({
+        message: {
+          id: String(msg._id),
+          direction: "OUTBOUND",
+          body: msg.body,
+          mediaType: type,
+          mediaFilename: originalname,
+          status: msg.status,
+          whatsappMessageId: msg.whatsappMessageId,
+          createdAt: msg.createdAt,
+        },
+      });
+    } catch (err: unknown) {
+      logger.error({ err }, "POST /conversations/:contactId/media failed");
+      res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+);
 
 export default router;

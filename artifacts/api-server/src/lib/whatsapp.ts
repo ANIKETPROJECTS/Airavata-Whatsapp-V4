@@ -271,6 +271,74 @@ export async function deleteMetaTemplate(name: string): Promise<void> {
 
 // ── Messaging ─────────────────────────────────────────────────────────────────
 
+/**
+ * Upload a media file to Meta and return the media_id.
+ * Buffer is uploaded as multipart/form-data to the Cloud API media endpoint.
+ */
+export async function uploadMedia(
+  fileBuffer: Buffer,
+  mimeType: string,
+  filename: string,
+): Promise<string> {
+  const { phoneNumberId, accessToken } = creds();
+
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", mimeType);
+  form.append(
+    "file",
+    new Blob([fileBuffer], { type: mimeType }),
+    filename,
+  );
+
+  const res = await fetch(`${GRAPH_BASE}/${phoneNumberId}/media`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form,
+  });
+  const data = (await res.json()) as { id?: string; error?: { message?: string } };
+  if (!res.ok || !data.id) {
+    throw new Error(`Media upload failed: ${data.error?.message ?? JSON.stringify(data)}`);
+  }
+  return data.id;
+}
+
+/** Derive the WhatsApp message type from a MIME type. */
+export function mediaTypeFromMime(mimeType: string): "image" | "video" | "audio" | "document" {
+  if (mimeType.startsWith("image/")) return "image";
+  if (mimeType.startsWith("video/")) return "video";
+  if (mimeType.startsWith("audio/")) return "audio";
+  return "document";
+}
+
+/** Send a media message (image / document / video / audio) using an already-uploaded media_id. */
+export async function sendMediaMessage(
+  to: string,
+  mediaId: string,
+  type: "image" | "video" | "audio" | "document",
+  filename?: string,
+) {
+  const { phoneNumberId } = creds();
+  const mediaPayload =
+    type === "document"
+      ? { id: mediaId, filename: filename ?? "file" }
+      : { id: mediaId };
+
+  const result = await graphFetch<{ messages: Array<{ id: string }> }>(
+    `/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: to.replace(/\s+/g, ""),
+        type,
+        [type]: mediaPayload,
+      }),
+    },
+  );
+  return result;
+}
+
 /** Send a free-text message within the 24-hour customer-service window. */
 export async function sendTextMessage(to: string, body: string) {
   const { phoneNumberId } = creds();
