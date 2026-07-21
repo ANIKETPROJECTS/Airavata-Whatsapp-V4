@@ -3,11 +3,10 @@
  * Matches the reference design (Quick / CSV / Groups / Tags / Flow).
  */
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
-  Zap, FileSpreadsheet, Users, Tag, Workflow,
-  ChevronDown, Upload, Loader2, AlertCircle, AlertTriangle,
+  ChevronDown, Upload, Loader2, AlertTriangle, Search, X, UserPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
@@ -20,6 +19,7 @@ type CampaignView = 'select' | 'quick' | 'csv' | 'groups' | 'tags' | 'flow';
 interface Template { id: string; name: string; body: string; status: string; language: string; }
 interface Group    { id: string; name: string; memberCount?: number; }
 interface TagItem  { id: string; name: string; color?: string; }
+interface Contact  { id: string; name: string; phone: string; }
 
 // ── Country codes ─────────────────────────────────────────────────────────────
 
@@ -142,11 +142,14 @@ function ConfigRow({
 }
 
 function NumbersSection({
-  value, onChange, countryCode, placeholder = 'Enter numbers separated by comma...',
+  value, onChange, countryCode,
+  contacts = [],
+  placeholder = 'Enter numbers separated by comma...',
 }: {
   value: string;
   onChange: (v: string) => void;
   countryCode: string;
+  contacts?: Contact[];
   placeholder?: string;
 }) {
   const { valid, invalid, duplicates } = useMemo(
@@ -154,9 +157,126 @@ function NumbersSection({
     [value, countryCode],
   );
 
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return contacts.filter(c =>
+      c.name.toLowerCase().includes(q) || c.phone.includes(q),
+    ).slice(0, 50);
+  }, [contacts, search]);
+
+  function addContact(phone: string) {
+    const existing = value.trim();
+    const nums = existing
+      ? existing.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+    if (!nums.includes(phone)) {
+      onChange([...nums, phone].join(', '));
+    }
+    setSearch('');
+  }
+
+  function addAll() {
+    const existing = value.trim()
+      ? value.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+    const existingSet = new Set(existing);
+    const toAdd = filtered.map(c => c.phone).filter(p => !existingSet.has(p));
+    if (toAdd.length) onChange([...existing, ...toAdd].join(', '));
+    setOpen(false);
+  }
+
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold text-gray-700">Numbers</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-gray-700">Numbers</p>
+
+        {/* Contact picker trigger */}
+        {contacts.length > 0 && (
+          <div className="relative" ref={pickerRef}>
+            <button
+              type="button"
+              onClick={() => { setOpen(o => !o); setSearch(''); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg text-primary border-primary/40 hover:bg-primary/5 transition-colors"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Select from contacts
+            </button>
+
+            {open && (
+              <div className="absolute right-0 top-full mt-1 w-72 bg-white border rounded-xl shadow-lg z-50 flex flex-col">
+                {/* Search */}
+                <div className="p-2 border-b">
+                  <div className="flex items-center gap-2 px-2 py-1.5 border rounded-lg bg-gray-50">
+                    <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="Search by name or number..."
+                      className="flex-1 text-xs bg-transparent outline-none text-gray-700 placeholder-gray-400"
+                    />
+                    {search && (
+                      <button onClick={() => setSearch('')}>
+                        <X className="w-3 h-3 text-gray-400" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* List */}
+                <div className="overflow-y-auto max-h-52">
+                  {filtered.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">No contacts found</p>
+                  ) : (
+                    filtered.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => { addContact(c.phone); }}
+                        className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 text-left transition-colors"
+                      >
+                        <div>
+                          <p className="text-xs font-medium text-gray-800">{c.name}</p>
+                          <p className="text-xs text-gray-400 font-mono">{c.phone}</p>
+                        </div>
+                        <span className="text-[10px] text-primary font-medium shrink-0 ml-2">+ Add</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                {/* Add all visible */}
+                {filtered.length > 1 && (
+                  <div className="border-t p-2">
+                    <button
+                      type="button"
+                      onClick={addAll}
+                      className="w-full text-xs font-semibold text-primary hover:bg-primary/5 py-1.5 rounded-lg transition-colors"
+                    >
+                      Add all {filtered.length} shown
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-4 items-start">
         <textarea
           value={value}
@@ -284,6 +404,13 @@ export default function CreateCampaign() {
     enabled: view === 'tags',
   });
   const tags = tagsData?.tags ?? [];
+
+  const { data: contactsData } = useQuery<{ contacts: Contact[] }>({
+    queryKey: ['contacts'],
+    queryFn: () => api.get('/contacts'),
+    enabled: view !== 'select' && view !== 'csv',
+  });
+  const contacts = contactsData?.contacts ?? [];
 
   // ── Parsed numbers ─────────────────────────────────────────────────────────
 
@@ -423,7 +550,7 @@ export default function CreateCampaign() {
           campaignName={campaignName} setCampaignName={setCampaignName}
           countryCode={countryCode} setCountryCode={setCountryCode}
         />
-        <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} />
+        <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} contacts={contacts} />
         <ActionButtons
           validCount={parsed.valid.length}
           onSchedule={() => handleSchedule({ phoneNumbers: parsed.valid })}
@@ -507,7 +634,7 @@ export default function CreateCampaign() {
             </div>
           }
         />
-        <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} />
+        <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} contacts={contacts} />
         <ActionButtons
           validCount={groupId ? (groups.find(g => g.id === groupId)?.memberCount ?? parsed.valid.length) : parsed.valid.length}
           onSchedule={() => handleSchedule({ groupIds: [groupId] })}
@@ -555,6 +682,7 @@ export default function CreateCampaign() {
           value={numbers}
           onChange={setNumbers}
           countryCode={countryCode}
+          contacts={contacts}
           placeholder="Enter numbers separated by comma or select a tag above to filter contacts"
         />
         <ActionButtons
