@@ -16,7 +16,12 @@ import { api } from '@/lib/api';
 
 type CampaignView = 'select' | 'quick' | 'csv' | 'groups' | 'tags' | 'flow';
 
-interface Template { id: string; name: string; body: string; status: string; language: string; }
+interface Template {
+  id: string; name: string; body: string; status: string; language: string;
+  headerType?: string; headerContent?: string; footer?: string;
+  buttons?: Array<{ type: string; text: string; value?: string }>;
+  category?: string;
+}
 interface Group    { id: string; name: string; memberCount?: number; }
 interface TagItem  { id: string; name: string; color?: string; }
 interface Contact  { id: string; name: string; phone: string; }
@@ -490,35 +495,123 @@ export default function CreateCampaign() {
     setView(v);
   }
 
-  // ── Variable values section ────────────────────────────────────────────────
+  // ── WhatsApp text renderer ─────────────────────────────────────────────────
+
+  function renderWABody(text: string): React.ReactNode {
+    // substitute variables first
+    const substituted = text.replace(/\{\{(\d+)\}\}/g, (_, idx: string) => {
+      const v = variableValues[idx] ?? '';
+      return v || `{{${idx}}}`;
+    });
+    // split into lines, then apply inline formatting per line
+    return substituted.split('\n').map((line, li) => {
+      // parse *bold*, _italic_, ~strike~ inline
+      const parts: React.ReactNode[] = [];
+      const regex = /(\*[^*]+\*|_[^_]+_|~[^~]+~)/g;
+      let last = 0;
+      let m: RegExpExecArray | null;
+      let pi = 0;
+      while ((m = regex.exec(line)) !== null) {
+        if (m.index > last) parts.push(<span key={pi++}>{line.slice(last, m.index)}</span>);
+        const token = m[0];
+        if (token.startsWith('*')) parts.push(<strong key={pi++}>{token.slice(1, -1)}</strong>);
+        else if (token.startsWith('_')) parts.push(<em key={pi++}>{token.slice(1, -1)}</em>);
+        else parts.push(<s key={pi++}>{token.slice(1, -1)}</s>);
+        last = m.index + token.length;
+      }
+      if (last < line.length) parts.push(<span key={pi++}>{line.slice(last)}</span>);
+      return <p key={li} className={li > 0 ? 'mt-1' : ''}>{parts}</p>;
+    });
+  }
+
+  // ── Variable values + preview section ─────────────────────────────────────
 
   function VariableValuesSection() {
-    if (templateVarIndices.length === 0) return null;
+    if (!selectedTemplate) return null;
+    const hasVars = templateVarIndices.length > 0;
+
     return (
-      <div className="bg-white border rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-gray-700">Template Variables</p>
-        <p className="text-xs text-gray-400">
-          Fill in values for each placeholder in your template. Use <code className="bg-gray-100 px-1 rounded">{'{{name}}'}</code> or <code className="bg-gray-100 px-1 rounded">{'{{phone}}'}</code> to auto-insert the contact's name/number.
-        </p>
-        {templateVarIndices.map(i => (
-          <div key={i} className="flex items-center gap-3">
-            <span className="text-xs font-mono text-gray-500 w-10 shrink-0">{`{{${i}}}`}</span>
-            <input
-              type="text"
-              value={variableValues[String(i)] ?? ''}
-              onChange={e => setVariableValues(prev => ({ ...prev, [String(i)]: e.target.value }))}
-              placeholder={`Value for {{${i}}} e.g. {{name}}, {{phone}}, or any text`}
-              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* WhatsApp preview bubble */}
+        <div className="lg:w-72 shrink-0">
+          <div
+            className="rounded-xl overflow-hidden shadow-sm border"
+            style={{ background: '#e5ddd5' }}
+          >
+            {/* Chat header */}
+            <div className="bg-[#075e54] text-white px-4 py-2 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                {selectedTemplate.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium truncate">{selectedTemplate.name}</span>
+            </div>
+
+            {/* Message bubble */}
+            <div className="p-3">
+              <div className="bg-white rounded-lg rounded-tl-none shadow-sm max-w-[90%]">
+                {/* Header */}
+                {selectedTemplate.headerType && selectedTemplate.headerType !== 'NONE' && selectedTemplate.headerContent && (
+                  <div className="px-3 pt-3 pb-1 font-semibold text-gray-900 text-sm border-b border-gray-100">
+                    {selectedTemplate.headerContent}
+                  </div>
+                )}
+
+                {/* Body */}
+                <div className="px-3 py-2.5 text-[13px] text-gray-800 leading-[1.5]">
+                  {renderWABody(selectedTemplate.body)}
+                </div>
+
+                {/* Footer */}
+                {selectedTemplate.footer && (
+                  <div className="px-3 pb-2 text-[11px] text-gray-400">
+                    {selectedTemplate.footer}
+                  </div>
+                )}
+
+                {/* Timestamp */}
+                <div className="px-3 pb-2 text-right text-[10px] text-gray-400">
+                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ✓✓
+                </div>
+
+                {/* Buttons */}
+                {selectedTemplate.buttons && selectedTemplate.buttons.length > 0 && (
+                  <div className="border-t border-gray-100 divide-y divide-gray-100">
+                    {selectedTemplate.buttons.map((btn, bi) => (
+                      <div key={bi} className="px-3 py-2 text-center text-[13px] text-[#0084ff] font-medium">
+                        {btn.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        ))}
-        {selectedTemplate?.body && (
-          <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 leading-relaxed">
-            <span className="font-semibold text-gray-500 block mb-1">Preview:</span>
-            {selectedTemplate.body.replace(/\{\{(\d+)\}\}/g, (_, idx: string) => {
-              const v = variableValues[idx] ?? '';
-              return v ? `[${v}]` : `{{${idx}}}`;
-            })}
+        </div>
+
+        {/* Variable inputs */}
+        {hasVars && (
+          <div className="flex-1 bg-white border rounded-xl p-4 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Template Variables</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Use <code className="bg-gray-100 px-1 rounded">{'{{name}}'}</code> or{' '}
+                <code className="bg-gray-100 px-1 rounded">{'{{phone}}'}</code> to auto-fill from each contact.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {templateVarIndices.map(i => (
+                <div key={i}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Variable {i}:</label>
+                  <input
+                    type="text"
+                    value={variableValues[String(i)] ?? ''}
+                    onChange={e => setVariableValues(prev => ({ ...prev, [String(i)]: e.target.value }))}
+                    placeholder={`e.g. {{name}}, an order ID, or any text`}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
