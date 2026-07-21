@@ -35,6 +35,7 @@ interface Message {
   direction: 'INBOUND' | 'OUTBOUND';
   body: string;
   mediaType?: 'image' | 'video' | 'audio' | 'document';
+  mediaId?: string | null;
   mediaFilename?: string;
   status: string;
   createdAt: string;
@@ -45,19 +46,77 @@ interface AttachmentFile {
   previewUrl: string | null; // only for images
 }
 
-// ── Media icon helper ─────────────────────────────────────────────────────────
+// ── Media renderer ────────────────────────────────────────────────────────────
 
-function MediaBubble({ mediaType, filename }: { mediaType: string; filename?: string }) {
-  const Icon =
-    mediaType === 'image' ? Image :
-    mediaType === 'video' ? Film :
-    mediaType === 'audio' ? Music :
-    FileText;
+function MediaBubble({ mediaType, mediaId, filename }: {
+  mediaType: string;
+  mediaId?: string | null;
+  filename?: string;
+}) {
+  // Build the proxy URL when we have a mediaId; fall back to icon-only when we don't.
+  const proxyUrl = mediaId
+    ? `${import.meta.env.BASE_URL}api/media/proxy?mediaId=${encodeURIComponent(mediaId)}`
+    : null;
 
+  if (mediaType === 'image') {
+    return proxyUrl ? (
+      <img
+        src={proxyUrl}
+        alt={filename ?? 'image'}
+        className="max-w-[260px] max-h-[260px] rounded-lg object-contain cursor-pointer"
+        onClick={() => window.open(proxyUrl, '_blank')}
+      />
+    ) : (
+      <div className="flex items-center gap-2 px-1 py-0.5 text-gray-500">
+        <Image className="w-5 h-5 shrink-0" />
+        <span className="text-xs truncate max-w-[180px]">{filename ?? 'image'}</span>
+      </div>
+    );
+  }
+
+  if (mediaType === 'video') {
+    return proxyUrl ? (
+      <video
+        src={proxyUrl}
+        controls
+        className="max-w-[280px] max-h-[200px] rounded-lg"
+      />
+    ) : (
+      <div className="flex items-center gap-2 px-1 py-0.5 text-gray-500">
+        <Film className="w-5 h-5 shrink-0" />
+        <span className="text-xs truncate max-w-[180px]">{filename ?? 'video'}</span>
+      </div>
+    );
+  }
+
+  if (mediaType === 'audio') {
+    return proxyUrl ? (
+      <audio src={proxyUrl} controls className="max-w-[260px]" />
+    ) : (
+      <div className="flex items-center gap-2 px-1 py-0.5 text-gray-500">
+        <Music className="w-5 h-5 shrink-0" />
+        <span className="text-xs truncate max-w-[180px]">{filename ?? 'audio'}</span>
+      </div>
+    );
+  }
+
+  // document / fallback — show a download link when possible
   return (
-    <div className="flex items-center gap-2 px-1 py-0.5 text-gray-600">
-      <Icon className="w-5 h-5 shrink-0" />
-      <span className="text-xs truncate max-w-[180px]">{filename ?? mediaType}</span>
+    <div className="flex items-center gap-2 px-1 py-0.5">
+      <FileText className="w-5 h-5 shrink-0 text-gray-500" />
+      {proxyUrl ? (
+        <a
+          href={proxyUrl}
+          download={filename ?? 'document'}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs underline text-blue-600 truncate max-w-[180px]"
+        >
+          {filename ?? 'document'}
+        </a>
+      ) : (
+        <span className="text-xs text-gray-500 truncate max-w-[180px]">{filename ?? mediaType}</span>
+      )}
     </div>
   );
 }
@@ -407,7 +466,7 @@ export default function LiveChat() {
                       }`}
                     >
                       {msg.mediaType && (
-                        <MediaBubble mediaType={msg.mediaType} filename={msg.mediaFilename} />
+                        <MediaBubble mediaType={msg.mediaType} mediaId={msg.mediaId} filename={msg.mediaFilename} />
                       )}
                       {msg.body && (
                         <p className={`text-sm whitespace-pre-wrap ${msg.mediaType ? 'mt-1 text-gray-500 italic' : ''}`}>
