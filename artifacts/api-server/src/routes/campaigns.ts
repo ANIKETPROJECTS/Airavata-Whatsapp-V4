@@ -9,8 +9,6 @@ import { CampaignModel } from "../models/Campaign";
 import { ContactModel } from "../models/Contact";
 import { TemplateModel } from "../models/Template";
 import { MessageModel } from "../models/Message";
-import { UserModel } from "../models/User";
-import { CreditTransactionModel } from "../models/CreditTransaction";
 import { sendTemplateMessage } from "../lib/whatsapp";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
@@ -73,6 +71,20 @@ async function resolveRecipients(
     }
   }
   return all;
+}
+
+/** Substitute {{N}} placeholders in the template body for display in live chat */
+function resolveBody(
+  body: string,
+  variableValues: Record<string, string>,
+  contact: { name: string; phone: string },
+): string {
+  return body.replace(/\{\{(\d+)\}\}/g, (_, index: string) => {
+    let value = variableValues[index] ?? "";
+    value = value.replace(/\{\{name\}\}/gi, contact.name);
+    value = value.replace(/\{\{phone\}\}/gi, contact.phone);
+    return value || `{{${index}}}`;
+  });
 }
 
 /** Build WhatsApp template components from variableValues and a contact */
@@ -230,15 +242,6 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "No active contacts found for the selected audience" });
     }
 
-    // Check credits
-    const user = await UserModel.findById(userId).lean();
-    if (!user) return res.status(404).json({ error: "User not found" });
-    if ((user.creditBalance ?? 0) < recipients.length) {
-      return res.status(400).json({
-        error: `Insufficient credits. Need ${recipients.length}, have ${user.creditBalance ?? 0}.`,
-      });
-    }
-
     // Create campaign record
     const isScheduled = !!scheduledAt && new Date(scheduledAt) > new Date();
     const campaign = await CampaignModel.create(
@@ -298,7 +301,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           contactId: contact._id,
           campaignId: camp._id,
           direction: "OUTBOUND",
-          body: template.body,
+          body: resolveBody(template.body, variableValues, contact),
           templateId: template._id,
           whatsappMessageId: result.messages?.[0]?.id ?? null,
           status: "SENT",
@@ -314,7 +317,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           contactId: contact._id,
           campaignId: camp._id,
           direction: "OUTBOUND",
-          body: template.body,
+          body: resolveBody(template.body, variableValues, contact),
           templateId: template._id,
           status: "FAILED",
           failureReason: err instanceof Error ? err.message : "Unknown error",
@@ -323,26 +326,11 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       }
     }
 
-    // Finalize campaign stats and deduct credits
-    const deduction = sent; // only deduct for actually sent messages
-    const newBalance = (user.creditBalance ?? 0) - deduction;
-
-    await Promise.all([
-      CampaignModel.findByIdAndUpdate(camp._id, {
-        status: "COMPLETED",
-        $set: { "stats.sent": sent, "stats.failed": failed },
-      }),
-      UserModel.findByIdAndUpdate(userId, { creditBalance: Math.max(0, newBalance) }),
-      deduction > 0 &&
-        CreditTransactionModel.create({
-          userId,
-          type: "DEDUCTION",
-          amount: -deduction,
-          balanceAfter: Math.max(0, newBalance),
-          campaignId: camp._id,
-          description: `Campaign "${name}" — ${sent} messages sent`,
-        }),
-    ]);
+    // Finalize campaign stats
+    await CampaignModel.findByIdAndUpdate(camp._id, {
+      status: "COMPLETED",
+      $set: { "stats.sent": sent, "stats.failed": failed },
+    });
 
     logger.info({ campaignId: String(camp._id), sent, failed }, "Campaign completed");
   } catch (err: unknown) {

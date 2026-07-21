@@ -368,17 +368,32 @@ export default function CreateCampaign() {
   const [view, setView] = useState<CampaignView>('select');
 
   // Shared form state
-  const [templateId, setTemplateId]     = useState('');
-  const [campaignName, setCampaignName] = useState('');
-  const [countryCode, setCountryCode]   = useState('');
-  const [numbers, setNumbers]           = useState('');
-  const [groupId, setGroupId]           = useState('');
-  const [tagId, setTagId]               = useState('');
-  const [csvFile, setCsvFile]           = useState<File | null>(null);
+  const [templateId, setTemplateId]         = useState('');
+  const [campaignName, setCampaignName]     = useState('');
+  const [countryCode, setCountryCode]       = useState('');
+  const [numbers, setNumbers]               = useState('');
+  const [groupId, setGroupId]               = useState('');
+  const [tagId, setTagId]                   = useState('');
+  const [csvFile, setCsvFile]               = useState<File | null>(null);
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   // Schedule modal state (simple — just stores a datetime string)
   const [scheduledAt, setScheduledAt] = useState('');
+
+  // ── Template variable detection ────────────────────────────────────────────
+
+  const selectedTemplate = approvedTemplates.find(t => t.id === templateId) ?? null;
+  const templateVarIndices: number[] = useMemo(() => {
+    if (!selectedTemplate?.body) return [];
+    const matches = [...selectedTemplate.body.matchAll(/\{\{(\d+)\}\}/g)];
+    return [...new Set(matches.map(m => parseInt(m[1]!, 10)))].sort((a, b) => a - b);
+  }, [selectedTemplate?.body]);
+
+  // Reset variable values when template changes
+  useEffect(() => {
+    setVariableValues({});
+  }, [templateId]);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -437,6 +452,7 @@ export default function CreateCampaign() {
     return {
       name: campaignName,
       templateId,
+      variableValues,
       ...(scheduled && scheduledAt ? { scheduledAt } : {}),
       ...extra,
     };
@@ -470,7 +486,43 @@ export default function CreateCampaign() {
   function resetAndGo(v: CampaignView) {
     setTemplateId(''); setCampaignName(''); setCountryCode('');
     setNumbers(''); setGroupId(''); setTagId(''); setCsvFile(null);
+    setVariableValues({});
     setView(v);
+  }
+
+  // ── Variable values section ────────────────────────────────────────────────
+
+  function VariableValuesSection() {
+    if (templateVarIndices.length === 0) return null;
+    return (
+      <div className="bg-white border rounded-xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-gray-700">Template Variables</p>
+        <p className="text-xs text-gray-400">
+          Fill in values for each placeholder in your template. Use <code className="bg-gray-100 px-1 rounded">{'{{name}}'}</code> or <code className="bg-gray-100 px-1 rounded">{'{{phone}}'}</code> to auto-insert the contact's name/number.
+        </p>
+        {templateVarIndices.map(i => (
+          <div key={i} className="flex items-center gap-3">
+            <span className="text-xs font-mono text-gray-500 w-10 shrink-0">{`{{${i}}}`}</span>
+            <input
+              type="text"
+              value={variableValues[String(i)] ?? ''}
+              onChange={e => setVariableValues(prev => ({ ...prev, [String(i)]: e.target.value }))}
+              placeholder={`Value for {{${i}}} e.g. {{name}}, {{phone}}, or any text`}
+              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        ))}
+        {selectedTemplate?.body && (
+          <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 leading-relaxed">
+            <span className="font-semibold text-gray-500 block mb-1">Preview:</span>
+            {selectedTemplate.body.replace(/\{\{(\d+)\}\}/g, (_, idx: string) => {
+              const v = variableValues[idx] ?? '';
+              return v ? `[${v}]` : `{{${idx}}}`;
+            })}
+          </div>
+        )}
+      </div>
+    );
   }
 
   // ── Campaign type cards ────────────────────────────────────────────────────
@@ -550,6 +602,7 @@ export default function CreateCampaign() {
           campaignName={campaignName} setCampaignName={setCampaignName}
           countryCode={countryCode} setCountryCode={setCountryCode}
         />
+        <VariableValuesSection />
         <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} contacts={contacts} />
         <ActionButtons
           validCount={parsed.valid.length}
@@ -634,6 +687,7 @@ export default function CreateCampaign() {
             </div>
           }
         />
+        <VariableValuesSection />
         <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} contacts={contacts} />
         <ActionButtons
           validCount={groupId ? (groups.find(g => g.id === groupId)?.memberCount ?? parsed.valid.length) : parsed.valid.length}
@@ -678,6 +732,7 @@ export default function CreateCampaign() {
           </p>
         </div>
 
+        <VariableValuesSection />
         <NumbersSection
           value={numbers}
           onChange={setNumbers}
