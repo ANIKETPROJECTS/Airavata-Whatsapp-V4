@@ -58,6 +58,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         phone: c.phone,
         email: c.email ?? null,
         status: c.status,
+        chatState: (c as Record<string, unknown>).chatState ?? "DOR",
         lastContactedAt: c.lastContactedAt ?? null,
         createdAt: c.createdAt,
         tags: c.tags,
@@ -127,9 +128,9 @@ router.post("/contacts", async (req: AuthRequest, res) => {
 // PUT /api/contacts/:id
 router.put("/contacts/:id", async (req: AuthRequest, res) => {
   try {
-    const { name, phone, email, tags, groupId, status } = req.body as {
+    const { name, phone, email, tags, groupId, status, chatState } = req.body as {
       name?: string; phone?: string; email?: string; tags?: string[];
-      groupId?: string | null; status?: string;
+      groupId?: string | null; status?: string; chatState?: string;
     };
 
     const contact = await ContactModel.findOne({ _id: req.params["id"], userId: req.user!.userId });
@@ -141,6 +142,7 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
     if (tags !== undefined) contact.tags = tags as unknown as typeof contact.tags;
     if (groupId !== undefined) contact.groupId = (groupId || undefined) as unknown as typeof contact.groupId;
     if (status) contact.status = status as "active" | "blocked" | "unsubscribed";
+    if (chatState) (contact as unknown as Record<string, unknown>).chatState = chatState;
 
     await contact.save();
 

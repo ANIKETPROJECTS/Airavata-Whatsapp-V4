@@ -10,6 +10,7 @@ const contactSchema = new Schema(
     groupId: { type: Schema.Types.ObjectId, ref: "Group" },
     lastContactedAt: { type: Date },
     status: { type: String, enum: ["active", "blocked", "unsubscribed"], default: "active" },
+    chatState: { type: String, enum: ["DOR", "REQ", "CLOSED", "ACTIVE"], default: "DOR" },
   },
   { timestamps: true },
 );
