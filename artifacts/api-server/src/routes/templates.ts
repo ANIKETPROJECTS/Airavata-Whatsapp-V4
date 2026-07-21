@@ -244,12 +244,12 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       });
     }
 
-    // Build the rendered body text for live chat display.
-    // Auth templates store a placeholder body; construct a meaningful display string instead.
+    // Build the rendered body text for live chat display — match what WhatsApp shows.
+    // Auth templates store a placeholder body; reconstruct the actual Meta-rendered text.
     let bodyText: string;
     if (isAuth) {
       const otpCode = variables![0]!;
-      bodyText = `🔐 OTP: ${otpCode}`;
+      bodyText = `${otpCode} is your verification code. For your security, do not share this code.`;
     } else {
       bodyText = template.body ?? "";
       if (variables && variables.length > 0) {
