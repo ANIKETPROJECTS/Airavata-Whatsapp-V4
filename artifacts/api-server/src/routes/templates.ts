@@ -1,5 +1,8 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import { TemplateModel } from "../models/Template";
+import { ContactModel } from "../models/Contact";
+import { MessageModel } from "../models/Message";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import {
   createMetaTemplate,
@@ -175,10 +178,9 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       return res.status(400).json({ error: "templateId and to are required" });
     }
 
-    const template = await TemplateModel.findOne({
-      _id: templateId,
-      userId: req.user!.userId,
-    });
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+
+    const template = await TemplateModel.findOne({ _id: templateId, userId });
     if (!template) return res.status(404).json({ error: "Template not found" });
 
     if (String(template.status).toUpperCase() !== "APPROVED") {
@@ -196,13 +198,52 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
           ]
         : undefined;
 
+    // Normalise phone: strip leading zeros / spaces
+    const phone = to.trim().replace(/\s+/g, "");
+
     const result = await sendTemplateMessage(
-      to,
+      phone,
       template.name,
       template.language ?? "en_US",
       components,
     );
-    res.json({ ok: true, messageId: result.messages?.[0]?.id ?? null });
+    const whatsappMessageId = result.messages?.[0]?.id ?? null;
+
+    // ── Persist to Live Chat ───────────────────────────────────────────────────
+    // Find or create the contact for this phone number
+    let contact = await ContactModel.findOne({ userId, phone });
+    if (!contact) {
+      contact = await ContactModel.create({
+        userId,
+        phone,
+        name: phone, // placeholder name; user can rename in Contacts
+      });
+    }
+
+    // Build the rendered body text (replace {{1}}, {{2}}… with the supplied values)
+    let bodyText = template.body ?? "";
+    if (variables && variables.length > 0) {
+      bodyText = bodyText.replace(/\{\{(\d+)\}\}/g, (_, idx: string) => {
+        const val = variables[parseInt(idx, 10) - 1];
+        return val ?? `{{${idx}}}`;
+      });
+    }
+
+    await MessageModel.create({
+      userId,
+      contactId: contact._id,
+      templateId: template._id,
+      direction: "OUTBOUND",
+      body: bodyText,
+      whatsappMessageId,
+      status: "SENT",
+      sentAt: new Date(),
+    });
+
+    // Keep lastContactedAt fresh
+    await ContactModel.updateOne({ _id: contact._id }, { lastContactedAt: new Date() });
+
+    res.json({ ok: true, messageId: whatsappMessageId });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
