@@ -198,7 +198,14 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       if (!otpCode) {
         return res.status(400).json({ error: "otpCode is required for authentication templates" });
       }
+      // Authentication templates require the OTP in BOTH the body component ({{1}})
+      // AND the button component. Sending only the button causes Meta error #132000:
+      // "body: number of localizable_params (0) does not match the expected number of params (1)"
       components = [
+        {
+          type: "body",
+          parameters: [{ type: "text", text: otpCode }],
+        },
         {
           type: "button",
           sub_type: "url",
