@@ -381,6 +381,17 @@ export default function CreateCampaign() {
   // Schedule modal state (simple — just stores a datetime string)
   const [scheduledAt, setScheduledAt] = useState('');
 
+  // ── Data fetching ──────────────────────────────────────────────────────────
+
+  const { data: tmplData, isLoading: tmplLoading } = useQuery<{ templates: Template[] }>({
+    queryKey: ['templates'],
+    queryFn: () => api.get('/templates'),
+    enabled: view !== 'select',
+  });
+  const approvedTemplates = (tmplData?.templates ?? []).filter(
+    t => String(t.status).toUpperCase() === 'APPROVED',
+  );
+
   // ── Template variable detection ────────────────────────────────────────────
 
   const selectedTemplate = approvedTemplates.find(t => t.id === templateId) ?? null;
@@ -394,17 +405,6 @@ export default function CreateCampaign() {
   useEffect(() => {
     setVariableValues({});
   }, [templateId]);
-
-  // ── Data fetching ──────────────────────────────────────────────────────────
-
-  const { data: tmplData, isLoading: tmplLoading } = useQuery<{ templates: Template[] }>({
-    queryKey: ['templates'],
-    queryFn: () => api.get('/templates'),
-    enabled: view !== 'select',
-  });
-  const approvedTemplates = (tmplData?.templates ?? []).filter(
-    t => String(t.status).toUpperCase() === 'APPROVED',
-  );
 
   const { data: groupsData } = useQuery<{ groups: Group[] }>({
     queryKey: ['groups'],
