@@ -244,13 +244,20 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       });
     }
 
-    // Build the rendered body text (replace {{1}}, {{2}}… with the supplied values)
-    let bodyText = template.body ?? "";
-    if (variables && variables.length > 0) {
-      bodyText = bodyText.replace(/\{\{(\d+)\}\}/g, (_, idx: string) => {
-        const val = variables[parseInt(idx, 10) - 1];
-        return val ?? `{{${idx}}}`;
-      });
+    // Build the rendered body text for live chat display.
+    // Auth templates store a placeholder body; construct a meaningful display string instead.
+    let bodyText: string;
+    if (isAuth) {
+      const otpCode = variables![0]!;
+      bodyText = `🔐 OTP: ${otpCode}`;
+    } else {
+      bodyText = template.body ?? "";
+      if (variables && variables.length > 0) {
+        bodyText = bodyText.replace(/\{\{(\d+)\}\}/g, (_, idx: string) => {
+          const val = variables[parseInt(idx, 10) - 1];
+          return val ?? `{{${idx}}}`;
+        });
+      }
     }
 
     await MessageModel.create({

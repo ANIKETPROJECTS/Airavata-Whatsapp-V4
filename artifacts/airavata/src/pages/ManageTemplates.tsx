@@ -53,7 +53,10 @@ function SendTestDialog({
   const varIndices = isAuth ? [] : extractVars(template.body);
   const [to, setTo] = useState('');
   const [varValues, setVarValues] = useState<string[]>(varIndices.map(() => ''));
-  const [otpCode, setOtpCode] = useState('');
+  // Auto-generate a 6-digit OTP for authentication templates
+  const [otpCode, setOtpCode] = useState(() =>
+    isAuth ? String(Math.floor(100000 + Math.random() * 900000)) : ''
+  );
   const [sending, setSending] = useState(false);
 
   const handleSend = async (e: React.FormEvent) => {
