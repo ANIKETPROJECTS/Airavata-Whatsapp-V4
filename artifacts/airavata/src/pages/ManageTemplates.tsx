@@ -49,25 +49,35 @@ function SendTestDialog({
   template: TemplateRecord;
   onClose: () => void;
 }) {
-  const varIndices = extractVars(template.body);
+  const isAuth = template.category.toUpperCase() === 'AUTHENTICATION';
+  const varIndices = isAuth ? [] : extractVars(template.body);
   const [to, setTo] = useState('');
   const [varValues, setVarValues] = useState<string[]>(varIndices.map(() => ''));
+  const [otpCode, setOtpCode] = useState('');
   const [sending, setSending] = useState(false);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!to.trim()) { toast.error('Enter a phone number'); return; }
-    for (let i = 0; i < varIndices.length; i++) {
-      if (!varValues[i]?.trim()) {
-        toast.error(`Fill in variable {{${varIndices[i]}}}`);
-        return;
+    if (isAuth) {
+      if (!otpCode.trim()) { toast.error('Enter the OTP code to send'); return; }
+    } else {
+      for (let i = 0; i < varIndices.length; i++) {
+        if (!varValues[i]?.trim()) {
+          toast.error(`Fill in variable {{${varIndices[i]}}}`);
+          return;
+        }
       }
     }
     setSending(true);
     try {
       const res = await api.post<{ ok: boolean; messageId: string | null }>(
         '/templates/send-test',
-        { templateId: template.id, to: to.trim(), variables: varValues.map(v => v.trim()) },
+        {
+          templateId: template.id,
+          to: to.trim(),
+          variables: isAuth ? [otpCode.trim()] : varValues.map(v => v.trim()),
+        },
       );
       if (res.ok) {
         toast.success('Template message sent!');
@@ -80,7 +90,9 @@ function SendTestDialog({
     }
   };
 
-  const preview = fillPreview(template.body, varValues);
+  const preview = isAuth
+    ? `Your OTP code is ${otpCode.trim() || '______'}. Tap "Copy Code" to copy it.`
+    : fillPreview(template.body, varValues);
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -101,8 +113,24 @@ function SendTestDialog({
         </div>
 
         <form onSubmit={handleSend} className="space-y-3">
-          {/* Variable inputs */}
-          {varIndices.length > 0 && (
+          {/* Authentication: OTP code input */}
+          {isAuth && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">OTP / verification code</label>
+              <input
+                type="text"
+                value={otpCode}
+                onChange={e => setOtpCode(e.target.value)}
+                placeholder="e.g. 483921"
+                autoFocus
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono tracking-widest"
+              />
+              <p className="text-xs text-gray-500">This code will appear in the WhatsApp message with a "Copy Code" button.</p>
+            </div>
+          )}
+
+          {/* Non-auth: body variable inputs */}
+          {!isAuth && varIndices.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fill in variables</p>
               {varIndices.map((idx, pos) => (
@@ -132,7 +160,7 @@ function SendTestDialog({
               value={to}
               onChange={e => setTo(e.target.value)}
               placeholder="+919876543210"
-              autoFocus={varIndices.length === 0}
+              autoFocus={!isAuth && varIndices.length === 0}
               className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
             <p className="text-xs text-gray-500">Include country code, e.g. +91 for India.</p>

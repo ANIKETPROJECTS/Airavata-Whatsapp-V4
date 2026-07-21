@@ -187,16 +187,33 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       return res.status(400).json({ error: "Only APPROVED templates can be sent" });
     }
 
-    // Build body component parameters if variables were supplied
-    const components =
-      variables && variables.length > 0
-        ? [
-            {
-              type: "body",
-              parameters: variables.map((v) => ({ type: "text", text: v })),
-            },
-          ]
-        : undefined;
+    // Authentication templates pass the OTP code as a button parameter, not a body parameter.
+    // Meta error #132000 occurs when you send no components (or body components) for auth templates.
+    const isAuth = String(template.category).toUpperCase() === "AUTHENTICATION";
+    let components: Array<{ type: string; sub_type?: string; index?: string; parameters: Array<{ type: string; text?: string }> }> | undefined;
+
+    if (isAuth) {
+      // The OTP code is the first element of variables[] when sent from the frontend.
+      const otpCode = variables?.[0]?.trim();
+      if (!otpCode) {
+        return res.status(400).json({ error: "otpCode is required for authentication templates" });
+      }
+      components = [
+        {
+          type: "button",
+          sub_type: "url",
+          index: "0",
+          parameters: [{ type: "text", text: otpCode }],
+        },
+      ];
+    } else if (variables && variables.length > 0) {
+      components = [
+        {
+          type: "body",
+          parameters: variables.map((v) => ({ type: "text", text: v })),
+        },
+      ];
+    }
 
     // Normalise phone: strip leading zeros / spaces
     const phone = to.trim().replace(/\s+/g, "");
