@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Key, Phone, MessageSquare, Settings, Layers, Users,
+  Key, Phone, MessageSquare, Settings, Layers, Users, Tag,
   Copy, Eye, EyeOff, RefreshCw, Loader2, CheckCircle2,
   Plus, Trash2, X, Search, Pencil,
 } from 'lucide-react';
@@ -587,8 +587,102 @@ function AttributesTab() {
   );
 }
 
+// ── Tags Tab ──────────────────────────────────────────────────────────────────
+const TAG_COLORS = [
+  '#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ef4444',
+  '#06b6d4', '#eab308', '#ec4899', '#14b8a6', '#6366f1',
+];
+
+function TagsTab() {
+  const qc = useQueryClient();
+  const [newName, setNewName] = useState('');
+  const [newColor, setNewColor] = useState(TAG_COLORS[0]!);
+  const [showForm, setShowForm] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  const { data, isLoading } = useQuery<{ tags: { id: string; name: string; color: string }[] }>({
+    queryKey: ['tags'],
+    queryFn: () => api.get('/tags'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/tags/${id}`),
+    onSuccess: () => { toast.success('Tag deleted'); qc.invalidateQueries({ queryKey: ['tags'] }); },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) { toast.error('Tag name is required'); return; }
+    setAdding(true);
+    try {
+      await api.post('/tags', { name: newName.trim(), color: newColor });
+      toast.success('Tag created');
+      qc.invalidateQueries({ queryKey: ['tags'] });
+      setNewName(''); setShowForm(false);
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+    finally { setAdding(false); }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center border-b pb-4">
+        <h2 className="text-lg font-semibold text-gray-900">Custom Tags</h2>
+        <button onClick={() => setShowForm(v => !v)}
+          className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+          <Plus className="w-4 h-4" /> Create Tag
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleAdd} className="bg-gray-50 rounded-lg p-4 space-y-3 border">
+          <div className="flex gap-3">
+            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Tag name, e.g. VIP" autoFocus
+              className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
+            <button type="button" onClick={() => setShowForm(false)} className="p-2 hover:bg-gray-200 rounded-lg">
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 font-medium">Color:</span>
+            {TAG_COLORS.map(c => (
+              <button key={c} type="button" onClick={() => setNewColor(c)}
+                className={`w-5 h-5 rounded-full border-2 transition-all ${newColor === c ? 'border-gray-800 scale-110' : 'border-transparent'}`}
+                style={{ backgroundColor: c }} />
+            ))}
+            <button type="submit" disabled={adding}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-60">
+              {adding && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Save
+            </button>
+          </div>
+        </form>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center text-gray-400 text-sm"><Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading…</div>
+      ) : (data?.tags.length ?? 0) === 0 ? (
+        <p className="text-sm text-gray-400">No tags yet. Create one above.</p>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {data!.tags.map(tag => (
+            <div key={tag.id} className="group border rounded-full px-3 py-1.5 flex items-center gap-2 text-sm"
+              style={{ backgroundColor: tag.color + '18', borderColor: tag.color + '50' }}>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+              <span className="font-medium" style={{ color: tag.color }}>{tag.name}</span>
+              <button onClick={() => { if (confirm(`Delete tag "${tag.name}"?`)) deleteMutation.mutate(tag.id); }}
+                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity ml-0.5">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
-type TabId = 'api' | 'agents' | 'phone' | 'canned' | 'livechat' | 'attributes';
+type TabId = 'api' | 'agents' | 'phone' | 'canned' | 'livechat' | 'attributes' | 'tags';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'api',        label: 'API key',           icon: Key },
@@ -597,6 +691,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'canned',     label: 'Canned Message',     icon: MessageSquare },
   { id: 'livechat',   label: 'Live Chat Settings', icon: Settings },
   { id: 'attributes', label: 'Attributes',         icon: Layers },
+  { id: 'tags',       label: 'Tags',               icon: Tag },
 ];
 
 export default function Manage() {
@@ -630,6 +725,7 @@ export default function Manage() {
           {activeTab === 'canned'     && <CannedMessagesTab />}
           {activeTab === 'livechat'   && <LiveChatSettingsTab />}
           {activeTab === 'attributes' && <AttributesTab />}
+          {activeTab === 'tags'       && <TagsTab />}
         </div>
       </div>
     </div>
