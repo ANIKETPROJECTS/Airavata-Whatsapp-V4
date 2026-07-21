@@ -14,6 +14,10 @@ import phoneNumbersRouter from "./phonenumbers";
 import metaComplianceRouter from "./meta-compliance";
 import integrationRouter from "./integration";
 import mediaRouter from "./media";
+import agentsRouter from "./agents";
+import cannedMessagesRouter from "./canned-messages";
+import livechatSettingsRouter from "./livechat-settings";
+import attributesRouter from "./attributes";
 
 const router: IRouter = Router();
 
@@ -34,5 +38,9 @@ router.use(billingRouter);
 router.use(phoneNumbersRouter);
 router.use(integrationRouter);
 router.use(mediaRouter);
+router.use(agentsRouter);
+router.use(cannedMessagesRouter);
+router.use(livechatSettingsRouter);
+router.use(attributesRouter);
 
 export default router;
