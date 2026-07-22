@@ -155,6 +155,9 @@ async function handleIncomingMessage(
   let flowData: Record<string, unknown> | undefined;
   let flowId: mongoose.Types.ObjectId | undefined;
 
+  // DEBUG: log full raw message to diagnose interactive parsing
+  logger.info({ rawMsg: JSON.stringify(msg) }, "RAW incoming message");
+
   if (msg.type === "text") {
     body = msg.text?.body;
   } else if (msg.type === "image") {
@@ -163,27 +166,40 @@ async function handleIncomingMessage(
     body = "[Document]";
   } else if (msg.type === "audio") {
     body = "[Audio]";
-  } else if (
-    msg.type === "interactive" &&
-    msg.interactive?.type === "nfm_reply" &&
-    msg.interactive.nfm_reply?.response_json
-  ) {
-    // WhatsApp Flow submission — parse the structured response
-    try {
-      flowData = JSON.parse(msg.interactive.nfm_reply.response_json) as Record<string, unknown>;
-      body = "📋 Form submitted";
+  } else if (msg.type === "interactive") {
+    // Log everything we see for interactive so we can diagnose the exact structure
+    const rawInteractive = (msg as Record<string, unknown>)["interactive"];
+    logger.info({ rawInteractive: JSON.stringify(rawInteractive) }, "Interactive message raw payload");
 
-      // Resolve the flow this submission belongs to via flow_token ("flow_<internalId>_<ts>")
-      const token = flowData["flow_token"] as string | undefined;
-      if (token) {
-        const match = token.match(/^flow_([a-f0-9]{24})_/);
-        if (match?.[1]) {
-          const candidate = await FlowModel.findById(match[1]).lean();
-          if (candidate) flowId = candidate._id as mongoose.Types.ObjectId;
+    const interactive = rawInteractive as {
+      type?: string;
+      nfm_reply?: { response_json?: string; body?: string; name?: string };
+    } | undefined;
+
+    if (interactive?.type === "nfm_reply" && interactive.nfm_reply?.response_json) {
+      // WhatsApp Flow submission — parse the structured response
+      try {
+        const parsed = JSON.parse(interactive.nfm_reply.response_json);
+        flowData = (typeof parsed === "object" && parsed !== null) ? parsed as Record<string, unknown> : { raw: parsed };
+        body = "📋 Form submitted";
+        logger.info({ flowData }, "Parsed flow response");
+
+        // Resolve the flow this submission belongs to via flow_token ("flow_<internalId>_<ts>")
+        const token = flowData["flow_token"] as string | undefined;
+        if (token) {
+          const match = token.match(/^flow_([a-f0-9]{24})_/);
+          if (match?.[1]) {
+            const candidate = await FlowModel.findById(match[1]).lean();
+            if (candidate) flowId = candidate._id as mongoose.Types.ObjectId;
+          }
         }
+      } catch (parseErr) {
+        logger.error({ parseErr: String(parseErr), rawJson: interactive.nfm_reply.response_json }, "Failed to parse nfm_reply response_json");
+        body = "📋 Form submitted (parse error)";
       }
-    } catch {
-      body = "[interactive]";
+    } else {
+      logger.warn({ interactiveType: interactive?.type }, "Interactive message is not nfm_reply — falling back");
+      body = `[${msg.type}]`;
     }
   } else {
     body = `[${msg.type}]`;

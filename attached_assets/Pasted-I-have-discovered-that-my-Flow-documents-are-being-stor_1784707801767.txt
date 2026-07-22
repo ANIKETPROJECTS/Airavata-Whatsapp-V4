@@ -1,0 +1,54 @@
+I have discovered that my Flow documents are being stored with:
+
+endpointUri: null
+
+Example:
+
+{
+  "_id": "...",
+  "name": "test2",
+  "status": "PUBLISHED",
+  "metaFlowId": "2203132617141349",
+  "endpointUri": null
+}
+
+I need you to audit the entire Flow implementation and fix it.
+
+Tasks:
+
+1. Find where a WhatsApp Flow is created or imported.
+2. Find where the flow data is saved into MongoDB.
+3. Ensure the Data Exchange Endpoint (endpointUri) is fetched from Meta Graph API and stored in MongoDB.
+4. If the endpointUri does not exist in the response, investigate why it is missing.
+5. Add logging to display the complete Meta Graph API response when importing or syncing a Flow.
+6. Create a sync function that updates existing Flow documents with the latest metadata from Meta, including:
+   - endpointUri
+   - status
+   - categories
+   - healthStatus
+   - validationErrors
+   - updatedAt
+7. Ensure endpointUri is never overwritten with null if a valid value already exists.
+8. If endpointUri is optional for static flows, clearly indicate this in comments and determine whether my Flow requires a Data Exchange Endpoint.
+9. Check that my webhook correctly handles Flow submissions:
+   - message.type = "interactive"
+   - interactive.type = "nfm_reply"
+   - Parse interactive.nfm_reply.response_json
+   - Save the parsed response into MongoDB.
+10. If my webhook is not handling nfm_reply messages, implement full support.
+
+Also inspect every file related to:
+- Flow creation
+- Flow synchronization
+- Flow sending
+- Webhook processing
+- MongoDB models
+
+At the end, provide:
+- The files that were modified.
+- The root cause of endpointUri being null.
+- Whether the issue is due to Meta API, my backend, or my database.
+- Whether my Flow is a Static Flow or a Data Exchange Flow.
+- Any additional issues found in the Flow implementation.
+
+Do not make assumptions. Trace the complete execution flow from Meta API request → backend → MongoDB → webhook → response storage and fix all issues.
