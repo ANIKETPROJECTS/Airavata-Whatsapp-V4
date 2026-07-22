@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Workflow, ArrowLeft, Send, Globe, Trash2,
-  Pencil, ChevronRight, LayoutList, PlusCircle, X, Check
+  Pencil, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox
 } from 'lucide-react';
 import { api } from '../lib/api';
 import PhonePreview from '../components/flow/PhonePreview';
@@ -206,10 +206,115 @@ function SendModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
   );
 }
 
+// ── Responses modal ───────────────────────────────────────────────────────────
+
+interface FlowResponse {
+  id: string;
+  contactName: string;
+  contactPhone: string;
+  flowData: Record<string, unknown>;
+  submittedAt: string;
+}
+
+const SKIP_KEYS = new Set(['flow_token', 'version', 'source']);
+
+function ResponsesModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
+  const { data, isLoading } = useQuery<{ responses: FlowResponse[]; total: number }>({
+    queryKey: ['flow-responses', flow.id],
+    queryFn: () => api.get(`/flows/${flow.id}/responses`),
+  });
+
+  const responses = data?.responses ?? [];
+
+  // Collect all unique field keys across responses (excluding internal Meta keys)
+  const allKeys = Array.from(
+    new Set(responses.flatMap(r => Object.keys(r.flowData).filter(k => !SKIP_KEYS.has(k))))
+  );
+
+  function formatKey(k: string) {
+    return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function formatVal(v: unknown): string {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  }
+  function formatDate(s: string) {
+    return new Date(s).toLocaleString();
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
+          <div className="flex items-center gap-3">
+            <Inbox className="w-5 h-5 text-primary" />
+            <div>
+              <h2 className="font-semibold text-gray-900">{flow.name} — Responses</h2>
+              {!isLoading && (
+                <p className="text-xs text-gray-400">{data?.total ?? 0} submission{data?.total !== 1 ? 's' : ''}</p>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-auto p-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading…</div>
+          ) : responses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 gap-3 text-gray-400">
+              <Inbox className="w-10 h-10 opacity-30" />
+              <p className="text-sm">No responses yet</p>
+              <p className="text-xs">Responses will appear here once users submit the form.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap">Contact</th>
+                    {allKeys.map(k => (
+                      <th key={k} className="text-left px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap">
+                        {formatKey(k)}
+                      </th>
+                    ))}
+                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {responses.map((r, i) => (
+                    <tr key={r.id} className={`border-b ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-primary/5 transition-colors`}>
+                      <td className="px-3 py-3">
+                        <p className="font-medium text-gray-800 text-xs">{r.contactName}</p>
+                        <p className="text-gray-400 text-[11px]">{r.contactPhone}</p>
+                      </td>
+                      {allKeys.map(k => (
+                        <td key={k} className="px-3 py-3 text-gray-700 text-xs max-w-[200px] truncate">
+                          {formatVal(r.flowData[k])}
+                        </td>
+                      ))}
+                      <td className="px-3 py-3 text-gray-400 text-[11px] whitespace-nowrap">{formatDate(r.submittedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Flow List ─────────────────────────────────────────────────────────────────
 
 function FlowList({
-  flows, onEdit, onEditMeta, onDelete, onPublish, onSend
+  flows, onEdit, onEditMeta, onDelete, onPublish, onSend, onViewResponses
 }: {
   flows: Flow[];
   onEdit: (f: Flow) => void;
@@ -217,6 +322,7 @@ function FlowList({
   onDelete: (id: string) => void;
   onPublish: (id: string) => void;
   onSend: (f: Flow) => void;
+  onViewResponses: (f: Flow) => void;
 }) {
   if (flows.length === 0) {
     return (
@@ -273,12 +379,20 @@ function FlowList({
               </button>
             )}
             {flow.status === 'PUBLISHED' && (
-              <button
-                onClick={() => onSend(flow)}
-                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium"
-              >
-                <Send className="w-3 h-3" /> Send
-              </button>
+              <>
+                <button
+                  onClick={() => onViewResponses(flow)}
+                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
+                >
+                  <Inbox className="w-3 h-3" /> Responses
+                </button>
+                <button
+                  onClick={() => onSend(flow)}
+                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium"
+                >
+                  <Send className="w-3 h-3" /> Send
+                </button>
+              </>
             )}
             <button
               onClick={() => onDelete(flow.id)}
@@ -556,6 +670,7 @@ export default function FlowBuilder() {
   const [editingMeta, setEditingMeta] = useState<Flow | null>(null);
   const [editingFlow, setEditingFlow] = useState<Flow | null>(null);
   const [sendingFlow, setSendingFlow] = useState<Flow | null>(null);
+  const [viewingResponses, setViewingResponses] = useState<Flow | null>(null);
 
   const { data: flows = [], isLoading } = useQuery({
     queryKey: ['flows'],
@@ -647,6 +762,7 @@ export default function FlowBuilder() {
             }}
             onPublish={(id) => publishMutation.mutate(id)}
             onSend={setSendingFlow}
+            onViewResponses={setViewingResponses}
           />
         )}
       </div>
@@ -667,6 +783,9 @@ export default function FlowBuilder() {
       )}
       {sendingFlow && (
         <SendModal flow={sendingFlow} onClose={() => setSendingFlow(null)} />
+      )}
+      {viewingResponses && (
+        <ResponsesModal flow={viewingResponses} onClose={() => setViewingResponses(null)} />
       )}
     </div>
   );

@@ -22,6 +22,9 @@ const messageSchema = new Schema(
     sentAt: { type: Date },
     deliveredAt: { type: Date },
     readAt: { type: Date },
+    // WhatsApp Flow response data (populated when type = interactive/nfm_reply)
+    flowData: { type: Schema.Types.Mixed },
+    flowId: { type: Schema.Types.ObjectId, ref: "Flow" },
   },
   { timestamps: true },
 );

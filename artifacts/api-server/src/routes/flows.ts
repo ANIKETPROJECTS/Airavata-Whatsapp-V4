@@ -393,6 +393,41 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// ── GET /api/flows/:id/responses ─────────────────────────────────────────────
+
+router.get("/flows/:id/responses", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const flowId = new mongoose.Types.ObjectId(req.params["id"]);
+
+    // Verify flow belongs to user
+    const flow = await FlowModel.findOne({ _id: flowId, userId }).lean();
+    if (!flow) return res.status(404).json({ error: "Flow not found" });
+
+    const { MessageModel } = await import("../models/Message");
+    const { ContactModel } = await import("../models/Contact");
+
+    const messages = await MessageModel.find({ userId, flowId }).sort({ createdAt: -1 }).lean();
+
+    const shaped = await Promise.all(
+      messages.map(async (m) => {
+        const contact = await ContactModel.findById(m.contactId).lean();
+        return {
+          id: String(m._id),
+          contactName: contact?.name ?? "Unknown",
+          contactPhone: contact?.phone ?? "",
+          flowData: (m as Record<string, unknown>).flowData ?? {},
+          submittedAt: m.createdAt,
+        };
+      })
+    );
+
+    res.json({ responses: shaped, total: shaped.length });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
 // ── POST /api/flows/endpoint ──────────────────────────────────────────────────
 // Meta calls this for dynamic flows. Must be unauthenticated.
 

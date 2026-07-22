@@ -119,6 +119,8 @@ router.get("/conversations/:contactId/messages", authenticate, async (req: AuthR
       mediaType: m.mediaType ?? null,
       mediaId: m.mediaId ?? null,
       mediaFilename: m.mediaFilename ?? null,
+      flowData: (m as Record<string, unknown>).flowData ?? null,
+      flowId: (m as Record<string, unknown>).flowId ? String((m as Record<string, unknown>).flowId) : null,
       status: m.status,
       whatsappMessageId: m.whatsappMessageId,
       sentAt: m.sentAt,

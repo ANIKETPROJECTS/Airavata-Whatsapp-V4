@@ -10,6 +10,7 @@ import { MessageModel } from "../models/Message";
 import { ContactModel } from "../models/Contact";
 import { UserModel } from "../models/User";
 import { CampaignModel } from "../models/Campaign";
+import { FlowModel } from "../models/Flow";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger";
 
@@ -149,17 +150,44 @@ async function handleIncomingMessage(
     logger.info({ phone: fromRaw, name: displayName }, "Auto-created contact from webhook");
   }
 
-  // Extract text body (only handling text messages for now)
-  const body =
-    msg.type === "text"
-      ? msg.text?.body
-      : msg.type === "image"
-        ? "[Image]"
-        : msg.type === "document"
-          ? "[Document]"
-          : msg.type === "audio"
-            ? "[Audio]"
-            : `[${msg.type}]`;
+  // Extract text body and optional flow response data
+  let body: string | undefined;
+  let flowData: Record<string, unknown> | undefined;
+  let flowId: mongoose.Types.ObjectId | undefined;
+
+  if (msg.type === "text") {
+    body = msg.text?.body;
+  } else if (msg.type === "image") {
+    body = "[Image]";
+  } else if (msg.type === "document") {
+    body = "[Document]";
+  } else if (msg.type === "audio") {
+    body = "[Audio]";
+  } else if (
+    msg.type === "interactive" &&
+    msg.interactive?.type === "nfm_reply" &&
+    msg.interactive.nfm_reply?.response_json
+  ) {
+    // WhatsApp Flow submission — parse the structured response
+    try {
+      flowData = JSON.parse(msg.interactive.nfm_reply.response_json) as Record<string, unknown>;
+      body = "📋 Form submitted";
+
+      // Resolve the flow this submission belongs to via flow_token ("flow_<internalId>_<ts>")
+      const token = flowData["flow_token"] as string | undefined;
+      if (token) {
+        const match = token.match(/^flow_([a-f0-9]{24})_/);
+        if (match?.[1]) {
+          const candidate = await FlowModel.findById(match[1]).lean();
+          if (candidate) flowId = candidate._id as mongoose.Types.ObjectId;
+        }
+      }
+    } catch {
+      body = "[interactive]";
+    }
+  } else {
+    body = `[${msg.type}]`;
+  }
 
   // Avoid duplicate messages
   const existing = await MessageModel.findOne({ whatsappMessageId: msg.id });
@@ -172,6 +200,8 @@ async function handleIncomingMessage(
     body,
     whatsappMessageId: msg.id,
     status: "RECEIVED",
+    ...(flowData ? { flowData } : {}),
+    ...(flowId ? { flowId } : {}),
   });
 
   // Update contact's lastContactedAt
@@ -242,6 +272,14 @@ interface WebhookMessage {
   image?: { id: string; mime_type: string };
   document?: { id: string; filename?: string };
   audio?: { id: string };
+  interactive?: {
+    type: string;
+    nfm_reply?: {
+      name: string;
+      response_json: string;
+      body: string;
+    };
+  };
 }
 
 interface WebhookStatus {

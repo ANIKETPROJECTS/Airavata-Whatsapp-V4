@@ -37,6 +37,8 @@ interface Message {
   mediaType?: 'image' | 'video' | 'audio' | 'document';
   mediaId?: string | null;
   mediaFilename?: string;
+  flowData?: Record<string, unknown> | null;
+  flowId?: string | null;
   status: string;
   createdAt: string;
 }
@@ -116,6 +118,44 @@ function MediaBubble({ mediaType, mediaId, filename }: {
         </a>
       ) : (
         <span className="text-xs text-gray-500 truncate max-w-[180px]">{filename ?? mediaType}</span>
+      )}
+    </div>
+  );
+}
+
+// ── Flow submission bubble ────────────────────────────────────────────────────
+
+function FlowDataBubble({ data }: { data: Record<string, unknown> }) {
+  // Skip internal Meta fields
+  const SKIP = new Set(['flow_token', 'version', 'source']);
+  const entries = Object.entries(data).filter(([k]) => !SKIP.has(k));
+
+  function formatKey(k: string) {
+    return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function formatVal(v: unknown): string {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  }
+
+  return (
+    <div className="min-w-[200px]">
+      <div className="flex items-center gap-1.5 mb-2">
+        <span className="text-base">📋</span>
+        <span className="text-xs font-semibold text-gray-700">Form submitted</span>
+      </div>
+      {entries.length === 0 ? (
+        <p className="text-xs text-gray-400 italic">No fields captured</p>
+      ) : (
+        <div className="space-y-1.5">
+          {entries.map(([k, v]) => (
+            <div key={k} className="flex flex-col">
+              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{formatKey(k)}</span>
+              <span className="text-sm text-gray-800 break-words">{formatVal(v)}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -465,13 +505,19 @@ export default function LiveChat() {
                           : 'bg-white rounded-tl-none text-gray-900'
                       }`}
                     >
-                      {msg.mediaType && (
-                        <MediaBubble mediaType={msg.mediaType} mediaId={msg.mediaId} filename={msg.mediaFilename} />
-                      )}
-                      {msg.body && (
-                        <p className={`text-sm whitespace-pre-wrap ${msg.mediaType ? 'mt-1 text-gray-500 italic' : ''}`}>
-                          {msg.body}
-                        </p>
+                      {msg.flowData && Object.keys(msg.flowData).length > 0 ? (
+                        <FlowDataBubble data={msg.flowData} />
+                      ) : msg.mediaType ? (
+                        <>
+                          <MediaBubble mediaType={msg.mediaType} mediaId={msg.mediaId} filename={msg.mediaFilename} />
+                          {msg.body && (
+                            <p className="text-sm whitespace-pre-wrap mt-1 text-gray-500 italic">{msg.body}</p>
+                          )}
+                        </>
+                      ) : (
+                        msg.body && (
+                          <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                        )
                       )}
                       <div className="flex items-center justify-end gap-1 mt-1">
                         <span className="text-[10px] text-gray-400">{formatTime(msg.createdAt)}</span>
