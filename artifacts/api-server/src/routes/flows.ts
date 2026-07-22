@@ -21,6 +21,13 @@ function shapeFlow(f: Record<string, unknown> & { _id: unknown }) {
   return { ...f, id: String(f._id) };
 }
 
+const DIGIT_WORDS = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE'];
+
+/** Replace digits in a screen ID so Meta accepts it (only letters + underscores allowed) */
+function sanitizeScreenId(id: string): string {
+  return id.replace(/\d/g, (d) => DIGIT_WORDS[parseInt(d)] ?? d);
+}
+
 /** Compile our internal screen format into Meta's Flow JSON */
 function compileToMetaJson(flow: {
   screens: Array<{
@@ -109,12 +116,12 @@ function compileToMetaJson(flow: {
         ? { name: "complete", payload: {} }
         : {
             name: "navigate",
-            next: { type: "screen", name: screen.nextScreenId ?? "COMPLETE" },
+            next: { type: "screen", name: sanitizeScreenId(screen.nextScreenId ?? "COMPLETE") },
           },
     });
 
     return {
-      id: screen.id,
+      id: sanitizeScreenId(screen.id),
       title: screen.title,
       layout: { type: "SingleColumnLayout", children },
     };

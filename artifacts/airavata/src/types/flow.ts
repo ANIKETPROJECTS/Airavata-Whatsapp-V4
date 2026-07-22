@@ -94,9 +94,12 @@ export function makeDefaultComponent(type: ComponentType): FlowComponent {
   }
 }
 
+const SCREEN_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'];
+
 export function makeNewScreen(index: number): FlowScreen {
+  const letter = SCREEN_LETTERS[index - 1] ?? String.fromCharCode(64 + index);
   return {
-    id: `SCREEN_${index}`,
+    id: `SCREEN_${letter}`,
     title: `Screen ${index}`,
     isTerminal: false,
     components: [],
