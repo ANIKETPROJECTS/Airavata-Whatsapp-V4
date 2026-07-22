@@ -18,6 +18,7 @@ import agentsRouter from "./agents";
 import cannedMessagesRouter from "./canned-messages";
 import livechatSettingsRouter from "./livechat-settings";
 import attributesRouter from "./attributes";
+import flowsRouter from "./flows";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(agentsRouter);
 router.use(cannedMessagesRouter);
 router.use(livechatSettingsRouter);
 router.use(attributesRouter);
+router.use(flowsRouter);
 
 export default router;
