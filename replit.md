@@ -2,6 +2,17 @@
 
 A WhatsApp Business marketing and engagement platform. Features include campaign management, contact/group organisation, live chat, chatbot flow builder, template management, and WhatsApp-integrated payments (WAPay).
 
+## Replit Setup Status
+
+✅ **Ready to run** — dependencies installed, workflows configured, all secrets added.
+
+| Workflow | Status |
+|---|---|
+| `artifacts/airavata: web` | Frontend (Vite dev server) |
+| `artifacts/api-server: API Server` | Express API + MongoDB |
+
+All required secrets (`MONGODB_URI`, `SESSION_SECRET`, `META_ACCESS_TOKEN`, `META_PHONE_NUMBER_ID`, `META_WABA_ID`, `WEBHOOK_VERIFY_TOKEN`) are set in Replit Secrets. The API server connects to MongoDB on startup and the login screen is accessible.
+
 ## Run & Operate
 
 - **Frontend**: `pnpm --filter @workspace/airavata run dev` (workflow: `artifacts/airavata: web`)
