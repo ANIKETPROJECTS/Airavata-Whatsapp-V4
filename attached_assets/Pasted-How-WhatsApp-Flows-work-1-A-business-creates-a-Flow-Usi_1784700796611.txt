@@ -1,0 +1,115 @@
+How WhatsApp Flows work
+1. A business creates a Flow
+
+Using the WhatsApp Business Platform, a company designs a sequence of screens that users can navigate.
+
+Examples:
+
+Appointment booking
+Loan applications
+Insurance quotes
+Product configuration
+Customer support requests
+Event registration
+2. The Flow is attached to a message
+
+The business sends a WhatsApp message containing a call-to-action button such as:
+
+"Book Appointment"
+"Get a Quote"
+"Apply Now"
+
+When the user taps the button, the Flow opens inside WhatsApp.
+
+3. The user completes screens
+
+A Flow can contain:
+
+Text inputs
+Dropdowns
+Radio buttons
+Checkboxes
+Date pickers
+Address fields
+Confirmation screens
+
+For example, a doctor's office Flow might ask:
+
+Select clinic location
+Choose doctor
+Pick date and time
+Enter contact details
+Confirm booking
+4. Validation happens during the Flow
+
+Businesses can:
+
+Check required fields
+Validate formats (phone numbers, email addresses, etc.)
+Show or hide questions based on previous answers
+Load dynamic options from their backend systems
+
+For example:
+
+Selecting "Car Insurance" might display vehicle questions.
+Selecting "Home Insurance" shows property questions instead.
+5. Data is submitted
+
+Once the user finishes:
+
+Information is sent to the business's backend system.
+The business receives the collected data.
+A confirmation message can be sent automatically.
+6. The conversation continues
+
+After the Flow ends, the chat remains open and the business can:
+
+Confirm bookings
+Provide quotes
+Request additional information
+Offer support
+Architecture
+
+A simplified view:
+
+Customer
+   │
+   ▼
+WhatsApp Chat
+   │
+   ▼
+WhatsApp Flow UI
+   │
+   ├── Static Flow screens
+   │
+   └── Business Backend APIs
+           │
+           ├── CRM
+           ├── Booking System
+           ├── Inventory
+           └── Payment Systems
+
+The Flow interface itself runs within WhatsApp, while business data typically comes from external systems via APIs.
+
+Types of Flows
+
+Static Flows
+
+Fixed screens
+Predetermined questions
+Good for simple surveys and registrations
+
+Dynamic Flows
+
+Content changes based on user selections
+Can fetch real-time information
+Good for booking systems, inventory checks, and personalized offers
+Example: Airline Check-In
+Airline sends a WhatsApp message.
+User taps "Check In".
+Flow asks for booking reference.
+Backend verifies reservation.
+Available seats are displayed.
+User selects a seat.
+Boarding pass details are generated.
+Confirmation appears in WhatsApp.
