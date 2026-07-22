@@ -134,9 +134,11 @@ async function metaRequest(path: string, method: string, body?: unknown) {
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  const data = (await res.json()) as { error?: { message?: string } };
+  const data = (await res.json()) as { error?: { message?: string; error_user_msg?: string; error_user_title?: string; code?: number; error_subcode?: number } };
   if (!res.ok) {
-    throw new Error(data.error?.message ?? `Meta API error ${res.status}`);
+    // Prefer the user-facing message from Meta when available
+    const msg = data.error?.error_user_msg ?? data.error?.message ?? `Meta API error ${res.status}`;
+    throw new Error(msg);
   }
   return data;
 }
