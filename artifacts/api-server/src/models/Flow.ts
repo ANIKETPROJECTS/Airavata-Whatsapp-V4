@@ -42,6 +42,8 @@ const flowSchema = new Schema(
       default: "DRAFT",
     },
     endpointUri: { type: String },
+    healthStatus: { type: String },
+    validationErrors: { type: Schema.Types.Mixed },
     screens: [screenSchema],
   },
   { timestamps: true },

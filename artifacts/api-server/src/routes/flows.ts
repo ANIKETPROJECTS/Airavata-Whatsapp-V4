@@ -130,6 +130,30 @@ function compileToMetaJson(flow: {
   return { version: "7.0", screens };
 }
 
+/** Fetch flow metadata from Meta and persist it locally */
+async function syncFlowFromMeta(flowId: unknown, metaFlowId: string) {
+  const meta = (await metaRequest(
+    `/${metaFlowId}?fields=id,name,status,health_status,validation_errors,endpoint_uri`,
+    "GET",
+  )) as {
+    id?: string;
+    name?: string;
+    status?: string;
+    health_status?: { can_send_message?: string; entities?: unknown[] };
+    validation_errors?: unknown[];
+    endpoint_uri?: string;
+  };
+
+  const patch: Record<string, unknown> = {
+    healthStatus: meta.health_status?.can_send_message ?? null,
+    validationErrors: meta.validation_errors ?? [],
+  };
+  if (meta.status) patch["status"] = meta.status;
+  if (meta.endpoint_uri) patch["endpointUri"] = meta.endpoint_uri;
+
+  return FlowModel.findByIdAndUpdate(flowId, { $set: patch }, { new: true }).lean();
+}
+
 /** Make an authenticated request to the Meta Graph API */
 async function metaRequest(path: string, method: string, body?: unknown) {
   const url = `${META_BASE}${path}`;
@@ -217,9 +241,17 @@ router.put("/flows/:id", authenticate, async (req: AuthRequest, res) => {
       endpointUri?: string;
     };
 
+    // Only include fields explicitly provided — omitting undefined prevents
+    // $set from clearing fields like endpointUri that weren't part of this update.
+    const updates: Record<string, unknown> = {};
+    if (name !== undefined) updates["name"] = name;
+    if (categories !== undefined) updates["categories"] = categories;
+    if (screens !== undefined) updates["screens"] = screens;
+    if (endpointUri !== undefined) updates["endpointUri"] = endpointUri;
+
     const flow = await FlowModel.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(req.params["id"]), userId },
-      { name, categories, screens, endpointUri },
+      { $set: updates },
       { new: true },
     ).lean();
 
@@ -310,17 +342,35 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
     // Step 3: Publish
     await metaRequest(`/${metaFlowId}/publish`, "POST");
 
-    // Step 4: Update local record
-    const updated = await FlowModel.findByIdAndUpdate(
-      flow._id,
-      { status: "PUBLISHED", metaFlowId },
-      { new: true },
-    ).lean();
+    // Step 4: Save metaFlowId + PUBLISHED status, then sync full metadata from Meta
+    await FlowModel.findByIdAndUpdate(flow._id, { $set: { status: "PUBLISHED", metaFlowId } });
+    const updated = await syncFlowFromMeta(flow._id, metaFlowId);
 
     logger.info({ flowId: String(flow._id), metaFlowId }, "Flow published to Meta");
     res.json({ flow: shapeFlow(updated as Record<string, unknown> & { _id: unknown }) });
   } catch (err: unknown) {
     logger.error({ err }, "Failed to publish flow to Meta");
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
+// ── POST /api/flows/:id/sync ──────────────────────────────────────────────────
+
+router.post("/flows/:id/sync", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const flow = await FlowModel.findOne({
+      _id: new mongoose.Types.ObjectId(req.params["id"]),
+      userId,
+    }).lean();
+    if (!flow) return res.status(404).json({ error: "Flow not found" });
+    if (!flow.metaFlowId) {
+      return res.status(400).json({ error: "Flow has not been published to Meta yet" });
+    }
+
+    const updated = await syncFlowFromMeta(flow._id, flow.metaFlowId);
+    res.json({ flow: shapeFlow(updated as Record<string, unknown> & { _id: unknown }) });
+  } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
