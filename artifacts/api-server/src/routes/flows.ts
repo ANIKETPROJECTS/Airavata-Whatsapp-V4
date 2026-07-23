@@ -447,6 +447,12 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
 
     if (!phone) return res.status(400).json({ error: "phone is required" });
 
+    // Meta requires phone numbers without the leading '+' (digits only)
+    const normalizedPhone = phone.replace(/^\+/, "");
+
+    // The first screen ID must match the sanitized ID that was uploaded to Meta
+    const firstScreenId = sanitizeScreenId(flow.screens?.[0]?.id ?? "SCREEN_A");
+
     const msgRes = await fetch(`${META_BASE}/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
@@ -456,7 +462,7 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
       body: JSON.stringify({
         messaging_product: "whatsapp",
         recipient_type: "individual",
-        to: phone,
+        to: normalizedPhone,
         type: "interactive",
         interactive: {
           type: "flow",
@@ -472,7 +478,7 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
               flow_cta: ctaLabel ?? "Open Form",
               flow_action: "navigate",
               flow_action_payload: {
-                screen: flow.screens?.[0]?.id ?? "SCREEN_1",
+                screen: firstScreenId,
               },
             },
           },
