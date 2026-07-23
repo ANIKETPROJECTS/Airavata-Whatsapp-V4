@@ -158,6 +158,7 @@ function compileToMetaJson(flow: {
     return {
       id: sanitizeScreenId(screen.id),
       title: screen.title,
+      ...(screen.isTerminal ? { terminal: true } : {}),
       ...(Object.keys(dataBlock).length > 0 ? { data: dataBlock } : {}),
       layout: { type: "SingleColumnLayout", children },
     };
@@ -367,12 +368,18 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
       headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
       body: formData,
     });
-    const uploadData = (await uploadRes.json()) as { error?: { message?: string }; validation_errors?: unknown[] };
+    const uploadData = (await uploadRes.json()) as { error?: { message?: string }; validation_errors?: Array<{ error: string; message: string }> };
     if (!uploadRes.ok) {
-      const detail = uploadData.validation_errors
+      const detail = uploadData.validation_errors?.length
         ? ` Validation errors: ${JSON.stringify(uploadData.validation_errors)}`
         : "";
       throw new Error((uploadData.error?.message ?? "Failed to upload flow JSON") + detail);
+    }
+    // Meta returns 200 even when there are validation errors — catch them here
+    // so the error surfaces before the publish call fails with a cryptic message.
+    if (uploadData.validation_errors?.length) {
+      const summary = uploadData.validation_errors.map((e) => `${e.error}: ${e.message}`).join("; ");
+      throw new Error(`Flow JSON validation failed: ${summary}`);
     }
 
     // Step 3: Publish
