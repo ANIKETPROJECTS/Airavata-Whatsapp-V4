@@ -487,13 +487,36 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
     });
 
     const msgData = (await msgRes.json()) as {
-      error?: { message?: string };
+      error?: { message?: string; type?: string; code?: number; error_subcode?: number; fbtrace_id?: string };
       messages?: Array<{ id: string }>;
     };
-    if (!msgRes.ok) throw new Error(msgData.error?.message ?? "Failed to send message");
+
+    if (!msgRes.ok) {
+      const metaErr = msgData.error;
+      logger.error({
+        metaStatus: msgRes.status,
+        metaError: metaErr,
+        sentPayload: {
+          to: normalizedPhone,
+          flow_id: flow.metaFlowId,
+          firstScreenId,
+          flow_message_version: "3",
+        },
+      }, "Meta send-flow API error");
+      return res.status(502).json({
+        error: metaErr?.message ?? "Meta API error",
+        meta: {
+          code: metaErr?.code,
+          subcode: metaErr?.error_subcode,
+          type: metaErr?.type,
+          fbtrace_id: metaErr?.fbtrace_id,
+        },
+      });
+    }
 
     res.json({ success: true, messageId: msgData.messages?.[0]?.id });
   } catch (err: unknown) {
+    logger.error({ err }, "Unexpected error in send-flow route");
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });

@@ -23,8 +23,16 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`);
+    const data = await res.json().catch(() => ({})) as {
+      error?: string;
+      meta?: { code?: number; subcode?: number; type?: string; fbtrace_id?: string };
+    };
+    // Log the full server/Meta error to the browser console for debugging
+    console.error(`[API] ${options.method ?? 'GET'} ${path} → ${res.status}`, data);
+    const metaDetail = data.meta
+      ? ` [Meta code ${data.meta.code ?? '?'}${data.meta.subcode ? `, subcode ${data.meta.subcode}` : ''}${data.meta.fbtrace_id ? `, trace ${data.meta.fbtrace_id}` : ''}]`
+      : '';
+    throw new Error((data.error ?? `HTTP ${res.status}`) + metaDetail);
   }
 
   return res.json() as Promise<T>;
