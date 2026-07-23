@@ -8,25 +8,36 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import menuIcon from '@assets/menu_(1)_1784810785126.png';
+import menuIcon from '@assets/menu_(2)_1784814106105.png';
 import chatBubblesIcon from '@assets/chat-bubbles-with-ellipsis_1784810867460.png';
 import contactsIcon from '@assets/contact-us_1784811121398.png';
+import marketingIcon from '@assets/marketing_1784814142833.png';
+import reportIcon from '@assets/report_(1)_1784814254803.png';
+import widgetIcon from '@assets/widget_1784814580920.png';
+import docsIcon from '@assets/docs_1784814701440.png';
+import flowChartIcon from '@assets/flow-chart_1784814816750.png';
+import botIcon from '@assets/bot_1784814891252.png';
+import skillDevelopmentIcon from '@assets/skill-development_1784814967525.png';
+import multipleUsersIcon from '@assets/multiple-users-silhouette_1784814995558.png';
+import catalogIcon from '@assets/catalog_1784815184631.png';
+import creditCardIcon from '@assets/credit-card_1784815236399.png';
+import settingsIcon from '@assets/settings_1784815274381.png';
 
 const SIDEBAR_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, iconSrc: menuIcon, href: '/dashboard' },
   { title: 'Live Chat', icon: MessageCircle, iconSrc: chatBubblesIcon, href: '/live-chat' },
   { title: 'Contacts', icon: Users, iconSrc: contactsIcon, href: '/contacts' },
-  { title: 'Create Campaign', icon: Megaphone, href: '/create-campaign' },
-  { title: 'Campaigns Report', icon: BarChart3, href: '/campaigns-report' },
-  { title: 'Add Template', icon: FileText, href: '/add-template' },
-  { title: 'Manage Templates', icon: FileText, href: '/manage-templates' },
-  { title: 'Flow Builder', icon: Workflow, href: '/flow-builder' },
-  { title: 'Chatbot', icon: Bot, href: '/chatbot' },
-  { title: 'Integration', icon: Blocks, href: '/integration' },
-  { title: 'Group', icon: UsersRound, href: '/group' },
-  { title: 'Catalogue', icon: ShoppingBag, href: '/catalogue' },
-  { title: 'WA Pay', icon: CreditCard, href: '/wa-pay' },
-  { title: 'Manage', icon: Settings, href: '/manage' },
+  { title: 'Create Campaign', icon: Megaphone, iconSrc: marketingIcon, href: '/create-campaign' },
+  { title: 'Campaigns Report', icon: BarChart3, iconSrc: reportIcon, href: '/campaigns-report' },
+  { title: 'Add Template', icon: FileText, iconSrc: widgetIcon, href: '/add-template' },
+  { title: 'Manage Templates', icon: FileText, iconSrc: docsIcon, href: '/manage-templates' },
+  { title: 'Flow Builder', icon: Workflow, iconSrc: flowChartIcon, href: '/flow-builder' },
+  { title: 'Chatbot', icon: Bot, iconSrc: botIcon, href: '/chatbot' },
+  { title: 'Integration', icon: Blocks, iconSrc: skillDevelopmentIcon, href: '/integration' },
+  { title: 'Group', icon: UsersRound, iconSrc: multipleUsersIcon, href: '/group' },
+  { title: 'Catalogue', icon: ShoppingBag, iconSrc: catalogIcon, href: '/catalogue' },
+  { title: 'WA Pay', icon: CreditCard, iconSrc: creditCardIcon, href: '/wa-pay' },
+  { title: 'Manage', icon: Settings, iconSrc: settingsIcon, href: '/manage' },
 ];
 
 // Expose collapsed state to pages so they can react if needed
