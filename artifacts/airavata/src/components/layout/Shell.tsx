@@ -74,7 +74,7 @@ export function Shell({ children }: { children: ReactNode }) {
           className={`
             airavata-sidebar relative flex flex-col bg-[#FFD700] text-black
             transition-all duration-200 ease-in-out shrink-0 z-20
-            ${collapsed ? 'w-16' : 'w-[220px]'}
+            ${collapsed ? 'w-20' : 'w-[260px]'}
           `}
         >
           {/* Logo */}
@@ -99,7 +99,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       title={collapsed ? item.title : undefined}
                       className={`
                         w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
-                        ${collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
+                        ${collapsed ? 'justify-center px-0 py-3.5' : 'gap-3.5 px-3.5 py-3'}
                         ${isActive
                           ? 'bg-white/45 text-black'
                           : 'text-black hover:bg-white/25'
@@ -111,10 +111,10 @@ export function Shell({ children }: { children: ReactNode }) {
                           src={item.iconSrc}
                           alt=""
                           aria-hidden="true"
-                          className="w-7 h-7 shrink-0 object-contain brightness-0"
+                          className="w-8 h-8 shrink-0 object-contain brightness-0"
                         />
                       ) : (
-                        <item.icon className="w-5 h-5 shrink-0 text-black" />
+                        <item.icon className="w-6 h-6 shrink-0 text-black" />
                       )}
                       {!collapsed && <span className="truncate">{item.title}</span>}
                     </button>
