@@ -17,11 +17,11 @@ import widgetIcon from '@assets/table_1784821548409.png';
 import docsIcon from '@assets/docs_1784814701440.png';
 import flowChartIcon from '@assets/flow-chart_1784814816750.png';
 import botIcon from '@assets/bot_1784814891252.png';
-import skillDevelopmentIcon from '@assets/skill-development_1784814967525.png';
-import multipleUsersIcon from '@assets/multiple-users-silhouette_1784814995558.png';
+import skillDevelopmentIcon from '@assets/link_1784832510109.png';
+import multipleUsersIcon from '@assets/people_(1)_1784832278623.png';
 import catalogIcon from '@assets/catalog_1784815184631.png';
-import creditCardIcon from '@assets/credit-card_1784815236399.png';
-import settingsIcon from '@assets/settings_1784815274381.png';
+import creditCardIcon from '@assets/credit-card_(1)_1784832045706.png';
+import settingsIcon from '@assets/settings_(1)_1784831863555.png';
 
 const SIDEBAR_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, iconSrc: menuIcon, href: '/dashboard' },
