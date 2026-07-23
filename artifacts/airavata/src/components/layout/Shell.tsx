@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import menuIcon from '@assets/menu_(2)_1784814106105.png';
+import menuIcon from '@assets/dashboard-interface_1784816353863.png';
 import chatBubblesIcon from '@assets/chat-bubbles-with-ellipsis_1784810867460.png';
 import contactsIcon from '@assets/contact-us_1784811121398.png';
 import marketingIcon from '@assets/marketing_1784814142833.png';
