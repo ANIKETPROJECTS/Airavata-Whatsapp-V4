@@ -1,0 +1,269 @@
+{
+  "name": "Customer Support Flow (Meta Test)",
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": { "x": 400, "y": 40 },
+      "data": {
+        "label": "Start",
+        "description": "Entry point — triggered when a user first messages the WhatsApp number"
+      }
+    },
+    {
+      "id": "keyword-1",
+      "type": "keyword",
+      "position": { "x": 400, "y": 180 },
+      "data": {
+        "label": "Welcome Trigger",
+        "keywords": ["hi", "hello", "hey", "start", "help", "menu"],
+        "matchType": "contains",
+        "caseSensitive": false
+      }
+    },
+    {
+      "id": "text-1",
+      "type": "textReply",
+      "position": { "x": 400, "y": 330 },
+      "data": {
+        "label": "Greeting",
+        "message": "👋 Hello {{contact.name}}!\n\nWelcome to *Airavata Support*. I'm your virtual assistant and I'm here to help you 24/7.\n\nPlease select an option below to get started.",
+        "typingDelay": 1.5
+      }
+    },
+    {
+      "id": "cta-1",
+      "type": "ctaButton",
+      "position": { "x": 400, "y": 490 },
+      "data": {
+        "label": "Main Menu",
+        "body": "What can I help you with today?",
+        "footer": "Reply with a button below",
+        "buttons": [
+          { "id": "btn-support", "title": "🛠️ Get Support" },
+          { "id": "btn-order", "title": "📦 Track Order" },
+          { "id": "btn-billing", "title": "💳 Billing Help" }
+        ]
+      }
+    },
+    {
+      "id": "condition-1",
+      "type": "condition",
+      "position": { "x": 400, "y": 660 },
+      "data": {
+        "label": "Check Request Type",
+        "conditions": [
+          {
+            "field": "button_reply",
+            "operator": "contains",
+            "value": "Support"
+          }
+        ],
+        "logicType": "AND"
+      }
+    },
+    {
+      "id": "list-1",
+      "type": "listReply",
+      "position": { "x": 160, "y": 840 },
+      "data": {
+        "label": "Support Options",
+        "header": "🛠️ Technical Support",
+        "body": "Please select the category that best describes your issue:",
+        "footer": "Our team responds within 2 hours",
+        "buttonText": "Select Issue",
+        "sections": [
+          {
+            "title": "Common Issues",
+            "rows": [
+              { "id": "issue-1", "title": "App not working", "description": "Crashes, errors, or slow performance" },
+              { "id": "issue-2", "title": "Login problem", "description": "Can't sign in or forgot password" },
+              { "id": "issue-3", "title": "WhatsApp integration", "description": "API or webhook issues" }
+            ]
+          },
+          {
+            "title": "Account",
+            "rows": [
+              { "id": "issue-4", "title": "Update my details", "description": "Name, email, or phone number" },
+              { "id": "issue-5", "title": "Delete my account", "description": "Request account removal" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "text-order",
+      "type": "textReply",
+      "position": { "x": 640, "y": 840 },
+      "data": {
+        "label": "Order Tracking",
+        "message": "📦 *Order Tracking*\n\nPlease share your order ID and I'll look it up for you right away!\n\nFormat: _ORD-XXXXXX_",
+        "typingDelay": 1
+      }
+    },
+    {
+      "id": "tag-1",
+      "type": "tag",
+      "position": { "x": 160, "y": 1020 },
+      "data": {
+        "label": "Tag as Support",
+        "action": "add",
+        "tags": ["support-request", "needs-attention", "bot-handled"]
+      }
+    },
+    {
+      "id": "api-1",
+      "type": "customApi",
+      "position": { "x": 160, "y": 1180 },
+      "data": {
+        "label": "Log to CRM",
+        "method": "POST",
+        "url": "https://webhook.site/your-unique-url",
+        "headers": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer YOUR_API_KEY" }
+        ],
+        "body": "{\n  \"phone\": \"{{contact.phone}}\",\n  \"name\": \"{{contact.name}}\",\n  \"issue_type\": \"{{list_reply}}\",\n  \"timestamp\": \"{{timestamp}}\",\n  \"source\": \"whatsapp-bot\"\n}",
+        "responseMapping": [
+          { "path": "$.ticket_id", "variable": "ticket_id" }
+        ],
+        "testResult": null
+      }
+    },
+    {
+      "id": "text-ticket",
+      "type": "textReply",
+      "position": { "x": 160, "y": 1340 },
+      "data": {
+        "label": "Ticket Confirmation",
+        "message": "✅ Got it! I've created a support ticket for you.\n\n🎫 *Ticket ID:* {{ticket_id}}\n\nA support agent will contact you shortly. Average response time is *2 hours*.\n\nIs there anything else I can help with?",
+        "typingDelay": 1
+      }
+    },
+    {
+      "id": "assign-1",
+      "type": "assignAgent",
+      "position": { "x": 160, "y": 1500 },
+      "data": {
+        "label": "Assign to Support Team",
+        "assignType": "team",
+        "agentId": "",
+        "teamId": "support-team",
+        "priority": "normal",
+        "note": "Customer reported issue via WhatsApp bot. Ticket auto-created."
+      }
+    },
+    {
+      "id": "attr-1",
+      "type": "attribute",
+      "position": { "x": 640, "y": 1020 },
+      "data": {
+        "label": "Save Order Context",
+        "attributes": [
+          { "name": "last_inquiry", "operator": "set", "value": "order_tracking" },
+          { "name": "bot_interaction", "operator": "increment", "value": "1" }
+        ]
+      }
+    },
+    {
+      "id": "error-1",
+      "type": "errorHandler",
+      "position": { "x": 780, "y": 660 },
+      "data": {
+        "label": "Error Fallback",
+        "errorMessage": "⚠️ Sorry, I ran into a small hiccup! Let me connect you with a human agent who can help you right away.",
+        "retryCount": 2,
+        "retryDelay": 5,
+        "fallbackFlowId": ""
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-kw",
+      "source": "start-1",
+      "target": "keyword-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-kw-text",
+      "source": "keyword-1",
+      "target": "text-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-text-cta",
+      "source": "text-1",
+      "target": "cta-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-cta-cond",
+      "source": "cta-1",
+      "target": "condition-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-cond-list",
+      "source": "condition-1",
+      "sourceHandle": "true",
+      "target": "list-1",
+      "animated": true,
+      "style": { "stroke": "#16a34a", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-cond-order",
+      "source": "condition-1",
+      "sourceHandle": "false",
+      "target": "text-order",
+      "animated": true,
+      "style": { "stroke": "#dc2626", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-list-tag",
+      "source": "list-1",
+      "target": "tag-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-tag-api",
+      "source": "tag-1",
+      "target": "api-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-api-ticket",
+      "source": "api-1",
+      "target": "text-ticket",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-ticket-assign",
+      "source": "text-ticket",
+      "target": "assign-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-order-attr",
+      "source": "text-order",
+      "target": "attr-1",
+      "animated": true,
+      "style": { "stroke": "#6366f1", "strokeWidth": 2 }
+    },
+    {
+      "id": "e-cta-err",
+      "source": "cta-1",
+      "target": "error-1",
+      "animated": true,
+      "style": { "stroke": "#9f1239", "strokeWidth": 2, "strokeDasharray": "5,5" }
+    }
+  ]
+}

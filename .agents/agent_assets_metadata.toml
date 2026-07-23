@@ -6,3 +6,9 @@ id = "nLvcY6rMGHJDOdMdvwSGr"
 uri = "file://attached_assets/airavata-app-icon.png"
 type = "image"
 title = "Airavata App Icon (1024×1024)"
+
+[[outputs]]
+id = "FsYif1LU_t9v4kdHSlNx-"
+uri = "file://attached_assets/sample-chatbot-flow.json"
+type = "unspecified"
+title = "Customer Support Flow — Meta Test"
