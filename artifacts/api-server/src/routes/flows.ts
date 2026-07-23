@@ -457,7 +457,16 @@ router.get("/flows/:id/responses", authenticate, async (req: AuthRequest, res) =
     const { MessageModel } = await import("../models/Message");
     const { ContactModel } = await import("../models/Contact");
 
-    const messages = await MessageModel.find({ userId, flowId }).sort({ createdAt: -1 }).lean();
+    // Primary query: messages explicitly linked to this flow via flowId
+    // Fallback: messages whose flowData.flow_token encodes this flow's internal ID
+    //   (covers submissions where flowId resolution failed but token was stored)
+    const messages = await MessageModel.find({
+      userId,
+      $or: [
+        { flowId },
+        { "flowData.flow_token": { $regex: `^flow_${String(flowId)}_` } },
+      ],
+    }).sort({ createdAt: -1 }).lean();
 
     const shaped = await Promise.all(
       messages.map(async (m) => {
