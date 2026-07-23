@@ -46,7 +46,25 @@ function compileToMetaJson(flow: {
     }>;
   }>;
 }) {
-  const screens = flow.screens.map((screen) => {
+  // Component types that collect user input and must be included in the payload
+  const FIELD_TYPES = new Set([
+    "TextInput", "TextArea", "Dropdown",
+    "RadioButtonsGroup", "CheckboxGroup", "DatePicker",
+  ]);
+
+  // For each screen: the list of input fields it owns
+  const screenFieldDefs = flow.screens.map((screen) =>
+    screen.components
+      .filter((c) => FIELD_TYPES.has(c.type) && c.name)
+      .map((c) => ({ name: c.name!, isArray: c.type === "CheckboxGroup" })),
+  );
+
+  const screens = flow.screens.map((screen, idx) => {
+    // Fields from ALL previous screens, passed in via data.*
+    const inheritedFields = screenFieldDefs.slice(0, idx).flat();
+    // Fields on THIS screen, accessed via form.*
+    const ownFields = screenFieldDefs[idx]!;
+
     const children: unknown[] = screen.components
       .map((comp) => {
         switch (comp.type) {
@@ -108,21 +126,39 @@ function compileToMetaJson(flow: {
       })
       .filter(Boolean);
 
-    // Add footer button
+    // Build the accumulated payload:
+    //   - own fields  → "${form.<name>}"  (current screen)
+    //   - inherited   → "${data.<name>}"  (passed from previous screens)
+    const payload: Record<string, string> = {};
+    for (const { name } of ownFields)       payload[name] = `\${form.${name}}`;
+    for (const { name } of inheritedFields)  payload[name] = `\${data.${name}}`;
+
+    // Add footer button with the accumulated payload
     children.push({
       type: "Footer",
       label: screen.isTerminal ? "Submit" : "Next",
       "on-click-action": screen.isTerminal
-        ? { name: "complete", payload: {} }
+        ? { name: "complete", payload }
         : {
             name: "navigate",
             next: { type: "screen", name: sanitizeScreenId(screen.nextScreenId ?? "COMPLETE") },
+            payload,
           },
     });
+
+    // Non-first screens must declare a `data` block so Meta knows the shape
+    // of values passed in from the previous navigate action.
+    const dataBlock: Record<string, { type: string; __example__: unknown }> = {};
+    for (const { name, isArray } of inheritedFields) {
+      dataBlock[name] = isArray
+        ? { type: "array", __example__: [] }
+        : { type: "string", __example__: "" };
+    }
 
     return {
       id: sanitizeScreenId(screen.id),
       title: screen.title,
+      ...(Object.keys(dataBlock).length > 0 ? { data: dataBlock } : {}),
       layout: { type: "SingleColumnLayout", children },
     };
   });
