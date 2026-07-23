@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { TemplateModel } from "../models/Template";
 import { ContactModel } from "../models/Contact";
 import { MessageModel } from "../models/Message";
+import { FlowModel } from "../models/Flow";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import {
   createMetaTemplate,
@@ -234,19 +235,38 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       // If the template has FLOW buttons, Meta requires a button component with
       // sub_type "flow" and a flow_token action parameter, even when there are no
       // body variables. Without it Meta returns: "Components sub_type invalid".
+      // We encode our internal Flow._id in the token so the webhook can link
+      // the submission back to the correct flow and surface it in Responses.
       const flowButtons = (template.buttons ?? []).filter(
         (b: { type: string }) => b.type === "FLOW",
       );
 
-      if (bodyComponent || flowButtons.length > 0) {
-        components = [
-          ...(bodyComponent ? [bodyComponent] : []),
-          ...flowButtons.map((_: unknown, i: number) => ({
+      const flowButtonComponents = await Promise.all(
+        flowButtons.map(async (btn: { type: string; flowId?: string }, i: number) => {
+          // Look up internal MongoDB _id by metaFlowId so the webhook regex resolves it
+          let flowToken = "unused";
+          if (btn.flowId) {
+            const internalFlow = await FlowModel.findOne({
+              metaFlowId: btn.flowId,
+              userId: new mongoose.Types.ObjectId(req.user!.userId),
+            }).lean();
+            if (internalFlow) {
+              flowToken = `flow_${String(internalFlow._id)}_${Date.now()}`;
+            }
+          }
+          return {
             type: "button",
             sub_type: "flow",
             index: String(i),
-            parameters: [{ type: "action", action: { flow_token: "unused" } }],
-          })),
+            parameters: [{ type: "action", action: { flow_token: flowToken } }],
+          };
+        }),
+      );
+
+      if (bodyComponent || flowButtonComponents.length > 0) {
+        components = [
+          ...(bodyComponent ? [bodyComponent] : []),
+          ...flowButtonComponents,
         ];
       }
     }
