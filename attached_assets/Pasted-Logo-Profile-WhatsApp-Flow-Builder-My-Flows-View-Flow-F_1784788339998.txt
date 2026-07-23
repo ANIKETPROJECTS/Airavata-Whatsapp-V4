@@ -1,0 +1,203 @@
+Logo
+Profile
+WhatsApp Flow Builder
+My Flows
+👁 View Flow
+
+
+
+Flow Settings
+Flow Name *
+Event Registration
+Flow Type
+
+Registration
+WhatsApp Phone Number *
+
+Fishtokri ( +919702012100)
+Meta Categories (select all that apply)
+Message Header (optional — shown above the message in chat)
+None
+Text
+🖼 Image
+Message Body Text — main text shown in the WhatsApp chat message
+Register for our upcoming event
+CTA Button Text
+Register Now
+Footer Text (optional)
+Screens and Fields
++ Add Screen
+Screen 1 - Personal Details
+x
+Screen 2 - Event Details
+x
+Screen Title — shown at the top of this screen inside the WhatsApp flow
+Personal Details
+Button Label — text on the bottom button
+Continue
+Navigation:
+→ Next Screen
+⑂ Conditional Branch
+Continue to — which screen opens next
+
+Auto — Screen 2: Event Details
+1
+📝 Text
+Input
+✕
+Label *
+Full Name
+Field Name — internal key, no spaces
+name
+Helper Text
+Required field
+2
+📧 Email
+Input
+✕
+Label *
+Email Address
+Field Name — internal key, no spaces
+email
+Helper Text
+Required field
+🔒 This flow is published — read-only. Published flows cannot be modified.
+Preview JSON
+Close
+👁 Preview
+▶ Test Flow
+12:30
+Admark Multiventures
+Register for our upcoming event
+Register Now
+Generated Flow JSON (v5.1)
+✕
+This JSON will be submitted to Meta. Use for debugging or manual upload.
+
+{
+  "version": "5.1",
+  "screens": [
+    {
+      "id": "SCREEN_ONE",
+      "title": "Personal Details",
+      "terminal": false,
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "main_form",
+            "children": [
+              {
+                "type": "TextInput",
+                "name": "name",
+                "label": "Full Name",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "TextInput",
+                "name": "email",
+                "label": "Email Address",
+                "required": true,
+                "input-type": "email"
+              },
+              {
+                "type": "Footer",
+                "label": "Continue",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "SCREEN_TWO"
+                  },
+                  "payload": {
+                    "name": "${form.name}",
+                    "email": "${form.email}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "SCREEN_TWO",
+      "title": "Event Details",
+      "terminal": true,
+      "data": {
+        "name": {
+          "type": "string",
+          "__example__": "sample"
+        },
+        "email": {
+          "type": "string",
+          "__example__": "sample"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "main_form",
+            "children": [
+              {
+                "type": "DatePicker",
+                "name": "preferred_date",
+                "label": "Preferred Date",
+                "required": true
+              },
+              {
+                "type": "Dropdown",
+                "name": "session",
+                "label": "Session Preference",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "morning_(9am-12pm)",
+                    "title": "Morning (9AM-12PM)"
+                  },
+                  {
+                    "id": "afternoon_(2pm-5pm)",
+                    "title": "Afternoon (2PM-5PM)"
+                  },
+                  {
+                    "id": "evening_(6pm-9pm)",
+                    "title": "Evening (6PM-9PM)"
+                  }
+                ]
+              },
+              {
+                "type": "OptIn",
+                "name": "newsletter",
+                "label": "Subscribe to newsletter",
+                "required": false
+              },
+              {
+                "type": "Footer",
+                "label": "Submit",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "preferred_date": "${form.preferred_date}",
+                    "session": "${form.session}",
+                    "newsletter": "${form.newsletter}",
+                    "name": "${data.name}",
+                    "email": "${data.email}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+Copy JSON
+Close
+WhatsApp
+0.75

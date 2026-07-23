@@ -91,7 +91,12 @@ router.post("/templates", authenticate, async (req: AuthRequest, res) => {
       body, footer, bodySamples, headerSample,
       // Authentication-only
       addSecurityRecommendation, codeExpirationMinutes, otpType,
+      // Flow button
+      flowButton,
     } = req.body as Record<string, unknown>;
+
+    type FlowButtonInput = { flowId: string; flowName?: string; text: string; navigateScreen: string };
+    const fb = flowButton as FlowButtonInput | undefined;
 
     const cat = toUpper(category, "MARKETING") as TemplateCategory;
 
@@ -115,6 +120,7 @@ router.post("/templates", authenticate, async (req: AuthRequest, res) => {
       addSecurityRecommendation: addSecurityRecommendation === true,
       codeExpirationMinutes: codeExpirationMinutes ? Number(codeExpirationMinutes) : undefined,
       otpType: otpType ? String(otpType) as import("../lib/whatsapp").OtpType : undefined,
+      flowButton: fb ? { flowId: fb.flowId, text: fb.text, navigateScreen: fb.navigateScreen } : undefined,
     });
 
     const template = await TemplateModel.create({
@@ -128,6 +134,9 @@ router.post("/templates", authenticate, async (req: AuthRequest, res) => {
       footer,
       status: metaResult.status ?? "PENDING",
       metaTemplateId: metaResult.id,
+      buttons: fb
+        ? [{ type: "FLOW", text: fb.text, flowId: fb.flowId, flowName: fb.flowName, navigateScreen: fb.navigateScreen }]
+        : [],
     });
 
     res.status(201).json({ template: shape(template.toObject()) });

@@ -83,6 +83,15 @@ export type TemplateCategory = "MARKETING" | "UTILITY" | "AUTHENTICATION";
 export type HeaderType = "NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
 export type OtpType = "COPY_CODE" | "ONE_TAP" | "ZERO_TAP";
 
+export interface FlowButtonParams {
+  /** Meta-assigned flow ID (our DB's metaFlowId) */
+  flowId: string;
+  /** Button label shown in WhatsApp */
+  text: string;
+  /** First screen to open — must match the sanitized screen ID sent to Meta */
+  navigateScreen: string;
+}
+
 export interface CreateTemplateParams {
   name: string;
   category: TemplateCategory;
@@ -96,6 +105,8 @@ export interface CreateTemplateParams {
   bodySamples?: string[];
   /** Sample value for a text header variable {{1}} */
   headerSample?: string;
+  /** Attach a WhatsApp Flow as a CTA button */
+  flowButton?: FlowButtonParams;
   // ── AUTHENTICATION-only fields ──────────────────────────────────────────────
   /** Show "For your security, never share this code." recommendation line */
   addSecurityRecommendation?: boolean;
@@ -162,6 +173,21 @@ export async function createMetaTemplate(params: CreateTemplateParams) {
 
   if (params.footer) {
     components.push({ type: "FOOTER", text: params.footer });
+  }
+
+  if (params.flowButton) {
+    components.push({
+      type: "BUTTONS",
+      buttons: [
+        {
+          type: "FLOW",
+          text: params.flowButton.text,
+          flow_id: params.flowButton.flowId,
+          navigate_screen: params.flowButton.navigateScreen,
+          flow_action: "navigate",
+        },
+      ],
+    } as unknown as Component);
   }
 
   const payload = {

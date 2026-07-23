@@ -1,9 +1,17 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
+
+interface Flow {
+  id: string;
+  name: string;
+  status: string;
+  metaFlowId?: string;
+  screens?: Array<{ id: string }>;
+}
 
 /** Returns sorted unique variable numbers found in a string */
 function extractVars(text: string): number[] {
@@ -31,6 +39,18 @@ export default function AddTemplate() {
   const [bodyText, setBodyText] = useState('Hi {{1}}, welcome to our service!');
   const [footerText, setFooterText] = useState('');
   const [samples, setSamples] = useState<Record<number, string>>({});
+
+  // ── Flow button fields ─────────────────────────────────────────────────────
+  const [flowButtonEnabled, setFlowButtonEnabled] = useState(false);
+  const [selectedFlowId, setSelectedFlowId] = useState('');
+  const [flowButtonText, setFlowButtonText] = useState('Open Form');
+
+  const { data: flowsData } = useQuery<{ flows: Flow[] }>({
+    queryKey: ['flows'],
+    queryFn: () => api.get('/flows'),
+  });
+  const publishedFlows = (flowsData?.flows ?? []).filter(f => f.status === 'PUBLISHED' && f.metaFlowId);
+  const selectedFlow = publishedFlows.find(f => f.id === selectedFlowId);
 
   // ── AUTHENTICATION fields ──────────────────────────────────────────────────
   const [addSecurityRec, setAddSecurityRec] = useState(true);
@@ -75,6 +95,19 @@ export default function AddTemplate() {
 
       const bodySamples = bodyVars.map(i => samples[i] ?? '');
       const headerSample = headerVars.length > 0 ? (samples[headerVars[0]!] ?? '') : undefined;
+
+      const DIGIT_WORDS = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE'];
+      const sanitizeScreenId = (id: string) => id.replace(/\d/g, d => DIGIT_WORDS[parseInt(d)] ?? d);
+
+      const fb = flowButtonEnabled && selectedFlow && selectedFlow.metaFlowId
+        ? {
+            flowId: selectedFlow.metaFlowId,
+            flowName: selectedFlow.name,
+            text: flowButtonText.trim() || 'Open Form',
+            navigateScreen: sanitizeScreenId(selectedFlow.screens?.[0]?.id ?? 'SCREEN_A'),
+          }
+        : undefined;
+
       return api.post('/templates', {
         name,
         category,
@@ -85,6 +118,7 @@ export default function AddTemplate() {
         footer: footerText || undefined,
         bodySamples: bodySamples.length > 0 ? bodySamples : undefined,
         headerSample: headerSample || undefined,
+        flowButton: fb,
       });
     },
     onSuccess: () => {
@@ -106,6 +140,10 @@ export default function AddTemplate() {
           return;
         }
       }
+    }
+    if (!isAuth && flowButtonEnabled && !selectedFlowId) {
+      toast.error('Please select a flow to attach, or disable the flow button');
+      return;
     }
     submitMutation.mutate();
   };
@@ -397,6 +435,70 @@ export default function AddTemplate() {
                     className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-primary focus:border-primary outline-none"
                   />
                 </div>
+
+                {/* Flow Button */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-green-500" />
+                      Attach a WhatsApp Flow
+                      <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setFlowButtonEnabled(v => !v)}
+                      className={`w-10 h-5 rounded-full transition-colors relative ${flowButtonEnabled ? 'bg-primary' : 'bg-gray-200'}`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${flowButtonEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                  </div>
+
+                  {flowButtonEnabled && (
+                    <div className="border rounded-lg p-4 space-y-3 bg-green-50 border-green-100">
+                      <p className="text-xs text-green-800">
+                        A button will be added to the template that opens the selected flow inside WhatsApp.
+                      </p>
+
+                      {/* Flow selector */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-gray-700">Select Flow</label>
+                        {publishedFlows.length === 0 ? (
+                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            No published flows found. Publish a flow in Flow Builder first.
+                          </p>
+                        ) : (
+                          <div className="relative">
+                            <select
+                              value={selectedFlowId}
+                              onChange={e => setSelectedFlowId(e.target.value)}
+                              className="w-full px-3 py-2 pr-8 border rounded-lg text-sm bg-white outline-none appearance-none focus:ring-primary focus:border-primary"
+                            >
+                              <option value="">— Choose a flow —</option>
+                              {publishedFlows.map(f => (
+                                <option key={f.id} value={f.id}>{f.name}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Button label */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-gray-700">Button Label</label>
+                        <input
+                          type="text"
+                          value={flowButtonText}
+                          onChange={e => setFlowButtonText(e.target.value)}
+                          placeholder="e.g. Book Appointment"
+                          maxLength={25}
+                          className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-primary focus:border-primary"
+                        />
+                        <p className="text-xs text-gray-400">Max 25 characters</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 
@@ -483,6 +585,14 @@ export default function AddTemplate() {
                       </div>
                     )}
                   </>
+                )}
+                {!isAuth && flowButtonEnabled && (flowButtonText || selectedFlow) && (
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <button className="w-full text-center text-[#0084ff] text-sm font-medium py-1 flex items-center justify-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5" />
+                      {flowButtonText || 'Open Form'}
+                    </button>
+                  </div>
                 )}
                 <div className="text-[10px] text-gray-400 text-right mt-1">12:00 PM</div>
               </div>

@@ -2,9 +2,13 @@ import { Schema, model, type InferSchemaType } from "mongoose";
 
 const templateButtonSchema = new Schema(
   {
-    type: { type: String, enum: ["QUICK_REPLY", "URL", "PHONE_NUMBER"], required: true },
+    type: { type: String, enum: ["QUICK_REPLY", "URL", "PHONE_NUMBER", "FLOW"], required: true },
     text: { type: String, required: true },
     value: { type: String },
+    // FLOW button fields
+    flowId: { type: String },       // Meta flow ID (metaFlowId)
+    flowName: { type: String },     // display label
+    navigateScreen: { type: String }, // first screen ID to navigate to
   },
   { _id: false },
 );
