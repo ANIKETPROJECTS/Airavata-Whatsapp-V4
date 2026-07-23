@@ -90,9 +90,9 @@ router.post("/auth/login", async (req, res) => {
       return;
     }
 
-    // Stamp META_PHONE_NUMBER_ID onto this user so incoming webhooks route to them correctly
+    // Always sync META_PHONE_NUMBER_ID onto the user so stale DB values don't break routing
     const configuredPhoneNumberId = process.env.META_PHONE_NUMBER_ID;
-    if (configuredPhoneNumberId && !user.metaPhoneNumberId) {
+    if (configuredPhoneNumberId && user.metaPhoneNumberId !== configuredPhoneNumberId) {
       await UserModel.findByIdAndUpdate(user._id, { metaPhoneNumberId: configuredPhoneNumberId });
     }
 
