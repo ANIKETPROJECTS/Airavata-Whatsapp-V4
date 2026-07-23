@@ -91,7 +91,6 @@ export function Shell({ children }: { children: ReactNode }) {
           <nav className="airavata-sidebar-nav flex-1 overflow-y-auto py-3">
             <ul className="space-y-1 px-2">
               {SIDEBAR_ITEMS.map((item) => {
-                const isActive = location === item.href;
                 return (
                   <li key={item.href}>
                     <button
@@ -120,45 +119,6 @@ export function Shell({ children }: { children: ReactNode }) {
               })}
             </ul>
           </nav>
-
-          {/* Bottom: user + sign out */}
-          <div className={`border-t border-white/25 py-3 space-y-1 px-2 shrink-0`}>
-            <button
-              onClick={() => handleNav('/profile')}
-              title={collapsed ? (user?.businessName ?? 'Profile') : undefined}
-              className={`
-                w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
-                ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-2 py-2'}
-                ${location === '/profile'
-                  ? 'bg-white text-black'
-                  : 'text-black hover:bg-white/25'
-                }
-              `}
-            >
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-black" />
-              </div>
-              {!collapsed && (
-                <div className="flex-1 text-left min-w-0">
-                  <div className="text-[14px] font-semibold truncate leading-tight">{user?.businessName ?? '—'}</div>
-                  <div className="text-[12px] text-black truncate leading-tight">{user?.email ?? ''}</div>
-                </div>
-              )}
-            </button>
-
-            <button
-              onClick={handleLogout}
-              title={collapsed ? 'Sign out' : undefined}
-              className={`
-                w-full flex items-center rounded-lg text-sm font-medium transition-colors
-                text-black hover:bg-white/25
-                ${collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
-              `}
-            >
-              <LogOut className="w-5 h-5 shrink-0 text-black" />
-              {!collapsed && <span className="text-[16px] font-semibold">Sign out</span>}
-            </button>
-          </div>
 
           {/* Collapse toggle button — pinned to right edge */}
           <button
@@ -198,6 +158,29 @@ export function Shell({ children }: { children: ReactNode }) {
               <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
                 <Bell className="w-4 h-4" />
                 <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
+              </button>
+
+              <button
+                onClick={() => handleNav('/profile')}
+                title={user?.businessName ?? 'Profile'}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-gray-600" />
+                </div>
+                <div className="hidden lg:block text-left max-w-36">
+                  <div className="text-[13px] font-semibold truncate leading-tight">{user?.businessName ?? 'Profile'}</div>
+                  <div className="text-[11px] text-gray-500 truncate leading-tight">{user?.email ?? ''}</div>
+                </div>
+              </button>
+
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                aria-label="Sign out"
+                className="p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-full transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </header>
