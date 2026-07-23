@@ -222,13 +222,33 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
           parameters: [{ type: "text", text: otpCode }],
         },
       ];
-    } else if (variables && variables.length > 0) {
-      components = [
-        {
-          type: "body",
-          parameters: variables.map((v) => ({ type: "text", text: v })),
-        },
-      ];
+    } else {
+      // Build the body component (only when there are variables to fill)
+      const bodyComponent = variables && variables.length > 0
+        ? {
+            type: "body",
+            parameters: variables.map((v) => ({ type: "text", text: v })),
+          }
+        : null;
+
+      // If the template has FLOW buttons, Meta requires a button component with
+      // sub_type "flow" and a flow_token action parameter, even when there are no
+      // body variables. Without it Meta returns: "Components sub_type invalid".
+      const flowButtons = (template.buttons ?? []).filter(
+        (b: { type: string }) => b.type === "FLOW",
+      );
+
+      if (bodyComponent || flowButtons.length > 0) {
+        components = [
+          ...(bodyComponent ? [bodyComponent] : []),
+          ...flowButtons.map((_: unknown, i: number) => ({
+            type: "button",
+            sub_type: "flow",
+            index: String(i),
+            parameters: [{ type: "action", action: { flow_token: "unused" } }],
+          })),
+        ];
+      }
     }
 
     // Normalise phone: strip leading zeros / spaces
