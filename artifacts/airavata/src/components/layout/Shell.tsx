@@ -59,7 +59,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside
           className={`
-            airavata-sidebar relative flex flex-col bg-[#FFD700] text-white
+            airavata-sidebar relative flex flex-col bg-[#FFD700] text-black
             transition-all duration-200 ease-in-out shrink-0 z-20
             ${collapsed ? 'w-16' : 'w-[220px]'}
           `}
@@ -67,7 +67,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {/* Logo */}
           <div className={`flex items-center border-b border-white/25 shrink-0 h-16 ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-4'}`}>
             <div className="w-9 h-9 rounded-md bg-white/20 flex items-center justify-center shrink-0">
-              <MessageCircle className="w-5 h-5 text-white" />
+              <MessageCircle className="w-5 h-5 text-black" />
             </div>
             {!collapsed && (
               <span className="font-bold text-xl tracking-tight truncate">Airavata</span>
@@ -85,11 +85,11 @@ export function Shell({ children }: { children: ReactNode }) {
                       onClick={() => handleNav(item.href)}
                       title={collapsed ? item.title : undefined}
                       className={`
-                        w-full flex items-center rounded-lg text-[15px] font-semibold text-white transition-colors
+                        w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
                         ${isActive
-                          ? 'bg-white/20 text-white'
-                          : 'text-white hover:bg-white/15'
+                          ? 'bg-black/10 text-black'
+                          : 'text-black hover:bg-black/10'
                         }
                       `}
                     >
@@ -98,10 +98,10 @@ export function Shell({ children }: { children: ReactNode }) {
                           src={dashboardIcon}
                           alt=""
                           aria-hidden="true"
-                          className="w-5 h-5 shrink-0 object-contain brightness-0 invert"
+                          className="w-5 h-5 shrink-0 object-contain"
                         />
                       ) : (
-                        <item.icon className="w-5 h-5 shrink-0 text-white" />
+                        <item.icon className="w-5 h-5 shrink-0 text-black" />
                       )}
                       {!collapsed && <span className="truncate">{item.title}</span>}
                     </button>
@@ -117,21 +117,21 @@ export function Shell({ children }: { children: ReactNode }) {
               onClick={() => handleNav('/profile')}
               title={collapsed ? (user?.businessName ?? 'Profile') : undefined}
               className={`
-                w-full flex items-center rounded-lg text-[15px] font-semibold text-white transition-colors
+                w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
                 ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-2 py-2'}
                 ${location === '/profile'
-                  ? 'bg-white/20 text-white'
-                  : 'text-white hover:bg-white/15'
+                  ? 'bg-black/10 text-black'
+                  : 'text-black hover:bg-black/10'
                 }
               `}
             >
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-white" />
+                <User className="w-4 h-4 text-black" />
               </div>
               {!collapsed && (
                 <div className="flex-1 text-left min-w-0">
                   <div className="text-[13px] font-semibold truncate leading-tight">{user?.businessName ?? '—'}</div>
-                  <div className="text-[11px] text-white truncate leading-tight">{user?.email ?? ''}</div>
+                  <div className="text-[11px] text-black truncate leading-tight">{user?.email ?? ''}</div>
                 </div>
               )}
             </button>
@@ -141,11 +141,11 @@ export function Shell({ children }: { children: ReactNode }) {
               title={collapsed ? 'Sign out' : undefined}
               className={`
                 w-full flex items-center rounded-lg text-sm font-medium transition-colors
-                text-white hover:bg-white/15
+                text-black hover:bg-black/10
                 ${collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
               `}
             >
-              <LogOut className="w-5 h-5 shrink-0 text-white" />
+              <LogOut className="w-5 h-5 shrink-0 text-black" />
               {!collapsed && <span className="text-[15px] font-semibold">Sign out</span>}
             </button>
           </div>
