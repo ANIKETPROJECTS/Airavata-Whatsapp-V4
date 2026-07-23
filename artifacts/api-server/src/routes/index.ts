@@ -19,6 +19,7 @@ import cannedMessagesRouter from "./canned-messages";
 import livechatSettingsRouter from "./livechat-settings";
 import attributesRouter from "./attributes";
 import flowsRouter from "./flows";
+import chatbotRouter from "./chatbot";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(cannedMessagesRouter);
 router.use(livechatSettingsRouter);
 router.use(attributesRouter);
 router.use(flowsRouter);
+router.use(chatbotRouter);
 
 export default router;
