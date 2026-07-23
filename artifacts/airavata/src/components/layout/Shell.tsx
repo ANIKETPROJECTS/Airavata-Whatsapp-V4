@@ -100,10 +100,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       className={`
                         w-full flex items-center rounded-lg text-[16px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3.5' : 'gap-3.5 px-3.5 py-3'}
-                        ${isActive
-                          ? 'bg-white text-black'
-                          : 'text-black hover:bg-white/25'
-                        }
+                        bg-white text-black hover:bg-white
                       `}
                     >
                       {item.iconSrc ? (
