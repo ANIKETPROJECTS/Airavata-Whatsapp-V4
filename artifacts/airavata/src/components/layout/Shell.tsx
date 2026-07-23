@@ -88,8 +88,8 @@ export function Shell({ children }: { children: ReactNode }) {
                         w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
                         ${isActive
-                          ? 'bg-black/10 text-black'
-                          : 'text-black hover:bg-black/10'
+                          ? 'bg-white/45 text-black'
+                          : 'text-black hover:bg-white/25'
                         }
                       `}
                     >
@@ -120,8 +120,8 @@ export function Shell({ children }: { children: ReactNode }) {
                 w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
                 ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-2 py-2'}
                 ${location === '/profile'
-                  ? 'bg-black/10 text-black'
-                  : 'text-black hover:bg-black/10'
+                  ? 'bg-white/45 text-black'
+                  : 'text-black hover:bg-white/25'
                 }
               `}
             >
@@ -141,7 +141,7 @@ export function Shell({ children }: { children: ReactNode }) {
               title={collapsed ? 'Sign out' : undefined}
               className={`
                 w-full flex items-center rounded-lg text-sm font-medium transition-colors
-                text-black hover:bg-black/10
+                text-black hover:bg-white/25
                 ${collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
               `}
             >
