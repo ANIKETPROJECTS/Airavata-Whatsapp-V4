@@ -11,6 +11,8 @@ const contactSchema = new Schema(
     lastContactedAt: { type: Date },
     status: { type: String, enum: ["active", "blocked", "unsubscribed"], default: "active" },
     chatState: { type: String, enum: ["DOR", "REQ", "CLOSED", "ACTIVE"], default: "DOR" },
+    // Chatbot engine session — tracks which flow node the contact is currently at
+    chatbotSession: { type: Schema.Types.Mixed },
   },
   { timestamps: true },
 );

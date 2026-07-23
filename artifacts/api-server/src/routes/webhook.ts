@@ -13,6 +13,7 @@ import { CampaignModel } from "../models/Campaign";
 import { FlowModel } from "../models/Flow";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger";
+import { runChatbotEngine } from "../lib/chatbotEngine";
 
 const router = Router();
 
@@ -154,12 +155,15 @@ async function handleIncomingMessage(
   let body: string | undefined;
   let flowData: Record<string, unknown> | undefined;
   let flowId: mongoose.Types.ObjectId | undefined;
+  let interactiveReplyId: string | undefined; // button_reply / list_reply ID for chatbot engine
+  let runChatbot = false; // only fire engine for text + interactive button/list replies
 
   // DEBUG: log full raw message to diagnose interactive parsing
   logger.info({ rawMsg: JSON.stringify(msg) }, "RAW incoming message");
 
   if (msg.type === "text") {
     body = msg.text?.body;
+    runChatbot = true;
   } else if (msg.type === "image") {
     body = "[Image]";
   } else if (msg.type === "document") {
@@ -197,6 +201,21 @@ async function handleIncomingMessage(
         logger.error({ parseErr: String(parseErr), rawJson: interactive.nfm_reply.response_json }, "Failed to parse nfm_reply response_json");
         body = "📋 Form submitted (parse error)";
       }
+      // Do NOT run chatbot on form submissions
+    } else if (interactive?.type === "button_reply") {
+      // CTA button press — resume chatbot session
+      const br = interactive.button_reply as { id: string; title: string } | undefined;
+      body = br?.title ?? "[button]";
+      interactiveReplyId = br?.id;
+      runChatbot = true;
+      logger.info({ buttonId: interactiveReplyId, title: body }, "Button reply received");
+    } else if (interactive?.type === "list_reply") {
+      // List row selection — resume chatbot session
+      const lr = interactive.list_reply as { id: string; title: string; description?: string } | undefined;
+      body = lr?.title ?? "[list selection]";
+      interactiveReplyId = lr?.id;
+      runChatbot = true;
+      logger.info({ rowId: interactiveReplyId, title: body }, "List reply received");
     } else {
       logger.warn({ interactiveType: interactive?.type }, "Interactive message is not nfm_reply — falling back");
       body = `[${msg.type}]`;
@@ -224,6 +243,13 @@ async function handleIncomingMessage(
   await ContactModel.findByIdAndUpdate(contactId, { lastContactedAt: new Date() });
 
   logger.info({ from: fromRaw, body }, "Stored incoming message");
+
+  // Fire chatbot engine for text messages and interactive button/list replies
+  if (runChatbot) {
+    runChatbotEngine(contactId, userId, { text: body, interactiveReplyId }).catch((err) =>
+      logger.error({ err: String(err) }, "Chatbot engine error"),
+    );
+  }
 }
 
 async function handleStatusUpdate(status: WebhookStatus) {
@@ -290,11 +316,9 @@ interface WebhookMessage {
   audio?: { id: string };
   interactive?: {
     type: string;
-    nfm_reply?: {
-      name: string;
-      response_json: string;
-      body: string;
-    };
+    nfm_reply?: { name: string; response_json: string; body: string };
+    button_reply?: { id: string; title: string };
+    list_reply?: { id: string; title: string; description?: string };
   };
 }
 

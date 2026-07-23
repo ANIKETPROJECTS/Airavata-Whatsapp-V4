@@ -383,6 +383,134 @@ export async function sendTextMessage(to: string, body: string) {
   return result;
 }
 
+/** Send an interactive reply-button message (up to 3 buttons). */
+export async function sendInteractiveButtons(
+  to: string,
+  body: string,
+  footer: string | undefined,
+  buttons: Array<{ id: string; title: string }>,
+) {
+  const { phoneNumberId } = creds();
+  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: to.replace(/\s+/g, ""),
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: body },
+        ...(footer ? { footer: { text: footer } } : {}),
+        action: {
+          buttons: buttons.slice(0, 3).map((b) => ({
+            type: "reply",
+            reply: { id: b.id, title: b.title.slice(0, 20) },
+          })),
+        },
+      },
+    }),
+  });
+}
+
+/** Send an interactive list-picker message. */
+export async function sendInteractiveList(
+  to: string,
+  header: string | undefined,
+  body: string,
+  footer: string | undefined,
+  buttonText: string,
+  sections: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>,
+) {
+  const { phoneNumberId } = creds();
+  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: to.replace(/\s+/g, ""),
+      type: "interactive",
+      interactive: {
+        type: "list",
+        ...(header ? { header: { type: "text", text: header } } : {}),
+        body: { text: body },
+        ...(footer ? { footer: { text: footer } } : {}),
+        action: {
+          button: buttonText.slice(0, 20),
+          sections: sections.map((s) => ({
+            title: s.title,
+            rows: s.rows.map((r) => ({
+              id: r.id,
+              title: r.title.slice(0, 24),
+              ...(r.description ? { description: r.description.slice(0, 72) } : {}),
+            })),
+          })),
+        },
+      },
+    }),
+  });
+}
+
+/** Request the user's live location (interactive). */
+export async function sendLocationRequest(to: string, body: string) {
+  const { phoneNumberId } = creds();
+  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: to.replace(/\s+/g, ""),
+      type: "interactive",
+      interactive: {
+        type: "location_request_message",
+        body: { text: body },
+        action: { name: "send_location" },
+      },
+    }),
+  });
+}
+
+/** Send a static location pin to the user. */
+export async function sendLocationMessage(
+  to: string,
+  latitude: string,
+  longitude: string,
+  name?: string,
+) {
+  const { phoneNumberId } = creds();
+  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: to.replace(/\s+/g, ""),
+      type: "location",
+      location: { latitude, longitude, ...(name ? { name } : {}) },
+    }),
+  });
+}
+
+/** Send a media message using a public URL (no prior upload needed). */
+export async function sendMediaByUrl(
+  to: string,
+  type: "image" | "video" | "audio" | "document",
+  url: string,
+  caption?: string,
+  filename?: string,
+) {
+  const { phoneNumberId } = creds();
+  const mediaPayload =
+    type === "document"
+      ? { link: url, ...(caption ? { caption } : {}), ...(filename ? { filename } : {}) }
+      : { link: url, ...(caption ? { caption } : {}) };
+
+  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: to.replace(/\s+/g, ""),
+      type,
+      [type]: mediaPayload,
+    }),
+  });
+}
+
 /** Send a template message to a phone number (E.164 format, e.g. +919876543210). */
 export async function sendTemplateMessage(
   to: string,
