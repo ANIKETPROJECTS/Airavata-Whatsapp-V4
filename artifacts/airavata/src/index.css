@@ -159,6 +159,10 @@
   --sidebar-ring: 142.1 70% 45%;
 }
 
+.airavata-sidebar {
+  font-family: 'Poppins', sans-serif;
+}
+
 @layer base {
   * {
     @apply border-border;
