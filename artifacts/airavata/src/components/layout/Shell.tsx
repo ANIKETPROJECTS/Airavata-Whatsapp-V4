@@ -98,7 +98,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       onClick={() => handleNav(item.href)}
                       title={collapsed ? item.title : undefined}
                       className={`
-                        w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
+                        w-full flex items-center rounded-lg text-[16px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3.5' : 'gap-3.5 px-3.5 py-3'}
                         ${isActive
                           ? 'bg-white/45 text-black'
@@ -143,8 +143,8 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
               {!collapsed && (
                 <div className="flex-1 text-left min-w-0">
-                  <div className="text-[13px] font-semibold truncate leading-tight">{user?.businessName ?? '—'}</div>
-                  <div className="text-[11px] text-black truncate leading-tight">{user?.email ?? ''}</div>
+                  <div className="text-[14px] font-semibold truncate leading-tight">{user?.businessName ?? '—'}</div>
+                  <div className="text-[12px] text-black truncate leading-tight">{user?.email ?? ''}</div>
                 </div>
               )}
             </button>
@@ -159,7 +159,7 @@ export function Shell({ children }: { children: ReactNode }) {
               `}
             >
               <LogOut className="w-5 h-5 shrink-0 text-black" />
-              {!collapsed && <span className="text-[15px] font-semibold">Sign out</span>}
+              {!collapsed && <span className="text-[16px] font-semibold">Sign out</span>}
             </button>
           </div>
 
