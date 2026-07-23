@@ -9,10 +9,10 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import menuIcon from '@assets/dashboard-interface_1784816353863.png';
-import chatBubblesIcon from '@assets/chat-bubbles-with-ellipsis_1784810867460.png';
+import chatBubblesIcon from '@assets/chat_(1)_1784831596587.png';
 import contactsIcon from '@assets/contact-us_(1)_1784820130355.png';
 import marketingIcon from '@assets/marketing_(1)_1784820162202.png';
-import reportIcon from '@assets/report_(1)_1784814254803.png';
+import reportIcon from '@assets/dashboard_(3)_1784831703621.png';
 import widgetIcon from '@assets/table_1784821548409.png';
 import docsIcon from '@assets/docs_1784814701440.png';
 import flowChartIcon from '@assets/flow-chart_1784814816750.png';
