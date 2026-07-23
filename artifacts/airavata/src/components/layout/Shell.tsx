@@ -91,6 +91,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <nav className="airavata-sidebar-nav flex-1 overflow-y-auto py-3">
             <ul className="space-y-1 px-2">
               {SIDEBAR_ITEMS.map((item) => {
+                const isActive = location === item.href;
                 return (
                   <li key={item.href}>
                     <button
@@ -99,7 +100,8 @@ export function Shell({ children }: { children: ReactNode }) {
                       className={`
                         w-full flex items-center rounded-lg text-[16px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3.5' : 'gap-3.5 px-3.5 py-3'}
-                        bg-white text-black hover:bg-white
+                        bg-white text-black hover:bg-white border-2
+                        ${isActive ? 'border-black' : 'border-transparent'}
                       `}
                     >
                       {item.iconSrc ? (
