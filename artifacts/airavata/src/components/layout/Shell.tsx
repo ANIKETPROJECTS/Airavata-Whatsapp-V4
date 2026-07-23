@@ -88,7 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
 
           {/* Nav items */}
-          <nav className="flex-1 overflow-y-auto py-3">
+          <nav className="airavata-sidebar-nav flex-1 overflow-y-auto py-3">
             <ul className="space-y-1 px-2">
               {SIDEBAR_ITEMS.map((item) => {
                 const isActive = location === item.href;
@@ -101,7 +101,7 @@ export function Shell({ children }: { children: ReactNode }) {
                         w-full flex items-center rounded-lg text-[16px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3.5' : 'gap-3.5 px-3.5 py-3'}
                         ${isActive
-                          ? 'bg-white/45 text-black'
+                          ? 'bg-white text-black'
                           : 'text-black hover:bg-white/25'
                         }
                       `}
@@ -133,7 +133,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 w-full flex items-center rounded-lg text-[15px] font-semibold text-black transition-colors
                 ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-2 py-2'}
                 ${location === '/profile'
-                  ? 'bg-white/45 text-black'
+                  ? 'bg-white text-black'
                   : 'text-black hover:bg-white/25'
                 }
               `}

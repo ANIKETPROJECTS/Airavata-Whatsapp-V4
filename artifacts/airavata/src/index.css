@@ -163,6 +163,15 @@
   font-family: 'Poppins', sans-serif;
 }
 
+.airavata-sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.airavata-sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
 @layer base {
   * {
     @apply border-border;
