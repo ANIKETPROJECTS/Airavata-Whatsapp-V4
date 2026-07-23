@@ -8,12 +8,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import dashboardIcon from '@assets/dashboard_(2)_1784810137669.png';
+import menuIcon from '@assets/menu_(1)_1784810785126.png';
+import chatBubblesIcon from '@assets/chat-bubbles-with-ellipsis_1784810867460.png';
+import contactsIcon from '@assets/contact-us_1784811121398.png';
 
 const SIDEBAR_ITEMS = [
-  { title: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-  { title: 'Live Chat', icon: MessageCircle, href: '/live-chat' },
-  { title: 'Contacts', icon: Users, href: '/contacts' },
+  { title: 'Dashboard', icon: LayoutDashboard, iconSrc: menuIcon, href: '/dashboard' },
+  { title: 'Live Chat', icon: MessageCircle, iconSrc: chatBubblesIcon, href: '/live-chat' },
+  { title: 'Contacts', icon: Users, iconSrc: contactsIcon, href: '/contacts' },
   { title: 'Create Campaign', icon: Megaphone, href: '/create-campaign' },
   { title: 'Campaigns Report', icon: BarChart3, href: '/campaigns-report' },
   { title: 'Add Template', icon: FileText, href: '/add-template' },
@@ -93,12 +95,12 @@ export function Shell({ children }: { children: ReactNode }) {
                         }
                       `}
                     >
-                      {item.title === 'Dashboard' ? (
+                      {item.iconSrc ? (
                         <img
-                          src={dashboardIcon}
+                          src={item.iconSrc}
                           alt=""
                           aria-hidden="true"
-                          className="w-5 h-5 shrink-0 object-contain"
+                          className="w-7 h-7 shrink-0 object-contain brightness-0"
                         />
                       ) : (
                         <item.icon className="w-5 h-5 shrink-0 text-black" />
