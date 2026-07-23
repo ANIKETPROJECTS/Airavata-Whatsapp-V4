@@ -431,8 +431,8 @@ function FlowEditorView({
   }
 
   function addScreen() {
-    const newScreen = makeNewScreen(screens.length + 1);
-    // Auto-link previous last screen to new one
+    const newScreen = { ...makeNewScreen(screens.length + 1), isTerminal: true };
+    // Auto-link previous last screen to new one, clearing its terminal flag
     setScreens(prev => {
       const updated = [...prev];
       if (updated.length > 0) {

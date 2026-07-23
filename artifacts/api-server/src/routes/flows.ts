@@ -59,7 +59,13 @@ function compileToMetaJson(flow: {
       .map((c) => ({ name: c.name!, isArray: c.type === "CheckboxGroup" })),
   );
 
-  const screens = flow.screens.map((screen, idx) => {
+  // Safety net: if no screen is explicitly marked terminal, treat the last one as terminal
+  const hasTerminal = flow.screens.some((s) => s.isTerminal);
+  const normalizedScreens = flow.screens.map((s, i) =>
+    !hasTerminal && i === flow.screens.length - 1 ? { ...s, isTerminal: true } : s
+  );
+
+  const screens = normalizedScreens.map((screen, idx) => {
     // Fields from ALL previous screens, passed in via data.*
     const inheritedFields = screenFieldDefs.slice(0, idx).flat();
     // Fields on THIS screen, accessed via form.*
