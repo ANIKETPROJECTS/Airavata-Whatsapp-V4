@@ -447,9 +447,9 @@ export default function AddTemplate() {
                     <button
                       type="button"
                       onClick={() => setFlowButtonEnabled(v => !v)}
-                      className={`w-10 h-5 rounded-full transition-colors relative ${flowButtonEnabled ? 'bg-primary' : 'bg-gray-200'}`}
+                      className={`w-8 h-4 rounded-full transition-colors relative ${flowButtonEnabled ? 'bg-primary' : 'bg-gray-200'}`}
                     >
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${flowButtonEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${flowButtonEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
                     </button>
                   </div>
 
