@@ -1,0 +1,130 @@
+Create a demo chatbot flow named "Product Promotion Flow" using the existing chatbot builder nodes.
+
+Purpose:
+When a customer receives a WhatsApp Marketing Template from a Campaign and clicks the Quick Reply button "Interested" or "Buy Now", this chatbot flow should start automatically.
+
+Flow:
+
+1. Start Node
+
+↓
+
+2. Text Reply
+Message:
+"👋 Hi {{customer_name}},
+Thank you for your interest in our products."
+
+↓
+
+3. Text Reply
+Message:
+"How can I help you today?"
+
+↓
+
+4. List Reply
+Title:
+Choose an option
+
+Options:
+• View Products
+• Pricing
+• Buy Now
+• Talk to Sales
+
+--------------------------------------------------
+
+If user selects "View Products"
+
+↓
+
+Text Reply
+"Here are our featured products."
+
+↓
+
+Media Reply
+Display 3 dummy product images with product names.
+
+↓
+
+CTA Button
+Button:
+Visit Website
+URL:
+https://demo.yourwebsite.com
+
+--------------------------------------------------
+
+If user selects "Pricing"
+
+↓
+
+Text Reply
+"Our latest pricing is shown below."
+
+↓
+
+Text Reply
+Display dummy pricing.
+
+↓
+
+CTA Button
+Visit Website
+
+--------------------------------------------------
+
+If user selects "Buy Now"
+
+↓
+
+Text Reply
+"Great! Click below to continue."
+
+↓
+
+CTA Button
+Visit Website
+
+--------------------------------------------------
+
+If user selects "Talk to Sales"
+
+↓
+
+Text Reply
+"Our sales team will contact you shortly."
+
+↓
+
+End
+
+--------------------------------------------------
+
+After Website Visit
+
+↓
+
+Text Reply
+
+"Thank you for visiting our website.
+
+Complete the demo purchase to place your dummy order."
+
+↓
+
+Text Reply
+
+"🎉 Your demo order has been placed successfully.
+
+Thank you for choosing us."
+
+End Flow
+
+Requirements:
+- Use only the existing nodes available in the chatbot builder.
+- Connect every node correctly.
+- Make the flow visual and easy to understand.
+- Keep it rule-based (no AI).
+- This is only a demo flow for a product marketing campaign.
