@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown } from 'lucide-react';
+import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown, Plus, Trash2, Phone, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 
@@ -40,10 +40,21 @@ export default function AddTemplate() {
   const [footerText, setFooterText] = useState('');
   const [samples, setSamples] = useState<Record<number, string>>({});
 
+  // ── Buttons ────────────────────────────────────────────────────────────────
+  type ButtonMode = 'NONE' | 'QUICK_REPLY' | 'CTA';
+  const [buttonMode, setButtonMode] = useState<ButtonMode>('NONE');
+  const [quickReplies, setQuickReplies] = useState(['', '', '']);
+  const [ctaUrl, setCtaUrl] = useState({ enabled: false, text: 'Visit Website', url: '' });
+  const [ctaPhone, setCtaPhone] = useState({ enabled: false, text: 'Call Us', phone: '' });
+
   // ── Flow button fields ─────────────────────────────────────────────────────
   const [flowButtonEnabled, setFlowButtonEnabled] = useState(false);
   const [selectedFlowId, setSelectedFlowId] = useState('');
   const [flowButtonText, setFlowButtonText] = useState('Open Form');
+
+  // ── Linked Chatbot ─────────────────────────────────────────────────────────
+  const [linkedChatbotEnabled, setLinkedChatbotEnabled] = useState(false);
+  const [linkedChatbotId, setLinkedChatbotId] = useState('');
 
   const { data: flowsData } = useQuery<{ flows: Flow[] }>({
     queryKey: ['flows'],
@@ -51,6 +62,13 @@ export default function AddTemplate() {
   });
   const publishedFlows = (flowsData?.flows ?? []).filter(f => f.status === 'PUBLISHED' && f.metaFlowId);
   const selectedFlow = publishedFlows.find(f => f.id === selectedFlowId);
+
+  interface ChatbotFlow { id: string; name: string; status: string; }
+  const { data: chatbotData } = useQuery<{ flows: ChatbotFlow[] }>({
+    queryKey: ['chatbot-flows'],
+    queryFn: () => api.get('/chatbot/flows'),
+  });
+  const publishedChatbotFlows = (chatbotData?.flows ?? []).filter(f => f.status === 'PUBLISHED');
 
   // ── AUTHENTICATION fields ──────────────────────────────────────────────────
   const [addSecurityRec, setAddSecurityRec] = useState(true);
@@ -108,6 +126,17 @@ export default function AddTemplate() {
           }
         : undefined;
 
+      // Build button payload based on active mode
+      const qrButtons = !fb && buttonMode === 'QUICK_REPLY'
+        ? quickReplies.filter(r => r.trim()).slice(0, 3)
+        : undefined;
+      const ctaButtonsList = !fb && buttonMode === 'CTA'
+        ? [
+            ...(ctaUrl.enabled ? [{ type: 'URL', text: ctaUrl.text.trim() || 'Visit Website', value: ctaUrl.url }] : []),
+            ...(ctaPhone.enabled ? [{ type: 'PHONE_NUMBER', text: ctaPhone.text.trim() || 'Call Us', value: ctaPhone.phone }] : []),
+          ]
+        : undefined;
+
       return api.post('/templates', {
         name,
         category,
@@ -119,6 +148,9 @@ export default function AddTemplate() {
         bodySamples: bodySamples.length > 0 ? bodySamples : undefined,
         headerSample: headerSample || undefined,
         flowButton: fb,
+        quickReplies: qrButtons,
+        ctaButtons: ctaButtonsList,
+        linkedChatbotFlowId: linkedChatbotEnabled && linkedChatbotId ? linkedChatbotId : undefined,
       });
     },
     onSuccess: () => {
@@ -144,6 +176,15 @@ export default function AddTemplate() {
     if (!isAuth && flowButtonEnabled && !selectedFlowId) {
       toast.error('Please select a flow to attach, or disable the flow button');
       return;
+    }
+    if (!isAuth && buttonMode === 'QUICK_REPLY') {
+      const filled = quickReplies.filter(r => r.trim());
+      if (filled.length === 0) { toast.error('Add at least one Quick Reply button label'); return; }
+    }
+    if (!isAuth && buttonMode === 'CTA') {
+      if (!ctaUrl.enabled && !ctaPhone.enabled) { toast.error('Enable at least one CTA button'); return; }
+      if (ctaUrl.enabled && !ctaUrl.url.trim()) { toast.error('Enter a URL for the Website button'); return; }
+      if (ctaPhone.enabled && !ctaPhone.phone.trim()) { toast.error('Enter a phone number for the Call button'); return; }
     }
     submitMutation.mutate();
   };
@@ -436,6 +477,193 @@ export default function AddTemplate() {
                   />
                 </div>
 
+                {/* Buttons */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      Buttons <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <p className="text-xs text-gray-400 mt-0.5">Add up to 3 Quick Reply buttons or CTA buttons (URL / Phone).</p>
+                  </div>
+
+                  {/* Mode picker */}
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { value: 'NONE', label: 'None' },
+                      { value: 'QUICK_REPLY', label: '⚡ Quick Reply' },
+                      { value: 'CTA', label: '🔗 Call-to-Action' },
+                    ] as { value: ButtonMode; label: string }[]).map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setButtonMode(opt.value);
+                          if (opt.value !== 'NONE') setFlowButtonEnabled(false);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                          buttonMode === opt.value
+                            ? 'bg-primary/10 border-primary text-primary font-medium'
+                            : 'hover:bg-gray-50 text-gray-600 border-gray-200'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Quick Reply inputs */}
+                  {buttonMode === 'QUICK_REPLY' && (
+                    <div className="border rounded-lg p-4 space-y-2 bg-purple-50 border-purple-100">
+                      <p className="text-xs text-purple-800 mb-3">
+                        When a customer taps a Quick Reply, the chatbot will be triggered automatically using the button text as the intent keyword.
+                      </p>
+                      {quickReplies.map((reply, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="text-xs font-mono w-5 text-center text-gray-400">{i + 1}</span>
+                          <input
+                            type="text"
+                            value={reply}
+                            onChange={e => {
+                              const next = [...quickReplies];
+                              next[i] = e.target.value;
+                              setQuickReplies(next);
+                            }}
+                            placeholder={['e.g. Interested', 'e.g. Buy Now', 'e.g. Talk to Sales'][i]}
+                            maxLength={25}
+                            className="flex-1 px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-primary focus:border-primary bg-white"
+                          />
+                          {reply && (
+                            <button type="button" onClick={() => { const next = [...quickReplies]; next[i] = ''; setQuickReplies(next); }} className="text-gray-400 hover:text-gray-600">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <p className="text-xs text-gray-400 pt-1">Max 25 characters per button · Up to 3 buttons</p>
+                    </div>
+                  )}
+
+                  {/* CTA inputs */}
+                  {buttonMode === 'CTA' && (
+                    <div className="border rounded-lg p-4 space-y-4 bg-blue-50 border-blue-100">
+                      {/* URL button */}
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={ctaUrl.enabled}
+                            onChange={e => setCtaUrl(v => ({ ...v, enabled: e.target.checked }))}
+                            className="accent-primary"
+                          />
+                          <Link className="w-4 h-4 text-blue-500" />
+                          <span className="text-sm font-medium text-gray-800">Website URL button</span>
+                        </label>
+                        {ctaUrl.enabled && (
+                          <div className="ml-6 space-y-2">
+                            <input
+                              type="text"
+                              value={ctaUrl.text}
+                              onChange={e => setCtaUrl(v => ({ ...v, text: e.target.value }))}
+                              placeholder="Button label"
+                              maxLength={25}
+                              className="w-full px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-primary focus:border-primary bg-white"
+                            />
+                            <input
+                              type="url"
+                              value={ctaUrl.url}
+                              onChange={e => setCtaUrl(v => ({ ...v, url: e.target.value }))}
+                              placeholder="https://yourwebsite.com"
+                              className="w-full px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-primary focus:border-primary bg-white"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Phone button */}
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={ctaPhone.enabled}
+                            onChange={e => setCtaPhone(v => ({ ...v, enabled: e.target.checked }))}
+                            className="accent-primary"
+                          />
+                          <Phone className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium text-gray-800">Phone Number button</span>
+                        </label>
+                        {ctaPhone.enabled && (
+                          <div className="ml-6 space-y-2">
+                            <input
+                              type="text"
+                              value={ctaPhone.text}
+                              onChange={e => setCtaPhone(v => ({ ...v, text: e.target.value }))}
+                              placeholder="Button label"
+                              maxLength={25}
+                              className="w-full px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-primary focus:border-primary bg-white"
+                            />
+                            <input
+                              type="tel"
+                              value={ctaPhone.phone}
+                              onChange={e => setCtaPhone(v => ({ ...v, phone: e.target.value }))}
+                              placeholder="+91 98765 43210"
+                              className="w-full px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-primary focus:border-primary bg-white"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400">You can enable one or both CTA buttons.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Linked Chatbot */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                      <MessageSquare className="w-4 h-4 text-indigo-500" />
+                      Linked Chatbot
+                      <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setLinkedChatbotEnabled(v => !v)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${linkedChatbotEnabled ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${linkedChatbotEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {linkedChatbotEnabled && (
+                    <div className="border rounded-lg p-4 space-y-3 bg-indigo-50 border-indigo-100">
+                      <p className="text-xs text-indigo-800">
+                        When a customer taps a Quick Reply button on this template, the selected chatbot flow will start automatically — skipping keyword matching.
+                      </p>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-gray-700">Select Chatbot Flow</label>
+                        {publishedChatbotFlows.length === 0 ? (
+                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            No published chatbot flows found. Build and publish a flow in the Chatbot Builder first.
+                          </p>
+                        ) : (
+                          <div className="relative">
+                            <select
+                              value={linkedChatbotId}
+                              onChange={e => setLinkedChatbotId(e.target.value)}
+                              className="w-full px-3 py-2 pr-8 border rounded-lg text-sm bg-white outline-none appearance-none focus:ring-indigo-400 focus:border-indigo-400"
+                            >
+                              <option value="">— Choose a chatbot flow —</option>
+                              {publishedChatbotFlows.map(f => (
+                                <option key={f.id} value={f.id}>{f.name}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Flow Button */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -446,7 +674,7 @@ export default function AddTemplate() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => setFlowButtonEnabled(v => !v)}
+                      onClick={() => { setFlowButtonEnabled(v => !v); if (!flowButtonEnabled) setButtonMode('NONE'); }}
                       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${flowButtonEnabled ? 'bg-primary' : 'bg-gray-200'}`}
                     >
                       <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${flowButtonEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -544,57 +772,93 @@ export default function AddTemplate() {
             </div>
 
             <div className="pt-16 pb-4 h-full overflow-y-auto flex flex-col">
-              <div className="bg-white rounded-lg rounded-tl-none p-3 shadow-sm text-sm text-gray-800 max-w-[90%] self-start">
-                {isAuth ? (
-                  /* Authentication preview */
-                  <div className="space-y-2">
-                    <p className="font-semibold text-gray-900">482913 is your verification code.</p>
-                    {addSecurityRec && (
-                      <p className="text-gray-500 text-xs">For your security, never share this code.</p>
-                    )}
-                    {enableExpiry && (
-                      <p className="text-gray-400 text-xs">This code expires in {codeExpiry} minutes.</p>
-                    )}
-                    <div className="border-t pt-2 mt-2">
-                      <button className="w-full text-center text-[#0084ff] text-sm font-medium py-1">
-                        {otpType === 'COPY_CODE' ? '📋 Copy Code' : '✅ Autofill'}
+              <div className="self-start max-w-[90%]">
+                {/* Message bubble */}
+                <div className={`bg-white p-3 shadow-sm text-sm text-gray-800 ${
+                  !isAuth && buttonMode === 'CTA' && (ctaUrl.enabled || ctaPhone.enabled)
+                    ? 'rounded-lg rounded-tl-none rounded-b-none'
+                    : 'rounded-lg rounded-tl-none'
+                }`}>
+                  {isAuth ? (
+                    /* Authentication preview */
+                    <div className="space-y-2">
+                      <p className="font-semibold text-gray-900">482913 is your verification code.</p>
+                      {addSecurityRec && (
+                        <p className="text-gray-500 text-xs">For your security, never share this code.</p>
+                      )}
+                      {enableExpiry && (
+                        <p className="text-gray-400 text-xs">This code expires in {codeExpiry} minutes.</p>
+                      )}
+                      <div className="border-t pt-2 mt-2">
+                        <button className="w-full text-center text-[#0084ff] text-sm font-medium py-1">
+                          {otpType === 'COPY_CODE' ? '📋 Copy Code' : '✅ Autofill'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Marketing / Utility preview */
+                    <>
+                      {headerType !== 'NONE' && (
+                        <div className="mb-2 w-full aspect-video bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                          {headerType === 'IMAGE' && <ImageIcon className="w-6 h-6" />}
+                          {headerType === 'VIDEO' && <Video className="w-6 h-6" />}
+                          {headerType === 'DOCUMENT' && <FileText className="w-6 h-6" />}
+                          {headerType === 'TEXT' && (
+                            <span className="font-bold text-gray-800 p-2 text-center">
+                              {applySamples(headerContent || 'HEADER TEXT', samples)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <div className="whitespace-pre-wrap leading-relaxed">
+                        {applySamples(bodyText, samples)}
+                      </div>
+                      {footerText && (
+                        <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500">
+                          {footerText}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {!isAuth && flowButtonEnabled && (flowButtonText || selectedFlow) && (
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      <button className="w-full text-center text-[#0084ff] text-sm font-medium py-1 flex items-center justify-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5" />
+                        {flowButtonText || 'Open Form'}
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  /* Marketing / Utility preview */
-                  <>
-                    {headerType !== 'NONE' && (
-                      <div className="mb-2 w-full aspect-video bg-gray-200 rounded flex items-center justify-center text-gray-400">
-                        {headerType === 'IMAGE' && <ImageIcon className="w-6 h-6" />}
-                        {headerType === 'VIDEO' && <Video className="w-6 h-6" />}
-                        {headerType === 'DOCUMENT' && <FileText className="w-6 h-6" />}
-                        {headerType === 'TEXT' && (
-                          <span className="font-bold text-gray-800 p-2 text-center">
-                            {applySamples(headerContent || 'HEADER TEXT', samples)}
-                          </span>
-                        )}
+                  )}
+                  <div className="text-[10px] text-gray-400 text-right mt-1">12:00 PM</div>
+                </div>
+
+                {/* CTA buttons — attached below bubble with dividers */}
+                {!isAuth && buttonMode === 'CTA' && (ctaUrl.enabled || ctaPhone.enabled) && (
+                  <div className="bg-white rounded-b-lg shadow-sm overflow-hidden border-t border-gray-100">
+                    {ctaUrl.enabled && (
+                      <div className="px-3 py-2 text-xs text-[#0084ff] text-center flex items-center justify-center gap-1 border-t border-gray-100 first:border-t-0">
+                        <Link className="w-3 h-3" />
+                        {ctaUrl.text || 'Visit Website'}
                       </div>
                     )}
-                    <div className="whitespace-pre-wrap leading-relaxed">
-                      {applySamples(bodyText, samples)}
-                    </div>
-                    {footerText && (
-                      <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500">
-                        {footerText}
+                    {ctaPhone.enabled && (
+                      <div className="px-3 py-2 text-xs text-[#0084ff] text-center flex items-center justify-center gap-1 border-t border-gray-100">
+                        <Phone className="w-3 h-3" />
+                        {ctaPhone.text || 'Call Us'}
                       </div>
                     )}
-                  </>
-                )}
-                {!isAuth && flowButtonEnabled && (flowButtonText || selectedFlow) && (
-                  <div className="mt-2 pt-2 border-t border-gray-100">
-                    <button className="w-full text-center text-[#0084ff] text-sm font-medium py-1 flex items-center justify-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5" />
-                      {flowButtonText || 'Open Form'}
-                    </button>
                   </div>
                 )}
-                <div className="text-[10px] text-gray-400 text-right mt-1">12:00 PM</div>
+
+                {/* Quick Reply pills — appear below bubble */}
+                {!isAuth && buttonMode === 'QUICK_REPLY' && quickReplies.some(r => r.trim()) && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {quickReplies.filter(r => r.trim()).map((reply, i) => (
+                      <div key={i} className="bg-white rounded-full px-3 py-1 text-[11px] text-[#0084ff] font-medium border border-white shadow-sm whitespace-nowrap">
+                        {reply}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

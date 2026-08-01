@@ -71,6 +71,51 @@ const MAX_STEPS = 25;
 // ── Public Entry Point ─────────────────────────────────────────────────────────
 
 /**
+ * Directly execute a specific published chatbot flow by its MongoDB ID,
+ * bypassing trigger resolution. Used when a template's linked chatbot is set.
+ */
+export async function runChatbotFlowById(
+  flowId: string,
+  contactId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId,
+  ctx: IncomingContext,
+): Promise<void> {
+  const contact = await ContactModel.findById(contactId).lean() as Record<string, unknown> | null;
+  if (!contact) return;
+
+  const flow = await ChatbotFlowModel.findOne({
+    _id: new mongoose.Types.ObjectId(flowId),
+    userId,
+    status: "PUBLISHED",
+  }).lean() as ChatbotFlow | null;
+
+  if (!flow) {
+    logger.warn({ flowId }, "Linked chatbot flow not found or not published");
+    return;
+  }
+
+  const phone = (contact["phone"] as string).replace(/\s+/g, "");
+
+  // Clear any existing session so the linked flow starts fresh
+  await clearSession(contactId);
+
+  const startNode = flow.nodes.find((n) => n.type === "start");
+  const firstEdge = flow.edges.find((e) => e.source === startNode?.id);
+  const startNodeId = firstEdge?.target ?? startNode?.id;
+
+  if (!startNodeId) {
+    logger.warn({ flowId }, "Linked chatbot flow has no start node");
+    return;
+  }
+
+  // Store the button text as a session variable so the flow can branch on intent
+  const variables: Record<string, unknown> = {};
+  if (ctx.text) variables["intent"] = ctx.text;
+
+  await executeFlow(flow, startNodeId, phone, contact, userId, contactId, variables);
+}
+
+/**
  * Called from the webhook after every inbound message that should be handled
  * by the chatbot (i.e. text messages and interactive button/list replies —
  * NOT WhatsApp Flow form submissions).

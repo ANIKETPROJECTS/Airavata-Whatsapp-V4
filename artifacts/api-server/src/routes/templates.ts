@@ -12,6 +12,7 @@ import {
   sendTemplateMessage,
   type TemplateCategory,
   type HeaderType,
+  type CtaButtonParam,
 } from "../lib/whatsapp";
 
 const router = Router();
@@ -32,6 +33,8 @@ function shape(t: Record<string, unknown> & { _id: unknown; createdAt?: unknown;
     headerContent: t.headerContent,
     body: t.body,
     footer: t.footer,
+    buttons: (t.buttons as unknown[] | undefined) ?? [],
+    linkedChatbotFlowId: t.linkedChatbotFlowId ? String(t.linkedChatbotFlowId) : null,
     status: t.status,
     rejectionReason: t.rejectionReason,
     metaTemplateId: t.metaTemplateId,
@@ -94,10 +97,17 @@ router.post("/templates", authenticate, async (req: AuthRequest, res) => {
       addSecurityRecommendation, codeExpirationMinutes, otpType,
       // Flow button
       flowButton,
+      // Quick-reply / CTA buttons
+      quickReplies,
+      ctaButtons,
+      // Linked chatbot
+      linkedChatbotFlowId,
     } = req.body as Record<string, unknown>;
 
     type FlowButtonInput = { flowId: string; flowName?: string; text: string; navigateScreen: string };
     const fb = flowButton as FlowButtonInput | undefined;
+    const qr = Array.isArray(quickReplies) ? (quickReplies as string[]).filter((s) => s.trim()) : undefined;
+    const cta = Array.isArray(ctaButtons) ? (ctaButtons as CtaButtonParam[]) : undefined;
 
     const cat = toUpper(category, "MARKETING") as TemplateCategory;
 
@@ -122,7 +132,19 @@ router.post("/templates", authenticate, async (req: AuthRequest, res) => {
       codeExpirationMinutes: codeExpirationMinutes ? Number(codeExpirationMinutes) : undefined,
       otpType: otpType ? String(otpType) as import("../lib/whatsapp").OtpType : undefined,
       flowButton: fb ? { flowId: fb.flowId, text: fb.text, navigateScreen: fb.navigateScreen } : undefined,
+      quickReplies: qr,
+      ctaButtons: cta,
     });
+
+    // Build MongoDB buttons array from whichever mode is active
+    let dbButtons: Array<{ type: string; text: string; value?: string; flowId?: string; flowName?: string; navigateScreen?: string }> = [];
+    if (fb) {
+      dbButtons = [{ type: "FLOW", text: fb.text, flowId: fb.flowId, flowName: fb.flowName, navigateScreen: fb.navigateScreen }];
+    } else if (qr && qr.length > 0) {
+      dbButtons = qr.slice(0, 3).map((text) => ({ type: "QUICK_REPLY", text }));
+    } else if (cta && cta.length > 0) {
+      dbButtons = cta.slice(0, 2).map((btn) => ({ type: btn.type, text: btn.text, value: btn.value }));
+    }
 
     const template = await TemplateModel.create({
       userId: req.user!.userId,
@@ -135,9 +157,8 @@ router.post("/templates", authenticate, async (req: AuthRequest, res) => {
       footer,
       status: metaResult.status ?? "PENDING",
       metaTemplateId: metaResult.id,
-      buttons: fb
-        ? [{ type: "FLOW", text: fb.text, flowId: fb.flowId, flowName: fb.flowName, navigateScreen: fb.navigateScreen }]
-        : [],
+      buttons: dbButtons,
+      ...(linkedChatbotFlowId ? { linkedChatbotFlowId } : {}),
     });
 
     res.status(201).json({ template: shape(template.toObject()) });

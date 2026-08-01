@@ -24,6 +24,8 @@ const templateSchema = new Schema(
     body: { type: String, required: true },
     footer: { type: String },
     buttons: [templateButtonSchema],
+    /** Optional: auto-launch this chatbot flow when a Quick Reply button is tapped */
+    linkedChatbotFlowId: { type: Schema.Types.ObjectId, ref: "ChatbotFlow" },
     status: { type: String, enum: ["PENDING", "APPROVED", "REJECTED"], default: "PENDING" },
     rejectionReason: { type: String },
     metaTemplateId: { type: String },

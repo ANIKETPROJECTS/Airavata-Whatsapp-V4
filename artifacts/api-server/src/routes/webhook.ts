@@ -11,9 +11,10 @@ import { ContactModel } from "../models/Contact";
 import { UserModel } from "../models/User";
 import { CampaignModel } from "../models/Campaign";
 import { FlowModel } from "../models/Flow";
+import { TemplateModel } from "../models/Template";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger";
-import { runChatbotEngine } from "../lib/chatbotEngine";
+import { runChatbotEngine, runChatbotFlowById } from "../lib/chatbotEngine";
 
 const router = Router();
 
@@ -164,6 +165,11 @@ async function handleIncomingMessage(
   if (msg.type === "text") {
     body = msg.text?.body;
     runChatbot = true;
+  } else if (msg.type === "button") {
+    // User tapped a Quick Reply button on a template message
+    body = msg.button?.text ?? msg.button?.payload ?? "[button]";
+    runChatbot = true;
+    logger.info({ payload: msg.button?.payload, text: msg.button?.text }, "Template quick-reply button tapped");
   } else if (msg.type === "image") {
     body = "[Image]";
   } else if (msg.type === "document") {
@@ -246,9 +252,58 @@ async function handleIncomingMessage(
 
   // Fire chatbot engine for text messages and interactive button/list replies
   if (runChatbot) {
-    runChatbotEngine(contactId, userId, { text: body, interactiveReplyId }).catch((err) =>
-      logger.error({ err: String(err) }, "Chatbot engine error"),
+    // For template Quick Reply taps: check if the template has a linked chatbot flow
+    // and run it directly, bypassing keyword matching.
+    const didRunLinked = await tryRunLinkedChatbot(contactId, userId, body, interactiveReplyId);
+    if (!didRunLinked) {
+      runChatbotEngine(contactId, userId, { text: body, interactiveReplyId }).catch((err) =>
+        logger.error({ err: String(err) }, "Chatbot engine error"),
+      );
+    }
+  }
+}
+
+/**
+ * If the contact's most recent inbound-triggering message came from a template
+ * with a linkedChatbotFlowId, run that flow directly and return true.
+ * Returns false if no linked flow was found so the caller can fall back to
+ * the normal keyword/start-trigger engine.
+ */
+async function tryRunLinkedChatbot(
+  contactId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId,
+  buttonText: string | undefined,
+  interactiveReplyId: string | undefined,
+): Promise<boolean> {
+  try {
+    // Find the most recent outbound template message sent to this contact
+    const lastTemplatMsg = await MessageModel.findOne({
+      contactId,
+      direction: "OUTBOUND",
+      templateId: { $exists: true, $ne: null },
+    }).sort({ createdAt: -1 }).lean();
+
+    if (!lastTemplatMsg?.templateId) return false;
+
+    const template = await TemplateModel.findById(lastTemplatMsg.templateId).lean();
+    if (!template?.linkedChatbotFlowId) return false;
+
+    logger.info(
+      { templateId: String(lastTemplatMsg.templateId), flowId: String(template.linkedChatbotFlowId) },
+      "Template Quick Reply → launching linked chatbot flow",
     );
+
+    runChatbotFlowById(
+      String(template.linkedChatbotFlowId),
+      contactId,
+      userId,
+      { text: buttonText, interactiveReplyId },
+    ).catch((err) => logger.error({ err: String(err) }, "Linked chatbot flow error"));
+
+    return true;
+  } catch (err) {
+    logger.error({ err: String(err) }, "tryRunLinkedChatbot error");
+    return false;
   }
 }
 
@@ -314,6 +369,8 @@ interface WebhookMessage {
   image?: { id: string; mime_type: string };
   document?: { id: string; filename?: string };
   audio?: { id: string };
+  /** Sent when a user taps a Quick Reply button on a template message */
+  button?: { payload: string; text: string };
   interactive?: {
     type: string;
     nfm_reply?: { name: string; response_json: string; body: string };

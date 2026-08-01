@@ -92,6 +92,13 @@ export interface FlowButtonParams {
   navigateScreen: string;
 }
 
+export interface CtaButtonParam {
+  type: "URL" | "PHONE_NUMBER";
+  text: string;
+  /** URL for type=URL, E.164 phone for type=PHONE_NUMBER */
+  value: string;
+}
+
 export interface CreateTemplateParams {
   name: string;
   category: TemplateCategory;
@@ -107,6 +114,10 @@ export interface CreateTemplateParams {
   headerSample?: string;
   /** Attach a WhatsApp Flow as a CTA button */
   flowButton?: FlowButtonParams;
+  /** Up to 3 quick-reply button labels (mutually exclusive with ctaButtons / flowButton) */
+  quickReplies?: string[];
+  /** Up to 2 CTA buttons: URL and/or PHONE_NUMBER (mutually exclusive with quickReplies / flowButton) */
+  ctaButtons?: CtaButtonParam[];
   // ── AUTHENTICATION-only fields ──────────────────────────────────────────────
   /** Show "For your security, never share this code." recommendation line */
   addSecurityRecommendation?: boolean;
@@ -175,6 +186,7 @@ export async function createMetaTemplate(params: CreateTemplateParams) {
     components.push({ type: "FOOTER", text: params.footer });
   }
 
+  // ── Buttons — only one mode can be active (flow / quick-reply / cta) ─────────
   if (params.flowButton) {
     components.push({
       type: "BUTTONS",
@@ -187,6 +199,23 @@ export async function createMetaTemplate(params: CreateTemplateParams) {
           flow_action: "navigate",
         },
       ],
+    } as unknown as Component);
+  } else if (params.quickReplies && params.quickReplies.length > 0) {
+    components.push({
+      type: "BUTTONS",
+      buttons: params.quickReplies.slice(0, 3).map((text) => ({
+        type: "QUICK_REPLY",
+        text: text.slice(0, 25),
+      })),
+    } as unknown as Component);
+  } else if (params.ctaButtons && params.ctaButtons.length > 0) {
+    components.push({
+      type: "BUTTONS",
+      buttons: params.ctaButtons.slice(0, 2).map((btn) =>
+        btn.type === "URL"
+          ? { type: "URL", text: btn.text.slice(0, 25), url: btn.value }
+          : { type: "PHONE_NUMBER", text: btn.text.slice(0, 25), phone_number: btn.value },
+      ),
     } as unknown as Component);
   }
 
