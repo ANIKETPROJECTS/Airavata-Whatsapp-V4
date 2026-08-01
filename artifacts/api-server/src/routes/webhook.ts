@@ -158,6 +158,7 @@ async function handleIncomingMessage(
   let flowId: mongoose.Types.ObjectId | undefined;
   let interactiveReplyId: string | undefined; // button_reply / list_reply ID for chatbot engine
   let runChatbot = false; // only fire engine for text + interactive button/list replies
+  let isTemplateQuickReply = false; // true only for template quick-reply button taps (msg.type === "button")
 
   // DEBUG: log full raw message to diagnose interactive parsing
   logger.info({ rawMsg: JSON.stringify(msg) }, "RAW incoming message");
@@ -169,6 +170,7 @@ async function handleIncomingMessage(
     // User tapped a Quick Reply button on a template message
     body = msg.button?.text ?? msg.button?.payload ?? "[button]";
     runChatbot = true;
+    isTemplateQuickReply = true;
     logger.info({ payload: msg.button?.payload, text: msg.button?.text }, "Template quick-reply button tapped");
   } else if (msg.type === "image") {
     body = "[Image]";
@@ -252,9 +254,13 @@ async function handleIncomingMessage(
 
   // Fire chatbot engine for text messages and interactive button/list replies
   if (runChatbot) {
-    // For template Quick Reply taps: check if the template has a linked chatbot flow
-    // and run it directly, bypassing keyword matching.
-    const didRunLinked = await tryRunLinkedChatbot(contactId, userId, body, interactiveReplyId);
+    // Only try the linked-template shortcut for actual template quick-reply taps
+    // (msg.type === "button"). Interactive button_reply / list_reply messages are
+    // responses to CTA buttons sent *by* a running flow and must resume the session
+    // via runChatbotEngine — not restart the linked flow from scratch.
+    const didRunLinked =
+      isTemplateQuickReply &&
+      (await tryRunLinkedChatbot(contactId, userId, body, interactiveReplyId));
     if (!didRunLinked) {
       runChatbotEngine(contactId, userId, { text: body, interactiveReplyId }).catch((err) =>
         logger.error({ err: String(err) }, "Chatbot engine error"),
