@@ -236,7 +236,7 @@ export default function ManageTemplates() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 overflow-y-auto h-full">
       {testTarget && (
         <SendTestDialog template={testTarget} onClose={() => setTestTarget(null)} />
       )}

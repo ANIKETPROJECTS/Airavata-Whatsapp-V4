@@ -65,7 +65,7 @@ export default function AddTemplate() {
 
   interface ChatbotFlow { id: string; name: string; status: string; }
   const { data: chatbotData } = useQuery<{ flows: ChatbotFlow[] }>({
-    queryKey: ['chatbot-flows'],
+    queryKey: ['chatbot-flows-picker'],
     queryFn: () => api.get('/chatbot/flows'),
   });
   const publishedChatbotFlows = (chatbotData?.flows ?? []).filter(f => f.status === 'PUBLISHED');
@@ -202,7 +202,7 @@ export default function AddTemplate() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+    <div className="p-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 overflow-y-auto h-full">
       {/* ── Form ─────────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Add Template</h1>
