@@ -465,7 +465,7 @@ export async function sendInteractiveList(
         action: {
           button: buttonText.slice(0, 20),
           sections: sections.map((s) => ({
-            title: s.title,
+            title: s.title.slice(0, 24),
             rows: s.rows.map((r) => ({
               id: r.id,
               title: r.title.slice(0, 24),
