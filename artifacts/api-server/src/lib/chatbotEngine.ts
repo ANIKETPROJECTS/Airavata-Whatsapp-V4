@@ -360,10 +360,13 @@ async function executeNode(
         const body = interpolate(String(d["body"] ?? ""), variables, contact);
         const footer = d["footer"] ? String(d["footer"]) : undefined;
         const buttons = (d["buttons"] as Array<{ id: string; title: string }> | undefined) ?? [];
-        if (body && buttons.length > 0) {
-          await sendInteractiveButtons(phone, body, footer, buttons);
-          await storeOutbound(userId, contactId, body);
+        if (!body || buttons.length === 0) {
+          logger.warn({ nodeId: node.id, body, buttonCount: buttons.length }, "ctaButton node skipped — body or buttons missing");
+          return {}; // don't hang: advance to next node
         }
+        logger.info({ nodeId: node.id, body, buttonCount: buttons.length }, "Sending interactive buttons");
+        await sendInteractiveButtons(phone, body, footer, buttons);
+        await storeOutbound(userId, contactId, body);
         return { waitForInput: true };
       }
 
@@ -373,14 +376,33 @@ async function executeNode(
         const body = interpolate(String(d["body"] ?? ""), variables, contact);
         const footer = d["footer"] ? String(d["footer"]) : undefined;
         const buttonText = String(d["buttonText"] ?? "Select");
-        const sections = (d["sections"] as Array<{
+        const rawSections = (d["sections"] as Array<{
           title: string;
           rows: Array<{ id: string; title: string; description?: string }>;
         }> | undefined) ?? [];
-        if (body && sections.length > 0) {
-          await sendInteractiveList(phone, header, body, footer, buttonText, sections);
-          await storeOutbound(userId, contactId, body);
+
+        // Sanitize: ensure every section has a non-empty title (Meta rejects blank titles)
+        // and filter out rows with empty titles.
+        const sections = rawSections
+          .map((s, i) => ({
+            title: s.title?.trim() || `Section ${i + 1}`,
+            rows: (s.rows ?? []).filter((r) => r.title?.trim()),
+          }))
+          .filter((s) => s.rows.length > 0);
+
+        if (!body || sections.length === 0) {
+          logger.warn(
+            { nodeId: node.id, body, sectionCount: rawSections.length, sanitizedCount: sections.length },
+            "listReply node skipped — body or sections missing/empty after sanitization",
+          );
+          return {}; // don't hang: advance to next node
         }
+        logger.info(
+          { nodeId: node.id, body, sectionCount: sections.length, rowCounts: sections.map((s) => s.rows.length) },
+          "Sending interactive list",
+        );
+        await sendInteractiveList(phone, header, body, footer, buttonText, sections);
+        await storeOutbound(userId, contactId, body);
         return { waitForInput: true };
       }
 
