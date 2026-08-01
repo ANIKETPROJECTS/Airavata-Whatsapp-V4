@@ -57,7 +57,7 @@ export default function AddTemplate() {
   const [linkedChatbotId, setLinkedChatbotId] = useState('');
 
   const { data: flowsData } = useQuery<{ flows: Flow[] }>({
-    queryKey: ['flows'],
+    queryKey: ['whatsapp-flows'],
     queryFn: () => api.get('/flows'),
   });
   const publishedFlows = (flowsData?.flows ?? []).filter(f => f.status === 'PUBLISHED' && f.metaFlowId);
