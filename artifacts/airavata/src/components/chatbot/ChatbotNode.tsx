@@ -263,6 +263,20 @@ function NodePreview({ type, data }: { type: string; data: Record<string, unknow
   }
 }
 
+// ── Dynamic handle helpers ─────────────────────────────────────────────────
+
+/** Returns per-row handles for a listReply node derived from its data. */
+function getListReplyHandles(data: Record<string, unknown>) {
+  const sections = (data.sections as Array<{ rows: Array<{ id: string; title: string }> }> | undefined) ?? [];
+  return sections.flatMap((s) => s.rows ?? []).map((r) => ({ id: r.id, label: r.title }));
+}
+
+/** Returns per-button handles for a ctaButton node derived from its data. */
+function getCtaButtonHandles(data: Record<string, unknown>) {
+  const buttons = (data.buttons as Array<{ id: string; title: string }> | undefined) ?? [];
+  return buttons.map((b) => ({ id: b.id, label: b.title }));
+}
+
 // ── Main node component ────────────────────────────────────────────────────
 export const ChatbotNode = memo(({ data, selected, type }: {
   data: Record<string, unknown>;
@@ -273,7 +287,22 @@ export const ChatbotNode = memo(({ data, selected, type }: {
   if (!def) return null;
   const Icon = ICONS[def.icon] ?? MessageSquare;
   const isStart = type === 'start';
-  const hasMultiOutputs = def.outputHandles && def.outputHandles.length > 1;
+
+  // Determine output handles:
+  //   - listReply / ctaButton: dynamic, derived from node data
+  //   - other nodes with outputHandles: static from nodeConfig
+  //   - everything else: single default handle
+  const dynamicHandles: Array<{ id: string; label: string }> | null =
+    type === 'listReply'
+      ? getListReplyHandles(data)
+      : type === 'ctaButton'
+      ? getCtaButtonHandles(data)
+      : null;
+
+  const hasMultiOutputs =
+    dynamicHandles != null
+      ? dynamicHandles.length > 0
+      : (def.outputHandles && def.outputHandles.length > 1);
 
   return (
     <div
@@ -321,9 +350,10 @@ export const ChatbotNode = memo(({ data, selected, type }: {
 
       {/* Source handles */}
       {hasMultiOutputs ? (
-        def.outputHandles!.map((h, i) => {
-          const totalHandles = def.outputHandles!.length;
-          const pct = ((i + 1) / (totalHandles + 1)) * 100;
+        // Render one handle per dynamic row/button OR per static outputHandle
+        (dynamicHandles ?? def.outputHandles!.map((h) => ({ id: h.id, label: h.label, color: h.color }))).map((h, i, arr) => {
+          const pct = ((i + 1) / (arr.length + 1)) * 100;
+          const color = ('color' in h ? (h as { color: string }).color : null) ?? def.color;
           return (
             <div key={h.id}>
               <Handle
@@ -331,23 +361,23 @@ export const ChatbotNode = memo(({ data, selected, type }: {
                 position={Position.Bottom}
                 id={h.id}
                 style={{
-                  background: h.color,
+                  background: color,
                   width: 10,
                   height: 10,
                   border: '2px solid white',
                   bottom: -5,
                   left: `${pct}%`,
-                  boxShadow: `0 0 0 2px ${h.color}44`,
+                  boxShadow: `0 0 0 2px ${color}44`,
                 }}
               />
               <div
-                className="absolute text-[8px] font-bold px-1 rounded"
+                className="absolute text-[8px] font-bold px-1 rounded truncate max-w-[60px]"
                 style={{
                   bottom: -16,
                   left: `${pct}%`,
                   transform: 'translateX(-50%)',
-                  color: h.color,
-                  background: `${h.color}15`,
+                  color,
+                  background: `${color}15`,
                 }}
               >
                 {h.label}
