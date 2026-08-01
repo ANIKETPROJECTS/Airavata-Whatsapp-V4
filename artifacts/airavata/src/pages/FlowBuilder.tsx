@@ -16,7 +16,7 @@ import {
 
 // ── API calls ─────────────────────────────────────────────────────────────────
 
-const fetchFlows = () => api.get<{ flows: Flow[] }>('/flows').then(r => r.flows);
+const fetchFlows = () => api.get<{ flows: Flow[] }>('/flows').then(r => r.flows ?? []);
 const createFlow = (body: Partial<Flow>) => api.post<{ flow: Flow }>('/flows', body).then(r => r.flow);
 const updateFlow = (id: string, body: Partial<Flow>) => api.put<{ flow: Flow }>(`/flows/${id}`, body).then(r => r.flow);
 const deleteFlow = (id: string) => api.delete(`/flows/${id}`);
