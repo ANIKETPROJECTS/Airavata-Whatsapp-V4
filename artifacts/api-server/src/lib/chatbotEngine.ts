@@ -24,6 +24,7 @@ import {
   sendLocationMessage,
   sendTemplateMessage,
 } from "./whatsapp";
+import { resolvePricingLookup } from "./pricing";
 
 // ── Internal Types ─────────────────────────────────────────────────────────────
 
@@ -147,9 +148,13 @@ export async function runChatbotEngine(
         if (ctx.text) {
           replyVariables["list_reply"] = ctx.text;
           replyVariables["button_reply"] = ctx.text;
+          replyVariables["selected_option"] = ctx.text;
+          replyVariables["selected_value"] = ctx.text;
         }
         replyVariables["list_reply_id"] = ctx.interactiveReplyId;
         replyVariables["button_reply_id"] = ctx.interactiveReplyId;
+        replyVariables["selected_option_id"] = ctx.interactiveReplyId;
+        replyVariables["selected_value_id"] = ctx.interactiveReplyId;
 
         // Find the outgoing edge matching the button/row the user pressed
         const edge =
@@ -547,7 +552,7 @@ async function executeNode(
           ? interpolate(String(d["body"]), variables, contact)
           : undefined;
         const responseMapping =
-          (d["responseMapping"] as Array<{ responsePath: string; variableName: string }> | undefined) ?? [];
+          (d["responseMapping"] as Array<Record<string, unknown>> | undefined) ?? [];
 
         const headers: Record<string, string> = {};
         rawHeaders.forEach(({ key, value }) => {
@@ -556,15 +561,21 @@ async function executeNode(
 
         if (url) {
           try {
-            const res = await fetch(url, {
-              method,
-              headers,
-              body: ["GET", "HEAD"].includes(method) ? undefined : bodyStr,
-            });
-            const data = (await res.json()) as Record<string, unknown>;
+            const data = isBuiltInApiUrl(url)
+              ? await executeBuiltInApi(url, bodyStr, variables, contact)
+              : await fetchExternalApi(url, method, headers, bodyStr);
             for (const m of responseMapping) {
-              const val = getNestedValue(data, m.responsePath);
-              if (val !== undefined) variables[m.variableName] = val;
+              // Imported flows use path/variable; older saved flows used
+              // responsePath/variableName. Accept both formats.
+              const responsePath = String(
+                m["path"] ?? m["responsePath"] ?? m["response_path"] ?? "",
+              );
+              const variableName = String(
+                m["variable"] ?? m["variableName"] ?? m["variable_name"] ?? "",
+              ).replace(/^\{\{|\}\}$/g, "").trim();
+              if (!responsePath || !variableName) continue;
+              const val = getNestedValue(data, responsePath);
+              if (val !== undefined) variables[variableName] = val;
             }
           } catch (fetchErr) {
             logger.error({ fetchErr, url }, "Chatbot customApi node error");
@@ -727,12 +738,83 @@ function interpolate(
 }
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-  return path.split(".").reduce((acc: unknown, key) => {
+  const normalizedPath = path
+    .trim()
+    .replace(/^\$\.?/, "")
+    .replace(/\[(\d+)\]/g, ".$1")
+    .replace(/^\./, "");
+  if (!normalizedPath) return obj;
+  return normalizedPath.split(".").reduce((acc: unknown, key) => {
     if (acc !== null && typeof acc === "object") {
       return (acc as Record<string, unknown>)[key];
     }
     return undefined;
   }, obj);
+}
+
+function isBuiltInApiUrl(url: string): boolean {
+  const normalized = url.trim().toLowerCase();
+  return normalized === "airavata://pricing/lookup" ||
+    normalized === "/api/chatbot/pricing/lookup" ||
+    normalized.includes("your-backend.example.com/api/pricing/lookup") ||
+    normalized.includes("webhook.site/your-unique-url");
+}
+
+async function executeBuiltInApi(
+  url: string,
+  bodyStr: string | undefined,
+  variables: Record<string, unknown>,
+  contact: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const normalized = url.trim().toLowerCase();
+  let body: Record<string, unknown> = {};
+  if (bodyStr) {
+    try {
+      const parsed = JSON.parse(bodyStr) as unknown;
+      if (parsed && typeof parsed === "object") body = parsed as Record<string, unknown>;
+    } catch {
+      logger.warn({ url }, "Built-in chatbot API received a non-JSON body");
+    }
+  }
+
+  if (
+    normalized === "airavata://pricing/lookup" ||
+    normalized === "/api/chatbot/pricing/lookup" ||
+    normalized.includes("your-backend.example.com/api/pricing/lookup")
+  ) {
+    return resolvePricingLookup({
+      car_category: body["car_category"] ?? variables["car_category"] ?? contact["car_category"],
+      service: body["service"] ?? body["selected_service"] ?? variables["selected_service"],
+    }) as unknown as Record<string, unknown>;
+  }
+
+  // Keep imported demo booking flows usable without sending data to a fake
+  // webhook.site URL. This is a local acknowledgement, not an external CRM.
+  return {
+    booking_id: `AD-${Date.now().toString(36).toUpperCase()}`,
+    accepted: true,
+  };
+}
+
+async function fetchExternalApi(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  bodyStr: string | undefined,
+): Promise<Record<string, unknown>> {
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: ["GET", "HEAD"].includes(method) ? undefined : bodyStr,
+  });
+  const contentType = res.headers.get("content-type") ?? "";
+  const data = contentType.includes("json")
+    ? await res.json()
+    : { body: await res.text() };
+  if (!res.ok) throw new Error(`Custom API returned ${res.status}`);
+  return (data && typeof data === "object")
+    ? data as Record<string, unknown>
+    : { data };
 }
 
 function sleep(ms: number): Promise<void> {

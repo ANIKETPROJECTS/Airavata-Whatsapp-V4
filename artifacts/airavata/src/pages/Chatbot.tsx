@@ -29,6 +29,35 @@ interface LogEntry { level: string; message: string; nodeId?: string; timestamp:
 
 function nanoid() { return Math.random().toString(36).slice(2, 10); }
 
+function normalizeImportedNodes(rawNodes: unknown): Node[] {
+  if (!Array.isArray(rawNodes)) return [];
+  return rawNodes.map((rawNode) => {
+    const node = rawNode as Node;
+    if (node.type !== 'customApi' || !node.data) return node;
+
+    const data = { ...node.data };
+    const url = String(data.url ?? '').trim();
+    if (
+      url.includes('your-backend.example.com/api/pricing/lookup') ||
+      url === '/api/pricing/lookup'
+    ) {
+      data.url = 'airavata://pricing/lookup';
+      data.headers = [];
+    }
+
+    if (Array.isArray(data.responseMapping)) {
+      data.responseMapping = data.responseMapping.map((rawMapping) => {
+        const mapping = rawMapping as Record<string, unknown>;
+        return {
+          path: String(mapping.path ?? mapping.responsePath ?? mapping.response_path ?? ''),
+          variable: String(mapping.variable ?? mapping.variableName ?? mapping.variable_name ?? ''),
+        };
+      });
+    }
+    return { ...node, data };
+  });
+}
+
 // ── API helpers ─────────────────────────────────────────────────────────────
 const fetchFlows = () => api.get<{ flows: ChatbotFlowSummary[] }>('/chatbot/flows').then(r => r.flows);
 const fetchFlow = (id: string) => api.get<{ flow: ChatbotFlow }>(`/chatbot/flows/${id}`).then(r => r.flow);
@@ -671,11 +700,12 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
       if (!file) return;
       try {
         const data = JSON.parse(await file.text());
-        if (data.nodes) setNodes(data.nodes);
+        const importedNodes = normalizeImportedNodes(data.nodes);
+        if (data.nodes) setNodes(importedNodes);
         if (data.edges) setEdges(data.edges);
         if (data.name) setFlowName(data.name);
         toast.success('Flow imported');
-        scheduleAutoSave(data.nodes ?? nodes, data.edges ?? edges);
+        scheduleAutoSave(importedNodes.length ? importedNodes : nodes, data.edges ?? edges);
       } catch { toast.error('Invalid JSON file'); }
     };
     input.click();

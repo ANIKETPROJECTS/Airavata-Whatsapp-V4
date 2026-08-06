@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
+import { resolvePricingLookup } from "../lib/pricing";
 
 const router = Router();
 
@@ -129,6 +130,18 @@ router.post("/chatbot/flows/:id/restore", authenticate, async (req: AuthRequest,
   }
 });
 
+// ── POST /api/chatbot/pricing/lookup ─────────────────────────────────────────
+// Built-in resolver used by imported demo flows. It is also available as a
+// normal endpoint for testing or for flows configured with this URL.
+router.post("/chatbot/pricing/lookup", authenticate, (req, res) => {
+  res.json(resolvePricingLookup(req.body as {
+    car_category?: unknown;
+    category?: unknown;
+    service?: unknown;
+    selected_service?: unknown;
+  }));
+});
+
 // ── GET /api/chatbot/flows/:id/analytics ─────────────────────────────────────
 router.get("/chatbot/flows/:id/analytics", authenticate, async (req: AuthRequest, res) => {
   try {
@@ -193,6 +206,28 @@ router.post("/chatbot/test-api", authenticate, async (req: AuthRequest, res) => 
     (rawHeaders ?? []).forEach(({ key, value }) => {
       if (key.trim()) headersObj[key.trim()] = value;
     });
+
+    const isBuiltInPricing =
+      String(url).trim().toLowerCase() === "airavata://pricing/lookup" ||
+      String(url).trim().toLowerCase() === "/api/chatbot/pricing/lookup" ||
+      String(url).toLowerCase().includes("your-backend.example.com/api/pricing/lookup");
+    if (isBuiltInPricing) {
+      let parsedBody: Record<string, unknown> = {};
+      if (typeof body === "string" && body.trim()) {
+        try {
+          parsedBody = JSON.parse(body) as Record<string, unknown>;
+        } catch {
+          return res.status(400).json({ error: "Built-in pricing request body must be valid JSON" });
+        }
+      }
+      return res.json({
+        status: 200,
+        statusText: "OK",
+        elapsed: 0,
+        headers: { "content-type": "application/json" },
+        body: resolvePricingLookup(parsedBody),
+      });
+    }
 
     const start = Date.now();
     const fetchRes = await fetch(url, {
