@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Workflow, ArrowLeft, Send, Globe, Trash2,
-  Pencil, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox
+  Pencil, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox, CalendarDays
 } from 'lucide-react';
 import { api } from '../lib/api';
 import PhonePreview from '../components/flow/PhonePreview';
@@ -43,12 +43,13 @@ function StatusBadge({ status }: { status: Flow['status'] }) {
 function FlowModal({ flow, onClose, onSave }: {
   flow?: Flow | null;
   onClose: () => void;
-  onSave: (data: { name: string; categories: string[]; endpointUri?: string }) => void;
+  onSave: (data: { name: string; categories: string[]; endpointUri?: string; screens?: FlowScreen[] }) => void;
 }) {
   const [name, setName] = useState(flow?.name ?? '');
   const [categories, setCategories] = useState<string[]>(flow?.categories ?? ['OTHER']);
   const [endpointUri, setEndpointUri] = useState(flow?.endpointUri ?? '');
   const [isDynamic, setIsDynamic] = useState(!!flow?.endpointUri);
+  const [useAppointmentTemplate, setUseAppointmentTemplate] = useState(false);
 
   function toggleCategory(val: string) {
     setCategories(prev =>
@@ -124,11 +125,36 @@ function FlowModal({ flow, onClose, onSave }: {
               />
             )}
           </div>
+
+          {!flow && (
+            <button
+              type="button"
+              onClick={() => setUseAppointmentTemplate(value => !value)}
+              className={`w-full flex items-start gap-3 text-left rounded-xl border p-3 transition-colors ${
+                useAppointmentTemplate
+                  ? 'border-primary bg-primary/5'
+                  : 'border-gray-200 hover:border-primary/40'
+              }`}
+            >
+              <div className={`mt-0.5 rounded-lg p-1.5 ${useAppointmentTemplate ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>
+                <CalendarDays className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-800">Start with an appointment form</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Name, mobile, vehicle, date, time, and optional notes on one screen.</p>
+              </div>
+            </button>
+          )}
         </div>
         <div className="px-6 py-4 border-t flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
           <button
-            onClick={() => name.trim() && onSave({ name: name.trim(), categories, endpointUri: isDynamic ? endpointUri : undefined })}
+            onClick={() => name.trim() && onSave({
+              name: name.trim(),
+              categories,
+              endpointUri: isDynamic ? endpointUri : undefined,
+              screens: useAppointmentTemplate ? [makeAppointmentScreen()] : undefined,
+            })}
             disabled={!name.trim()}
             className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50"
           >
@@ -138,6 +164,35 @@ function FlowModal({ flow, onClose, onSave }: {
       </div>
     </div>
   );
+}
+
+function makeAppointmentScreen(): FlowScreen {
+  return {
+    id: 'SCREEN_APPOINTMENT',
+    title: 'Book Appointment',
+    isTerminal: true,
+    components: [
+      { type: 'TextHeading', text: 'Appointment details' },
+      { type: 'TextBody', text: 'Please fill in the details below and submit once.' },
+      { type: 'TextInput', name: 'full_name', label: 'Full name', required: true, inputType: 'text' },
+      { type: 'TextInput', name: 'phone', label: 'Mobile number', required: true, inputType: 'phone' },
+      { type: 'TextInput', name: 'vehicle_model', label: 'Vehicle model', required: true, inputType: 'text' },
+      { type: 'DatePicker', name: 'appointment_date', label: 'Preferred date', required: true },
+      {
+        type: 'Dropdown',
+        name: 'appointment_time',
+        label: 'Preferred time',
+        required: true,
+        options: [
+          { id: '09_00', title: '09:00 AM' },
+          { id: '12_00', title: '12:00 PM' },
+          { id: '03_00', title: '03:00 PM' },
+          { id: '06_00', title: '06:00 PM' },
+        ],
+      },
+      { type: 'TextArea', name: 'notes', label: 'Additional notes (optional)', required: false },
+    ],
+  };
 }
 
 // ── Send Flow modal ───────────────────────────────────────────────────────────

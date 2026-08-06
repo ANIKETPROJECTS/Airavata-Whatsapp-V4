@@ -12,9 +12,14 @@ import { UserModel } from "../models/User";
 import { CampaignModel } from "../models/Campaign";
 import { FlowModel } from "../models/Flow";
 import { TemplateModel } from "../models/Template";
+import { ChatbotFlowModel } from "../models/ChatbotFlow";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger";
-import { runChatbotEngine, runChatbotFlowById } from "../lib/chatbotEngine";
+import {
+  runChatbotEngine,
+  runChatbotFlowById,
+  resumeChatbotAfterFlowSubmission,
+} from "../lib/chatbotEngine";
 
 const router = Router();
 
@@ -201,8 +206,31 @@ async function handleIncomingMessage(
         if (token) {
           const match = token.match(/^flow_([a-f0-9]{24})_/);
           if (match?.[1]) {
-            const candidate = await FlowModel.findById(match[1]).lean();
+            const candidate = await FlowModel.findOne({ _id: match[1], userId }).lean();
             if (candidate) flowId = candidate._id as mongoose.Types.ObjectId;
+          }
+        }
+
+        // Meta commonly returns only {screen, data} in response_json. In that
+        // case resolve the Flow document from the chatbot node that is paused
+        // for this contact, so the response remains visible in Flow Responses.
+        if (!flowId) {
+          const session = (contact as Record<string, unknown>)["chatbotSession"] as
+            { flowId?: string; currentNodeId?: string } | undefined;
+          if (session?.flowId && session.currentNodeId) {
+            const chatbot = await ChatbotFlowModel.findOne({
+              _id: session.flowId,
+              userId,
+              status: "PUBLISHED",
+            }).lean();
+            const pausedNode = chatbot?.nodes?.find((node) => node.id === session.currentNodeId);
+            const flowReference = pausedNode?.data && typeof pausedNode.data === "object"
+              ? (pausedNode.data as Record<string, unknown>)["flowId"]
+              : undefined;
+            if (typeof flowReference === "string" && mongoose.Types.ObjectId.isValid(flowReference)) {
+              const candidate = await FlowModel.findOne({ _id: flowReference, userId }).lean();
+              if (candidate) flowId = candidate._id as mongoose.Types.ObjectId;
+            }
           }
         }
       } catch (parseErr) {
@@ -251,6 +279,14 @@ async function handleIncomingMessage(
   await ContactModel.findByIdAndUpdate(contactId, { lastContactedAt: new Date() });
 
   logger.info({ from: fromRaw, body }, "Stored incoming message");
+
+  // A WhatsApp Flow submission continues the paused chatbot at the node
+  // connected after Flow Reply. It must not restart keyword matching.
+  if (flowData) {
+    resumeChatbotAfterFlowSubmission(contactId, userId, flowData).catch((err) =>
+      logger.error({ err: String(err), contactId: String(contactId) }, "Chatbot resume after Flow submission failed"),
+    );
+  }
 
   // Fire chatbot engine for text messages and interactive button/list replies
   if (runChatbot) {

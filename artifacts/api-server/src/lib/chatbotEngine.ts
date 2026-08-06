@@ -230,6 +230,63 @@ export async function runChatbotEngine(
   }
 }
 
+/**
+ * Resume a chatbot after a user submits a WhatsApp Flow form.
+ *
+ * A Flow Reply node deliberately pauses the chatbot session. Meta sends the
+ * completed form back as an nfm_reply webhook, so the next edge in the
+ * chatbot graph is executed only after the form has been submitted.
+ */
+export async function resumeChatbotAfterFlowSubmission(
+  contactId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId,
+  submittedData: Record<string, unknown>,
+): Promise<void> {
+  const contact = await ContactModel.findById(contactId).lean() as Record<string, unknown> | null;
+  if (!contact) return;
+
+  const session = contact["chatbotSession"] as Session | undefined;
+  if (!session?.flowId || !session.currentNodeId) {
+    logger.info({ contactId: String(contactId) }, "Flow submitted without a paused chatbot session");
+    return;
+  }
+
+  const flow = await ChatbotFlowModel.findOne({
+    _id: new mongoose.Types.ObjectId(session.flowId),
+    userId,
+    status: "PUBLISHED",
+  }).lean() as ChatbotFlow | null;
+
+  if (!flow) {
+    await clearSession(contactId);
+    logger.warn({ flowId: session.flowId }, "Cannot resume chatbot after Flow submission");
+    return;
+  }
+
+  // Meta may include submitted values under `data`; merge that object into the
+  // top level so downstream chatbot nodes can use {{full_name}}, {{date}}, etc.
+  const nestedData = submittedData["data"];
+  const formValues =
+    nestedData && typeof nestedData === "object" && !Array.isArray(nestedData)
+      ? { ...submittedData, ...(nestedData as Record<string, unknown>) }
+      : submittedData;
+  const variables = { ...(session.variables ?? {}) };
+  const internalKeys = new Set(["flow_token", "version", "source", "data"]);
+
+  for (const [key, value] of Object.entries(formValues)) {
+    if (!internalKeys.has(key)) variables[key] = value;
+  }
+
+  const nextEdge = flow.edges.find((edge) => edge.source === session.currentNodeId);
+  if (!nextEdge) {
+    await clearSession(contactId);
+    return;
+  }
+
+  const phone = String(contact["phone"] ?? "").replace(/\s+/g, "");
+  await executeFlow(flow, nextEdge.target, phone, contact, userId, contactId, variables);
+}
+
 // ── Trigger Resolution ─────────────────────────────────────────────────────────
 
 function findKeywordTriggerInFlows(
@@ -491,6 +548,9 @@ async function executeNode(
         if (metaFlowId) {
           await sendWhatsAppFlowMessage(phone, metaFlowId, userId, headerText, bodyText, ctaLabel);
           await storeOutbound(userId, contactId, bodyText);
+          // Do not advance yet. The webhook resumes this node's outgoing edge
+          // once the user submits the form.
+          return { waitForInput: true };
         }
         return {};
       }
@@ -640,7 +700,7 @@ function evaluateCondition(
 
 async function sendWhatsAppFlowMessage(
   phone: string,
-  metaFlowId: string,
+  flowReference: string,
   userId: mongoose.Types.ObjectId,
   headerText: string | undefined,
   bodyText: string,
@@ -651,15 +711,26 @@ async function sendWhatsAppFlowMessage(
   if (!accessToken || !phoneNumberId) throw new Error("Meta credentials not configured");
 
   // Look up internal flow to generate a trackable token
-  const internalFlow = await FlowModel.findOne({ metaFlowId, userId }).lean() as {
+  // The chatbot UI stores our internal Flow document ID. Keep accepting a
+  // Meta Flow ID as a backwards-compatible fallback for older saved nodes.
+  const internalFlow = (
+    mongoose.Types.ObjectId.isValid(flowReference)
+      ? await FlowModel.findOne({ _id: new mongoose.Types.ObjectId(flowReference), userId, status: "PUBLISHED" }).lean()
+      : null
+  ) ?? await FlowModel.findOne({ metaFlowId: flowReference, userId, status: "PUBLISHED" }).lean() as {
     _id: mongoose.Types.ObjectId;
+    metaFlowId?: string;
     screens?: Array<{ id: string }>;
   } | null;
+
+  if (!internalFlow?.metaFlowId) {
+    throw new Error("Select a published WhatsApp Flow before sending this chatbot node");
+  }
 
   const flowToken = internalFlow
     ? `flow_${String(internalFlow._id)}_${Date.now()}`
     : "unused";
-  const firstScreen = internalFlow?.screens?.[0]?.id ?? "SCREEN_A";
+  const firstScreen = sanitizeFlowScreenId(internalFlow?.screens?.[0]?.id ?? "SCREEN_A");
   const normalizedPhone = phone.replace(/^\+/, "");
 
   const res = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
@@ -683,7 +754,7 @@ async function sendWhatsAppFlowMessage(
           parameters: {
             flow_message_version: "3",
             flow_token: flowToken,
-            flow_id: metaFlowId,
+            flow_id: internalFlow.metaFlowId,
             flow_cta: ctaLabel,
             flow_action: "navigate",
             flow_action_payload: { screen: firstScreen },
@@ -697,6 +768,12 @@ async function sendWhatsAppFlowMessage(
     const err = (await res.json()) as { error?: { message?: string } };
     throw new Error(`Meta flow message error: ${err.error?.message ?? res.status}`);
   }
+}
+
+const FLOW_DIGIT_WORDS = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"];
+
+function sanitizeFlowScreenId(id: string): string {
+  return id.replace(/\d/g, (digit) => FLOW_DIGIT_WORDS[Number(digit)] ?? digit);
 }
 
 // ── Session Helpers ────────────────────────────────────────────────────────────

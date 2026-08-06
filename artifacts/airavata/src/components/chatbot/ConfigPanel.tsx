@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   X, Plus, Trash2, ChevronDown, Eye, Play, Loader2, CheckCircle2,
   AlertCircle, Copy, ChevronRight,
@@ -647,20 +648,43 @@ function IntegrationConfig({ data, update }: { data: Record<string, unknown>; up
 }
 
 function FlowReplyConfig({ data, update }: { data: Record<string, unknown>; update: (p: Record<string, unknown>) => void }) {
+  const { data: flowResponse, isLoading } = useQuery({
+    queryKey: ['whatsapp-flows-for-chatbot'],
+    queryFn: () => api.get<{ flows: Array<{ id: string; name: string; status: string; metaFlowId?: string }> }>('/flows'),
+  });
+  const publishedFlows = (flowResponse?.flows ?? []).filter(
+    flow => flow.status === 'PUBLISHED' && flow.metaFlowId,
+  );
+
   return (
     <>
-      <Field label="WhatsApp Flow ID">
-        <input className={input} value={String(data.flowId ?? '')} onChange={e => update({ flowId: e.target.value })} placeholder="Meta Flow ID..." />
-      </Field>
-      <Field label="Mode">
-        <div className="flex gap-2">
-          {[['draft', '🔧 Draft'], ['published', '🚀 Published']].map(([v, l]) => (
-            <button key={v} onClick={() => update({ mode: v })} className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${data.mode === v ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-              {l}
-            </button>
-          ))}
+      <Field label="Appointment / WhatsApp Flow">
+        <div className="relative">
+          <select
+            className={select}
+            value={String(data.flowId ?? '')}
+            onChange={e => update({ flowId: e.target.value })}
+            disabled={isLoading}
+          >
+            <option value="">{isLoading ? 'Loading flows…' : 'Select a published Flow…'}</option>
+            {publishedFlows.map(flow => (
+              <option key={flow.id} value={flow.id}>{flow.name}</option>
+            ))}
+            {/* Older chatbot nodes may still contain a Meta ID. Keep it visible
+                until the user replaces it with an internal Flow selection. */}
+            {Boolean(data.flowId) && !publishedFlows.some(flow => flow.id === data.flowId) && (
+              <option value={String(data.flowId)}>Existing Meta Flow ({String(data.flowId)})</option>
+            )}
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
         </div>
       </Field>
+      {publishedFlows.length === 0 && !isLoading && (
+        <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+          <p className="text-[10px] text-amber-700 font-medium">No published WhatsApp Flows yet</p>
+          <p className="text-[10px] text-amber-600 mt-0.5">Create the appointment form in WhatsApp Flows, publish it to Meta, then select it here.</p>
+        </div>
+      )}
       <Field label="Header Text" hint="optional">
         <input className={input} value={String(data.headerText ?? '')} onChange={e => update({ headerText: e.target.value })} placeholder="Message header..." />
       </Field>
