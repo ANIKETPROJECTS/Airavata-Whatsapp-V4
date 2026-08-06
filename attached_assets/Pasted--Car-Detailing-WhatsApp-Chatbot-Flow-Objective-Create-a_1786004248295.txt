@@ -1,0 +1,431 @@
+# Car Detailing WhatsApp Chatbot Flow
+
+## Objective
+Create a WhatsApp chatbot that helps customers:
+
+1. Greet the bot.
+2. Select their car category.
+3. View available services.
+4. View service price and details.
+5. Book an appointment.
+
+---
+
+# Flow Overview
+
+```
+User
+   │
+   ▼
+Greeting Detection
+   │
+   ▼
+Welcome Message
+   │
+   ▼
+Select Car Category
+   │
+   ▼
+Display Services
+   │
+   ▼
+Select Service
+   │
+   ▼
+Show Price + Service Details
+   │
+   ▼
+Book Appointment
+   │
+   ▼
+Collect Customer Details
+   │
+   ▼
+Confirmation
+```
+
+---
+
+# Step 1 – Greeting Trigger
+
+## Trigger Words
+
+- Hi
+- Hello
+- Hey
+- Interested
+- Details
+- Service
+- Car Wash
+- Pricing
+- Start
+
+---
+
+## Bot Response
+
+Welcome to **[Company Name]** 🚗✨
+
+We're happy to help you choose the perfect detailing package.
+
+Please select your vehicle type.
+
+Buttons:
+
+- Small Cars
+- Hatchback / Small Sedan
+- Mid-size Sedan / Compact SUV / MUV
+- SUV / MPV
+
+---
+
+# Step 2 – Vehicle Selection
+
+Store selected vehicle in:
+
+```
+car_category
+```
+
+Example
+
+```
+car_category = SUV / MPV
+```
+
+After selection display all available services for that category.
+
+---
+
+# Step 3 – Services
+
+Show these services as buttons/list.
+
+- Foam Washing
+- Premium Washing
+- Interior Cleaning
+- Interior Steam Cleaning
+- Leather Treatment
+- Detailing
+- Paint Sealant Coating (Teflon)
+- Ceramic Coating – 9H
+- Ceramic Coating – MAFRA
+- Ceramic Coating – MENZA PRO
+- Ceramic Coating – KOCH CHEMIE
+- Corrosion Treatment
+- Windshield Coating
+- Windshield Coating (All Glasses)
+- Sun Control Film – Economy
+- Sun Control Film – Standard
+- Sun Control Film – Premium
+- Sun Control Film – Ceramic
+
+Store selected service as
+
+```
+selected_service
+```
+
+---
+
+# Step 4 – Price Lookup
+
+Use the selected vehicle category to determine the correct price.
+
+## Pricing Table
+
+### Small Cars
+
+| Service | Price |
+|---------|------:|
+| Foam Washing | ₹400 |
+| Premium Washing | ₹600 |
+| Interior Cleaning | ₹2,500 |
+| Interior Steam Cleaning | ₹3,500 |
+| Leather Treatment | ₹5,000 |
+| Detailing | ₹5,000 |
+| Paint Sealant Coating (Teflon) | ₹6,500 |
+| Ceramic Coating – 9H | ₹11,000 |
+| Ceramic Coating – MAFRA | ₹12,500 |
+| Ceramic Coating – MENZA PRO | ₹15,000 |
+| Ceramic Coating – KOCH CHEMIE | ₹18,000 |
+| Corrosion Treatment | ₹3,500 |
+| Windshield Coating | ₹2,500 |
+| Windshield Coating (All Glasses) | ₹5,000 |
+| Sun Control Film – Economy | ₹5,200 |
+| Sun Control Film – Standard | ₹7,500 |
+| Sun Control Film – Premium | ₹11,500 |
+| Sun Control Film – Ceramic | ₹13,500 |
+
+### Hatchback / Small Sedan
+
+| Service | Price |
+|---------|------:|
+| Foam Washing | ₹500 |
+| Premium Washing | ₹700 |
+| Interior Cleaning | ₹3,000 |
+| Interior Steam Cleaning | ₹4,000 |
+| Leather Treatment | ₹5,500 |
+| Detailing | ₹6,500 |
+| Paint Sealant Coating (Teflon) | ₹8,500 |
+| Ceramic Coating – 9H | ₹12,500 |
+| Ceramic Coating – MAFRA | ₹15,000 |
+| Ceramic Coating – MENZA PRO | ₹18,000 |
+| Ceramic Coating – KOCH CHEMIE | ₹22,000 |
+| Corrosion Treatment | ₹5,000 |
+| Windshield Coating | ₹3,000 |
+| Windshield Coating (All Glasses) | ₹5,500 |
+| Sun Control Film – Economy | ₹6,000 |
+| Sun Control Film – Standard | ₹8,300 |
+| Sun Control Film – Premium | ₹13,000 |
+| Sun Control Film – Ceramic | ₹15,500 |
+
+### Mid-size Sedan / Compact SUV / MUV
+
+| Service | Price |
+|---------|------:|
+| Foam Washing | ₹600 |
+| Premium Washing | ₹800 |
+| Interior Cleaning | ₹3,500 |
+| Interior Steam Cleaning | ₹4,500 |
+| Leather Treatment | ₹6,000 |
+| Detailing | ₹7,000 |
+| Paint Sealant Coating (Teflon) | ₹9,500 |
+| Ceramic Coating – 9H | ₹15,000 |
+| Ceramic Coating – MAFRA | ₹18,000 |
+| Ceramic Coating – MENZA PRO | ₹21,000 |
+| Ceramic Coating – KOCH CHEMIE | ₹25,000 |
+| Corrosion Treatment | ₹6,000 |
+| Windshield Coating | ₹3,500 |
+| Windshield Coating (All Glasses) | ₹6,000 |
+| Sun Control Film – Economy | ₹6,500 |
+| Sun Control Film – Standard | ₹9,500 |
+| Sun Control Film – Premium | ₹15,000 |
+| Sun Control Film – Ceramic | ₹18,000 |
+
+### SUV / MPV
+
+| Service | Price |
+|---------|------:|
+| Foam Washing | ₹700 |
+| Premium Washing | ₹900 |
+| Interior Cleaning | ₹4,500 |
+| Interior Steam Cleaning | ₹5,500 |
+| Leather Treatment | ₹7,000 |
+| Detailing | ₹9,000 |
+| Paint Sealant Coating (Teflon) | ₹11,500 |
+| Ceramic Coating – 9H | ₹18,000 |
+| Ceramic Coating – MAFRA | ₹21,000 |
+| Ceramic Coating – MENZA PRO | ₹24,000 |
+| Ceramic Coating – KOCH CHEMIE | ₹28,000 |
+| Corrosion Treatment | ₹7,500 |
+| Windshield Coating | ₹4,000 |
+| Windshield Coating (All Glasses) | ₹6,500 |
+| Sun Control Film – Economy | ₹8,400 |
+| Sun Control Film – Standard | ₹12,500 |
+| Sun Control Film – Premium | ₹18,000 |
+| Sun Control Film – Ceramic | ₹21,000 |
+
+---
+
+# Step 5 – Service Details
+
+After user selects a service, send:
+
+Example
+
+**Premium Washing**
+
+Price: ₹900
+
+Includes:
+
+- Exterior foam wash
+- Tyre cleaning
+- Alloy cleaning
+- Dashboard cleaning
+- Interior vacuum
+- Drying with microfiber cloth
+- Premium shampoo
+
+Buttons
+
+- Book Appointment
+- View Other Services
+
+---
+
+# Step 6 – Appointment Form
+
+Ask one question at a time.
+
+### Full Name
+
+Store:
+
+```
+customer_name
+```
+
+---
+
+### Mobile Number
+
+Store:
+
+```
+phone
+```
+
+---
+
+### Vehicle Model
+
+Example:
+
+```
+Hyundai Creta
+Maruti Swift
+BMW X1
+```
+
+Store:
+
+```
+vehicle_model
+```
+
+---
+
+### Preferred Date
+
+Store:
+
+```
+appointment_date
+```
+
+---
+
+### Preferred Time
+
+Buttons
+
+- 10:00 AM
+- 11:00 AM
+- 12:00 PM
+- 2:00 PM
+- 3:00 PM
+- 4:00 PM
+- 5:00 PM
+
+Store:
+
+```
+appointment_time
+```
+
+---
+
+### Additional Notes
+
+Optional
+
+Store:
+
+```
+notes
+```
+
+---
+
+# Step 7 – Confirmation
+
+Show summary.
+
+```
+Appointment Summary
+
+Name:
+{{customer_name}}
+
+Phone:
+{{phone}}
+
+Vehicle:
+{{vehicle_model}}
+
+Category:
+{{car_category}}
+
+Service:
+{{selected_service}}
+
+Price:
+₹{{service_price}}
+
+Date:
+{{appointment_date}}
+
+Time:
+{{appointment_time}}
+```
+
+Buttons
+
+- Confirm Booking
+- Edit Booking
+
+---
+
+# Step 8 – Final Message
+
+Thank you for choosing **[Company Name]** 🚗✨
+
+Your appointment has been successfully booked.
+
+Our team will contact you shortly for confirmation.
+
+We look forward to serving you!
+
+---
+
+# Variables
+
+```
+car_category
+
+selected_service
+
+service_price
+
+customer_name
+
+phone
+
+vehicle_model
+
+appointment_date
+
+appointment_time
+
+notes
+```
+
+---
+
+# Admin Notification
+
+When booking is confirmed, send the following data to the CRM/Google Sheet/API:
+
+- Customer Name
+- Phone Number
+- Vehicle Category
+- Vehicle Model
+- Selected Service
+- Price
+- Appointment Date
+- Appointment Time
+- Notes
+- Booking Timestamp
+- WhatsApp Number

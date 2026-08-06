@@ -141,6 +141,16 @@ export async function runChatbotEngine(
 
     if (flow) {
       if (ctx.interactiveReplyId) {
+        const replyVariables = { ...(session.variables ?? {}) };
+        // Imported flows use the visible reply text in conditions and
+        // attributes, while the ID is only used to resume the graph.
+        if (ctx.text) {
+          replyVariables["list_reply"] = ctx.text;
+          replyVariables["button_reply"] = ctx.text;
+        }
+        replyVariables["list_reply_id"] = ctx.interactiveReplyId;
+        replyVariables["button_reply_id"] = ctx.interactiveReplyId;
+
         // Find the outgoing edge matching the button/row the user pressed
         const edge =
           flow.edges.find(
@@ -152,13 +162,33 @@ export async function runChatbotEngine(
 
         if (edge) {
           await executeFlow(
-            flow, edge.target, phone, contact, userId, contactId, session.variables ?? {},
+            flow, edge.target, phone, contact, userId, contactId, replyVariables,
           );
           return;
         }
       }
 
       // User sent a plain text message while mid-flow.
+      const waitingNode = flow.nodes.find((n) => n.id === session.currentNodeId);
+      if (ctx.text && waitingNode?.type === "question") {
+        const variable = String(waitingNode.data["variable"] ?? "").trim();
+        const nextVariables = { ...(session.variables ?? {}) };
+        if (variable) {
+          nextVariables[variable] =
+            waitingNode.data["required"] === false &&
+            ctx.text.trim().toLowerCase() === "skip"
+              ? ""
+              : ctx.text.trim();
+        }
+        const edge = flow.edges.find((e) => e.source === session.currentNodeId);
+        if (edge) {
+          await executeFlow(flow, edge.target, phone, contact, userId, contactId, nextVariables);
+        } else {
+          await clearSession(contactId);
+        }
+        return;
+      }
+
       // Check if it matches a keyword trigger in any flow (allows flow switching).
       const published = await ChatbotFlowModel.find({ userId, status: "PUBLISHED" }).lean() as ChatbotFlow[];
       const kw = findKeywordTriggerInFlows(published, ctx.text);

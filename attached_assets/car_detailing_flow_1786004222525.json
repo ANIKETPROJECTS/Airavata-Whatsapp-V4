@@ -1,0 +1,1172 @@
+{
+  "name": "Car Detailing WhatsApp Chatbot Flow",
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 400,
+        "y": 40
+      },
+      "data": {
+        "label": "Start",
+        "description": "Entry point — triggered when a user first messages the WhatsApp number"
+      }
+    },
+    {
+      "id": "keyword-1",
+      "type": "keyword",
+      "position": {
+        "x": 400,
+        "y": 180
+      },
+      "data": {
+        "label": "Greeting Trigger",
+        "keywords": [
+          "hi",
+          "hello",
+          "hey",
+          "interested",
+          "details",
+          "service",
+          "car wash",
+          "pricing",
+          "start"
+        ],
+        "matchType": "contains",
+        "caseSensitive": false
+      }
+    },
+    {
+      "id": "text-welcome",
+      "type": "textReply",
+      "position": {
+        "x": 400,
+        "y": 330
+      },
+      "data": {
+        "label": "Welcome Message",
+        "message": "Welcome to *{{company.name}}* 🚗✨\n\nWe're happy to help you choose the perfect detailing package.\n\nPlease select your vehicle type below.",
+        "typingDelay": 1.5
+      }
+    },
+    {
+      "id": "list-vehicle",
+      "type": "listReply",
+      "position": {
+        "x": 400,
+        "y": 480
+      },
+      "data": {
+        "label": "Vehicle Category",
+        "header": "🚘 Select Vehicle Type",
+        "body": "Choose the category that matches your car so we can show accurate pricing.",
+        "footer": "Prices vary by vehicle size",
+        "buttonText": "Select Vehicle",
+        "sections": [
+          {
+            "title": "Vehicle Types",
+            "rows": [
+              {
+                "id": "cat-small",
+                "title": "Small Cars",
+                "description": "e.g. Alto, Kwid, Eon"
+              },
+              {
+                "id": "cat-hatch",
+                "title": "Hatchback / Small Sedan",
+                "description": "e.g. Swift, i20, Amaze"
+              },
+              {
+                "id": "cat-mid",
+                "title": "Mid-size Sedan / Compact SUV / MUV",
+                "description": "e.g. City, Creta, Ertiga"
+              },
+              {
+                "id": "cat-suv",
+                "title": "SUV / MPV",
+                "description": "e.g. Fortuner, XUV700, Innova"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "attr-category",
+      "type": "attribute",
+      "position": {
+        "x": 400,
+        "y": 650
+      },
+      "data": {
+        "label": "Save Vehicle Category",
+        "attributes": [
+          {
+            "name": "car_category",
+            "operator": "set",
+            "value": "{{list_reply}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "list-service-category",
+      "type": "listReply",
+      "position": {
+        "x": 400,
+        "y": 800
+      },
+      "data": {
+        "label": "Service Category",
+        "header": "🛠️ Our Services",
+        "body": "What kind of service are you looking for?",
+        "footer": "Select a category to see options",
+        "buttonText": "Select Category",
+        "sections": [
+          {
+            "title": "Categories",
+            "rows": [
+              {
+                "id": "svccat-wash",
+                "title": "Washing",
+                "description": "Foam & premium washing"
+              },
+              {
+                "id": "svccat-interior",
+                "title": "Interior Care",
+                "description": "Cleaning, steam, leather, detailing"
+              },
+              {
+                "id": "svccat-coating",
+                "title": "Coatings & Protection",
+                "description": "Sealant, ceramic, corrosion treatment"
+              },
+              {
+                "id": "svccat-glass",
+                "title": "Glass & Window Films",
+                "description": "Windshield coating, sun control film"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "cond-svc-1",
+      "type": "condition",
+      "position": {
+        "x": 400,
+        "y": 950
+      },
+      "data": {
+        "label": "Route: Washing?",
+        "conditions": [
+          {
+            "field": "list_reply",
+            "operator": "contains",
+            "value": "Washing"
+          }
+        ],
+        "logicType": "AND"
+      }
+    },
+    {
+      "id": "cond-svc-2",
+      "type": "condition",
+      "position": {
+        "x": 700,
+        "y": 1100
+      },
+      "data": {
+        "label": "Route: Interior Care?",
+        "conditions": [
+          {
+            "field": "list_reply",
+            "operator": "contains",
+            "value": "Interior Care"
+          }
+        ],
+        "logicType": "AND"
+      }
+    },
+    {
+      "id": "cond-svc-3",
+      "type": "condition",
+      "position": {
+        "x": 1000,
+        "y": 1250
+      },
+      "data": {
+        "label": "Route: Coatings?",
+        "conditions": [
+          {
+            "field": "list_reply",
+            "operator": "contains",
+            "value": "Coatings"
+          }
+        ],
+        "logicType": "AND"
+      }
+    },
+    {
+      "id": "list-washing",
+      "type": "listReply",
+      "position": {
+        "x": 100,
+        "y": 1100
+      },
+      "data": {
+        "label": "Washing Services",
+        "header": "🧽 Washing",
+        "body": "Select a washing service:",
+        "footer": "Exact price depends on your vehicle category",
+        "buttonText": "Select Service",
+        "sections": [
+          {
+            "title": "Washing",
+            "rows": [
+              {
+                "id": "svc-foam",
+                "title": "Foam Washing",
+                "description": "From ₹400 — exterior foam wash & rinse"
+              },
+              {
+                "id": "svc-premium-wash",
+                "title": "Premium Washing",
+                "description": "From ₹600 — foam wash + tyre, alloy & dashboard cleaning"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "list-interior",
+      "type": "listReply",
+      "position": {
+        "x": 550,
+        "y": 1250
+      },
+      "data": {
+        "label": "Interior Care Services",
+        "header": "🪑 Interior Care",
+        "body": "Select an interior care service:",
+        "footer": "Exact price depends on your vehicle category",
+        "buttonText": "Select Service",
+        "sections": [
+          {
+            "title": "Interior Care",
+            "rows": [
+              {
+                "id": "svc-interior-clean",
+                "title": "Interior Cleaning",
+                "description": "From ₹2,500 — vacuum, dashboard & upholstery wipe-down"
+              },
+              {
+                "id": "svc-interior-steam",
+                "title": "Interior Steam Cleaning",
+                "description": "From ₹3,500 — deep steam sanitization of cabin"
+              },
+              {
+                "id": "svc-leather",
+                "title": "Leather Treatment",
+                "description": "From ₹5,000 — leather cleaning & conditioning"
+              },
+              {
+                "id": "svc-detailing",
+                "title": "Detailing",
+                "description": "From ₹5,000 — full interior + exterior detailing"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "list-coating",
+      "type": "listReply",
+      "position": {
+        "x": 900,
+        "y": 1400
+      },
+      "data": {
+        "label": "Coating & Protection Services",
+        "header": "✨ Coatings & Protection",
+        "body": "Select a coating or protection service:",
+        "footer": "Exact price depends on your vehicle category",
+        "buttonText": "Select Service",
+        "sections": [
+          {
+            "title": "Coatings & Protection",
+            "rows": [
+              {
+                "id": "svc-teflon",
+                "title": "Paint Sealant Coating (Teflon)",
+                "description": "From ₹6,500 — paint protection sealant"
+              },
+              {
+                "id": "svc-ceramic-9h",
+                "title": "Ceramic Coating – 9H",
+                "description": "From ₹11,000 — entry-level ceramic protection"
+              },
+              {
+                "id": "svc-ceramic-mafra",
+                "title": "Ceramic Coating – MAFRA",
+                "description": "From ₹12,500 — mid-tier ceramic coating"
+              },
+              {
+                "id": "svc-ceramic-menza",
+                "title": "Ceramic Coating – MENZA PRO",
+                "description": "From ₹15,000 — premium ceramic coating"
+              },
+              {
+                "id": "svc-ceramic-koch",
+                "title": "Ceramic Coating – KOCH CHEMIE",
+                "description": "From ₹18,000 — top-tier ceramic coating"
+              },
+              {
+                "id": "svc-corrosion",
+                "title": "Corrosion Treatment",
+                "description": "From ₹3,500 — underbody anti-rust treatment"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "list-glass",
+      "type": "listReply",
+      "position": {
+        "x": 1250,
+        "y": 1400
+      },
+      "data": {
+        "label": "Glass & Film Services",
+        "header": "🪟 Glass & Window Films",
+        "body": "Select a glass or film service:",
+        "footer": "Exact price depends on your vehicle category",
+        "buttonText": "Select Service",
+        "sections": [
+          {
+            "title": "Glass & Films",
+            "rows": [
+              {
+                "id": "svc-windshield",
+                "title": "Windshield Coating",
+                "description": "From ₹2,500 — water-repellent windshield coating"
+              },
+              {
+                "id": "svc-windshield-all",
+                "title": "Windshield Coating (All Glasses)",
+                "description": "From ₹5,000 — coating for all glass surfaces"
+              },
+              {
+                "id": "svc-scf-economy",
+                "title": "Sun Control Film – Economy",
+                "description": "From ₹5,200 — basic heat & UV protection film"
+              },
+              {
+                "id": "svc-scf-standard",
+                "title": "Sun Control Film – Standard",
+                "description": "From ₹7,500 — better heat rejection film"
+              },
+              {
+                "id": "svc-scf-premium",
+                "title": "Sun Control Film – Premium",
+                "description": "From ₹11,500 — high-performance film"
+              },
+              {
+                "id": "svc-scf-ceramic",
+                "title": "Sun Control Film – Ceramic",
+                "description": "From ₹13,500 — top-tier ceramic window film"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "attr-service",
+      "type": "attribute",
+      "position": {
+        "x": 700,
+        "y": 1580
+      },
+      "data": {
+        "label": "Save Selected Service",
+        "attributes": [
+          {
+            "name": "selected_service",
+            "operator": "set",
+            "value": "{{list_reply}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "api-price",
+      "type": "customApi",
+      "position": {
+        "x": 700,
+        "y": 1730
+      },
+      "data": {
+        "label": "Lookup Price",
+        "method": "POST",
+        "url": "https://your-backend.example.com/api/pricing/lookup",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer YOUR_API_KEY"
+          }
+        ],
+        "body": "{\n  \"car_category\": \"{{car_category}}\",\n  \"service\": \"{{selected_service}}\"\n}",
+        "responseMapping": [
+          {
+            "path": "$.price",
+            "variable": "service_price"
+          },
+          {
+            "path": "$.description",
+            "variable": "service_description"
+          }
+        ],
+        "testResult": null
+      }
+    },
+    {
+      "id": "text-details",
+      "type": "textReply",
+      "position": {
+        "x": 700,
+        "y": 1880
+      },
+      "data": {
+        "label": "Service Price & Details",
+        "message": "*{{selected_service}}*\n\nVehicle: {{car_category}}\nPrice: ₹{{service_price}}\n\n{{service_description}}\n\nWould you like to book this service?",
+        "typingDelay": 1
+      }
+    },
+    {
+      "id": "cta-book-or-view",
+      "type": "ctaButton",
+      "position": {
+        "x": 700,
+        "y": 2030
+      },
+      "data": {
+        "label": "Book or Browse",
+        "body": "What would you like to do next?",
+        "footer": "Reply with a button below",
+        "buttons": [
+          {
+            "id": "btn-book",
+            "title": "📅 Book Appointment"
+          },
+          {
+            "id": "btn-other",
+            "title": "🔎 View Other Services"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cond-book",
+      "type": "condition",
+      "position": {
+        "x": 700,
+        "y": 2180
+      },
+      "data": {
+        "label": "Check: Book or Browse?",
+        "conditions": [
+          {
+            "field": "button_reply",
+            "operator": "contains",
+            "value": "Book"
+          }
+        ],
+        "logicType": "AND"
+      }
+    },
+    {
+      "id": "q-name",
+      "type": "question",
+      "position": {
+        "x": 400,
+        "y": 2340
+      },
+      "data": {
+        "label": "Ask Name",
+        "question": "Great choice! Let's book your appointment.\n\nFirst, what's your full name?",
+        "variable": "customer_name",
+        "inputType": "text",
+        "required": true
+      }
+    },
+    {
+      "id": "q-phone",
+      "type": "question",
+      "position": {
+        "x": 400,
+        "y": 2480
+      },
+      "data": {
+        "label": "Ask Phone",
+        "question": "Thanks {{customer_name}}! What's the best mobile number to reach you on?",
+        "variable": "phone",
+        "inputType": "phone",
+        "required": true
+      }
+    },
+    {
+      "id": "q-vehicle",
+      "type": "question",
+      "position": {
+        "x": 400,
+        "y": 2620
+      },
+      "data": {
+        "label": "Ask Vehicle Model",
+        "question": "What's your vehicle model? (e.g. Hyundai Creta, Maruti Swift, BMW X1)",
+        "variable": "vehicle_model",
+        "inputType": "text",
+        "required": true
+      }
+    },
+    {
+      "id": "q-date",
+      "type": "question",
+      "position": {
+        "x": 400,
+        "y": 2760
+      },
+      "data": {
+        "label": "Ask Preferred Date",
+        "question": "What date would you like to bring your car in? (DD/MM/YYYY)",
+        "variable": "appointment_date",
+        "inputType": "date",
+        "required": true
+      }
+    },
+    {
+      "id": "list-time",
+      "type": "listReply",
+      "position": {
+        "x": 400,
+        "y": 2900
+      },
+      "data": {
+        "label": "Preferred Time",
+        "header": "🕒 Preferred Time",
+        "body": "Please select your preferred appointment slot:",
+        "footer": "Subject to availability",
+        "buttonText": "Select Time",
+        "sections": [
+          {
+            "title": "Available Slots",
+            "rows": [
+              {
+                "id": "t-10",
+                "title": "10:00 AM"
+              },
+              {
+                "id": "t-11",
+                "title": "11:00 AM"
+              },
+              {
+                "id": "t-12",
+                "title": "12:00 PM"
+              },
+              {
+                "id": "t-14",
+                "title": "2:00 PM"
+              },
+              {
+                "id": "t-15",
+                "title": "3:00 PM"
+              },
+              {
+                "id": "t-16",
+                "title": "4:00 PM"
+              },
+              {
+                "id": "t-17",
+                "title": "5:00 PM"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "attr-time",
+      "type": "attribute",
+      "position": {
+        "x": 400,
+        "y": 3050
+      },
+      "data": {
+        "label": "Save Appointment Time",
+        "attributes": [
+          {
+            "name": "appointment_time",
+            "operator": "set",
+            "value": "{{list_reply}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "q-notes",
+      "type": "question",
+      "position": {
+        "x": 400,
+        "y": 3200
+      },
+      "data": {
+        "label": "Ask Additional Notes",
+        "question": "Any additional notes for our team? (Optional — reply 'skip' if none)",
+        "variable": "notes",
+        "inputType": "text",
+        "required": false
+      }
+    },
+    {
+      "id": "text-summary",
+      "type": "textReply",
+      "position": {
+        "x": 400,
+        "y": 3350
+      },
+      "data": {
+        "label": "Appointment Summary",
+        "message": "*Appointment Summary*\n\nName: {{customer_name}}\nPhone: {{phone}}\nVehicle: {{vehicle_model}}\nCategory: {{car_category}}\nService: {{selected_service}}\nPrice: ₹{{service_price}}\nDate: {{appointment_date}}\nTime: {{appointment_time}}\nNotes: {{notes}}",
+        "typingDelay": 1
+      }
+    },
+    {
+      "id": "cta-confirm",
+      "type": "ctaButton",
+      "position": {
+        "x": 400,
+        "y": 3500
+      },
+      "data": {
+        "label": "Confirm or Edit",
+        "body": "Does everything look correct?",
+        "footer": "Reply with a button below",
+        "buttons": [
+          {
+            "id": "btn-confirm",
+            "title": "✅ Confirm Booking"
+          },
+          {
+            "id": "btn-edit",
+            "title": "✏️ Edit Booking"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cond-confirm",
+      "type": "condition",
+      "position": {
+        "x": 400,
+        "y": 3650
+      },
+      "data": {
+        "label": "Check: Confirm or Edit?",
+        "conditions": [
+          {
+            "field": "button_reply",
+            "operator": "contains",
+            "value": "Confirm"
+          }
+        ],
+        "logicType": "AND"
+      }
+    },
+    {
+      "id": "tag-1",
+      "type": "tag",
+      "position": {
+        "x": 250,
+        "y": 3800
+      },
+      "data": {
+        "label": "Tag Booking",
+        "action": "add",
+        "tags": [
+          "car-detailing",
+          "booking-confirmed",
+          "bot-handled"
+        ]
+      }
+    },
+    {
+      "id": "api-crm",
+      "type": "customApi",
+      "position": {
+        "x": 250,
+        "y": 3950
+      },
+      "data": {
+        "label": "Send Booking to CRM/Sheet",
+        "method": "POST",
+        "url": "https://webhook.site/your-unique-url",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer YOUR_API_KEY"
+          }
+        ],
+        "body": "{\n  \"customer_name\": \"{{customer_name}}\",\n  \"phone\": \"{{phone}}\",\n  \"vehicle_category\": \"{{car_category}}\",\n  \"vehicle_model\": \"{{vehicle_model}}\",\n  \"selected_service\": \"{{selected_service}}\",\n  \"price\": \"{{service_price}}\",\n  \"appointment_date\": \"{{appointment_date}}\",\n  \"appointment_time\": \"{{appointment_time}}\",\n  \"notes\": \"{{notes}}\",\n  \"timestamp\": \"{{timestamp}}\",\n  \"source\": \"whatsapp-bot\"\n}",
+        "responseMapping": [
+          {
+            "path": "$.booking_id",
+            "variable": "booking_id"
+          }
+        ],
+        "testResult": null
+      }
+    },
+    {
+      "id": "text-final",
+      "type": "textReply",
+      "position": {
+        "x": 250,
+        "y": 4100
+      },
+      "data": {
+        "label": "Booking Confirmation",
+        "message": "Thank you for choosing *{{company.name}}* 🚗✨\n\nYour appointment has been successfully booked!\n\n🎫 Booking ID: {{booking_id}}\n\nOur team will contact you shortly to confirm. We look forward to serving you!",
+        "typingDelay": 1
+      }
+    },
+    {
+      "id": "assign-1",
+      "type": "assignAgent",
+      "position": {
+        "x": 250,
+        "y": 4250
+      },
+      "data": {
+        "label": "Assign to Detailing Team",
+        "assignType": "team",
+        "agentId": "",
+        "teamId": "detailing-team",
+        "priority": "normal",
+        "note": "New appointment booked via WhatsApp bot. Awaiting confirmation call."
+      }
+    },
+    {
+      "id": "error-1",
+      "type": "errorHandler",
+      "position": {
+        "x": 900,
+        "y": 4000
+      },
+      "data": {
+        "label": "Error Fallback",
+        "errorMessage": "⚠️ Sorry, I ran into a small hiccup while processing your booking! Let me connect you with a human agent who can help you right away.",
+        "retryCount": 2,
+        "retryDelay": 5,
+        "fallbackFlowId": ""
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-kw",
+      "source": "start-1",
+      "target": "keyword-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-kw-welcome",
+      "source": "keyword-1",
+      "target": "text-welcome",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-welcome-listveh",
+      "source": "text-welcome",
+      "target": "list-vehicle",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-listveh-attrcat",
+      "source": "list-vehicle",
+      "target": "attr-category",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-attrcat-listsvccat",
+      "source": "attr-category",
+      "target": "list-service-category",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-listsvccat-cond1",
+      "source": "list-service-category",
+      "target": "cond-svc-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-cond1-washing",
+      "source": "cond-svc-1",
+      "target": "list-washing",
+      "animated": true,
+      "style": {
+        "stroke": "#16a34a",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-cond1-cond2",
+      "source": "cond-svc-1",
+      "target": "cond-svc-2",
+      "animated": true,
+      "style": {
+        "stroke": "#dc2626",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-cond2-interior",
+      "source": "cond-svc-2",
+      "target": "list-interior",
+      "animated": true,
+      "style": {
+        "stroke": "#16a34a",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-cond2-cond3",
+      "source": "cond-svc-2",
+      "target": "cond-svc-3",
+      "animated": true,
+      "style": {
+        "stroke": "#dc2626",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-cond3-coating",
+      "source": "cond-svc-3",
+      "target": "list-coating",
+      "animated": true,
+      "style": {
+        "stroke": "#16a34a",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-cond3-glass",
+      "source": "cond-svc-3",
+      "target": "list-glass",
+      "animated": true,
+      "style": {
+        "stroke": "#dc2626",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-washing-attrsvc",
+      "source": "list-washing",
+      "target": "attr-service",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-interior-attrsvc",
+      "source": "list-interior",
+      "target": "attr-service",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-coating-attrsvc",
+      "source": "list-coating",
+      "target": "attr-service",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-glass-attrsvc",
+      "source": "list-glass",
+      "target": "attr-service",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-attrsvc-apiprice",
+      "source": "attr-service",
+      "target": "api-price",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-apiprice-details",
+      "source": "api-price",
+      "target": "text-details",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-details-ctabook",
+      "source": "text-details",
+      "target": "cta-book-or-view",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-ctabook-condbook",
+      "source": "cta-book-or-view",
+      "target": "cond-book",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-condbook-qname",
+      "source": "cond-book",
+      "target": "q-name",
+      "animated": true,
+      "style": {
+        "stroke": "#16a34a",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-condbook-listsvccat",
+      "source": "cond-book",
+      "target": "list-service-category",
+      "animated": true,
+      "style": {
+        "stroke": "#dc2626",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-qname-qphone",
+      "source": "q-name",
+      "target": "q-phone",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-qphone-qvehicle",
+      "source": "q-phone",
+      "target": "q-vehicle",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-qvehicle-qdate",
+      "source": "q-vehicle",
+      "target": "q-date",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-qdate-listtime",
+      "source": "q-date",
+      "target": "list-time",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-listtime-attrtime",
+      "source": "list-time",
+      "target": "attr-time",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-attrtime-qnotes",
+      "source": "attr-time",
+      "target": "q-notes",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-qnotes-summary",
+      "source": "q-notes",
+      "target": "text-summary",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-summary-ctaconfirm",
+      "source": "text-summary",
+      "target": "cta-confirm",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-ctaconfirm-condconfirm",
+      "source": "cta-confirm",
+      "target": "cond-confirm",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-condconfirm-tag",
+      "source": "cond-confirm",
+      "target": "tag-1",
+      "animated": true,
+      "style": {
+        "stroke": "#16a34a",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "true"
+    },
+    {
+      "id": "e-condconfirm-qname",
+      "source": "cond-confirm",
+      "target": "q-name",
+      "animated": true,
+      "style": {
+        "stroke": "#dc2626",
+        "strokeWidth": 2
+      },
+      "sourceHandle": "false"
+    },
+    {
+      "id": "e-tag-apicrm",
+      "source": "tag-1",
+      "target": "api-crm",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-apicrm-final",
+      "source": "api-crm",
+      "target": "text-final",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-final-assign",
+      "source": "text-final",
+      "target": "assign-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-apicrm-error",
+      "source": "api-crm",
+      "target": "error-1",
+      "animated": true,
+      "style": {
+        "stroke": "#9f1239",
+        "strokeWidth": 2,
+        "strokeDasharray": "5,5"
+      }
+    }
+  ]
+}
