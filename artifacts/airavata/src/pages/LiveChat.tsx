@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MessageSquare, MoreVertical,
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
-  FileText, Image, Film, Music, X, FileImage, Mic,
+  FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -221,11 +221,24 @@ export default function LiveChat() {
   });
 
   const messages = msgsData?.messages ?? [];
+  const latestMessageId = messages[messages.length - 1]?.id;
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  // Opening a chat marks the inbound messages currently visible in it as read.
+  // The latest-message dependency also keeps an actively viewed chat read when
+  // a new WhatsApp message arrives during polling.
+  useEffect(() => {
+    if (!activeConvId) return;
+    api.post(`/conversations/${activeConvId}/read`)
+      .then(() => qc.invalidateQueries({ queryKey: ['conversations'] }))
+      .catch(() => {
+        // A transient refresh failure should not interrupt the chat UI.
+      });
+  }, [activeConvId, latestMessageId, qc]);
 
   // ── Send text message mutation ────────────────────────────────────────────
 
@@ -267,6 +280,16 @@ export default function LiveChat() {
       });
       qc.invalidateQueries({ queryKey: ['messages', activeConvId] });
       qc.invalidateQueries({ queryKey: ['conversations'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ contactId, status }: { contactId: string; status: 'Open' | 'Resolved' }) =>
+      api.put(`/conversations/${contactId}/status`, { status }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+      toast.success('Conversation status updated');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -347,6 +370,18 @@ export default function LiveChat() {
     return matchTab && matchSearch;
   });
 
+  const unreadTotals = {
+    All: conversations.reduce((sum, conversation) => sum + conversation.unread, 0),
+    Open: conversations
+      .filter(conversation => conversation.status === 'Open')
+      .reduce((sum, conversation) => sum + conversation.unread, 0),
+    Resolved: conversations
+      .filter(conversation => conversation.status === 'Resolved')
+      .reduce((sum, conversation) => sum + conversation.unread, 0),
+  };
+
+  const tabs: Array<'All' | 'Open' | 'Resolved'> = ['All', 'Open', 'Resolved'];
+
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
@@ -374,7 +409,7 @@ export default function LiveChat() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {['All', 'Open', 'Resolved'].map(tab => (
+            {tabs.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -383,6 +418,15 @@ export default function LiveChat() {
                 }`}
               >
                 {tab}
+                {unreadTotals[tab] > 0 && (
+                  <span
+                    className={`ml-1.5 inline-flex min-w-4 h-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                      activeTab === tab ? 'bg-white text-gray-900' : 'bg-primary text-white'
+                    }`}
+                  >
+                    {unreadTotals[tab] > 99 ? '99+' : unreadTotals[tab]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -477,6 +521,26 @@ export default function LiveChat() {
                 className={`p-2 rounded-lg transition-colors ${rightPanelOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 <MoreVertical className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => statusMutation.mutate({
+                  contactId: activeConv.id,
+                  status: activeConv.status === 'Resolved' ? 'Open' : 'Resolved',
+                })}
+                disabled={statusMutation.isPending}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-60 ${
+                  activeConv.status === 'Resolved'
+                    ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={activeConv.status === 'Resolved' ? 'Reopen conversation' : 'Resolve conversation'}
+              >
+                {statusMutation.isPending
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : activeConv.status === 'Resolved'
+                    ? <RotateCcw className="w-3.5 h-3.5" />
+                    : <CheckCircle2 className="w-3.5 h-3.5" />}
+                {activeConv.status === 'Resolved' ? 'Reopen' : 'Resolve'}
               </button>
             </div>
           </div>

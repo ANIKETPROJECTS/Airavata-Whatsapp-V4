@@ -11,6 +11,9 @@ const contactSchema = new Schema(
     lastContactedAt: { type: Date },
     status: { type: String, enum: ["active", "blocked", "unsubscribed"], default: "active" },
     chatState: { type: String, enum: ["DOR", "REQ", "CLOSED", "ACTIVE"], default: "DOR" },
+    // Timestamp through which an agent has read inbound messages in Live Chat.
+    // Unread counts are derived from messages after this point.
+    lastReadAt: { type: Date },
     // Chatbot engine session — tracks which flow node the contact is currently at
     chatbotSession: { type: Schema.Types.Mixed },
   },

@@ -275,8 +275,12 @@ async function handleIncomingMessage(
     ...(flowId ? { flowId } : {}),
   });
 
-  // Update contact's lastContactedAt
-  await ContactModel.findByIdAndUpdate(contactId, { lastContactedAt: new Date() });
+  // New customer activity belongs in Open and remains unread until an agent
+  // opens the conversation. This also reopens conversations previously marked
+  // Resolved.
+  await ContactModel.findByIdAndUpdate(contactId, {
+    $set: { lastContactedAt: new Date(), chatState: "ACTIVE" },
+  });
 
   logger.info({ from: fromRaw, body }, "Stored incoming message");
 

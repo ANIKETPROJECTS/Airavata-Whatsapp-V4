@@ -26,7 +26,9 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
 
-    // Aggregate: group messages by contactId, pick the latest message per contact
+    // Aggregate: group messages by contactId, pick the latest message per contact.
+    // Unread messages are calculated separately from Contact.lastReadAt so
+    // opening a conversation can mark it read without mutating every Message.
     const convs = await MessageModel.aggregate([
       { $match: { userId } },
       { $sort: { createdAt: -1 } },
@@ -36,11 +38,6 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
           lastMessage: { $first: "$body" },
           lastMessageAt: { $first: "$createdAt" },
           lastDirection: { $first: "$direction" },
-          unread: {
-            $sum: {
-              $cond: [{ $eq: ["$direction", "INBOUND"] }, 1, 0],
-            },
-          },
         },
       },
       { $sort: { lastMessageAt: -1 } },
@@ -54,6 +51,30 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
       },
       { $unwind: "$contact" },
     ]);
+
+    const unreadRows = await MessageModel.aggregate([
+      { $match: { userId, direction: "INBOUND" } },
+      {
+        $lookup: {
+          from: "contacts",
+          localField: "contactId",
+          foreignField: "_id",
+          as: "contact",
+        },
+      },
+      { $unwind: "$contact" },
+      {
+        $match: {
+          $expr: {
+            $gt: ["$createdAt", { $ifNull: ["$contact.lastReadAt", new Date(0)] }],
+          },
+        },
+      },
+      { $group: { _id: "$contactId", unread: { $sum: 1 } } },
+    ]);
+    const unreadByContact = new Map(
+      unreadRows.map((row) => [String(row._id), Number(row.unread ?? 0)]),
+    );
 
     const now = Date.now();
     const twentyFourHours = 24 * 60 * 60 * 1000;
@@ -81,8 +102,8 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
         contactPhone: c.contact.phone ?? "",
         lastMessage: c.lastMessage ?? "",
         lastMessageAt: c.lastMessageAt,
-        unread: c.unread ?? 0,
-        status: "Open",
+        unread: unreadByContact.get(String(c._id)) ?? 0,
+        status: c.contact.chatState === "CLOSED" ? "Resolved" : "Open",
         windowOpen,
       };
     });
@@ -90,6 +111,57 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
     res.json({ conversations: shaped });
   } catch (err: unknown) {
     logger.error({ err }, "GET /conversations failed");
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
+// ── POST /api/conversations/:contactId/read
+// Mark all inbound messages currently in a conversation as read for this agent.
+router.post("/conversations/:contactId/read", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const contactId = new mongoose.Types.ObjectId(req.params.contactId);
+    const contact = await ContactModel.findOneAndUpdate(
+      { _id: contactId, userId },
+      { $set: { lastReadAt: new Date() } },
+      { new: true },
+    ).lean();
+    if (!contact) return res.status(404).json({ error: "Contact not found" });
+    res.json({ ok: true, unread: 0 });
+  } catch (err: unknown) {
+    logger.error({ err }, "POST /conversations/:contactId/read failed");
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
+// ── PUT /api/conversations/:contactId/status
+// Open or resolve a conversation. A new inbound message reopens it automatically.
+router.put("/conversations/:contactId/status", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const contactId = new mongoose.Types.ObjectId(req.params.contactId);
+    const requestedStatus = String((req.body as { status?: string }).status ?? "");
+    if (!["Open", "Resolved"].includes(requestedStatus)) {
+      return res.status(400).json({ error: "status must be Open or Resolved" });
+    }
+
+    const contact = await ContactModel.findOneAndUpdate(
+      { _id: contactId, userId },
+      {
+        $set: {
+          chatState: requestedStatus === "Resolved" ? "CLOSED" : "ACTIVE",
+          ...(requestedStatus === "Resolved" ? { lastReadAt: new Date() } : {}),
+        },
+      },
+      { new: true },
+    ).lean();
+    if (!contact) return res.status(404).json({ error: "Contact not found" });
+    res.json({
+      ok: true,
+      status: contact.chatState === "CLOSED" ? "Resolved" : "Open",
+    });
+  } catch (err: unknown) {
+    logger.error({ err }, "PUT /conversations/:contactId/status failed");
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
