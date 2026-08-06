@@ -1,3 +1,6 @@
+import mongoose from "mongoose";
+import { ServicePricingCatalogModel, type ServicePricingRow } from "../models/ServicePricingCatalog";
+
 export interface PricingLookupInput {
   car_category?: unknown;
   category?: unknown;
@@ -146,26 +149,67 @@ function canonicalService(value: unknown): string {
   return normalize(SERVICE_ALIASES[normalized] ?? normalized);
 }
 
-export function resolvePricingLookup(input: PricingLookupInput): PricingLookupResult {
+export function getDefaultPricingRows(): Array<Pick<ServicePricingRow, "service" | "category" | "price" | "currency">> {
+  return Object.entries(PRICES).flatMap(([category, services]) =>
+    Object.entries(services).map(([service, price]) => ({
+      service: Object.entries(SERVICE_ALIASES).find(([, canonical]) => canonical === service)?.[0] ?? service,
+      category: Object.entries(CATEGORY_ALIASES).find(([, canonical]) => canonical === category)?.[0] ?? category,
+      price,
+      currency: "INR",
+    })),
+  );
+}
+
+function resolvePricingFromRows(
+  input: PricingLookupInput,
+  rows: Array<{ service: string; category: string; price: number; currency?: string }>,
+): PricingLookupResult {
   const category = canonicalCategory(input.car_category ?? input.category);
   const service = canonicalService(input.service ?? input.selected_service);
-  // Compare normalized keys as well as normalized input. This keeps values
-  // copied from WhatsApp labels working when they use en dashes/em dashes,
-  // while the price table uses a different dash character.
-  const categoryPrices = Object.entries(PRICES).find(
-    ([tableCategory]) => normalize(tableCategory) === category,
-  )?.[1];
-  const price = Object.entries(categoryPrices ?? {}).find(
-    ([tableService]) => normalize(tableService) === service,
-  )?.[1] ?? null;
+  const matchingRow = rows.find((row) =>
+    normalize(canonicalCategory(row.category)) === category &&
+    normalize(canonicalService(row.service)) === service,
+  );
+  const price = matchingRow?.price ?? null;
 
   return {
     price,
-    currency: "INR",
+    currency: (matchingRow?.currency ?? "INR") as "INR",
     description: price === null
       ? "We could not find a price for that combination. Please choose another option."
-      : `${service.replace(/\b\w/g, (letter) => letter.toUpperCase())} for ${category.replace(/\b\w/g, (letter) => letter.toUpperCase())}.`,
+      : `${matchingRow?.service ?? service} for ${matchingRow?.category ?? category}.`,
     car_category: String(input.car_category ?? input.category ?? ""),
     service: String(input.service ?? input.selected_service ?? ""),
   };
+}
+
+/**
+ * Synchronous compatibility resolver for API tests and older callers.
+ * Runtime chatbot execution uses resolvePricingLookupForUser below so changes
+ * in the workspace catalog take effect without a code change.
+ */
+export function resolvePricingLookup(input: PricingLookupInput): PricingLookupResult {
+  return resolvePricingFromRows(input, getDefaultPricingRows());
+}
+
+export async function ensurePricingCatalog(userId: mongoose.Types.ObjectId | string) {
+  const objectId = typeof userId === "string" ? new mongoose.Types.ObjectId(userId) : userId;
+  let catalog = await ServicePricingCatalogModel.findOne({ userId: objectId });
+  if (!catalog) {
+    catalog = await ServicePricingCatalogModel.create({
+      userId: objectId,
+      rows: getDefaultPricingRows(),
+      sourceFilename: "Built-in service pricing",
+      importedAt: new Date(),
+    });
+  }
+  return catalog;
+}
+
+export async function resolvePricingLookupForUser(
+  userId: mongoose.Types.ObjectId | string,
+  input: PricingLookupInput,
+): Promise<PricingLookupResult> {
+  const catalog = await ensurePricingCatalog(userId);
+  return resolvePricingFromRows(input, catalog.rows as unknown as Array<{ service: string; category: string; price: number; currency?: string }>);
 }

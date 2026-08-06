@@ -2,7 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
-import { resolvePricingLookup } from "../lib/pricing";
+import { resolvePricingLookupForUser } from "../lib/pricing";
 
 const router = Router();
 
@@ -133,8 +133,8 @@ router.post("/chatbot/flows/:id/restore", authenticate, async (req: AuthRequest,
 // ── POST /api/chatbot/pricing/lookup ─────────────────────────────────────────
 // Built-in resolver used by imported demo flows. It is also available as a
 // normal endpoint for testing or for flows configured with this URL.
-router.post("/chatbot/pricing/lookup", authenticate, (req, res) => {
-  res.json(resolvePricingLookup(req.body as {
+router.post("/chatbot/pricing/lookup", authenticate, async (req: AuthRequest, res) => {
+  res.json(await resolvePricingLookupForUser(req.user!.userId, req.body as {
     car_category?: unknown;
     category?: unknown;
     service?: unknown;
@@ -225,7 +225,7 @@ router.post("/chatbot/test-api", authenticate, async (req: AuthRequest, res) => 
         statusText: "OK",
         elapsed: 0,
         headers: { "content-type": "application/json" },
-        body: resolvePricingLookup(parsedBody),
+        body: await resolvePricingLookupForUser(req.user!.userId, parsedBody),
       });
     }
 

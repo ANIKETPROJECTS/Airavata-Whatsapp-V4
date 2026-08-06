@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Key, Phone, MessageSquare, Settings, Layers, Users, Tag,
   Copy, Eye, EyeOff, RefreshCw, Loader2, CheckCircle2,
   Plus, Trash2, X, Search, Pencil,
+  FileSpreadsheet, Upload, Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
@@ -17,6 +18,15 @@ interface CannedMsg { id: string; name: string; message: string; type: string; }
 interface DaySettings { enabled: boolean; open: string; close: string; }
 interface LiveChatSettings { offHoursEnabled: boolean; offHoursMessage: string; timezone: string; workingHours: Record<string, DaySettings>; }
 interface AttributeItem { id: string; name: string; }
+interface PricingRow { id?: string; service: string; category: string; price: number; currency?: string; }
+interface PricingCatalogResponse {
+  catalog: {
+    rows: PricingRow[];
+    sourceFilename: string | null;
+    importedAt: string | null;
+    updatedAt: string | null;
+  };
+}
 
 // ── API Keys Tab ──────────────────────────────────────────────────────────────
 function ApiKeysTab() {
@@ -681,8 +691,163 @@ function TagsTab() {
   );
 }
 
+// ── Service Pricing Tab ───────────────────────────────────────────────────────
+function ServicePricingTab() {
+  const qc = useQueryClient();
+  const [rows, setRows] = useState<PricingRow[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [message, setMessage] = useState<string>('');
+  const { data, isLoading } = useQuery<PricingCatalogResponse>({
+    queryKey: ['service-pricing'],
+    queryFn: () => api.get('/service-pricing'),
+  });
+
+  useEffect(() => {
+    if (data?.catalog.rows) setRows(data.catalog.rows);
+  }, [data]);
+
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const response = await fetch('/api/service-pricing/import', {
+        method: 'POST',
+        credentials: 'include',
+        body: form,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error ?? 'Unable to import workbook');
+      return payload as PricingCatalogResponse;
+    },
+    onSuccess: result => {
+      setRows(result.catalog.rows);
+      setSelectedFile(null);
+      setMessage(`Imported ${result.catalog.rows.length} pricing rows.`);
+      qc.invalidateQueries({ queryKey: ['service-pricing'] });
+      toast.success('Service pricing imported');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: (nextRows: PricingRow[]) => api.put<PricingCatalogResponse>('/service-pricing', {
+      rows: nextRows.map(({ service, category, price, currency }) => ({ service, category, price, currency })),
+    }),
+    onSuccess: result => {
+      setRows(result.catalog.rows);
+      setMessage('Catalog saved. Chatbot pricing lookups use these values immediately.');
+      qc.invalidateQueries({ queryKey: ['service-pricing'] });
+      toast.success('Service pricing saved');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updateRow = (index: number, patch: Partial<PricingRow>) =>
+    setRows(current => current.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row));
+
+  return (
+    <div className="p-6 space-y-5">
+      <div className="border-b pb-4">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <FileSpreadsheet className="w-5 h-5 text-primary" /> Service Pricing
+        </h2>
+        <p className="text-xs text-gray-500 mt-1">
+          This catalog powers the chatbot pricing node dynamically. Import or edit prices here—no code changes are needed.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">Import an Excel price list</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Use columns named Service, Category, and Price. Importing replaces the current catalog.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="file"
+            accept=".xlsx"
+            className="block flex-1 text-xs text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-medium file:text-gray-700 file:shadow-sm"
+            onChange={event => setSelectedFile(event.target.files?.[0] ?? null)}
+          />
+          <button
+            onClick={() => selectedFile && importMutation.mutate(selectedFile)}
+            disabled={!selectedFile || importMutation.isPending}
+            className="flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
+          >
+            {importMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            Import workbook
+          </button>
+        </div>
+      </div>
+
+      {message && <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">{message}</p>}
+
+      {isLoading ? (
+        <div className="flex items-center text-gray-400 text-sm"><Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading pricing catalog…</div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs text-gray-500">
+              {rows.length} rows{data?.catalog.sourceFilename ? ` · Source: ${data.catalog.sourceFilename}` : ''}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRows(current => [...current, { service: '', category: '', price: 0, currency: 'INR' }])}
+                className="flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add row
+              </button>
+              <button
+                onClick={() => saveMutation.mutate(rows)}
+                disabled={saveMutation.isPending}
+                className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Save catalog
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[680px] text-sm">
+              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Service</th>
+                  <th className="px-3 py-2 font-semibold">Category</th>
+                  <th className="w-32 px-3 py-2 font-semibold">Price</th>
+                  <th className="w-20 px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {rows.map((row, index) => (
+                  <tr key={row.id ?? `new-${index}`} className="hover:bg-gray-50/70">
+                    <td className="px-3 py-1.5">
+                      <input value={row.service} onChange={event => updateRow(index, { service: event.target.value })} className="w-full rounded border px-2 py-1.5 text-xs focus:border-primary focus:outline-none" />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <input value={row.category} onChange={event => updateRow(index, { category: event.target.value })} className="w-full rounded border px-2 py-1.5 text-xs focus:border-primary focus:outline-none" />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <input type="number" min="0" value={row.price} onChange={event => updateRow(index, { price: Number(event.target.value) })} className="w-full rounded border px-2 py-1.5 text-xs focus:border-primary focus:outline-none" />
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      <button onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))} className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500" title="Remove row">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {rows.length === 0 && <p className="p-8 text-center text-sm text-gray-400">No pricing rows yet. Import your workbook above.</p>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
-type TabId = 'api' | 'agents' | 'phone' | 'canned' | 'livechat' | 'attributes' | 'tags';
+type TabId = 'api' | 'agents' | 'phone' | 'canned' | 'livechat' | 'attributes' | 'tags' | 'pricing';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'api',        label: 'API key',           icon: Key },
@@ -692,6 +857,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'livechat',   label: 'Live Chat Settings', icon: Settings },
   { id: 'attributes', label: 'Attributes',         icon: Layers },
   { id: 'tags',       label: 'Tags',               icon: Tag },
+  { id: 'pricing',    label: 'Service Pricing',    icon: FileSpreadsheet },
 ];
 
 export default function Manage() {
@@ -726,6 +892,7 @@ export default function Manage() {
           {activeTab === 'livechat'   && <LiveChatSettingsTab />}
           {activeTab === 'attributes' && <AttributesTab />}
           {activeTab === 'tags'       && <TagsTab />}
+          {activeTab === 'pricing'    && <ServicePricingTab />}
         </div>
       </div>
     </div>

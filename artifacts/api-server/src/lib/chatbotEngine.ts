@@ -24,7 +24,7 @@ import {
   sendLocationMessage,
   sendTemplateMessage,
 } from "./whatsapp";
-import { resolvePricingLookup } from "./pricing";
+import { resolvePricingLookupForUser } from "./pricing";
 
 // ── Internal Types ─────────────────────────────────────────────────────────────
 
@@ -636,7 +636,7 @@ async function executeNode(
         if (url) {
           try {
             const data = isBuiltInApiUrl(url)
-              ? await executeBuiltInApi(url, bodyStr, variables, contact)
+              ? await executeBuiltInApi(url, bodyStr, variables, contact, userId)
               : await fetchExternalApi(url, method, headers, bodyStr);
             for (const m of responseMapping) {
               // Imported flows use path/variable; older saved flows used
@@ -864,6 +864,7 @@ async function executeBuiltInApi(
   bodyStr: string | undefined,
   variables: Record<string, unknown>,
   contact: Record<string, unknown>,
+  userId: mongoose.Types.ObjectId,
 ): Promise<Record<string, unknown>> {
   const normalized = url.trim().toLowerCase();
   let body: Record<string, unknown> = {};
@@ -881,7 +882,7 @@ async function executeBuiltInApi(
     normalized === "/api/chatbot/pricing/lookup" ||
     normalized.includes("your-backend.example.com/api/pricing/lookup")
   ) {
-    return resolvePricingLookup({
+    return await resolvePricingLookupForUser(userId, {
       car_category: body["car_category"] ?? variables["car_category"] ?? contact["car_category"],
       service: body["service"] ?? body["selected_service"] ?? variables["selected_service"],
     }) as unknown as Record<string, unknown>;
