@@ -1,0 +1,160 @@
+1. Database model created
+Created a MongoDB/Mongoose WhatsAppInquiry model/collection with:
+
+customerName
+phone
+whatsappContactName
+vehicleModel
+vehicleCategory
+serviceName
+quotedPrice
+currency
+appointmentDate
+appointmentTime
+timezone
+notes
+stage
+bookingId
+assignedTo
+airavataContactId
+airavataConversationId
+externalInquiryId
+source
+formSubmittedAt
+confirmedAt
+createdAt
+updatedAt
+Persisted stages are now:
+
+NEW
+FORM_SUBMITTED
+FOLLOW_UP_REQUIRED
+BOOKING_CONFIRMED
+BOOKING_CANCELLED
+COMPLETED
+LOST
+
+The UI displays readable labels such as “Booking Confirmed”.
+
+2. Files changed
+shared/schema.ts
+Added the full WhatsApp Inquiry schema and stage definitions.
+server/storage.ts
+Added the Mongoose model.
+Added database CRUD methods.
+Added updatedAt handling and validation.
+server/routes.ts
+Added API endpoints.
+Added validation for create and update requests.
+Added legacy-record migration.
+Added development-only seed synchronization.
+client/src/pages/whatsapp-inquiries.tsx
+Updated the existing page to use the new database field names and uppercase stage values.
+Existing search, stage filter, appointment-date filter, list, and detail view remain available.
+.agents/memory/MEMORY.md
+.agents/memory/whatsapp-inquiry-contract.md
+3. API routes created
+All routes require the existing AutoGamma authenticated session.
+
+GET    /api/whatsapp-inquiries
+GET    /api/whatsapp-inquiries/:id
+POST   /api/whatsapp-inquiries
+PATCH  /api/whatsapp-inquiries/:id
+DELETE /api/whatsapp-inquiries/:id
+
+PATCH is used for updates, consistent with the existing project conventions.
+
+4. Does the page load from the database?
+Yes. The page now loads from MongoDB through:
+
+GET /api/whatsapp-inquiries
+
+The detail view uses the database record returned from the list. Stage and notes updates are persisted using PATCH.
+
+The app was restarted and verified successfully:
+
+MongoDB connected successfully
+[whatsapp-inquiries] Development seed data synchronized.
+serving on port 5000
+
+5. Exact create request format
+POST /api/whatsapp-inquiries
+Content-Type: application/json
+
+{
+  "customerName": "Sairaj Koyande",
+  "phone": "+919619523254",
+  "whatsappContactName": "Sairaj Koyande",
+  "vehicleModel": "Ajajja",
+  "vehicleCategory": "Small Cars",
+  "serviceName": "Foam Washing",
+  "quotedPrice": 400,
+  "currency": "INR",
+  "appointmentDate": "2026-08-06",
+  "appointmentTime": "15:00",
+  "timezone": "Asia/Kolkata",
+  "notes": "",
+  "stage": "BOOKING_CONFIRMED",
+  "bookingId": "AD-MSHPLCMP",
+  "assignedTo": "",
+  "source": "whatsapp"
+}
+
+Optional fields:
+
+{
+  "airavataContactId": "optional-id",
+  "airavataConversationId": "optional-id",
+  "externalInquiryId": "optional-id",
+  "formSubmittedAt": "2026-08-06T10:00:00.000Z",
+  "confirmedAt": "2026-08-06T11:00:00.000Z"
+}
+
+6. Exact update request format
+PATCH /api/whatsapp-inquiries/:id
+Content-Type: application/json
+
+Example stage update:
+
+{
+  "stage": "FOLLOW_UP_REQUIRED"
+}
+
+Example notes and booking update:
+
+{
+  "notes": "Customer requested a callback tomorrow.",
+  "appointmentDate": "2026-08-08",
+  "appointmentTime": "14:00",
+  "bookingId": "AD-MSHPLCMP"
+}
+
+Assignment update:
+
+{
+  "assignedTo": "user-id"
+}
+
+7. Development seed behavior
+The two requested sample inquiries are seeded only when:
+
+NODE_ENV=development
+
+They are synchronized idempotently using development identifiers, so restarting the app does not create duplicates.
+
+Development records:
+
+Sairaj Koyande — +919619523254 — Ajajja — Foam Washing — ₹400 — BOOKING_CONFIRMED
+Abhijeet Singh — +918600126395 — Xyz — Ceramic Coating – MENZA PRO — ₹21,000 — FORM_SUBMITTED
+The existing two legacy WhatsApp records in the testing database were migrated to the new field names and stage values.
+
+Production does not automatically insert these sample records.
+
+Remaining work before Airavata
+Before connecting Airavata, the main decision is how duplicate webhook deliveries should be handled:
+
+Which Airavata identifier is authoritative?
+Should externalInquiryId be unique?
+Or should uniqueness be based on airavataConversationId?
+Should repeated events update the existing inquiry or be ignored?
+That follow-up has been proposed as a separate task. No Airavata connection, webhook, API key, priority scoring, AI analysis, or conversation synchronization was added.
