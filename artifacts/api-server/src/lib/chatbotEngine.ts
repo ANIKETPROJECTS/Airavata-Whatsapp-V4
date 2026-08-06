@@ -583,7 +583,15 @@ async function executeNode(
         }
         return {};
       }
-
+      // ── Question — asks for free text and waits for the reply ────────────
+      case "question": {
+        const message = interpolate(String(d["question"] ?? ""), variables, contact);
+        if (message) {
+          await sendTextMessage(phone, message);
+          await storeOutbound(userId, contactId, message);
+        }
+        return { waitForInput: true };
+      }
       default:
         logger.info({ type: node.type }, "Chatbot node type not handled — skipping");
         return {};
