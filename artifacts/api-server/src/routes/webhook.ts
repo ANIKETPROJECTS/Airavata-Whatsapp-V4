@@ -63,6 +63,11 @@ router.post("/webhook", async (req, res) => {
 
   try {
     const body = req.body as WebhookBody;
+    logger.info({
+      object: body?.object,
+      entryCount: body?.entry?.length ?? 0,
+      changeCount: body?.entry?.reduce((sum, entry) => sum + (entry.changes?.length ?? 0), 0) ?? 0,
+    }, "Webhook request received");
     if (body?.object !== "whatsapp_business_account") return;
 
     const myPhoneNumberId = process.env.META_PHONE_NUMBER_ID;

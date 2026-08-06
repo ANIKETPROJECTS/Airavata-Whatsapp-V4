@@ -382,8 +382,22 @@ async function executeFlow(
     );
 
     if (result.error) {
-      logger.error({ nodeId: node.id, error: result.error }, "Chatbot node error — stopping flow");
-      break;
+      logger.error({
+        nodeId: node.id,
+        nodeType: node.type,
+        flowId: String(flow._id),
+        error: result.error,
+      }, "Chatbot node error — preserving session for retry");
+      // Keep the session at the failed node. This is especially important for
+      // Flow Reply nodes: if Meta rejects the outbound Flow message, a later
+      // retry should not force the customer to restart the whole chatbot.
+      await saveSession(contactId, {
+        flowId: String(flow._id),
+        currentNodeId: node.id,
+        variables,
+        startedAt: new Date(),
+      });
+      return;
     }
 
     if (result.waitForInput) {
@@ -746,6 +760,13 @@ async function sendWhatsAppFlowMessage(
     : "unused";
   const firstScreen = sanitizeFlowScreenId(internalFlow?.screens?.[0]?.id ?? "SCREEN_A");
   const normalizedPhone = phone.replace(/^\+/, "");
+  logger.info({
+    to: normalizedPhone,
+    flowReference,
+    internalFlowId: String(internalFlow._id),
+    metaFlowId: internalFlow.metaFlowId,
+    firstScreen,
+  }, "Sending WhatsApp Flow message to Meta");
 
   const res = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
     method: "POST",
@@ -779,9 +800,23 @@ async function sendWhatsAppFlowMessage(
   });
 
   if (!res.ok) {
-    const err = (await res.json()) as { error?: { message?: string } };
-    throw new Error(`Meta flow message error: ${err.error?.message ?? res.status}`);
+    const raw = await res.text();
+    let err: { error?: { message?: string; code?: number; error_subcode?: number; fbtrace_id?: string } } = {};
+    try {
+      err = JSON.parse(raw) as typeof err;
+    } catch {
+      // Keep the raw response in the thrown error below.
+    }
+    logger.error({
+      status: res.status,
+      raw,
+      metaError: err.error,
+      to: normalizedPhone,
+      metaFlowId: internalFlow.metaFlowId,
+    }, "Meta rejected WhatsApp Flow message");
+    throw new Error(`Meta flow message error: ${err.error?.message ?? raw ?? String(res.status)}`);
   }
+  logger.info({ to: normalizedPhone, metaFlowId: internalFlow.metaFlowId }, "Meta accepted WhatsApp Flow message");
 }
 
 const FLOW_DIGIT_WORDS = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"];
