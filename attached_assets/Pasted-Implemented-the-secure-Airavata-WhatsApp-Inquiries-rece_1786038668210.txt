@@ -1,0 +1,183 @@
+Implemented the secure Airavata WhatsApp Inquiries receiver.
+
+1. Endpoint URL
+POST /api/integrations/airavata/whatsapp-inquiries
+
+Local URL:
+
+http://localhost:5000/api/integrations/airavata/whatsapp-inquiries
+
+The app is currently running. It has not been published or connected to Airavata.
+
+2. Required authentication header
+X-Airavata-Integration-Key: <integration-secret>
+
+Missing or incorrect keys return:
+
+401 Unauthorized
+
+The comparison uses a timing-safe server-side comparison.
+
+3. Required environment variable
+AIRAVATA_INTEGRATION_SECRET
+
+The secret is configured in Replit Secrets and is never exposed to the frontend or logs.
+
+4. Accepted request schema
+Required fields:
+
+{
+  "eventType": "inquiry.created | inquiry.updated | booking.confirmed | booking.cancelled",
+  "eventId": "unique-event-id",
+  "sourceSystem": "airavata",
+  "source": "whatsapp",
+  "externalInquiryId": "authoritative-inquiry-id"
+}
+
+Optional event data:
+
+{
+  "customer": {
+    "name": "string",
+    "phone": "string",
+    "whatsappContactName": "string"
+  },
+  "vehicle": {
+    "model": "string",
+    "category": "string"
+  },
+  "service": {
+    "name": "string",
+    "quotedPrice": 400,
+    "currency": "INR"
+  },
+  "appointment": {
+    "date": "YYYY-MM-DD",
+    "time": "HH:mm",
+    "timezone": "Asia/Kolkata",
+    "notes": "string"
+  },
+  "stage": "NEW | FORM_SUBMITTED | FOLLOW_UP_REQUIRED | BOOKING_CONFIRMED | BOOKING_CANCELLED | COMPLETED | LOST",
+  "references": {
+    "airavataContactId": "contact-id",
+    "airavataConversationId": "conversation-id"
+  },
+  "booking": {
+    "bookingId": "booking-id",
+    "date": "YYYY-MM-DD",
+    "time": "HH:mm"
+  },
+  "occurredAt": "ISO-8601 datetime"
+}
+
+customer, vehicle, and service are required for inquiry.created.
+
+booking is required for booking.confirmed.
+
+Invalid payloads return HTTP 400.
+
+5. Response schema
+Successful new or updated event:
+
+{
+  "accepted": true,
+  "duplicate": false,
+  "inquiryId": "database-id",
+  "stage": "FORM_SUBMITTED"
+}
+
+Duplicate event:
+
+{
+  "accepted": true,
+  "duplicate": true,
+  "inquiryId": "database-id",
+  "stage": "FORM_SUBMITTED"
+}
+
+6. Duplicate-event behavior
+eventId is stored for idempotency.
+Repeating the same eventId does not process the event again.
+The duplicate request returns accepted: true and duplicate: true.
+Repeating an event with the same externalInquiryId but a new eventId updates the existing inquiry instead of creating a duplicate.
+airavataContactId is stored only as a contact reference and is not used as the inquiry identity.
+7. Unique database indexes
+Yes.
+
+The inquiry collection has this unique sparse compound index:
+
+{
+  sourceSystem: 1,
+  externalInquiryId: 1
+}
+
+The event idempotency collection has this unique index:
+
+{
+  sourceSystem: 1,
+  externalEventId: 1
+}
+
+8. Local testing
+Use the running development server:
+
+curl -i \
+  -X POST \
+  http://localhost:5000/api/integrations/airavata/whatsapp-inquiries \
+  -H "Content-Type: application/json" \
+  -H "X-Airavata-Integration-Key: <your-secret>" \
+  -d @event.json
+
+The integration secret is intentionally not readable by me, so I verified the missing-key and incorrect-key paths instead. Both returned HTTP 401.
+
+9. Sample curl command
+curl -i \
+  -X POST \
+  http://localhost:5000/api/integrations/airavata/whatsapp-inquiries \
+  -H "Content-Type: application/json" \
+  -H "X-Airavata-Integration-Key: replace-with-placeholder-secret" \
+  -d '{
+    "eventType": "inquiry.created",
+    "eventId": "unique-event-id",
+    "sourceSystem": "airavata",
+    "source": "whatsapp",
+    "externalInquiryId": "airavata-inquiry-id",
+    "customer": {
+      "name": "Sairaj Koyande",
+      "phone": "+919619523254",
+      "whatsappContactName": "Sairaj Koyande"
+    },
+    "vehicle": {
+      "model": "Ajajja",
+      "category": "Small Cars"
+    },
+    "service": {
+      "name": "Foam Washing",
+      "quotedPrice": 400,
+      "currency": "INR"
+    },
+    "appointment": {
+      "date": "2026-08-06",
+      "time": "15:00",
+      "timezone": "Asia/Kolkata",
+      "notes": ""
+    },
+    "stage": "FORM_SUBMITTED",
+    "references": {
+      "airavataContactId": "airavata-contact-id",
+      "airavataConversationId": "airavata-conversation-id"
+    },
+    "occurredAt": "2026-08-06T10:06:00.000Z"
+  }'
+
+10. Workspace/company/tenant awareness
+No.
+
+The endpoint currently scopes uniqueness by:
+
+sourceSystem + externalInquiryId
+sourceSystem + externalEventId
+
+The existing project does not have workspace, company, or tenant isolation implemented for WhatsApp Inquiries. Airavata has not been connected yet.
+
+The application workflow restarted successfully, and the existing UI was not changed.
