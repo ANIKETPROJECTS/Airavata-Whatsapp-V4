@@ -36,7 +36,10 @@ router.get("/service-pricing", authenticate, async (req: AuthRequest, res) => {
 
 router.post("/service-pricing/import", authenticate, upload.single("file"), async (req: AuthRequest, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "An .xlsx pricing workbook is required" });
+    if (!req.file) {
+      res.status(400).json({ error: "An .xlsx pricing workbook is required" });
+      return;
+    }
     const rows = parsePricingWorkbook(req.file.buffer);
     const catalog = await ServicePricingCatalogModel.findOneAndUpdate(
       { userId: userId(req) },
@@ -52,7 +55,10 @@ router.post("/service-pricing/import", authenticate, upload.single("file"), asyn
 router.put("/service-pricing", authenticate, async (req: AuthRequest, res) => {
   try {
     const rows = (req.body as { rows?: Array<{ service?: string; category?: string; price?: number; currency?: string }> }).rows;
-    if (!Array.isArray(rows)) return res.status(400).json({ error: "rows must be an array" });
+    if (!Array.isArray(rows)) {
+      res.status(400).json({ error: "rows must be an array" });
+      return;
+    }
     const cleanRows = rows.map((row) => ({
       service: String(row.service ?? "").trim(),
       category: String(row.category ?? "").trim(),
@@ -60,7 +66,8 @@ router.put("/service-pricing", authenticate, async (req: AuthRequest, res) => {
       currency: String(row.currency ?? "INR").trim() || "INR",
     }));
     if (cleanRows.some((row) => !row.service || !row.category || !Number.isFinite(row.price) || row.price < 0)) {
-      return res.status(400).json({ error: "Every row needs a service, category, and non-negative price" });
+      res.status(400).json({ error: "Every row needs a service, category, and non-negative price" });
+      return;
     }
     const catalog = await ServicePricingCatalogModel.findOneAndUpdate(
       { userId: userId(req) },
@@ -73,5 +80,4 @@ router.put("/service-pricing", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-export { ensureCatalog };
 export default router;

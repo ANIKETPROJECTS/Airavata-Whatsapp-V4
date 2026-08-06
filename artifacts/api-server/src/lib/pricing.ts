@@ -149,11 +149,24 @@ function canonicalService(value: unknown): string {
   return normalize(SERVICE_ALIASES[normalized] ?? normalized);
 }
 
+function displayPricingLabel(value: string): string {
+  return value
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bSuv\b/g, "SUV")
+    .replace(/\bMuv\b/g, "MUV")
+    .replace(/\bMpv\b/g, "MPV")
+    .replace(/\b9h\b/gi, "9H")
+    .replace(/\bMafra\b/g, "MAFRA")
+    .replace(/\bMenza Pro\b/g, "MENZA PRO")
+    .replace(/\bKoch Chemie\b/g, "KOCH CHEMIE")
+    .replace(/\bTeflon\b/g, "TEFLON");
+}
+
 export function getDefaultPricingRows(): Array<Pick<ServicePricingRow, "service" | "category" | "price" | "currency">> {
   return Object.entries(PRICES).flatMap(([category, services]) =>
     Object.entries(services).map(([service, price]) => ({
-      service: Object.entries(SERVICE_ALIASES).find(([, canonical]) => canonical === service)?.[0] ?? service,
-      category: Object.entries(CATEGORY_ALIASES).find(([, canonical]) => canonical === category)?.[0] ?? category,
+      service: displayPricingLabel(service),
+      category: displayPricingLabel(category),
       price,
       currency: "INR",
     })),

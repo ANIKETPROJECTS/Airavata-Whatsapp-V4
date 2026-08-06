@@ -4,3 +4,4 @@
 - [Live Chat unread state](live-chat-unread-state.md) — derive badges from inbound messages after lastReadAt; new inbound activity reopens resolved conversations.
 - [Meta webhook secret name](meta-webhook-secret-name.md) — webhook verification uses WEBHOOK_VERIFY_TOKEN with a WHATSAPP_VERIFY_TOKEN compatibility fallback.
 - [Chatbot condition edge handles](chatbot-condition-edges.md) — condition branch edges must store the matching true/false sourceHandle or runtime execution stops.
+- [Service pricing catalog](service-pricing-catalog.md) — workspace-owned MongoDB pricing rows power built-in chatbot lookups and XLSX imports.
