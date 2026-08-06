@@ -134,18 +134,26 @@ function normalize(value: unknown): string {
 
 function canonicalCategory(value: unknown): string {
   const normalized = normalize(value);
-  return CATEGORY_ALIASES[normalized] ?? normalized;
+  return normalize(CATEGORY_ALIASES[normalized] ?? normalized);
 }
 
 function canonicalService(value: unknown): string {
   const normalized = normalize(value);
-  return SERVICE_ALIASES[normalized] ?? normalized;
+  return normalize(SERVICE_ALIASES[normalized] ?? normalized);
 }
 
 export function resolvePricingLookup(input: PricingLookupInput): PricingLookupResult {
   const category = canonicalCategory(input.car_category ?? input.category);
   const service = canonicalService(input.service ?? input.selected_service);
-  const price = PRICES[category]?.[service] ?? null;
+  // Compare normalized keys as well as normalized input. This keeps values
+  // copied from WhatsApp labels working when they use en dashes/em dashes,
+  // while the price table uses a different dash character.
+  const categoryPrices = Object.entries(PRICES).find(
+    ([tableCategory]) => normalize(tableCategory) === category,
+  )?.[1];
+  const price = Object.entries(categoryPrices ?? {}).find(
+    ([tableService]) => normalize(tableService) === service,
+  )?.[1] ?? null;
 
   return {
     price,

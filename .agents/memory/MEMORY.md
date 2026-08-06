@@ -1,2 +1,3 @@
 - [Airavata: MongoDB alongside existing Postgres scaffold](airavata-mongodb-setup.md) — when a project's default `@workspace/db` is Postgres/Drizzle but the user requires MongoDB-only, add mongoose directly to the API server package instead of touching the shared db lib.
 - [Airavata: Mongoose aggregation ObjectId casting](airavata-mongodb-aggregation.md) — aggregation $match does NOT auto-cast string IDs; wrap with `new mongoose.Types.ObjectId(str)` explicitly.
+- [Pricing label normalization](pricing-label-normalization.md) — normalize punctuation and dash variants in both WhatsApp labels and configured pricing keys before matching.
