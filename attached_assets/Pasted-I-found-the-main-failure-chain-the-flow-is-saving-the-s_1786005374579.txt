@@ -1,0 +1,64 @@
+I found the main failure chain: the flow is saving the selected row in list_reply, but the engine never populates that variable, so every service condition evaluates false and falls through to the Glass branch. The price node is also still a placeholder URL, and its imported response-mapping keys don’t match what the engine reads. I’m fixing the engine compatibility now and making the import preserve the uploaded JSON shape.
+
+
+Show less
+
+Opened index.ts
+
+Opened app.ts
+
+Opened Chatbot.tsx
+Enhancing the flow and pricing
+
+Enhancing the flow and pricing
+
+Opened nodeConfig.ts
+
+Opened ConfigPanel.tsx
+
+Searched for "case 'question'|questio…"
+Evaluating app enhancements
+
+Evaluating app enhancements
+
+Searched for "company.name|companyNam…"
+
+Processed text
+Evaluating CTA flow issues
+
+Evaluating CTA flow issues
+Considering API endpoint features
+
+Considering API endpoint features
+
+Listed files
+
+Opened whatsapp.ts
+Improving Price Resolver
+
+Improving Price Resolver
+Exploring API Issue
+
+I’m looking into the user's issue with the list-washing on the resume and how the service interpolates the list reply when “Foam Washing” is set. The custom API placeholder URL seems problematic, as it fetches and fails, leaving variables empty. I'm considering creating a native pricing API endpoint to address the JSON import issue. We might need to ensure normalization and mapping are properly handled. I’m curious about whether fixing the uploaded JSON or changing the API flow could help!Improving Price Resolver
+
+I’m considering adding a built-in service price resolver for the placeholder URL in uploaded JSON. It seems replacing that external URL on import could help with normalization. If the URL is something like https://your-backend.example.com/api/pricing/lookup, perhaps I could set it to a local endpoint like /api/chatbot/pricing/lookup. I might even explore adding support for airavata://pricing/lookup in built-in nodes. It could simplify the process, avoiding manual configuration for the user!
+
+Implementing booking system
+
+Implementing booking system
+Implementing booking system
+
+I’m thinking of setting the variable booking_id to AD-..., and I shouldn't pretend it's external. The user mainly takes screenshots of prices, so I’ll implement a custom API with a placeholder URL.
+
+For pricing lookup, I need to derive car_category and selected_service from a static pricing map. I also might have to handle a webhook.site placeholder to set the booking_id. I shouldn't need randomness; maybe using the date is fine. But there could be an issue with actual IDs versus titles for some services.
+
+Normalizing service matching
+
+Normalizing service matching
+Resolving implementation issues
+
+Resolving implementation issues
+The first edit didn’t apply cleanly, so I’m splitting the fix into smaller changes to avoid touching unrelated flow behavior.
+
+
+Edited chatbotEngine.ts
