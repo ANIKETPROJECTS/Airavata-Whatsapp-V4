@@ -2,7 +2,7 @@
  * Module 6: Webhook Handling
  * Handles Meta's webhook verification handshake and incoming event payloads.
  * Register this URL in Meta's App Dashboard under WhatsApp > Configuration.
- * Set WEBHOOK_VERIFY_TOKEN in Replit Secrets to the same token you enter in Meta.
+ * Set WHATSAPP_VERIFY_TOKEN in Replit Secrets to the same token you enter in Meta.
  */
 
 import { Router } from "express";
@@ -35,11 +35,14 @@ router.get("/webhook", (req, res) => {
   const token = req.query["hub.verify_token"] as string | undefined;
   const challenge = req.query["hub.challenge"] as string | undefined;
 
-  const verifyToken = process.env.WEBHOOK_VERIFY_TOKEN;
+  // WHATSAPP_VERIFY_TOKEN is the configured Replit secret name. Keep the
+  // legacy WEBHOOK_VERIFY_TOKEN fallback for existing deployments.
+  const verifyToken =
+    process.env.WHATSAPP_VERIFY_TOKEN ?? process.env.WEBHOOK_VERIFY_TOKEN;
 
   if (!verifyToken) {
-    logger.warn("WEBHOOK_VERIFY_TOKEN is not set — webhook verification will fail");
-    res.status(500).send("WEBHOOK_VERIFY_TOKEN not configured in Secrets");
+    logger.warn("WHATSAPP_VERIFY_TOKEN is not set — webhook verification will fail");
+    res.status(500).send("WHATSAPP_VERIFY_TOKEN not configured in Secrets");
     return;
   }
 
@@ -196,13 +199,26 @@ async function handleIncomingMessage(
     if (interactive?.type === "nfm_reply" && interactive.nfm_reply?.response_json) {
       // WhatsApp Flow submission — parse the structured response
       try {
-        const parsed = JSON.parse(interactive.nfm_reply.response_json);
+        const rawResponse = interactive.nfm_reply.response_json;
+        const parsed = typeof rawResponse === "string"
+          ? JSON.parse(rawResponse)
+          : rawResponse;
         flowData = (typeof parsed === "object" && parsed !== null) ? parsed as Record<string, unknown> : { raw: parsed };
         body = "📋 Form submitted";
-        logger.info({ flowData }, "Parsed flow response");
+        logger.info({
+          from: fromRaw,
+          responseKeys: Object.keys(flowData),
+          hasNestedData: Boolean(flowData["data"] && typeof flowData["data"] === "object"),
+        }, "Parsed WhatsApp Flow response");
 
         // Resolve the flow this submission belongs to via flow_token ("flow_<internalId>_<ts>")
-        const token = flowData["flow_token"] as string | undefined;
+        const nestedResponse = flowData["data"];
+        const nestedToken = nestedResponse && typeof nestedResponse === "object"
+          ? (nestedResponse as Record<string, unknown>)["flow_token"]
+          : undefined;
+        const token =
+          (typeof flowData["flow_token"] === "string" ? flowData["flow_token"] : undefined) ??
+          (typeof nestedToken === "string" ? nestedToken : undefined);
         if (token) {
           const match = token.match(/^flow_([a-f0-9]{24})_/);
           if (match?.[1]) {
@@ -233,6 +249,12 @@ async function handleIncomingMessage(
             }
           }
         }
+        logger.info({
+          from: fromRaw,
+          tokenFound: Boolean(token),
+          flowId: flowId ? String(flowId) : undefined,
+          sessionFound: Boolean((contact as Record<string, unknown>)["chatbotSession"]),
+        }, "Resolved WhatsApp Flow submission context");
       } catch (parseErr) {
         logger.error({ parseErr: String(parseErr), rawJson: interactive.nfm_reply.response_json }, "Failed to parse nfm_reply response_json");
         body = "📋 Form submitted (parse error)";
@@ -287,9 +309,11 @@ async function handleIncomingMessage(
   // A WhatsApp Flow submission continues the paused chatbot at the node
   // connected after Flow Reply. It must not restart keyword matching.
   if (flowData) {
-    resumeChatbotAfterFlowSubmission(contactId, userId, flowData).catch((err) =>
-      logger.error({ err: String(err), contactId: String(contactId) }, "Chatbot resume after Flow submission failed"),
-    );
+    resumeChatbotAfterFlowSubmission(contactId, userId, flowData)
+      .then(() => logger.info({ contactId: String(contactId) }, "Chatbot resumed after Flow submission"))
+      .catch((err) =>
+        logger.error({ err: String(err), contactId: String(contactId) }, "Chatbot resume after Flow submission failed"),
+      );
   }
 
   // Fire chatbot engine for text messages and interactive button/list replies

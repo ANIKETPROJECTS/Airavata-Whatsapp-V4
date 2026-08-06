@@ -247,7 +247,10 @@ export async function resumeChatbotAfterFlowSubmission(
 
   const session = contact["chatbotSession"] as Session | undefined;
   if (!session?.flowId || !session.currentNodeId) {
-    logger.info({ contactId: String(contactId) }, "Flow submitted without a paused chatbot session");
+    logger.warn({
+      contactId: String(contactId),
+      submittedKeys: Object.keys(submittedData),
+    }, "Flow submitted without a paused chatbot session");
     return;
   }
 
@@ -271,7 +274,7 @@ export async function resumeChatbotAfterFlowSubmission(
       ? { ...submittedData, ...(nestedData as Record<string, unknown>) }
       : submittedData;
   const variables = { ...(session.variables ?? {}) };
-  const internalKeys = new Set(["flow_token", "version", "source", "data"]);
+  const internalKeys = new Set(["flow_token", "version", "source", "screen", "data"]);
 
   for (const [key, value] of Object.entries(formValues)) {
     if (!internalKeys.has(key)) variables[key] = value;
@@ -279,11 +282,22 @@ export async function resumeChatbotAfterFlowSubmission(
 
   const nextEdge = flow.edges.find((edge) => edge.source === session.currentNodeId);
   if (!nextEdge) {
+    logger.error({
+      flowId: session.flowId,
+      currentNodeId: session.currentNodeId,
+      submittedKeys: Object.keys(submittedData),
+    }, "Flow submission has no outgoing chatbot edge");
     await clearSession(contactId);
     return;
   }
 
   const phone = String(contact["phone"] ?? "").replace(/\s+/g, "");
+  logger.info({
+    flowId: session.flowId,
+    currentNodeId: session.currentNodeId,
+    nextNodeId: nextEdge.target,
+    variableKeys: Object.keys(variables),
+  }, "Resuming chatbot after WhatsApp Flow submission");
   await executeFlow(flow, nextEdge.target, phone, contact, userId, contactId, variables);
 }
 

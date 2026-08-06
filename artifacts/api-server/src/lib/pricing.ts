@@ -101,6 +101,8 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "cat-hatch": "hatchback / small sedan",
   "cat-mid": "mid-size sedan / compact suv / muv",
   "cat-suv": "suv / mpv",
+  // Short labels used by the imported chatbot's vehicle list.
+  "mid-size sedan / compact": "mid-size sedan / compact suv / muv",
 };
 
 const SERVICE_ALIASES: Record<string, string> = {
@@ -122,6 +124,8 @@ const SERVICE_ALIASES: Record<string, string> = {
   "svc-scf-standard": "sun control film – standard",
   "svc-scf-premium": "sun control film – premium",
   "svc-scf-ceramic": "sun control film – ceramic",
+  // Short labels used by the imported chatbot's coating list.
+  "ceramic coating - menza": "ceramic coating – menza pro",
 };
 
 function normalize(value: unknown): string {
