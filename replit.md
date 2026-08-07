@@ -1,47 +1,40 @@
 # Airavata WhatsApp Solution
 
-A full-stack WhatsApp Business Platform solution for managing contacts, campaigns, conversations, and AI-powered agents.
+A WhatsApp business platform built with React (Vite) + Express + MongoDB. Handles chatbot flows, live agent chat, template management, and WhatsApp Cloud API webhooks.
 
 ## Stack
 
-- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui (`artifacts/airavata/`)
-- **Backend**: Node.js + Express + Mongoose (`artifacts/api-server/`)
-- **Database**: MongoDB Atlas (via `MONGODB_URI`)
-- **Shared libs**: `lib/api-zod` (validation), `lib/api-client-react` (typed fetch hooks), `lib/db` (Drizzle/Postgres scaffold — unused, Mongoose used instead)
+- **Frontend**: React + Vite + Tailwind + shadcn/ui (`artifacts/airavata`)
+- **Backend**: Express 5 + Mongoose (`artifacts/api-server`)
+- **Database**: MongoDB (via `MONGODB_URI`)
+- **WhatsApp**: Meta Cloud API
 
-## How to Run
+## Running the project
 
-Dependencies are managed by pnpm workspaces. Install once from the root:
+Two workflows run in parallel:
 
-```bash
-pnpm install
-```
+| Workflow | Command |
+|---|---|
+| `artifacts/airavata: web` | `pnpm --filter @workspace/airavata run dev` |
+| `artifacts/api-server: API Server` | `pnpm --filter @workspace/api-server run dev` |
 
-Three workflows are configured and start automatically:
-- **`artifacts/airavata: web`** — React dev server (preview at `/`)
-- **`artifacts/api-server: API Server`** — Express API (preview at `/api`)
-- **`artifacts/mockup-sandbox: Component Preview Server`** — Canvas mockup sandbox
+Start both from the Workflows panel. The frontend is served by Vite; the API builds with esbuild then starts on `PORT`.
 
-## Environment Variables / Secrets
+## Required secrets
 
-| Key | Where set | Notes |
-|-----|-----------|-------|
-| `MONGODB_URI` | Secret | MongoDB Atlas connection string |
-| `SESSION_SECRET` | Secret | JWT signing key |
-| `META_ACCESS_TOKEN` | Secret | WhatsApp Cloud API token |
-| `META_APP_SECRET` | Secret | Meta app secret |
-| `META_PHONE_NUMBER_ID` | Env var | WhatsApp phone number ID |
-| `META_WABA_ID` | Env var | WhatsApp Business Account ID |
-| `META_APP_ID` | Env var | Meta app ID |
-| `WEBHOOK_VERIFY_TOKEN` | Env var | `airavata_wh_2026` |
-| `AIRAVATA_INTEGRATION_SECRET` | Secret | Shared key for AutoGamma receiver |
-| `AIRAVATA_INTEGRATION_URL` | Env var (optional) | Defaults to `https://newcrm.autogamma.in/api/integrations/airavata/whatsapp-inquiries` |
+| Secret | Purpose |
+|---|---|
+| `MONGODB_URI` | MongoDB connection string |
+| `META_ACCESS_TOKEN` | Meta Graph API access token |
+| `META_PHONE_NUMBER_ID` | WhatsApp sender phone number ID |
+| `META_APP_ID` | Meta app ID |
+| `META_APP_SECRET` | Meta app secret (webhook signature verification) |
+| `META_WABA_ID` | WhatsApp Business Account ID |
+| `WEBHOOK_VERIFY_TOKEN` | Token used to verify Meta webhook subscription |
+| `SESSION_SECRET` | Express session signing secret |
+| `AIRAVATA_INTEGRATION_SECRET` | Optional: external integration auth secret |
+| `AIRAVATA_INTEGRATION_URL` | Optional: external integration endpoint |
 
-## Architecture Notes
+## User preferences
 
-- In **development**, the frontend Vite dev server and API server run as separate workflows. The API proxies `/api` requests; the frontend uses relative `/api` URLs.
-- In **production**, the API server serves the built frontend from `artifacts/airavata/dist/public/` and handles SPA fallback — so only the API server needs to be deployed.
-- MongoDB connection is in `artifacts/api-server/src/lib/mongodb.ts` using Mongoose.
-- Auth uses JWT (signed with `SESSION_SECRET`) stored in an HTTP-only cookie.
-
-## User Preferences
+- Keep MongoDB/Mongoose for data storage (do not migrate to Drizzle/Postgres).
