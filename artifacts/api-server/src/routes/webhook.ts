@@ -20,6 +20,7 @@ import {
   runChatbotFlowById,
   resumeChatbotAfterFlowSubmission,
 } from "../lib/chatbotEngine";
+import { sendInquiryCreated } from "../lib/airavataIntegration";
 
 const router = Router();
 
@@ -291,6 +292,13 @@ async function handleIncomingMessage(
   const existing = await MessageModel.findOne({ whatsappMessageId: msg.id });
   if (existing) return;
 
+  const hasPreviousInboundMessage = Boolean(
+    await MessageModel.exists({
+      contactId,
+      direction: "INBOUND",
+    }),
+  );
+
   await MessageModel.create({
     userId,
     contactId,
@@ -310,6 +318,38 @@ async function handleIncomingMessage(
   });
 
   logger.info({ from: fromRaw, body }, "Stored incoming message");
+
+  if (!hasPreviousInboundMessage) {
+    void sendInquiryCreated({
+      eventType: "inquiry.created",
+      eventId: msg.id,
+      sourceSystem: "airavata",
+      source: "whatsapp",
+      externalInquiryId: `whatsapp:${fromNorm}`,
+      customer: {
+        name: contact?.name ?? fromRaw,
+        phone: `+${fromRaw}`,
+        whatsappContactName: contact?.name ?? fromRaw,
+      },
+      vehicle: {
+        model: "Not specified",
+        category: "Not specified",
+      },
+      service: {
+        name: "WhatsApp inquiry",
+        currency: "INR",
+      },
+      appointment: {
+        timezone: "Asia/Kolkata",
+        notes: body ?? "",
+      },
+      stage: "NEW",
+      references: {
+        airavataContactId: String(contactId),
+      },
+      occurredAt: new Date(Number(msg.timestamp) * 1000).toISOString(),
+    });
+  }
 
   // A WhatsApp Flow submission continues the paused chatbot at the node
   // connected after Flow Reply. It must not restart keyword matching.

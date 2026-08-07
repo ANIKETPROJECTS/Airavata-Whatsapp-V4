@@ -34,6 +34,8 @@ Three workflows are configured and start automatically:
 | `META_WABA_ID` | Env var | WhatsApp Business Account ID |
 | `META_APP_ID` | Env var | Meta app ID |
 | `WEBHOOK_VERIFY_TOKEN` | Env var | `airavata_wh_2026` |
+| `AIRAVATA_INTEGRATION_SECRET` | Secret | Shared key for AutoGamma receiver |
+| `AIRAVATA_INTEGRATION_URL` | Env var (optional) | Defaults to `https://newcrm.autogamma.in/api/integrations/airavata/whatsapp-inquiries` |
 
 ## Architecture Notes
 
