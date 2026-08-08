@@ -26,6 +26,12 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "243bddb176eec328c00240a40a0752fb",
+
+        // ── AutoGamma integration ──────────────────────────────────────────────
+        AIRAVATA_INTEGRATION_URL:
+          "https://newcrm.autogamma.in/api/integrations/airavata/whatsapp-inquiries",
+        // Keep the shared secret in the VPS environment, not in this tracked file.
+        AIRAVATA_INTEGRATION_SECRET: process.env.AIRAVATA_INTEGRATION_SECRET,
       },
     },
   ],
