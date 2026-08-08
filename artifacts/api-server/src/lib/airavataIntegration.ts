@@ -43,7 +43,9 @@ export interface AiravataInquiryCreatedEvent {
 export async function sendInquiryCreated(
   event: AiravataInquiryCreatedEvent,
 ): Promise<void> {
-  const secret = process.env.AIRAVATA_INTEGRATION_SECRET;
+  // Secrets pasted from another Repl can carry an accidental trailing newline
+  // or surrounding spaces. The receiver compares the key exactly.
+  const secret = process.env.AIRAVATA_INTEGRATION_SECRET?.trim();
   if (!secret) {
     logger.warn("AIRAVATA_INTEGRATION_SECRET is not configured; skipping AutoGamma inquiry event");
     return;
