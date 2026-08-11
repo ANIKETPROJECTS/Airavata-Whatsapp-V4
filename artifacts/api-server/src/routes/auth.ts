@@ -26,7 +26,9 @@ router.post("/auth/signup", async (req, res) => {
     };
 
     if (!businessName?.trim() || !email?.trim() || !password) {
-      res.status(400).json({ error: "businessName, email, and password are required" });
+      res
+        .status(400)
+        .json({ error: "businessName, email, and password are required" });
       return;
     }
 
@@ -35,9 +37,13 @@ router.post("/auth/signup", async (req, res) => {
       return;
     }
 
-    const existing = await UserModel.findOne({ email: email.toLowerCase().trim() });
+    const existing = await UserModel.findOne({
+      email: email.toLowerCase().trim(),
+    });
     if (existing) {
-      res.status(409).json({ error: "An account with this email already exists" });
+      res
+        .status(409)
+        .json({ error: "An account with this email already exists" });
       return;
     }
 
@@ -71,7 +77,10 @@ router.post("/auth/signup", async (req, res) => {
 // POST /api/auth/login
 router.post("/auth/login", async (req, res) => {
   try {
-    const { email, password } = req.body as { email?: string; password?: string };
+    const { email, password } = req.body as {
+      email?: string;
+      password?: string;
+    };
 
     if (!email?.trim() || !password) {
       res.status(400).json({ error: "Email and password are required" });
@@ -88,12 +97,6 @@ router.post("/auth/login", async (req, res) => {
     if (!valid) {
       res.status(401).json({ error: "Invalid email or password" });
       return;
-    }
-
-    // Always sync META_PHONE_NUMBER_ID onto the user so stale DB values don't break routing
-    const configuredPhoneNumberId = process.env.META_PHONE_NUMBER_ID;
-    if (configuredPhoneNumberId && user.metaPhoneNumberId !== configuredPhoneNumberId) {
-      await UserModel.findByIdAndUpdate(user._id, { metaPhoneNumberId: configuredPhoneNumberId });
     }
 
     const token = signToken({ userId: user._id.toString(), email: user.email });
@@ -123,7 +126,9 @@ router.post("/auth/logout", (_req, res) => {
 // GET /api/auth/me
 router.get("/auth/me", authenticate, async (req: AuthRequest, res) => {
   try {
-    const user = await UserModel.findById(req.user!.userId).select("-passwordHash");
+    const user = await UserModel.findById(req.user!.userId).select(
+      "-passwordHash",
+    );
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
