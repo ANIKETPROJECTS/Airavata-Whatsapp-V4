@@ -3,17 +3,19 @@
  *
  * Launches the WhatsApp Embedded Signup popup via the Facebook JS SDK.
  * On success the auth code is sent to the backend which exchanges it for
- * a system-user access token and stores it against the logged-in user.
+ * a WhatsApp Business access token and stores it against the logged-in user.
  *
- * Config ID: 1057575420290304 (WhatsApp Embedded Signup With 60 Expiration Token)
+ * Config ID: 1057575420290304
  * App ID:    1324395306544610
  */
 
-import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
-import { api } from '@/lib/api';
+import { useState, useCallback } from "react";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
 
-const CONFIG_ID = '1057575420290304';
+const CONFIG_ID = "1057575420290304";
+
+const META_REDIRECT_URI = "https://airavataintelligence.com/";
 
 declare global {
   interface Window {
@@ -24,12 +26,14 @@ declare global {
         opts: Record<string, unknown>,
       ) => void;
     };
+
     fbAsyncInit?: () => void;
   }
 }
 
 interface FBLoginResponse {
-  status: 'connected' | 'not_authorized' | 'unknown';
+  status: "connected" | "not_authorized" | "unknown";
+
   authResponse?: {
     code?: string;
     accessToken?: string;
@@ -41,36 +45,40 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const launch = useCallback(() => {
-    if (typeof window.FB === 'undefined') {
-      toast.error('Facebook SDK is still loading — please try again in a moment.');
+    if (typeof window.FB === "undefined") {
+      toast.error(
+        "Facebook SDK is still loading — please try again in a moment.",
+      );
       return;
     }
 
     setIsConnecting(true);
 
-    // FB.login expects a regular callback. Keep the callback synchronous and
-    // start the async API exchange explicitly so the SDK never receives a
-    // Promise-returning handler.
     window.FB.login(
       (response: FBLoginResponse) => {
-        if (response.status !== 'connected' || !response.authResponse?.code) {
+        if (response.status !== "connected" || !response.authResponse?.code) {
           setIsConnecting(false);
-          if (response.status !== 'connected') {
-            toast.error('Facebook login was cancelled or failed.');
+
+          if (response.status !== "connected") {
+            toast.error("Facebook login was cancelled or failed.");
           }
+
           return;
         }
 
         void (async () => {
           try {
-            await api.post('/whatsapp/onboard', {
+            await api.post("/whatsapp/onboard", {
               code: response.authResponse!.code,
             });
-            toast.success('WhatsApp Business Account connected successfully!');
+
+            toast.success("WhatsApp Business Account connected successfully!");
+
             onSuccess?.();
           } catch (err: unknown) {
             const msg =
-              err instanceof Error ? err.message : 'Failed to connect account';
+              err instanceof Error ? err.message : "Failed to connect account";
+
             toast.error(msg);
           } finally {
             setIsConnecting(false);
@@ -79,8 +87,13 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
       },
       {
         config_id: CONFIG_ID,
-        response_type: 'code',
+        response_type: "code",
         override_default_response_type: true,
+
+        // Must match the redirect_uri used by the backend
+        // and the URI configured in the Meta Developer dashboard.
+        redirect_uri: META_REDIRECT_URI,
+
         extras: {
           sessionInfoVersion: 2,
         },
@@ -88,5 +101,8 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
     );
   }, [onSuccess]);
 
-  return { launch, isConnecting };
+  return {
+    launch,
+    isConnecting,
+  };
 }
