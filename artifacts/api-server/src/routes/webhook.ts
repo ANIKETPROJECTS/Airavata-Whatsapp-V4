@@ -71,20 +71,10 @@ router.post("/webhook", async (req, res) => {
     }, "Webhook request received");
     if (body?.object !== "whatsapp_business_account") return;
 
-    const myPhoneNumberId = process.env.META_PHONE_NUMBER_ID;
-
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
         const value = change.value;
         if (!value || change.field !== "messages") continue;
-
-        // Log phone_number_id for debugging but do not filter on it —
-        // test payloads from Meta dashboard use "123456123" instead of the real ID.
-        if (myPhoneNumberId && value.metadata?.phone_number_id &&
-            value.metadata.phone_number_id !== myPhoneNumberId) {
-          logger.info({ expected: myPhoneNumberId, got: value.metadata.phone_number_id },
-            "Webhook phone_number_id differs from env (continuing anyway)");
-        }
 
         // Debug: log what we received
         logger.info(
@@ -95,7 +85,11 @@ router.post("/webhook", async (req, res) => {
         // Handle incoming messages
         for (const msg of value.messages ?? []) {
           logger.info({ msgId: msg.id, from: msg.from, type: msg.type }, "Processing incoming message");
-          await handleIncomingMessage(msg, value.contacts ?? []).catch((err) =>
+          await handleIncomingMessage(
+            msg,
+            value.contacts ?? [],
+            value.metadata?.phone_number_id,
+          ).catch((err) =>
             logger.error({ err: String(err), msgId: msg.id }, "Error handling incoming message"),
           );
         }
@@ -118,6 +112,7 @@ router.post("/webhook", async (req, res) => {
 async function handleIncomingMessage(
   msg: WebhookMessage,
   waContacts: WebhookContact[],
+  phoneNumberId: string | undefined,
 ) {
   const fromRaw = msg.from; // digits only, no +, e.g. "919876543210"
   if (!fromRaw) {
@@ -126,36 +121,43 @@ async function handleIncomingMessage(
   }
   const fromNorm = normalizePhone(fromRaw);
 
-  // Find a Contact whose normalized phone matches
-  const allContacts = await ContactModel.find({}).lean();
-  const contact = allContacts.find(
+  // Resolve the tenant from the receiving WhatsApp phone number before
+  // reading or creating any contact.
+  if (!phoneNumberId) {
+    logger.error(
+      { msgId: msg.id, from: fromRaw },
+      "Incoming webhook message has no phone_number_id; skipping",
+    );
+    return;
+  }
+
+  const owningUser = await UserModel.findOne({ metaPhoneNumberId: phoneNumberId })
+    .select("_id")
+    .lean();
+  if (!owningUser) {
+    logger.error(
+      { msgId: msg.id, from: fromRaw, phoneNumberId },
+      "No user matches incoming webhook phone_number_id; skipping",
+    );
+    return;
+  }
+
+  const userId = owningUser._id as mongoose.Types.ObjectId;
+
+  // Find a Contact for this tenant whose normalized phone matches.
+  const tenantContacts = await ContactModel.find({ userId }).lean();
+  const contact = tenantContacts.find(
     (c) => normalizePhone(c.phone) === fromNorm,
   );
 
   let contactId: mongoose.Types.ObjectId;
-  let userId: mongoose.Types.ObjectId;
 
   if (contact) {
     contactId = contact._id as mongoose.Types.ObjectId;
-    userId = contact.userId as mongoose.Types.ObjectId;
   } else {
-    // Auto-create contact for unknown senders — assign to the only/first user
-    // In a multi-tenant production setup you'd match by WABA per user
+    // Auto-create the contact under the user owning the receiving number.
     const waContact = waContacts.find((wc) => normalizePhone(wc.wa_id) === fromNorm);
     const displayName = waContact?.profile?.name ?? fromRaw;
-
-    // Prefer the user whose Meta phone number ID matches the env config
-    const configuredPhoneNumberId = process.env.META_PHONE_NUMBER_ID;
-    const firstUser = configuredPhoneNumberId
-      ? await UserModel.findOne({ metaPhoneNumberId: configuredPhoneNumberId }).lean()
-          ?? await UserModel.findOne().sort({ createdAt: -1 }).lean()
-      : await UserModel.findOne().sort({ createdAt: -1 }).lean();
-    if (!firstUser) {
-      logger.warn({ fromRaw }, "No user found; skipping unknown sender");
-      return;
-    }
-
-    userId = firstUser._id as mongoose.Types.ObjectId;
 
     const created = await ContactModel.create({
       userId,
@@ -469,7 +471,7 @@ interface WebhookBody {
 
 interface WebhookValue {
   messaging_product: string;
-  metadata?: { display_phone_number: string; phone_number_id: string };
+  metadata?: { display_phone_number: string; phone_number_id?: string };
   messages?: WebhookMessage[];
   statuses?: WebhookStatus[];
   contacts?: WebhookContact[];
