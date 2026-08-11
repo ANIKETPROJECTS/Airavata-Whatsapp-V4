@@ -17,12 +17,16 @@ const router = Router();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function shapeCampaign(c: Record<string, unknown> & { _id: unknown; templateId?: unknown }) {
+function shapeCampaign(
+  c: Record<string, unknown> & { _id: unknown; templateId?: unknown },
+) {
   return {
     id: String(c._id),
     name: c.name,
     templateId: c.templateId ? String(c.templateId) : null,
-    templateName: (c as Record<string, unknown> & { template?: Array<{ name: string }> }).template?.[0]?.name ?? null,
+    templateName:
+      (c as Record<string, unknown> & { template?: Array<{ name: string }> })
+        .template?.[0]?.name ?? null,
     audience: c.audience,
     variableValues: c.variableValues,
     scheduledAt: c.scheduledAt,
@@ -39,7 +43,9 @@ async function resolveRecipients(
   userId: mongoose.Types.ObjectId,
   contactIds: string[],
   groupIds: string[],
-): Promise<Array<{ _id: mongoose.Types.ObjectId; name: string; phone: string }>> {
+): Promise<
+  Array<{ _id: mongoose.Types.ObjectId; name: string; phone: string }>
+> {
   const byId = contactIds.length
     ? await ContactModel.find({
         userId,
@@ -62,12 +68,20 @@ async function resolveRecipients(
 
   // Deduplicate by _id
   const seen = new Set<string>();
-  const all: Array<{ _id: mongoose.Types.ObjectId; name: string; phone: string }> = [];
+  const all: Array<{
+    _id: mongoose.Types.ObjectId;
+    name: string;
+    phone: string;
+  }> = [];
   for (const c of [...byId, ...byGroup]) {
     const key = String(c._id);
     if (!seen.has(key)) {
       seen.add(key);
-      all.push({ _id: c._id as mongoose.Types.ObjectId, name: c.name, phone: c.phone });
+      all.push({
+        _id: c._id as mongoose.Types.ObjectId,
+        name: c.name,
+        phone: c.phone,
+      });
     }
   }
   return all;
@@ -130,7 +144,9 @@ router.get("/campaigns", authenticate, async (req: AuthRequest, res) => {
 
     res.json({ campaigns: campaigns.map(shapeCampaign) });
   } catch (err: unknown) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+    res
+      .status(500)
+      .json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
 
@@ -162,6 +178,7 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
     // Per-recipient breakdown (latest 200 messages)
     const messages = await MessageModel.find({
       campaignId: new mongoose.Types.ObjectId(req.params.id),
+      userId,
     })
       .populate("contactId", "name phone")
       .limit(200)
@@ -169,7 +186,9 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
 
     res.json({ campaign: shapeCampaign(campaign), messages });
   } catch (err: unknown) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+    res
+      .status(500)
+      .json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
 
@@ -203,14 +222,21 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     };
 
     if (!name || !templateId) {
-      return res.status(400).json({ error: "name and templateId are required" });
+      return res
+        .status(400)
+        .json({ error: "name and templateId are required" });
     }
 
     // Validate template belongs to user and is APPROVED
-    const template = await TemplateModel.findOne({ _id: templateId, userId }).lean();
+    const template = await TemplateModel.findOne({
+      _id: templateId,
+      userId,
+    }).lean();
     if (!template) return res.status(404).json({ error: "Template not found" });
     if (String(template.status).toUpperCase() !== "APPROVED") {
-      return res.status(400).json({ error: "Only APPROVED templates can be used in campaigns" });
+      return res
+        .status(400)
+        .json({ error: "Only APPROVED templates can be used in campaigns" });
     }
 
     // Resolve contacts by raw phone numbers (Quick / Tags / Flow campaigns)
@@ -220,7 +246,9 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
         userId,
         phone: { $in: phoneNumbers },
         status: "active",
-      }).select("_id").lean();
+      })
+        .select("_id")
+        .lean();
       phoneContactIds = byPhone.map((c) => String(c._id));
     }
 
@@ -231,15 +259,21 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
         userId,
         tags: new mongoose.Types.ObjectId(tagId),
         status: "active",
-      }).select("_id").lean();
+      })
+        .select("_id")
+        .lean();
       tagContactIds = byTag.map((c) => String(c._id));
     }
 
-    const allContactIds = [...new Set([...contactIds, ...phoneContactIds, ...tagContactIds])];
+    const allContactIds = [
+      ...new Set([...contactIds, ...phoneContactIds, ...tagContactIds]),
+    ];
 
     const recipients = await resolveRecipients(userId, allContactIds, groupIds);
     if (recipients.length === 0) {
-      return res.status(400).json({ error: "No active contacts found for the selected audience" });
+      return res
+        .status(400)
+        .json({ error: "No active contacts found for the selected audience" });
     }
 
     // Create campaign record
@@ -257,7 +291,13 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           variableValues,
           scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
           status: isScheduled ? "SCHEDULED" : "SENDING",
-          stats: { totalRecipients: recipients.length, sent: 0, delivered: 0, read: 0, failed: 0 },
+          stats: {
+            totalRecipients: recipients.length,
+            sent: 0,
+            delivered: 0,
+            read: 0,
+            failed: 0,
+          },
           creditCost: recipients.length,
         },
       ],
@@ -308,10 +348,15 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           sentAt: new Date(),
         });
 
-        await ContactModel.findByIdAndUpdate(contact._id, { lastContactedAt: new Date() });
+        await ContactModel.findByIdAndUpdate(contact._id, {
+          lastContactedAt: new Date(),
+        });
         sent++;
       } catch (err) {
-        logger.error({ err, contactId: String(contact._id) }, "Failed to send to contact");
+        logger.error(
+          { err, contactId: String(contact._id) },
+          "Failed to send to contact",
+        );
         await MessageModel.create({
           userId,
           contactId: contact._id,
@@ -332,42 +377,59 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       $set: { "stats.sent": sent, "stats.failed": failed },
     });
 
-    logger.info({ campaignId: String(camp._id), sent, failed }, "Campaign completed");
+    logger.info(
+      { campaignId: String(camp._id), sent, failed },
+      "Campaign completed",
+    );
   } catch (err: unknown) {
     await session.abortTransaction().catch(() => {});
     session.endSession();
     if (!res.headersSent) {
-      res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+      res
+        .status(500)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
     }
   }
 });
 
 // ── Dashboard stats ───────────────────────────────────────────────────────────
 
-router.get("/campaigns/stats/summary", authenticate, async (req: AuthRequest, res) => {
-  try {
-    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+router.get(
+  "/campaigns/stats/summary",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user!.userId);
 
-    const [stats] = await CampaignModel.aggregate([
-      { $match: { userId } },
-      {
-        $group: {
-          _id: null,
-          totalSent: { $sum: "$stats.sent" },
-          totalDelivered: { $sum: "$stats.delivered" },
-          totalRead: { $sum: "$stats.read" },
-          totalFailed: { $sum: "$stats.failed" },
-          campaignCount: { $sum: 1 },
+      const [stats] = await CampaignModel.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: null,
+            totalSent: { $sum: "$stats.sent" },
+            totalDelivered: { $sum: "$stats.delivered" },
+            totalRead: { $sum: "$stats.read" },
+            totalFailed: { $sum: "$stats.failed" },
+            campaignCount: { $sum: 1 },
+          },
         },
-      },
-    ]);
+      ]);
 
-    res.json({
-      stats: stats ?? { totalSent: 0, totalDelivered: 0, totalRead: 0, totalFailed: 0, campaignCount: 0 },
-    });
-  } catch (err: unknown) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
-  }
-});
+      res.json({
+        stats: stats ?? {
+          totalSent: 0,
+          totalDelivered: 0,
+          totalRead: 0,
+          totalFailed: 0,
+          campaignCount: 0,
+        },
+      });
+    } catch (err: unknown) {
+      res
+        .status(500)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+);
 
 export default router;
