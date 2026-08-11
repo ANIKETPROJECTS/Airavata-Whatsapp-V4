@@ -15,8 +15,6 @@ import { api } from "@/lib/api";
 
 const CONFIG_ID = "1057575420290304";
 
-const META_REDIRECT_URI = "https://airavataintelligence.com/";
-
 declare global {
   interface Window {
     FB: {
@@ -89,10 +87,6 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
         config_id: CONFIG_ID,
         response_type: "code",
         override_default_response_type: true,
-
-        // Must match the redirect_uri used by the backend
-        // and the URI configured in the Meta Developer dashboard.
-        redirect_uri: META_REDIRECT_URI,
 
         extras: {
           sessionInfoVersion: 2,

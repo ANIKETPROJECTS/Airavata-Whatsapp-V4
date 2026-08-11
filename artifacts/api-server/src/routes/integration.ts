@@ -17,9 +17,7 @@ const router = Router();
 
 const META_APP_ID = process.env.META_APP_ID ?? "1324395306544610";
 const META_APP_SECRET = process.env.META_APP_SECRET;
-const GRAPH_API_VERSION = "v22.0";
-
-const META_REDIRECT_URI = "https://airavataintelligence.com/";
+const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   const { code } = req.body as { code?: string };
@@ -43,7 +41,6 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
       `&client_secret=${encodeURIComponent(META_APP_SECRET)}` +
-      `&redirect_uri=${encodeURIComponent(META_REDIRECT_URI)}` +
       `&code=${encodeURIComponent(code)}`;
 
     const tokenRes = await fetch(tokenUrl);
