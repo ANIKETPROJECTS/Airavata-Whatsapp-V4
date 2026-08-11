@@ -48,8 +48,11 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
 
     setIsConnecting(true);
 
+    // FB.login expects a regular callback. Keep the callback synchronous and
+    // start the async API exchange explicitly so the SDK never receives a
+    // Promise-returning handler.
     window.FB.login(
-      async (response: FBLoginResponse) => {
+      (response: FBLoginResponse) => {
         if (response.status !== 'connected' || !response.authResponse?.code) {
           setIsConnecting(false);
           if (response.status !== 'connected') {
@@ -58,19 +61,21 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
           return;
         }
 
-        try {
-          await api.post('/integration/facebook/connect', {
-            code: response.authResponse.code,
-          });
-          toast.success('WhatsApp Business Account connected successfully!');
-          onSuccess?.();
-        } catch (err: unknown) {
-          const msg =
-            err instanceof Error ? err.message : 'Failed to connect account';
-          toast.error(msg);
-        } finally {
-          setIsConnecting(false);
-        }
+        void (async () => {
+          try {
+            await api.post('/whatsapp/onboard', {
+              code: response.authResponse!.code,
+            });
+            toast.success('WhatsApp Business Account connected successfully!');
+            onSuccess?.();
+          } catch (err: unknown) {
+            const msg =
+              err instanceof Error ? err.message : 'Failed to connect account';
+            toast.error(msg);
+          } finally {
+            setIsConnecting(false);
+          }
+        })();
       },
       {
         config_id: CONFIG_ID,
