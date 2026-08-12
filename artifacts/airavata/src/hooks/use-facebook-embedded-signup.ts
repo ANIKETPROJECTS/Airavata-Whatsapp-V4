@@ -17,6 +17,7 @@ const CONFIG_ID = "1057575420290304";
 
 declare global {
   interface Window {
+    fbSDKReady?: boolean;
     FB: {
       init: (opts: Record<string, unknown>) => void;
       login: (
@@ -43,7 +44,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const launch = useCallback(() => {
-    if (typeof window.FB === "undefined") {
+    if (typeof window.FB === "undefined" || !window.fbSDKReady) {
       toast.error(
         "Facebook SDK is still loading — please try again in a moment.",
       );

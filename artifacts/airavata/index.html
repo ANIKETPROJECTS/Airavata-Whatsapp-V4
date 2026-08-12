@@ -25,12 +25,11 @@
           xfbml: true,
           version: 'v21.0',
         });
+        window.fbSDKReady = true;
       };
     </script>
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+    <script
