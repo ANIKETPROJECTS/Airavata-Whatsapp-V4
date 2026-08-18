@@ -1,0 +1,92 @@
+root@srv1232657:/var/www/Airavata-Whatsapp-V1# pm2 describe airavata-whatsapp-api
+ Describing process with id 43 - name airavata-whatsapp-api
+┌────────────────────┬─────────────────────────────────────────────────────────────────────┐
+│ status             │ online                                                              │
+│ name               │ airavata-whatsapp-api                                               │
+│ namespace          │ default                                                             │
+│ version            │ 0.0.0                                                               │
+│ restarts           │ 2                                                                   │
+│ max memory restart │ 536870912                                                           │
+│ uptime             │ 82s                                                                 │
+│ script path        │ /var/www/Airavata-Whatsapp-V1/artifacts/api-server/dist/index.mjs   │
+│ script args        │ N/A                                                                 │
+│ error log path     │ /root/.pm2/logs/airavata-whatsapp-api-error-43.log                  │
+│ out log path       │ /root/.pm2/logs/airavata-whatsapp-api-out-43.log                    │
+│ pid path           │ /root/.pm2/pids/airavata-whatsapp-api-43.pid                        │
+│ interpreter        │ /root/.local/share/fnm/node-versions/v20.20.2/installation/bin/node │
+│ interpreter args   │ --enable-source-maps                                                │
+│ script id          │ 43                                                                  │
+│ exec cwd           │ /var/www/Airavata-Whatsapp-V1                                       │
+│ exec mode          │ cluster_mode                                                        │
+│ node.js version    │ 20.19.4                                                             │
+│ node env           │ production                                                          │
+│ watch & reload     │ ✘                                                                   │
+│ unstable restarts  │ 0                                                                   │
+│ created at         │ 2026-08-18T10:12:28.871Z                                            │
+└────────────────────┴─────────────────────────────────────────────────────────────────────┘
+ Actions available
+┌────────────────────────┐
+│ km:heapdump            │
+│ km:cpu:profiling:start │
+│ km:cpu:profiling:stop  │
+│ km:heap:sampling:start │
+│ km:heap:sampling:stop  │
+└────────────────────────┘
+ Trigger via: pm2 trigger airavata-whatsapp-api <action_name>
+
+ Code metrics value
+┌────────────────────────┬───────────────────────┐
+│ Heap Size              │ 96.49 MiB             │
+│ Heap Usage             │ 97.25 %               │
+│ Used Heap Size         │ 93.83 MiB             │
+│ Active requests        │ 0                     │
+│ Active handles         │ 16                    │
+│ Event Loop Latency     │ 0.33 ms               │
+│ Event Loop Latency p95 │ 2.14 ms               │
+│ HTTP Mean Latency      │ 5 ms                  │
+│ HTTP P95 Latency       │ 175.59999999999945 ms │
+│ HTTP                   │ 0.15 req/min          │
+└────────────────────────┴───────────────────────┘
+ Divergent env variables from local env
+
+
+ Add your own code metrics: http://bit.ly/code-metrics
+ Use `pm2 logs airavata-whatsapp-api [--lines 1000]` to display logs
+ Use `pm2 env 43` to display environment variables
+ Use `pm2 monit` to monitor CPU and Memory usage airavata-whatsapp-api
+root@srv1232657:/var/www/Airavata-Whatsapp-V1# pm2 env 43 | grep -E 'META_APP_ID|NODE_ENV|PORT'
+META_APP_ID: 1324395306544610
+PORT: 3014
+NODE_ENV: production
+root@srv1232657:/var/www/Airavata-Whatsapp-V1# pm2 list
+┌────┬──────────────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name                         │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼──────────────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 41 │ Bung-le-pos                  │ default     │ 1.0.0   │ cluster │ 469067   │ 25h    │ 6    │ online    │ 0%       │ 200.0mb  │ root     │ disabled │
+│ 40 │ BungleDigitalMenu            │ default     │ 1.0.0   │ cluster │ 440401   │ 4D     │ 3    │ online    │ 0%       │ 127.0mb  │ root     │ disabled │
+│ 3  │ DM-pos                       │ default     │ 1.0.0   │ fork    │ 408778   │ 6D     │ 1    │ online    │ 0%       │ 118.9mb  │ root     │ disabled │
+│ 11 │ Tarangdigitalmenu            │ default     │ 1.0.0   │ cluster │ 408877   │ 6D     │ 1    │ online    │ 0%       │ 122.6mb  │ root     │ disabled │
+│ 32 │ aes-vault                    │ default     │ 0.0.0   │ cluster │ 408984   │ 6D     │ 1    │ online    │ 0%       │ 79.7mb   │ root     │ disabled │
+│ 15 │ airavata-app                 │ default     │ 1.0.0   │ fork    │ 408905   │ 6D     │ 2    │ online    │ 0%       │ 134.1mb  │ root     │ disabled │
+│ 43 │ airavata-whatsapp-api        │ default     │ 0.0.0   │ cluster │ 480379   │ 100s   │ 2    │ online    │ 0%       │ 200.9mb  │ root     │ disabled │
+│ 1  │ airavatatechnologies-web     │ default     │ 1.0.0   │ fork    │ 408754   │ 6D     │ 1    │ online    │ 0%       │ 103.3mb  │ root     │ disabled │
+│ 10 │ at-digital-menu              │ default     │ 1.0.0   │ fork    │ 411800   │ 6D     │ 6    │ online    │ 0%       │ 151.9mb  │ root     │ disabled │
+│ 37 │ at-smart-salon               │ default     │ N/A     │ fork    │ 410882   │ 6D     │ 0    │ online    │ 0%       │ 114.0mb  │ root     │ disabled │
+│ 9  │ atdigitalmenu                │ default     │ 1.0.0   │ cluster │ 408824   │ 6D     │ 1    │ online    │ 0%       │ 118.3mb  │ root     │ disabled │
+│ 8  │ barrelborn                   │ default     │ 1.0.0   │ fork    │ 408800   │ 6D     │ 0    │ online    │ 0%       │ 117.8mb  │ root     │ disabled │
+│ 5  │ bg-remover-portal            │ default     │ 1.0.0   │ fork    │ 408794   │ 6D     │ 1    │ online    │ 0%       │ 124.3mb  │ root     │ disabled │
+│ 33 │ csv-profiler                 │ default     │ 0.0.0   │ cluster │ 408998   │ 6D     │ 2    │ online    │ 0%       │ 81.6mb   │ root     │ disabled │
+│ 7  │ eva-jewels                   │ default     │ 1.0.0   │ cluster │ 408821   │ 6D     │ 1    │ online    │ 0%       │ 118.5mb  │ root     │ disabled │
+│ 39 │ krushisuvidha-api            │ default     │ N/A     │ fork    │ 437691   │ 4D     │ 0    │ online    │ 0%       │ 151.2mb  │ root     │ disabled │
+│ 31 │ labourcodes                  │ default     │ 0.0.0   │ fork    │ 408982   │ 6D     │ 3    │ online    │ 0%       │ 110.9mb  │ root     │ disabled │
+│ 12 │ mings-chinese-cuisine        │ default     │ 1.0.0   │ cluster │ 408876   │ 6D     │ 1    │ online    │ 0%       │ 106.4mb  │ root     │ disabled │
+│ 4  │ portfolio-app                │ default     │ N/A     │ fork    │ 408789   │ 6D     │ 1    │ online    │ 0%       │ 77.8mb   │ root     │ disabled │
+│ 14 │ prism-server                 │ default     │ 1.0.0   │ fork    │ 408897   │ 6D     │ 1    │ online    │ 0%       │ 80.9mb   │ root     │ disabled │
+│ 6  │ rest-express                 │ default     │ 1.0.0   │ fork    │ 408791   │ 6D     │ 1    │ online    │ 0%       │ 79.9mb   │ root     │ disabled │
+│ 0  │ restaurant-management-app    │ default     │ N/A     │ fork    │ 408763   │ 6D     │ 1    │ online    │ 0%       │ 77.1mb   │ root     │ disabled │
+│ 2  │ restaurant-pos               │ default     │ 1.0.0   │ cluster │ 428621   │ 5D     │ 2    │ online    │ 0%       │ 127.1mb  │ root     │ disabled │
+│ 30 │ vip-networkscatalogue        │ default     │ 1.0.0   │ cluster │ 408946   │ 6D     │ 1    │ online    │ 0%       │ 88.3mb   │ root     │ disabled │
+│ 29 │ vip-networkswebsite          │ default     │ 1.0.0   │ cluster │ 408943   │ 6D     │ 2    │ online    │ 0%       │ 89.7mb   │ root     │ disabled │
+│ 17 │ whamo-app                    │ default     │ 1.0.0   │ fork    │ 408912   │ 6D     │ 13   │ online    │ 0%       │ 99.6mb   │ root     │ disabled │
+└────┴──────────────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+root@srv1232657:/var/www/Airavata-Whatsapp-V1#
