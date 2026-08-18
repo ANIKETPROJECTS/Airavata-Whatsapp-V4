@@ -1,0 +1,125 @@
+root@srv1232657:/var/www# rm -rf Airavata-Whatsapp-V1/
+root@srv1232657:/var/www# git clone https://github.com/ANIKETPROJECTS/Airavata-Whatsapp-V4.git
+Cloning into 'Airavata-Whatsapp-V4'...
+remote: Enumerating objects: 2029, done.
+remote: Counting objects: 100% (2029/2029), done.
+remote: Compressing objects: 100% (955/955), done.
+remote: Total 2029 (delta 1071), reused 1987 (delta 1030), pack-reused 0 (from 0)
+Receiving objects: 100% (2029/2029), 54.28 MiB | 16.03 MiB/s, done.
+Resolving deltas: 100% (1071/1071), done.
+root@srv1232657:/var/www# mv Airavata-Whatsapp-V4/ Airavata-Whatsapp-V1
+root@srv1232657:/var/www# cd Airavata-Whatsapp-V1/
+root@srv1232657:/var/www/Airavata-Whatsapp-V1# pnpm install
+Scope: all 9 workspace projects
+Lockfile is up to date, resolution step is skipped
+Packages: +539
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 539, reused 539, downloaded 0, added 539, done
+
+dependencies:
++ @replit/connectors-sdk 0.4.1
+
+devDependencies:
++ prettier 3.9.5
++ typescript 5.9.3
+
+Done in 6.6s using pnpm v10.33.0
+root@srv1232657:/var/www/Airavata-Whatsapp-V1# pnpm run build
+
+> workspace@0.0.0 build /var/www/Airavata-Whatsapp-V1
+> node build-vps.mjs
+
+✔ pnpm already installed
+
+$ pnpm install --no-frozen-lockfile
+Scope: all 9 workspace projects
+Lockfile is up to date, resolution step is skipped
+Already up to date
+Done in 1.9s using pnpm v10.33.0
+
+$ pnpm --filter @workspace/api-server run build
+
+> @workspace/api-server@0.0.0 build /var/www/Airavata-Whatsapp-V1/artifacts/api-server
+> node ./build.mjs
+
+
+  dist/index.mjs                       4.9mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.4kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   8.8mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.1kb
+  dist/pino-pretty.mjs.map           203.6kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+
+⚡ Done in 773ms
+
+$ pnpm --filter @workspace/airavata run build
+
+> @workspace/airavata@0.0.0 build /var/www/Airavata-Whatsapp-V1/artifacts/airavata
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+✓ 2557 modules transformed.
+dist/public/index.html                                                 1.93 kB │ gzip:   0.77 kB
+dist/public/assets/credit-card_(1)_1784832045706-eu4EpRWe.png          5.04 kB
+dist/public/assets/chat_(1)_1784831596587-DwMJ1NIe.png                 6.82 kB
+dist/public/assets/docs_1784814701440-B4fME3Zo.png                     7.28 kB
+dist/public/assets/dashboard-interface_1784816353863-60oj9PZD.png      7.52 kB
+dist/public/assets/table_1784821548409-eDmp5ci3.png                    8.43 kB
+dist/public/assets/catalog_1784815184631-CjgmGxK4.png                 11.15 kB
+dist/public/assets/dashboard_(3)_1784831703621-sVJWqEDw.png           11.63 kB
+dist/public/assets/bot_1784814891252-DvUfcZoG.png                     11.93 kB
+dist/public/assets/contact-us_(1)_1784820130355-oet01HyT.png          16.16 kB
+dist/public/assets/people_(1)_1784832278623-IZLwpdYQ.png              16.65 kB
+dist/public/assets/link_1784832510109-D1uVfE4Y.png                    17.85 kB
+dist/public/assets/marketing_(1)_1784820162202-D9W9KIBy.png           18.12 kB
+dist/public/assets/settings_(1)_1784831863555-CfPEjaNB.png            19.80 kB
+dist/public/assets/index-BCXSljPe.css                                145.64 kB │ gzip:  23.50 kB
+dist/public/assets/index-BFNhiOv5.js                               1,807.08 kB │ gzip: 474.96 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.39s
+
+✅  Build complete!
+   API bundle : artifacts/api-server/dist/index.mjs
+   Frontend   : artifacts/airavata/dist/public/
+root@srv1232657:/var/www/Airavata-Whatsapp-V1# pm2 start ecosystem.config.cjs
+[PM2][WARN] Applications airavata-whatsapp-api not running, starting...
+[PM2] App [airavata-whatsapp-api] launched (1 instances)
+┌────┬──────────────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name                         │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼──────────────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 41 │ Bung-le-pos                  │ default     │ 1.0.0   │ cluster │ 469067   │ 24h    │ 6    │ online    │ 0%       │ 199.6mb  │ root     │ disabled │
+│ 40 │ BungleDigitalMenu            │ default     │ 1.0.0   │ cluster │ 440401   │ 4D     │ 3    │ online    │ 0%       │ 126.5mb  │ root     │ disabled │
+│ 3  │ DM-pos                       │ default     │ 1.0.0   │ fork    │ 408778   │ 6D     │ 1    │ online    │ 0%       │ 118.5mb  │ root     │ disabled │
+│ 11 │ Tarangdigitalmenu            │ default     │ 1.0.0   │ cluster │ 408877   │ 6D     │ 1    │ online    │ 0%       │ 122.6mb  │ root     │ disabled │
+│ 32 │ aes-vault                    │ default     │ 0.0.0   │ cluster │ 408984   │ 6D     │ 1    │ online    │ 0%       │ 80.2mb   │ root     │ disabled │
+│ 15 │ airavata-app                 │ default     │ 1.0.0   │ fork    │ 408905   │ 6D     │ 2    │ online    │ 0%       │ 134.4mb  │ root     │ disabled │
+│ 43 │ airavata-whatsapp-api        │ default     │ 0.0.0   │ cluster │ 479981   │ 0s     │ 0    │ online    │ 0%       │ 50.8mb   │ root     │ disabled │
+│ 1  │ airavatatechnologies-web     │ default     │ 1.0.0   │ fork    │ 408754   │ 6D     │ 1    │ online    │ 0%       │ 102.9mb  │ root     │ disabled │
+│ 10 │ at-digital-menu              │ default     │ 1.0.0   │ fork    │ 411800   │ 6D     │ 6    │ online    │ 0%       │ 152.4mb  │ root     │ disabled │
+│ 37 │ at-smart-salon               │ default     │ N/A     │ fork    │ 410882   │ 6D     │ 0    │ online    │ 0%       │ 113.3mb  │ root     │ disabled │
+│ 9  │ atdigitalmenu                │ default     │ 1.0.0   │ cluster │ 408824   │ 6D     │ 1    │ online    │ 0%       │ 118.2mb  │ root     │ disabled │
+│ 8  │ barrelborn                   │ default     │ 1.0.0   │ fork    │ 408800   │ 6D     │ 0    │ online    │ 0%       │ 117.8mb  │ root     │ disabled │
+│ 5  │ bg-remover-portal            │ default     │ 1.0.0   │ fork    │ 408794   │ 6D     │ 1    │ online    │ 0%       │ 124.3mb  │ root     │ disabled │
+│ 33 │ csv-profiler                 │ default     │ 0.0.0   │ cluster │ 408998   │ 6D     │ 2    │ online    │ 0%       │ 81.6mb   │ root     │ disabled │
+│ 7  │ eva-jewels                   │ default     │ 1.0.0   │ cluster │ 408821   │ 6D     │ 1    │ online    │ 0%       │ 118.5mb  │ root     │ disabled │
+│ 39 │ krushisuvidha-api            │ default     │ N/A     │ fork    │ 437691   │ 4D     │ 0    │ online    │ 0%       │ 151.3mb  │ root     │ disabled │
+│ 31 │ labourcodes                  │ default     │ 0.0.0   │ fork    │ 408982   │ 6D     │ 3    │ online    │ 0%       │ 109.3mb  │ root     │ disabled │
+│ 12 │ mings-chinese-cuisine        │ default     │ 1.0.0   │ cluster │ 408876   │ 6D     │ 1    │ online    │ 0%       │ 106.6mb  │ root     │ disabled │
+│ 4  │ portfolio-app                │ default     │ N/A     │ fork    │ 408789   │ 6D     │ 1    │ online    │ 0%       │ 78.3mb   │ root     │ disabled │
+│ 14 │ prism-server                 │ default     │ 1.0.0   │ fork    │ 408897   │ 6D     │ 1    │ online    │ 0%       │ 84.6mb   │ root     │ disabled │
+│ 6  │ rest-express                 │ default     │ 1.0.0   │ fork    │ 408791   │ 6D     │ 1    │ online    │ 0%       │ 79.1mb   │ root     │ disabled │
+│ 0  │ restaurant-management-app    │ default     │ N/A     │ fork    │ 408763   │ 6D     │ 1    │ online    │ 0%       │ 77.1mb   │ root     │ disabled │
+│ 2  │ restaurant-pos               │ default     │ 1.0.0   │ cluster │ 428621   │ 5D     │ 2    │ online    │ 0%       │ 127.8mb  │ root     │ disabled │
+│ 30 │ vip-networkscatalogue        │ default     │ 1.0.0   │ cluster │ 408946   │ 6D     │ 1    │ online    │ 0%       │ 88.2mb   │ root     │ disabled │
+│ 29 │ vip-networkswebsite          │ default     │ 1.0.0   │ cluster │ 408943   │ 6D     │ 2    │ online    │ 0%       │ 89.5mb   │ root     │ disabled │
+│ 17 │ whamo-app                    │ default     │ 1.0.0   │ fork    │ 408912   │ 6D     │ 13   │ online    │ 0%       │ 99.6mb   │ root     │ disabled │
+└────┴──────────────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+root@srv1232657:/var/www/Airavata-Whatsapp-V1#
