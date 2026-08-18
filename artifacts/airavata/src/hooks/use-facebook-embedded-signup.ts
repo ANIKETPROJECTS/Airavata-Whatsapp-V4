@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 
 const CONFIG_ID = "1057575420290304";
+const REDIRECT_URI = "https://airavataintelligence.com/";
 
 declare global {
   interface Window {
@@ -52,7 +53,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
     }
 
     setIsConnecting(true);
-    const redirectUri = `${window.location.origin}${window.location.pathname}`;
+    const redirectUri = REDIRECT_URI;
     console.group("[WhatsApp Embedded Signup] Starting OAuth dialog");
     console.log("Current page:", window.location.href);
     console.log("Computed redirect_uri:", redirectUri);

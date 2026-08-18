@@ -1,0 +1,14 @@
+root@srv1232657:/var/www/Airavata-Whatsapp-V1# pm2 flush airavata-whatsapp-api
+pm2 logs airavata-whatsapp-api --lines 0
+[PM2] Flushing:
+[PM2] /root/.pm2/logs/airavata-whatsapp-api-out-43.log
+[PM2] /root/.pm2/logs/airavata-whatsapp-api-error-43.log
+[PM2] Logs flushed
+43|airavata-whatsapp-api  | {"level":30,"time":1787048135148,"pid":480379,"hostname":"srv1232657","req":{"id":53,"method":"GET","url":"/api/campaigns"},"res":{"statusCode":304},"responseTime":16,"msg":"request completed"}
+43|airavata-whatsapp-api  | {"level":30,"time":1787048135152,"pid":480379,"hostname":"srv1232657","req":{"id":52,"method":"GET","url":"/api/campaigns/stats/summary"},"res":{"statusCode":304},"responseTime":24,"msg":"request completed"}
+43|airavata-whatsapp-api  | {"level":30,"time":1787048142146,"pid":480379,"hostname":"srv1232657","req":{"id":54,"method":"GET","url":"/api/campaigns/stats/summary"},"res":{"statusCode":304},"responseTime":8,"msg":"request completed"}
+43|airavata-whatsapp-api  | {"level":30,"time":1787048142149,"pid":480379,"hostname":"srv1232657","req":{"id":55,"method":"GET","url":"/api/campaigns"},"res":{"statusCode":304},"responseTime":8,"msg":"request completed"}
+43|airavata-whatsapp-api  | {"level":30,"time":1787048150727,"pid":480379,"hostname":"srv1232657","redirectUri":"https://airavataintelligence.com/dashboard","codePresent":true,"codeLength":451,"graphApiVersion":"v21.0","tokenExchangePath":"/oauth/access_token","msg":"WhatsApp Embedded Signup: starting Meta code exchange"}
+43|airavata-whatsapp-api  | {"level":50,"time":1787048150961,"pid":480379,"hostname":"srv1232657","status":400,"error":"Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request","redirectUri":"https://airavataintelligence.com/dashboard","codeLength":451,"msg":"Meta token exchange failed"}
+43|airavata-whatsapp-api  | {"level":30,"time":1787048150963,"pid":480379,"hostname":"srv1232657","req":{"id":56,"method":"POST","url":"/api/whatsapp/onboard"},"res":{"statusCode":502},"err":{"type":"Error","message":"failed with status code 502","stack":"Error: failed with status code 502\n    at onResFinished (/var/www/Airavata-Whatsapp-V1/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)\n    at ServerResponse.onResponseComplete (/var/www/Airavata-Whatsapp-V1/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)\n    at ServerResponse.emit (node:events:536:35)\n    at onFinish (node:_http_outgoing:1031:10)\n    at callback (node:internal/streams/writable:766:21)\n    at afterWrite (node:internal/streams/writable:710:5)\n    at afterWriteTick (node:internal/streams/writable:696:10)\n    at process.processTicksAndRejections (node:internal/process/task_queues:81:21)"},"responseTime":238,"msg":"request errored"}
+
