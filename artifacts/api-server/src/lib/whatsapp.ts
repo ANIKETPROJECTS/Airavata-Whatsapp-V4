@@ -1,7 +1,12 @@
 /**
  * Thin wrapper around Meta's WhatsApp Cloud API (Graph API v22.0).
- * Reads credentials from environment variables so they never touch source code.
+ * Per-user credentials are fetched from the whatsappcredentials collection and
+ * decrypted at send time. The shared env-var token is retained only as a fallback.
  */
+
+import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
+import { decryptToken } from "./credentialCrypto";
+import { logger } from "./logger";
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 
@@ -69,6 +74,97 @@ async function graphFetch<T>(path: string, options: RequestInit = {}): Promise<T
     );
   }
   return data;
+}
+
+/**
+ * Like graphFetch but takes an explicit accessToken instead of calling creds().
+ * Used by all per-user message-sending functions.
+ */
+async function graphFetchWithCreds<T>(
+  path: string,
+  accessToken: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const url = `${GRAPH_BASE}${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      ...(options.headers ?? {}),
+    },
+  });
+
+  const rawText = await res.text();
+  let data: T & {
+    error?: {
+      message?: string;
+      type?: string;
+      code?: number;
+      error_subcode?: number;
+      fbtrace_id?: string;
+    };
+  };
+  try {
+    data = JSON.parse(rawText) as typeof data;
+  } catch {
+    throw new Error(`Meta API HTTP ${res.status} — non-JSON body: ${rawText}`);
+  }
+
+  if (!res.ok) {
+    const e = data.error ?? {};
+    console.error(
+      "[graphFetchWithCreds] Meta error response\n" +
+      `  HTTP status   : ${res.status}\n` +
+      `  error.code    : ${e.code ?? "(none)"}\n` +
+      `  error.type    : ${e.type ?? "(none)"}\n` +
+      `  error.message : ${e.message ?? "(none)"}\n` +
+      `  error_subcode : ${e.error_subcode ?? "(none)"}\n` +
+      `  fbtrace_id    : ${e.fbtrace_id ?? "(none)"}\n` +
+      `  full body     : ${rawText}`,
+    );
+    throw new Error(
+      `Meta API HTTP ${res.status} | code=${e.code ?? "-"} subcode=${e.error_subcode ?? "-"} ` +
+      `type=${e.type ?? "-"} fbtrace=${e.fbtrace_id ?? "-"} | ${e.message ?? rawText}`,
+    );
+  }
+  return data;
+}
+
+/**
+ * Fetch per-user WhatsApp credentials from the whatsappcredentials collection.
+ * Falls back to the shared env-var token if no record is found, but always logs
+ * a warning when the fallback fires — a fallback send uses Airavata's own number
+ * and token, which bills the wrong account.
+ */
+export async function getCredentials(
+  userId: string,
+): Promise<{ phoneNumberId: string; accessToken: string }> {
+  try {
+    const cred = await WhatsAppCredentialModel.findOne({ userId }).lean();
+    if (cred) {
+      const accessToken = decryptToken(cred.accessTokenEncrypted);
+      return { phoneNumberId: cred.phoneNumberId, accessToken };
+    }
+  } catch (err) {
+    logger.warn({ userId, err }, "[getCredentials] Failed to read/decrypt whatsappcredentials — falling back to shared env token");
+  }
+
+  // ── Env-var fallback ──────────────────────────────────────────────────────
+  const phoneNumberId = process.env["META_PHONE_NUMBER_ID"];
+  const accessToken = process.env["META_ACCESS_TOKEN"];
+  if (!phoneNumberId || !accessToken) {
+    throw new Error(
+      `No WhatsApp credentials found for userId=${userId} and shared env credentials are also missing. ` +
+      "Connect WhatsApp in Settings or set META_PHONE_NUMBER_ID and META_ACCESS_TOKEN.",
+    );
+  }
+  logger.warn(
+    { userId },
+    "[getCredentials] No whatsappcredentials record found for user — falling back to shared env token. " +
+    "This sends under Airavata's own WhatsApp number and bills the wrong account.",
+  );
+  return { phoneNumberId, accessToken };
 }
 
 /** Extract variable indices from a template body string, e.g. "Hi {{1}}, your OTP is {{2}}" → [1, 2] */
@@ -372,15 +468,19 @@ export async function sendMediaMessage(
   mediaId: string,
   type: "image" | "video" | "audio" | "document",
   filename?: string,
+  userId?: string,
 ) {
-  const { phoneNumberId } = creds();
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   const mediaPayload =
     type === "document"
       ? { id: mediaId, filename: filename ?? "file" }
       : { id: mediaId };
 
-  const result = await graphFetch<{ messages: Array<{ id: string }> }>(
+  const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     `/${phoneNumberId}/messages`,
+    accessToken,
     {
       method: "POST",
       body: JSON.stringify({
@@ -395,10 +495,13 @@ export async function sendMediaMessage(
 }
 
 /** Send a free-text message within the 24-hour customer-service window. */
-export async function sendTextMessage(to: string, body: string) {
-  const { phoneNumberId } = creds();
-  const result = await graphFetch<{ messages: Array<{ id: string }> }>(
+export async function sendTextMessage(to: string, body: string, userId?: string) {
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     `/${phoneNumberId}/messages`,
+    accessToken,
     {
       method: "POST",
       body: JSON.stringify({
@@ -418,9 +521,12 @@ export async function sendInteractiveButtons(
   body: string,
   footer: string | undefined,
   buttons: Array<{ id: string; title: string }>,
+  userId?: string,
 ) {
-  const { phoneNumberId } = creds();
-  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
@@ -449,9 +555,12 @@ export async function sendInteractiveList(
   footer: string | undefined,
   buttonText: string,
   sections: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>,
+  userId?: string,
 ) {
-  const { phoneNumberId } = creds();
-  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
@@ -479,9 +588,11 @@ export async function sendInteractiveList(
 }
 
 /** Request the user's live location (interactive). */
-export async function sendLocationRequest(to: string, body: string) {
-  const { phoneNumberId } = creds();
-  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+export async function sendLocationRequest(to: string, body: string, userId?: string) {
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
@@ -502,9 +613,12 @@ export async function sendLocationMessage(
   latitude: string,
   longitude: string,
   name?: string,
+  userId?: string,
 ) {
-  const { phoneNumberId } = creds();
-  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
@@ -522,14 +636,17 @@ export async function sendMediaByUrl(
   url: string,
   caption?: string,
   filename?: string,
+  userId?: string,
 ) {
-  const { phoneNumberId } = creds();
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   const mediaPayload =
     type === "document"
       ? { link: url, ...(caption ? { caption } : {}), ...(filename ? { filename } : {}) }
       : { link: url, ...(caption ? { caption } : {}) };
 
-  return graphFetch<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, {
+  return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
@@ -551,10 +668,14 @@ export async function sendTemplateMessage(
     index?: string;
     parameters: Array<{ type: string; text?: string; action?: Record<string, unknown> }>;
   }>,
+  userId?: string,
 ) {
-  const { phoneNumberId } = creds();
-  const result = await graphFetch<{ messages: Array<{ id: string }> }>(
+  const { phoneNumberId, accessToken } = userId
+    ? await getCredentials(userId)
+    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     `/${phoneNumberId}/messages`,
+    accessToken,
     {
       method: "POST",
       body: JSON.stringify({

@@ -334,6 +334,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           template.name,
           template.language ?? "en_US",
           components,
+          userId,
         );
 
         await MessageModel.create({

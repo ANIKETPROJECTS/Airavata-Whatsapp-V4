@@ -23,6 +23,7 @@ import {
   sendLocationRequest,
   sendLocationMessage,
   sendTemplateMessage,
+  getCredentials,
 } from "./whatsapp";
 import { resolvePricingLookupForUser } from "./pricing";
 
@@ -457,7 +458,7 @@ async function executeNode(
         if (message) {
           const ms = Number(d["typingDelay"] ?? 0);
           if (ms > 0 && ms <= 5000) await sleep(ms);
-          await sendTextMessage(phone, message);
+          await sendTextMessage(phone, message, userId.toString());
           await storeOutbound(userId, contactId, message);
         }
         return {};
@@ -469,7 +470,7 @@ async function executeNode(
         const mediaUrl = String(d["mediaUrl"] ?? "");
         const caption = d["caption"] ? String(d["caption"]) : undefined;
         if (mediaUrl) {
-          await sendMediaByUrl(phone, mediaType, mediaUrl, caption);
+          await sendMediaByUrl(phone, mediaType, mediaUrl, caption, undefined, userId.toString());
           await storeOutbound(userId, contactId, `[${mediaType}]`, { mediaType, mediaUrl });
         }
         return {};
@@ -485,7 +486,7 @@ async function executeNode(
           return {}; // don't hang: advance to next node
         }
         logger.info({ nodeId: node.id, body, buttonCount: buttons.length }, "Sending interactive buttons");
-        await sendInteractiveButtons(phone, body, footer, buttons);
+        await sendInteractiveButtons(phone, body, footer, buttons, userId.toString());
         await storeOutbound(userId, contactId, body);
         return { waitForInput: true };
       }
@@ -521,7 +522,7 @@ async function executeNode(
           { nodeId: node.id, body, sectionCount: sections.length, rowCounts: sections.map((s) => s.rows.length) },
           "Sending interactive list",
         );
-        await sendInteractiveList(phone, header, body, footer, buttonText, sections);
+        await sendInteractiveList(phone, header, body, footer, buttonText, sections, userId.toString());
         await storeOutbound(userId, contactId, body);
         return { waitForInput: true };
       }
@@ -544,7 +545,7 @@ async function executeNode(
                   },
                 ]
               : undefined;
-          await sendTemplateMessage(phone, templateName, language, components);
+          await sendTemplateMessage(phone, templateName, language, components, userId.toString());
           await storeOutbound(userId, contactId, `[template: ${templateName}]`);
         }
         return {};
@@ -555,13 +556,13 @@ async function executeNode(
         const action = String(d["action"] ?? "request");
         if (action === "request") {
           const message = String(d["message"] ?? "Please share your location.");
-          await sendLocationRequest(phone, message);
+          await sendLocationRequest(phone, message, userId.toString());
           await storeOutbound(userId, contactId, message);
         } else {
           const lat = String(d["lat"] ?? "0");
           const lng = String(d["lng"] ?? "0");
           const name = d["locationName"] ? String(d["locationName"]) : undefined;
-          await sendLocationMessage(phone, lat, lng, name);
+          await sendLocationMessage(phone, lat, lng, name, userId.toString());
           await storeOutbound(userId, contactId, `[location${name ? `: ${name}` : ""}]`);
         }
         return {};
@@ -675,7 +676,7 @@ async function executeNode(
       case "question": {
         const message = interpolate(String(d["question"] ?? ""), variables, contact);
         if (message) {
-          await sendTextMessage(phone, message);
+          await sendTextMessage(phone, message, userId.toString());
           await storeOutbound(userId, contactId, message);
         }
         return { waitForInput: true };
@@ -734,9 +735,7 @@ async function sendWhatsAppFlowMessage(
   bodyText: string,
   ctaLabel: string,
 ): Promise<void> {
-  const accessToken = process.env["META_ACCESS_TOKEN"];
-  const phoneNumberId = process.env["META_PHONE_NUMBER_ID"];
-  if (!accessToken || !phoneNumberId) throw new Error("Meta credentials not configured");
+  const { accessToken, phoneNumberId } = await getCredentials(userId.toString());
 
   // Look up internal flow to generate a trackable token
   // The chatbot UI stores our internal Flow document ID. Keep accepting a

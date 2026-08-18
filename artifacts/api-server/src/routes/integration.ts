@@ -9,8 +9,11 @@
  */
 
 import { Router, type Response } from "express";
+import mongoose from "mongoose";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { UserModel } from "../models/User";
+import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
+import { encryptToken } from "../lib/credentialCrypto";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -241,6 +244,28 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         metaEmbeddedSignupCode: 1,
       },
     });
+
+    /**
+     * Also upsert encrypted credentials into whatsappcredentials collection.
+     * This is the source of truth used by all outbound message sending.
+     */
+    try {
+      const accessTokenEncrypted = encryptToken(accessToken);
+      await WhatsAppCredentialModel.findOneAndUpdate(
+        { userId: new mongoose.Types.ObjectId(req.user!.userId) },
+        {
+          userId: new mongoose.Types.ObjectId(req.user!.userId),
+          wabaId,
+          phoneNumberId,
+          accessTokenEncrypted,
+        },
+        { upsert: true, new: true },
+      );
+      logger.info({ userId: req.user!.userId }, "WhatsApp credentials encrypted and stored in whatsappcredentials");
+    } catch (credErr) {
+      // Log but do not fail the onboarding — user can reconnect to retry
+      logger.error({ err: credErr, userId: req.user!.userId }, "Failed to store encrypted WhatsApp credentials");
+    }
 
     logger.info(
       {
