@@ -26,6 +26,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "243bddb176eec328c00240a40a0752fb",
+        META_REDIRECT_URI: "https://airavataintelligence.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:

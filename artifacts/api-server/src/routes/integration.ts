@@ -20,6 +20,8 @@ const router = Router();
 
 const META_APP_ID = process.env.META_APP_ID ?? "1324395306544610";
 const META_APP_SECRET = process.env.META_APP_SECRET;
+const META_REDIRECT_URI =
+  process.env.META_REDIRECT_URI ?? "https://airavataintelligence.com/";
 const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
@@ -44,7 +46,8 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
       `&client_secret=${encodeURIComponent(META_APP_SECRET)}` +
-      `&code=${encodeURIComponent(code)}`;
+      `&code=${encodeURIComponent(code)}` +
+      `&redirect_uri=${encodeURIComponent(META_REDIRECT_URI)}`;
 
     const tokenRes = await fetch(tokenUrl);
 
@@ -261,10 +264,17 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         },
         { upsert: true, new: true },
       );
-      logger.info({ userId: req.user!.userId }, "WhatsApp credentials encrypted and stored in whatsappcredentials");
+
+      logger.info(
+        { userId: req.user!.userId },
+        "WhatsApp credentials encrypted and stored in whatsappcredentials",
+      );
     } catch (credErr) {
       // Log but do not fail the onboarding — user can reconnect to retry
-      logger.error({ err: credErr, userId: req.user!.userId }, "Failed to store encrypted WhatsApp credentials");
+      logger.error(
+        { err: credErr, userId: req.user!.userId },
+        "Failed to store encrypted WhatsApp credentials",
+      );
     }
 
     logger.info(
