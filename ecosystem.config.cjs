@@ -27,7 +27,7 @@ module.exports = {
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "243bddb176eec328c00240a40a0752fb",
         META_REDIRECT_URI: "https://airavataintelligence.com/",
-
+        
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
           "https://newcrm.autogamma.in/api/integrations/airavata/whatsapp-inquiries",

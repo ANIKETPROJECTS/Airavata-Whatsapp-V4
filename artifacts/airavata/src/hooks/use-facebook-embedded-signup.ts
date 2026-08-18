@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 
 const CONFIG_ID = "1057575420290304";
+const REDIRECT_URI = "https://airavataintelligence.com/";
 
 declare global {
   interface Window {
@@ -69,6 +70,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
           try {
             await api.post("/whatsapp/onboard", {
               code: response.authResponse!.code,
+              redirect_uri: REDIRECT_URI,
             });
 
             toast.success("WhatsApp Business Account connected successfully!");
@@ -86,6 +88,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
       },
       {
         config_id: CONFIG_ID,
+        redirect_uri: REDIRECT_URI,
         response_type: "code",
         override_default_response_type: true,
 

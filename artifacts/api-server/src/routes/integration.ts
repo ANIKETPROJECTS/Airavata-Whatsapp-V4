@@ -25,7 +25,10 @@ const META_REDIRECT_URI =
 const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
-  const { code } = req.body as { code?: string };
+  const { code, redirect_uri } = req.body as {
+    code?: string;
+    redirect_uri?: string;
+  };
 
   if (!code) {
     res.status(400).json({
@@ -42,12 +45,13 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   }
 
   try {
+    const redirectUri = redirect_uri ?? META_REDIRECT_URI;
     const tokenUrl =
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
       `&client_secret=${encodeURIComponent(META_APP_SECRET)}` +
       `&code=${encodeURIComponent(code)}` +
-      `&redirect_uri=${encodeURIComponent(META_REDIRECT_URI)}`;
+      `&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
     const tokenRes = await fetch(tokenUrl);
 
