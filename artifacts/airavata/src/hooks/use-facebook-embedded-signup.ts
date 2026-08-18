@@ -53,9 +53,25 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
 
     setIsConnecting(true);
     const redirectUri = `${window.location.origin}${window.location.pathname}`;
+    console.group("[WhatsApp Embedded Signup] Starting OAuth dialog");
+    console.log("Current page:", window.location.href);
+    console.log("Computed redirect_uri:", redirectUri);
+    console.log("config_id:", CONFIG_ID);
+    console.log("response_type:", "code");
+    console.groupEnd();
 
     window.FB.login(
       (response: FBLoginResponse) => {
+        console.group("[WhatsApp Embedded Signup] Facebook SDK response");
+        console.log("status:", response.status);
+        console.log("has authResponse:", Boolean(response.authResponse));
+        console.log("has authorization code:", Boolean(response.authResponse?.code));
+        console.log(
+          "authResponse keys:",
+          response.authResponse ? Object.keys(response.authResponse) : [],
+        );
+        console.groupEnd();
+
         if (response.status !== "connected" || !response.authResponse?.code) {
           setIsConnecting(false);
 
@@ -68,6 +84,13 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
 
         void (async () => {
           try {
+            console.group("[WhatsApp Embedded Signup] Sending code to backend");
+            console.log("POST /whatsapp/onboard");
+            console.log("redirect_uri:", redirectUri);
+            console.log("code present:", true);
+            console.log("code length:", response.authResponse!.code!.length);
+            console.groupEnd();
+
             await api.post("/whatsapp/onboard", {
               code: response.authResponse!.code,
               redirect_uri: redirectUri,

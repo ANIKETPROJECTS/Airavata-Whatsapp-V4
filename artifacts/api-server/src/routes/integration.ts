@@ -50,6 +50,17 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
+    logger.info(
+      {
+        redirectUri: redirect_uri,
+        codePresent: true,
+        codeLength: code.length,
+        graphApiVersion: GRAPH_API_VERSION,
+        tokenExchangePath: "/oauth/access_token",
+      },
+      "WhatsApp Embedded Signup: starting Meta code exchange",
+    );
+
     const tokenUrl =
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
@@ -74,6 +85,8 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         {
           status: tokenRes.status,
           error: tokenData.error?.message,
+          redirectUri: redirect_uri,
+          codeLength: code.length,
         },
         "Meta token exchange failed",
       );
