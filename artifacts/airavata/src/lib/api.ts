@@ -1,6 +1,14 @@
 // API client — all calls go to the API server at /api (routed by Replit's path-based proxy)
 const BASE = "/api";
 
+const TOKEN_KEY = "auth_token";
+
+export const tokenStorage = {
+  get: (): string | null => localStorage.getItem(TOKEN_KEY),
+  set: (token: string): void => localStorage.setItem(TOKEN_KEY, token),
+  clear: (): void => localStorage.removeItem(TOKEN_KEY),
+};
+
 type FetchOptions = RequestInit & { json?: unknown };
 
 async function request<T>(path: string, options: FetchOptions = {}): Promise<T> {
@@ -15,8 +23,14 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
     body = JSON.stringify(json);
   }
 
+  // Send JWT from localStorage as Bearer token
+  const token = tokenStorage.get();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${BASE}${path}`, {
-    credentials: "include", // send httpOnly cookie
+    credentials: "include", // keep for cookie fallback
     ...rest,
     headers,
     body,

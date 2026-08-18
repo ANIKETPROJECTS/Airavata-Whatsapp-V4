@@ -6,7 +6,7 @@ import {
   useCallback,
   ReactNode,
 } from 'react';
-import { api } from '../lib/api';
+import { api, tokenStorage } from '../lib/api';
 
 export interface AuthUser {
   id: string;
@@ -48,17 +48,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const { user } = await api.post<{ user: AuthUser }>('/auth/login', { email, password });
+    const { token, user } = await api.post<{ token: string; user: AuthUser }>('/auth/login', { email, password });
+    tokenStorage.set(token);
     setUser(user);
   }, []);
 
   const signup = useCallback(async (data: SignupData) => {
-    const { user } = await api.post<{ user: AuthUser }>('/auth/signup', data);
+    const { token, user } = await api.post<{ token: string; user: AuthUser }>('/auth/signup', data);
+    tokenStorage.set(token);
     setUser(user);
   }, []);
 
   const logout = useCallback(async () => {
     await api.post('/auth/logout');
+    tokenStorage.clear();
     setUser(null);
   }, []);
 

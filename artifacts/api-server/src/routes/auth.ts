@@ -60,6 +60,7 @@ router.post("/auth/signup", async (req, res) => {
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     res.status(201).json({
+      token,
       user: {
         id: user._id,
         businessName: user.businessName,
@@ -103,6 +104,7 @@ router.post("/auth/login", async (req, res) => {
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     res.json({
+      token,
       user: {
         id: user._id,
         businessName: user.businessName,

@@ -72,6 +72,13 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        // Forward cookies so httpOnly auth_token cookie works correctly
+      },
+    },
   },
   preview: {
     port,
