@@ -13,7 +13,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
-const CONFIG_ID = "1057575420290304";
+const CONFIG_ID = "2110512133150292";
 const FACEBOOK_SDK_REDIRECT_URI =
   "https://www.facebook.com/connect/login_success.html";
 
