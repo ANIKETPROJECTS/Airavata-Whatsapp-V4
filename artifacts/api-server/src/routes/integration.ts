@@ -23,10 +23,7 @@ const META_APP_SECRET = process.env.META_APP_SECRET;
 const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
-  const { code, redirect_uri } = req.body as {
-    code?: string;
-    redirect_uri?: string;
-  };
+  const { code } = req.body as { code?: string };
 
   if (!code) {
     res.status(400).json({
@@ -43,16 +40,9 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   }
 
   try {
-    if (!redirect_uri) {
-      res.status(400).json({
-        error: "Missing redirect_uri from Embedded Signup request",
-      });
-      return;
-    }
-
     logger.info(
       {
-        redirectUri: redirect_uri,
+        redirectUri: "not used for config_id Embedded Signup",
         codePresent: true,
         codeLength: code.length,
         graphApiVersion: GRAPH_API_VERSION,
@@ -65,8 +55,7 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
       `&client_secret=${encodeURIComponent(META_APP_SECRET)}` +
-      `&code=${encodeURIComponent(code)}` +
-      `&redirect_uri=${encodeURIComponent(redirect_uri)}`;
+      `&code=${encodeURIComponent(code)}`;
 
     const tokenRes = await fetch(tokenUrl);
 
@@ -85,7 +74,7 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         {
           status: tokenRes.status,
           error: tokenData.error?.message,
-          redirectUri: redirect_uri,
+          redirectUri: "not used for config_id Embedded Signup",
           codeLength: code.length,
         },
         "Meta token exchange failed",
