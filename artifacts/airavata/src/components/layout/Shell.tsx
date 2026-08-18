@@ -22,6 +22,8 @@ import multipleUsersIcon from '@assets/people_(1)_1784832278623.png';
 import catalogIcon from '@assets/catalog_1784815184631.png';
 import creditCardIcon from '@assets/credit-card_(1)_1784832045706.png';
 import settingsIcon from '@assets/settings_(1)_1784831863555.png';
+import logoIcon from '@assets/ICON_NOBG.svg';
+import fullLogo from '@assets/HFULL_NOBGSVG.svg';
 
 const SIDEBAR_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, iconSrc: menuIcon, href: '/dashboard' },
@@ -72,19 +74,18 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside
           className={`
-            airavata-sidebar relative flex flex-col bg-[#FFD700] text-black
+            airavata-sidebar relative flex flex-col bg-[#25d366] text-black
             transition-all duration-200 ease-in-out shrink-0 z-20
             ${collapsed ? 'w-20' : 'w-[260px]'}
           `}
         >
           {/* Logo */}
-          <div className={`flex items-center border-b border-white/25 shrink-0 h-16 ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-4'}`}>
-            <div className="w-9 h-9 rounded-md bg-white/20 flex items-center justify-center shrink-0">
-              <MessageCircle className="w-5 h-5 text-black" />
-            </div>
-            {!collapsed && (
-              <span className="font-bold text-xl tracking-tight truncate">Airavata</span>
-            )}
+          <div className={`flex items-center justify-center bg-white border-b border-gray-200 shrink-0 h-16 ${collapsed ? 'px-0' : 'px-4'}`}>
+            <img
+              src={collapsed ? logoIcon : fullLogo}
+              alt="Airavata"
+              className={collapsed ? 'w-9 h-9 object-contain' : 'w-full max-w-[190px] max-h-10 object-contain'}
+            />
           </div>
 
           {/* Nav items */}
