@@ -20,15 +20,10 @@ const router = Router();
 
 const META_APP_ID = process.env.META_APP_ID ?? "1324395306544610";
 const META_APP_SECRET = process.env.META_APP_SECRET;
-const META_REDIRECT_URI =
-  process.env.META_REDIRECT_URI ?? "https://airavataintelligence.com/";
 const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
-  const { code, redirect_uri } = req.body as {
-    code?: string;
-    redirect_uri?: string;
-  };
+  const { code } = req.body as { code?: string };
 
   if (!code) {
     res.status(400).json({
@@ -45,13 +40,11 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   }
 
   try {
-    const redirectUri = redirect_uri ?? META_REDIRECT_URI;
     const tokenUrl =
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
       `&client_secret=${encodeURIComponent(META_APP_SECRET)}` +
-      `&code=${encodeURIComponent(code)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      `&code=${encodeURIComponent(code)}`;
 
     const tokenRes = await fetch(tokenUrl);
 
