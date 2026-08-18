@@ -52,6 +52,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
     }
 
     setIsConnecting(true);
+    const redirectUri = `${window.location.origin}${window.location.pathname}`;
 
     window.FB.login(
       (response: FBLoginResponse) => {
@@ -69,6 +70,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
           try {
             await api.post("/whatsapp/onboard", {
               code: response.authResponse!.code,
+              redirect_uri: redirectUri,
             });
 
             toast.success("WhatsApp Business Account connected successfully!");
@@ -86,6 +88,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
       },
       {
         config_id: CONFIG_ID,
+        redirect_uri: redirectUri,
         response_type: "code",
         override_default_response_type: true,
 

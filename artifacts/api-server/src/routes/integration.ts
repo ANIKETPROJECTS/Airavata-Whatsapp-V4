@@ -23,7 +23,10 @@ const META_APP_SECRET = process.env.META_APP_SECRET;
 const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
-  const { code } = req.body as { code?: string };
+  const { code, redirect_uri } = req.body as {
+    code?: string;
+    redirect_uri?: string;
+  };
 
   if (!code) {
     res.status(400).json({
@@ -40,11 +43,19 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   }
 
   try {
+    if (!redirect_uri) {
+      res.status(400).json({
+        error: "Missing redirect_uri from Embedded Signup request",
+      });
+      return;
+    }
+
     const tokenUrl =
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
       `&client_secret=${encodeURIComponent(META_APP_SECRET)}` +
-      `&code=${encodeURIComponent(code)}`;
+      `&code=${encodeURIComponent(code)}` +
+      `&redirect_uri=${encodeURIComponent(redirect_uri)}`;
 
     const tokenRes = await fetch(tokenUrl);
 
