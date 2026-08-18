@@ -25,9 +25,9 @@ module.exports = {
         META_WABA_ID: "1546864506819232",
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
-        META_APP_SECRET: "243bddb176eec328c00240a40a0752fb",
+        META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
         META_REDIRECT_URI: "https://airavataintelligence.com/",
-        
+
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
           "https://newcrm.autogamma.in/api/integrations/airavata/whatsapp-inquiries",
