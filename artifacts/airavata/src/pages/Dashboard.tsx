@@ -78,7 +78,10 @@ const fmt = (value: number) => value.toLocaleString();
 const pct = (value: number, total: number) => total > 0 ? `${Math.round((value / total) * 100)}%` : '—';
 const campaignTargeted = (campaign: Campaign) => campaign.stats.totalRecipients ?? campaign.stats.sent + campaign.stats.failed;
 const campaignCompletion = (campaign: Campaign) => pct(campaign.stats.sent, campaignTargeted(campaign));
-const campaignSuccess = (campaign: Campaign) => pct(campaign.stats.delivered, campaign.stats.sent);
+const campaignSuccess = (campaign: Campaign) => {
+  const targeted = campaignTargeted(campaign);
+  return pct(Math.min(campaign.stats.delivered, targeted), targeted);
+};
 
 function MetricCard({
   label,
@@ -154,8 +157,10 @@ function SectionHeading({
 
 function StatusPill({ status }: { status: string }) {
   const normalized = status.toUpperCase();
-  const style = normalized === 'APPROVED' || normalized === 'PUBLISHED' || normalized === 'COMPLETED'
-    ? 'bg-green-50 text-green-700'
+  const style = normalized === 'COMPLETED'
+    ? 'bg-green-500 text-white'
+    : normalized === 'APPROVED' || normalized === 'PUBLISHED'
+      ? 'bg-green-50 text-green-700'
     : normalized === 'REJECTED' || normalized === 'FAILED'
       ? 'bg-red-50 text-red-700'
       : 'bg-amber-50 text-amber-700';
@@ -323,13 +328,13 @@ export default function Dashboard() {
                   <tr>
                     <th className="pb-3 font-semibold">Campaign</th>
                     <th className="pb-3 font-semibold">Date</th>
-                    <th className="pb-3 font-semibold">Targeted</th>
-                    <th className="pb-3 font-semibold">Sent</th>
-                    <th className="pb-3 font-semibold">Delivered</th>
-                    <th className="pb-3 font-semibold">Read</th>
-                    <th className="pb-3 font-semibold">Failed</th>
-                    <th className="pb-3 font-semibold">Completed</th>
-                    <th className="pb-3 font-semibold">Success ratio</th>
+                    <th className="pb-3 text-center font-semibold">Targeted</th>
+                    <th className="pb-3 text-center font-semibold">Sent</th>
+                    <th className="pb-3 text-center font-semibold">Delivered</th>
+                    <th className="pb-3 text-center font-semibold">Read</th>
+                    <th className="pb-3 text-center font-semibold">Failed</th>
+                    <th className="pb-3 text-center font-semibold">Completed</th>
+                    <th className="pb-3 text-center font-semibold">Success ratio</th>
                     <th className="pb-3 text-right font-semibold">Status</th>
                   </tr>
                 </thead>
@@ -338,20 +343,13 @@ export default function Dashboard() {
                     <tr key={c.id}>
                       <td className="max-w-[220px] truncate py-4 pr-4 font-semibold text-black">{c.name}</td>
                       <td className="whitespace-nowrap py-4 text-gray-800">{new Date(c.createdAt).toLocaleDateString()}</td>
-                      <td className="py-4 font-semibold text-black">{fmt(campaignTargeted(c))}</td>
-                      <td className="py-4 text-gray-800">{fmt(c.stats.sent)}</td>
-                      <td className="py-4 text-gray-800">{fmt(c.stats.delivered)}</td>
-                      <td className="py-4 text-gray-800">{fmt(c.stats.read)}</td>
-                      <td className="py-4 font-semibold text-red-700">{fmt(c.stats.failed)}</td>
-                      <td className="min-w-[130px] py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-black">{campaignCompletion(c)}</span>
-                          <div className="h-1.5 w-16 overflow-hidden bg-gray-100">
-                            <div className="h-full bg-green-500" style={{ width: `${Math.min(100, (c.stats.sent / Math.max(1, campaignTargeted(c))) * 100)}%` }} />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 font-semibold text-black">{campaignSuccess(c)}</td>
+                      <td className="py-4 text-center font-semibold text-black">{fmt(campaignTargeted(c))}</td>
+                      <td className="py-4 text-center text-gray-800">{fmt(c.stats.sent)}</td>
+                      <td className="py-4 text-center text-gray-800">{fmt(c.stats.delivered)}</td>
+                      <td className="py-4 text-center text-gray-800">{fmt(c.stats.read)}</td>
+                      <td className="py-4 text-center font-semibold text-red-700">{fmt(c.stats.failed)}</td>
+                      <td className="py-4 text-center font-semibold text-black">{campaignCompletion(c)}</td>
+                      <td className="py-4 text-center font-semibold text-black">{campaignSuccess(c)}</td>
                       <td className="py-4 text-right"><StatusPill status={c.status} /></td>
                     </tr>
                   ))}
