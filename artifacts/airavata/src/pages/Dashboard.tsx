@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFacebookEmbeddedSignup } from '@/hooks/use-facebook-embedded-signup';
 import facebookIcon from '@assets/facebook_(1)_1787158279371.png';
 import verifiedIcon from '@assets/social-media_1787158389051.png';
-import sentCardIcon from '@assets/sent_1787158963032.png';
+import sentCardIcon from '@assets/send_(1)_1787159297533.png';
 import messageCardIcon from '@assets/message_1787158795063.png';
 import viewCardIcon from '@assets/view_1787158851964.png';
 import reportCardIcon from '@assets/report_1787158875535.png';
