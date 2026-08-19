@@ -297,11 +297,11 @@ export default function Dashboard() {
         <section>
           <SectionHeading eyebrow="Customer activity" title="Conversation health" href="/live-chat" />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            <MetricCard label="Total contacts" value={contactsLoading ? '—' : fmt(contactTotal)} detail="Contacts in your workspace" icon={Users} hideIcon tone="blue" />
-            <MetricCard label="Active chats" value={conversationsLoading ? '—' : fmt(activeChats)} detail="Open conversations needing attention" icon={MessageCircle} hideIcon tone="teal" />
-            <MetricCard label="Customer replies" value={conversationsLoading ? '—' : fmt(customerReplies)} detail="Unread inbound messages" icon={MessageSquareReply} hideIcon tone="amber" />
-            <MetricCard label="Total conversations" value={conversationsLoading ? '—' : fmt(conversations.length)} detail="Contacts with message history" icon={Users} hideIcon tone="blue" />
-            <MetricCard label="Campaigns run" value={fmt(stats?.campaignCount ?? campaigns.length)} detail="All-time campaign count" icon={BarChart3} hideIcon tone="violet" />
+            <MetricCard label="Total contacts" value={contactsLoading ? '—' : fmt(contactTotal)} detail="Contacts in your workspace" icon={Users} hideIcon large tone="blue" />
+            <MetricCard label="Active chats" value={conversationsLoading ? '—' : fmt(activeChats)} detail="Open conversations needing attention" icon={MessageCircle} hideIcon large tone="teal" />
+            <MetricCard label="Customer replies" value={conversationsLoading ? '—' : fmt(customerReplies)} detail="Unread inbound messages" icon={MessageSquareReply} hideIcon large tone="amber" />
+            <MetricCard label="Total conversations" value={conversationsLoading ? '—' : fmt(conversations.length)} detail="Contacts with message history" icon={Users} hideIcon large tone="blue" />
+            <MetricCard label="Campaigns run" value={fmt(stats?.campaignCount ?? campaigns.length)} detail="All-time campaign count" icon={BarChart3} hideIcon large tone="violet" />
           </div>
         </section>
 
