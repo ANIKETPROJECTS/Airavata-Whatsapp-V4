@@ -11,6 +11,7 @@ import { ContactModel } from "../models/Contact";
 import { sendTextMessage, uploadMedia, sendMediaMessage, mediaTypeFromMime } from "../lib/whatsapp";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+import { withCreditCharge } from "../lib/creditDeduction";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -239,7 +240,11 @@ router.post("/conversations/:contactId/messages", authenticate, async (req: Auth
     }
 
     // Send via WhatsApp API
-    const result = await sendTextMessage(contact.phone, body.trim());
+    const result = await withCreditCharge({
+      userId,
+      description: `Live Chat message to ${contact.phone}`,
+      send: () => sendTextMessage(contact.phone, body.trim(), userId.toString()),
+    });
     const waMessageId = result.messages?.[0]?.id ?? null;
 
     const msg = await MessageModel.create({
@@ -304,11 +309,22 @@ router.post(
       const { buffer, mimetype, originalname } = req.file;
       const type = mediaTypeFromMime(mimetype);
 
-      // 1. Upload to Meta
-      const mediaId = await uploadMedia(buffer, mimetype, originalname);
-
-      // 2. Send via WhatsApp
-      const result = await sendMediaMessage(contact.phone, mediaId, type, originalname);
+       // Reserve credits before the upload/send sequence; refund if either Meta call fails.
+       const { mediaId, result } = await withCreditCharge({
+         userId,
+         description: `Live Chat media message to ${contact.phone}`,
+         send: async () => {
+           const mediaId = await uploadMedia(buffer, mimetype, originalname);
+           const result = await sendMediaMessage(
+             contact.phone,
+             mediaId,
+             type,
+             originalname,
+             userId.toString(),
+           );
+           return { mediaId, result };
+         },
+       });
       const waMessageId = result.messages?.[0]?.id ?? null;
 
       // 3. Persist to MongoDB

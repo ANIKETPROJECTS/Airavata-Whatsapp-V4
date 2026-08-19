@@ -12,6 +12,7 @@ import { MessageModel } from "../models/Message";
 import { sendTemplateMessage } from "../lib/whatsapp";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+import { withCreditCharge } from "../lib/creditDeduction";
 
 const router = Router();
 
@@ -329,13 +330,19 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     for (const contact of recipients) {
       try {
         const components = buildComponents(variableValues, contact);
-        const result = await sendTemplateMessage(
-          contact.phone,
-          template.name,
-          template.language ?? "en_US",
-          components,
+        const result = await withCreditCharge({
           userId,
-        );
+          campaignId: camp._id,
+          description: `Campaign message to ${contact.phone}`,
+          send: () =>
+            sendTemplateMessage(
+              contact.phone,
+              template.name,
+              template.language ?? "en_US",
+              components,
+              userId,
+            ),
+        });
 
         await MessageModel.create({
           userId,

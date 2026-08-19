@@ -12,11 +12,11 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-type CreditChargeOptions = {
+type CreditChargeOptions<T> = {
   userId: mongoose.Types.ObjectId | string;
   description: string;
   campaignId?: mongoose.Types.ObjectId | string;
-  send: () => Promise<unknown>;
+  send: () => Promise<T>;
 };
 
 function objectId(value: mongoose.Types.ObjectId | string) {
@@ -45,12 +45,12 @@ async function creditsPerMessage(): Promise<number> {
  * Reserve credits atomically before sending, then finalize the deduction only
  * after Meta succeeds. A failed Meta request gets an atomic reservation refund.
  */
-export async function withCreditCharge({
+export async function withCreditCharge<T>({
   userId,
   description,
   campaignId,
   send,
-}: CreditChargeOptions): Promise<unknown> {
+}: CreditChargeOptions<T>): Promise<T> {
   const resolvedUserId = objectId(userId);
   const amount = await creditsPerMessage();
 
@@ -69,26 +69,28 @@ export async function withCreditCharge({
     throw new InsufficientCreditsError();
   }
 
+  let result: T;
   try {
-    const result = await send();
-    const currentUser = await UserModel.findById(resolvedUserId)
-      .select("creditBalance")
-      .lean();
-
-    await CreditTransactionModel.create({
-      userId: resolvedUserId,
-      type: "DEDUCTION",
-      amount: -amount,
-      balanceAfter: currentUser?.creditBalance ?? reservedUser.creditBalance,
-      ...(campaignId ? { campaignId: objectId(campaignId) } : {}),
-      description,
-    });
-
-    return result;
+    result = await send();
   } catch (error) {
     await UserModel.findByIdAndUpdate(resolvedUserId, {
       $inc: { creditBalance: amount },
     });
     throw error;
   }
+
+  const currentUser = await UserModel.findById(resolvedUserId)
+    .select("creditBalance")
+    .lean();
+
+  await CreditTransactionModel.create({
+    userId: resolvedUserId,
+    type: "DEDUCTION",
+    amount: -amount,
+    balanceAfter: currentUser?.creditBalance ?? reservedUser.creditBalance,
+    ...(campaignId ? { campaignId: objectId(campaignId) } : {}),
+    description,
+  });
+
+  return result;
 }

@@ -26,6 +26,7 @@ import {
   getCredentials,
 } from "./whatsapp";
 import { resolvePricingLookupForUser } from "./pricing";
+import { withCreditCharge } from "./creditDeduction";
 
 // ── Internal Types ─────────────────────────────────────────────────────────────
 
@@ -458,7 +459,11 @@ async function executeNode(
         if (message) {
           const ms = Number(d["typingDelay"] ?? 0);
           if (ms > 0 && ms <= 5000) await sleep(ms);
-          await sendTextMessage(phone, message, userId.toString());
+          await withCreditCharge({
+            userId,
+            description: `Chatbot text message to ${phone}`,
+            send: () => sendTextMessage(phone, message, userId.toString()),
+          });
           await storeOutbound(userId, contactId, message);
         }
         return {};
@@ -470,7 +475,19 @@ async function executeNode(
         const mediaUrl = String(d["mediaUrl"] ?? "");
         const caption = d["caption"] ? String(d["caption"]) : undefined;
         if (mediaUrl) {
-          await sendMediaByUrl(phone, mediaType, mediaUrl, caption, undefined, userId.toString());
+          await withCreditCharge({
+            userId,
+            description: `Chatbot media message to ${phone}`,
+            send: () =>
+              sendMediaByUrl(
+                phone,
+                mediaType,
+                mediaUrl,
+                caption,
+                undefined,
+                userId.toString(),
+              ),
+          });
           await storeOutbound(userId, contactId, `[${mediaType}]`, { mediaType, mediaUrl });
         }
         return {};
@@ -486,7 +503,18 @@ async function executeNode(
           return {}; // don't hang: advance to next node
         }
         logger.info({ nodeId: node.id, body, buttonCount: buttons.length }, "Sending interactive buttons");
-        await sendInteractiveButtons(phone, body, footer, buttons, userId.toString());
+        await withCreditCharge({
+          userId,
+          description: `Chatbot button message to ${phone}`,
+          send: () =>
+            sendInteractiveButtons(
+              phone,
+              body,
+              footer,
+              buttons,
+              userId.toString(),
+            ),
+        });
         await storeOutbound(userId, contactId, body);
         return { waitForInput: true };
       }
@@ -522,7 +550,20 @@ async function executeNode(
           { nodeId: node.id, body, sectionCount: sections.length, rowCounts: sections.map((s) => s.rows.length) },
           "Sending interactive list",
         );
-        await sendInteractiveList(phone, header, body, footer, buttonText, sections, userId.toString());
+        await withCreditCharge({
+          userId,
+          description: `Chatbot list message to ${phone}`,
+          send: () =>
+            sendInteractiveList(
+              phone,
+              header,
+              body,
+              footer,
+              buttonText,
+              sections,
+              userId.toString(),
+            ),
+        });
         await storeOutbound(userId, contactId, body);
         return { waitForInput: true };
       }
@@ -545,7 +586,18 @@ async function executeNode(
                   },
                 ]
               : undefined;
-          await sendTemplateMessage(phone, templateName, language, components, userId.toString());
+          await withCreditCharge({
+            userId,
+            description: `Chatbot template message to ${phone}`,
+            send: () =>
+              sendTemplateMessage(
+                phone,
+                templateName,
+                language,
+                components,
+                userId.toString(),
+              ),
+          });
           await storeOutbound(userId, contactId, `[template: ${templateName}]`);
         }
         return {};
@@ -556,13 +608,29 @@ async function executeNode(
         const action = String(d["action"] ?? "request");
         if (action === "request") {
           const message = String(d["message"] ?? "Please share your location.");
-          await sendLocationRequest(phone, message, userId.toString());
+          await withCreditCharge({
+            userId,
+            description: `Chatbot location request to ${phone}`,
+            send: () =>
+              sendLocationRequest(phone, message, userId.toString()),
+          });
           await storeOutbound(userId, contactId, message);
         } else {
           const lat = String(d["lat"] ?? "0");
           const lng = String(d["lng"] ?? "0");
           const name = d["locationName"] ? String(d["locationName"]) : undefined;
-          await sendLocationMessage(phone, lat, lng, name, userId.toString());
+          await withCreditCharge({
+            userId,
+            description: `Chatbot location message to ${phone}`,
+            send: () =>
+              sendLocationMessage(
+                phone,
+                lat,
+                lng,
+                name,
+                userId.toString(),
+              ),
+          });
           await storeOutbound(userId, contactId, `[location${name ? `: ${name}` : ""}]`);
         }
         return {};
@@ -575,7 +643,19 @@ async function executeNode(
         const bodyText = String(d["bodyText"] ?? "Please complete the form below.");
         const ctaLabel = String(d["ctaLabel"] ?? "Open Form");
         if (metaFlowId) {
-          await sendWhatsAppFlowMessage(phone, metaFlowId, userId, headerText, bodyText, ctaLabel);
+          await withCreditCharge({
+            userId,
+            description: `Chatbot Flow message to ${phone}`,
+            send: () =>
+              sendWhatsAppFlowMessage(
+                phone,
+                metaFlowId,
+                userId,
+                headerText,
+                bodyText,
+                ctaLabel,
+              ),
+          });
           await storeOutbound(userId, contactId, bodyText);
           // Do not advance yet. The webhook resumes this node's outgoing edge
           // once the user submits the form.
@@ -676,7 +756,11 @@ async function executeNode(
       case "question": {
         const message = interpolate(String(d["question"] ?? ""), variables, contact);
         if (message) {
-          await sendTextMessage(phone, message, userId.toString());
+          await withCreditCharge({
+            userId,
+            description: `Chatbot question message to ${phone}`,
+            send: () => sendTextMessage(phone, message, userId.toString()),
+          });
           await storeOutbound(userId, contactId, message);
         }
         return { waitForInput: true };
