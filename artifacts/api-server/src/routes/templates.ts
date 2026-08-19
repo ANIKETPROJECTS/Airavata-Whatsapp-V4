@@ -14,6 +14,7 @@ import {
   type HeaderType,
   type CtaButtonParam,
 } from "../lib/whatsapp";
+import { withCreditCharge } from "../lib/creditDeduction";
 
 const router = Router();
 
@@ -295,12 +296,22 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
     // Normalise phone: strip leading zeros / spaces
     const phone = to.trim().replace(/\s+/g, "");
 
-    const result = await sendTemplateMessage(
-      phone,
-      template.name,
-      template.language ?? "en_US",
-      components,
-    );
+    const category = String(template.category).toUpperCase() as
+      | "AUTHENTICATION"
+      | "UTILITY"
+      | "MARKETING";
+    const result = await withCreditCharge({
+      userId,
+      category,
+      description: `Template test send to ${phone}`,
+      send: () =>
+        sendTemplateMessage(
+          phone,
+          template.name,
+          template.language ?? "en_US",
+          components,
+        ),
+    });
     const whatsappMessageId = result.messages?.[0]?.id ?? null;
 
     // ── Persist to Live Chat ───────────────────────────────────────────────────
