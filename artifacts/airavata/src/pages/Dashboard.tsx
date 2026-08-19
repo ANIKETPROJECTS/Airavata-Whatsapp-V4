@@ -128,7 +128,11 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Welcome Back, {user?.businessName ?? 'there'} 👋
           </h1>
-          <p className="text-gray-600">Your WhatsApp Business API is connected and ready to send messages.</p>
+          <p className="text-gray-600">
+            {user?.metaWabaConnected
+              ? 'Your WhatsApp Business API is connected and ready to send messages.'
+              : 'Connect your WhatsApp Business Account to start sending messages.'}
+          </p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 bg-white text-gray-700 font-medium rounded-lg border shadow-sm hover:bg-gray-50">
