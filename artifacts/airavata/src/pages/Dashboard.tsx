@@ -27,7 +27,7 @@ interface Campaign {
   name: string;
   templateName: string | null;
   status: string;
-  stats: { sent: number; delivered: number; read: number; failed: number };
+  stats: { totalRecipients?: number; sent: number; delivered: number; read: number; failed: number };
   createdAt: string;
 }
 
@@ -76,6 +76,9 @@ interface ChatbotFlow {
 
 const fmt = (value: number) => value.toLocaleString();
 const pct = (value: number, total: number) => total > 0 ? `${Math.round((value / total) * 100)}%` : '—';
+const campaignTargeted = (campaign: Campaign) => campaign.stats.totalRecipients ?? campaign.stats.sent + campaign.stats.failed;
+const campaignCompletion = (campaign: Campaign) => pct(campaign.stats.sent, campaignTargeted(campaign));
+const campaignSuccess = (campaign: Campaign) => pct(campaign.stats.delivered, campaign.stats.sent);
 
 function MetricCard({
   label,
@@ -220,9 +223,9 @@ export default function Dashboard() {
   const approvedTemplates = templates.filter(t => t.status.toUpperCase() === 'APPROVED').length;
   const activeCampaigns = campaigns.filter(c => ['SENDING', 'SCHEDULED'].includes(c.status.toUpperCase())).length;
   const liveChatbots = flows.filter(f => f.status.toUpperCase() === 'PUBLISHED').length;
-  const recentCampaigns = campaigns.slice(0, 5);
+  const recentCampaigns = campaigns.slice(0, 8);
   const recentTemplates = templates.slice(0, 4);
-  const recentConversations = conversations.slice(0, 4);
+  const recentConversations = conversations.slice(0, 6);
   const recentFlows = flows.slice(0, 4);
   const totalFlowTriggered = flows.reduce((sum, flow) => sum + (flow.analytics?.triggered ?? 0), 0);
   const totalFlowCompleted = flows.reduce((sum, flow) => sum + (flow.analytics?.completed ?? 0), 0);
@@ -305,57 +308,78 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
-           <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
-            <SectionHeading eyebrow="Recent activity" title="Campaign performance" href="/campaigns-report" />
-            {campaignsLoading ? <div className="h-32 animate-pulse rounded-lg bg-gray-50" /> : recentCampaigns.length === 0 ? (
-              <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 text-center">
-                <BarChart3 className="h-6 w-6 text-gray-300" />
-                <p className="mt-2 text-xs font-semibold text-gray-800">No campaigns yet</p>
-                <a href="/create-campaign" className="mt-1 text-xs text-primary hover:underline">Create your first campaign</a>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[520px] text-left text-xs">
-                  <thead className="border-b border-gray-100 text-[10px] uppercase tracking-wide text-gray-400">
-                    <tr><th className="pb-3 font-semibold">Campaign</th><th className="pb-3 font-semibold">Sent</th><th className="pb-3 font-semibold">Delivered</th><th className="pb-3 font-semibold">Read</th><th className="pb-3 text-right font-semibold">Status</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {recentCampaigns.map(c => (
-                      <tr key={c.id}>
-                        <td className="max-w-[190px] truncate py-3 pr-3 font-semibold text-gray-800">{c.name}</td>
-                        <td className="py-3 text-gray-800">{fmt(c.stats.sent)}</td>
-                        <td className="py-3 text-gray-800">{fmt(c.stats.delivered)}</td>
-                        <td className="py-3 text-gray-800">{fmt(c.stats.read)}</td>
-                        <td className="py-3 text-right"><StatusPill status={c.status} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+        <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+          <SectionHeading eyebrow="Recent activity" title="Campaign performance" href="/campaigns-report" />
+          {campaignsLoading ? <div className="h-40 animate-pulse bg-gray-50" /> : recentCampaigns.length === 0 ? (
+            <div className="flex min-h-40 flex-col items-center justify-center border border-dashed border-gray-200 text-center">
+              <BarChart3 className="h-6 w-6 text-gray-300" />
+              <p className="mt-2 text-sm font-semibold text-gray-800">No campaigns yet</p>
+              <a href="/create-campaign" className="mt-1 text-sm text-primary hover:underline">Create your first campaign</a>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1080px] text-left text-sm">
+                <thead className="border-b border-gray-200 text-[11px] uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="pb-3 font-semibold">Campaign</th>
+                    <th className="pb-3 font-semibold">Date</th>
+                    <th className="pb-3 font-semibold">Targeted</th>
+                    <th className="pb-3 font-semibold">Sent</th>
+                    <th className="pb-3 font-semibold">Delivered</th>
+                    <th className="pb-3 font-semibold">Read</th>
+                    <th className="pb-3 font-semibold">Failed</th>
+                    <th className="pb-3 font-semibold">Completed</th>
+                    <th className="pb-3 font-semibold">Success ratio</th>
+                    <th className="pb-3 text-right font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {recentCampaigns.map(c => (
+                    <tr key={c.id}>
+                      <td className="max-w-[220px] truncate py-4 pr-4 font-semibold text-black">{c.name}</td>
+                      <td className="whitespace-nowrap py-4 text-gray-800">{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4 font-semibold text-black">{fmt(campaignTargeted(c))}</td>
+                      <td className="py-4 text-gray-800">{fmt(c.stats.sent)}</td>
+                      <td className="py-4 text-gray-800">{fmt(c.stats.delivered)}</td>
+                      <td className="py-4 text-gray-800">{fmt(c.stats.read)}</td>
+                      <td className="py-4 font-semibold text-red-700">{fmt(c.stats.failed)}</td>
+                      <td className="min-w-[130px] py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-black">{campaignCompletion(c)}</span>
+                          <div className="h-1.5 w-16 overflow-hidden bg-gray-100">
+                            <div className="h-full bg-green-500" style={{ width: `${Math.min(100, (c.stats.sent / Math.max(1, campaignTargeted(c))) * 100)}%` }} />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 font-semibold text-black">{campaignSuccess(c)}</td>
+                      <td className="py-4 text-right"><StatusPill status={c.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
-           <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
-            <SectionHeading eyebrow="Live chat" title="Latest customer replies" href="/live-chat" />
-            {conversationsLoading ? <div className="h-32 animate-pulse rounded-lg bg-gray-50" /> : recentConversations.length === 0 ? (
-              <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-800">No conversation activity yet</div>
-            ) : (
-              <div className="divide-y divide-gray-100">
-                {recentConversations.map(c => (
-                  <div key={c.id} className="flex items-center gap-3 py-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{c.contactName.slice(0, 1).toUpperCase()}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2"><p className="truncate text-xs font-semibold text-gray-800">{c.contactName}</p>{c.unread > 0 && <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white">{c.unread}</span>}</div>
-                       <p className="mt-0.5 truncate text-[11px] text-gray-800">{c.lastMessage || 'No message preview'}</p>
-                    </div>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+        <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+          <SectionHeading eyebrow="Live chat" title="Latest customer replies" href="/live-chat" />
+          {conversationsLoading ? <div className="h-40 animate-pulse bg-gray-50" /> : recentConversations.length === 0 ? (
+            <div className="flex min-h-40 items-center justify-center border border-dashed border-gray-200 text-sm text-gray-800">No conversation activity yet</div>
+          ) : (
+            <div className="grid gap-x-8 divide-y divide-gray-100 md:grid-cols-2 md:divide-y-0">
+              {recentConversations.map(c => (
+                <div key={c.id} className="flex items-center gap-4 border-b border-gray-100 py-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{c.contactName.slice(0, 1).toUpperCase()}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-semibold text-black">{c.contactName}</p>{c.unread > 0 && <span className="bg-primary px-2 py-1 text-xs font-bold text-white">{c.unread}</span>}</div>
+                    <p className="mt-1 truncate text-sm text-gray-800">{c.lastMessage || 'No message preview'}</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-gray-500" />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section>
           <SectionHeading eyebrow="Automation workspace" title="Templates, campaigns and chatbots" />
