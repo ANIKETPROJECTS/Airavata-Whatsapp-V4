@@ -441,7 +441,7 @@ export default function Dashboard() {
                 { label: 'Failed', value: failedCampaigns, tone: 'red' },
               ]}
             >
-              {campaignsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentCampaigns.length === 0 ? <EmptyResource text="No campaigns created yet" href="/create-campaign" action="Create campaign" /> : recentCampaigns.slice(0, 7).map(c => <ResourceRow key={c.id} name={c.name} meta={`${fmt(c.stats.sent)} sent`} status={c.status} />)}
+              {campaignsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentCampaigns.length === 0 ? <EmptyResource text="No campaigns created yet" href="/create-campaign" action="Create campaign" /> : recentCampaigns.slice(0, 7).map(c => <ResourceRow key={c.id} name={c.name} status={c.status} />)}
             </ResourceCard>
             <ResourceCard
               title="Chatbots"
@@ -453,7 +453,7 @@ export default function Dashboard() {
                 { label: 'Failed', value: failedChatbots, tone: 'red' },
               ]}
             >
-              {flowsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentFlows.length === 0 ? <EmptyResource text="No chatbot flows created yet" href="/chatbot" action="Build a chatbot" /> : recentFlows.slice(0, 7).map(f => <ResourceRow key={f.id} name={f.name} meta={`${fmt(f.analytics?.triggered ?? 0)} triggered`} status={f.status} />)}
+              {flowsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentFlows.length === 0 ? <EmptyResource text="No chatbot flows created yet" href="/chatbot" action="Build a chatbot" /> : recentFlows.slice(0, 7).map(f => <ResourceRow key={f.id} name={f.name} status={f.status} />)}
             </ResourceCard>
           </div>
         </section>
@@ -566,8 +566,8 @@ function ResourceCard({ title, total, href, details, children }: {
   );
 }
 
-function ResourceRow({ name, meta, status }: { name: string; meta: string; status: string }) {
-  return <div className="flex items-center justify-between gap-3 border-t border-gray-100 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-black">{name}</p><p className="mt-1 text-xs text-gray-800">{meta}</p></div><StatusPill status={status} large /></div>;
+function ResourceRow({ name, meta, status }: { name: string; meta?: string; status: string }) {
+  return <div className="flex items-center justify-between gap-3 border-t border-gray-100 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-black">{name}</p>{meta && <p className="mt-1 text-xs text-gray-800">{meta}</p>}</div><StatusPill status={status} large /></div>;
 }
 
 function EmptyResource({ text, href, action }: { text: string; href: string; action: string }) {
