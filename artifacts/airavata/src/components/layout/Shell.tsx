@@ -140,9 +140,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <header className="h-[60px] bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
             <div className="flex items-center gap-3">
               <div className="hidden md:flex items-center text-sm text-gray-500">
-                <span className="text-gray-400">Airavata</span>
-                <ChevronRight className="w-4 h-4 mx-1 text-gray-300" />
-                <span className="font-semibold text-gray-800">{currentItem?.title || 'Profile'}</span>
+                <span className="text-xl font-semibold text-gray-900">{currentItem?.title || 'Profile'}</span>
               </div>
             </div>
 
@@ -155,8 +153,8 @@ export function Shell({ children }: { children: ReactNode }) {
                   className="w-8 h-8 object-contain"
                 />
                 <div className="leading-tight whitespace-nowrap">
-                  <div className="text-sm font-semibold text-black">+91 9167959756</div>
-                  <div className="mt-1 text-sm font-semibold text-black">support@atwassup.com</div>
+                  <div className="text-xs font-normal text-black">support@atwassup.com</div>
+                  <div className="mt-1 text-xs font-normal text-black">+91 9167959756</div>
                 </div>
               </div>
               <img
