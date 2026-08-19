@@ -302,7 +302,7 @@ export default function Dashboard() {
               className="inline-flex items-center gap-2.5 border border-orange-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm hover:bg-orange-50"
             >
               <img src={walletIcon} alt="Wallet" className="h-7 w-7 rounded object-contain" />
-              <span>{fmt(billingData?.balance ?? user?.creditBalance ?? 0)} credits</span>
+              <span>{fmt(billingData?.balance ?? user?.creditBalance ?? 0)} Credits</span>
             </a>
             {user?.metaWabaConnected ? (
               <div className="inline-flex items-center gap-2.5 border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm">
