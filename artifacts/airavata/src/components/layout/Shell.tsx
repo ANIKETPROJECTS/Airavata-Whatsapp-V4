@@ -4,7 +4,7 @@ import {
   LayoutDashboard, MessageCircle, Users, Megaphone, BarChart3, 
   FileText, Settings, Workflow, Bot, Blocks, UsersRound, ShoppingBag, 
   CreditCard, Search, Bell, User, LogOut, ChevronRight, ChevronLeft,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +40,7 @@ const SIDEBAR_ITEMS = [
   { title: 'Catalogue', icon: ShoppingBag, iconSrc: catalogIcon, href: '/catalogue' },
   { title: 'WA Pay', icon: CreditCard, iconSrc: creditCardIcon, href: '/wa-pay' },
   { title: 'Manage', icon: Settings, iconSrc: settingsIcon, href: '/manage' },
+  { title: 'Admin', icon: ShieldCheck, href: '/admin', adminOnly: true },
 ];
 
 // Expose collapsed state to pages so they can react if needed
@@ -65,7 +66,10 @@ export function Shell({ children }: { children: ReactNode }) {
     }
   };
 
-  const currentItem = SIDEBAR_ITEMS.find(i => i.href === location) || SIDEBAR_ITEMS[0];
+  const visibleSidebarItems = SIDEBAR_ITEMS.filter(
+    item => !('adminOnly' in item) || !item.adminOnly || user?.role === 'admin',
+  );
+  const currentItem = visibleSidebarItems.find(i => i.href === location) || visibleSidebarItems[0];
 
   return (
     <SidebarContext.Provider value={{ collapsed }}>
@@ -91,7 +95,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {/* Nav items */}
           <nav className="airavata-sidebar-nav flex-1 overflow-y-auto py-3">
             <ul className="space-y-1 px-2">
-              {SIDEBAR_ITEMS.map((item) => {
+              {visibleSidebarItems.map((item) => {
                 const isActive = location === item.href;
                 return (
                   <li key={item.href}>

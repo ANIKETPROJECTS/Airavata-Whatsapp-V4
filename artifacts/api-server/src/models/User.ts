@@ -12,6 +12,7 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true },
     phone: { type: String, trim: true },
     timezone: { type: String, default: "Asia/Kolkata" },
+    role: { type: String, enum: ["admin", "client"], default: "client" },
     creditBalance: { type: Number, default: 0 },
     metaPhoneNumberId: { type: String, unique: true, sparse: true },
     // Embedded Signup — set when a business connects their WABA via Connect Facebook

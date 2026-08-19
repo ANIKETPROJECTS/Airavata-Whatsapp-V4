@@ -14,6 +14,7 @@ export interface AuthUser {
   email: string;
   phone?: string;
   timezone?: string;
+  role?: 'admin' | 'client';
   creditBalance?: number;
   metaWabaConnected?: boolean;
 }

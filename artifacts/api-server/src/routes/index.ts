@@ -21,6 +21,7 @@ import attributesRouter from "./attributes";
 import flowsRouter from "./flows";
 import chatbotRouter from "./chatbot";
 import servicePricingRouter from "./service-pricing";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -48,5 +49,6 @@ router.use(attributesRouter);
 router.use(flowsRouter);
 router.use(chatbotRouter);
 router.use(servicePricingRouter);
+router.use(adminRouter);
 
 export default router;

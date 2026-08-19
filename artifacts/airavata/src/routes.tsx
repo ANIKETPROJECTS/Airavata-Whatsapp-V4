@@ -14,6 +14,7 @@ import Catalogue from './pages/Catalogue';
 import WAPay from './pages/WAPay';
 import Manage from './pages/Manage';
 import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 
 export const routes = [
   { path: '/dashboard', component: Dashboard },
@@ -31,4 +32,5 @@ export const routes = [
   { path: '/wa-pay', component: WAPay },
   { path: '/manage', component: Manage },
   { path: '/profile', component: Profile },
+  { path: '/admin', component: Admin },
 ];
