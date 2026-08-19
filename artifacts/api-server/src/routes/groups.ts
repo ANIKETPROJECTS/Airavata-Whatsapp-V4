@@ -96,7 +96,7 @@ router.delete("/groups/:id", async (req: AuthRequest, res) => {
     // Unassign contacts from this group before deleting
     await ContactModel.updateMany(
       { userId: req.user!.userId, groupId: group._id },
-      { $unset: { groupId: 1 } },
+      { $unset: { groupId: 1 }, $pull: { groupIds: group._id } },
     );
     await group.deleteOne();
 

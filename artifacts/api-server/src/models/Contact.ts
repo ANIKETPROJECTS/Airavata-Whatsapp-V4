@@ -8,6 +8,7 @@ const contactSchema = new Schema(
     email: { type: String, trim: true },
     tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
     groupId: { type: Schema.Types.ObjectId, ref: "Group" },
+    groupIds: [{ type: Schema.Types.ObjectId, ref: "Group" }],
     lastContactedAt: { type: Date },
     status: { type: String, enum: ["active", "blocked", "unsubscribed"], default: "active" },
     chatState: { type: String, enum: ["DOR", "REQ", "CLOSED", "ACTIVE"], default: "DOR" },

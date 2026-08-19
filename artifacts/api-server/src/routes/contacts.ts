@@ -19,6 +19,7 @@ async function populateContact(doc: InstanceType<typeof ContactModel>) {
     createdAt: doc.createdAt,
     tags: doc.tags,   // will be populated
     groupId: doc.groupId ?? null,
+    groupIds: (doc as unknown as { groupIds?: unknown[] }).groupIds ?? [],
     group: doc.groupId ?? null, // will be populated
   };
 }
@@ -45,6 +46,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
       ContactModel.find(filter)
         .populate("tags", "name color")
         .populate("groupId", "name")
+        .populate("groupIds", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -63,6 +65,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         createdAt: c.createdAt,
         tags: c.tags,
         group: c.groupId,
+        groups: ((c as unknown as { groupIds?: unknown[] }).groupIds ?? (c.groupId ? [c.groupId] : [])),
       })),
       total,
       page: pageNum,
@@ -128,9 +131,9 @@ router.post("/contacts", async (req: AuthRequest, res) => {
 // PUT /api/contacts/:id
 router.put("/contacts/:id", async (req: AuthRequest, res) => {
   try {
-    const { name, phone, email, tags, groupId, status, chatState } = req.body as {
+    const { name, phone, email, tags, groupId, groupIds, status, chatState } = req.body as {
       name?: string; phone?: string; email?: string; tags?: string[];
-      groupId?: string | null; status?: string; chatState?: string;
+      groupId?: string | null; groupIds?: string[]; status?: string; chatState?: string;
     };
 
     const contact = await ContactModel.findOne({ _id: req.params["id"], userId: req.user!.userId });
@@ -140,7 +143,20 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
     if (phone?.trim()) contact.phone = phone.trim();
     if (email !== undefined) contact.email = email?.trim();
     if (tags !== undefined) contact.tags = tags as unknown as typeof contact.tags;
-    if (groupId !== undefined) contact.groupId = (groupId || undefined) as unknown as typeof contact.groupId;
+    if (groupIds !== undefined) {
+      const validGroups = await GroupModel.find({
+        _id: { $in: groupIds },
+        userId: req.user!.userId,
+      }).select('_id');
+      if (validGroups.length !== groupIds.length) {
+        return res.status(400).json({ error: "Invalid group selection" });
+      }
+      (contact as unknown as { groupIds: unknown[] }).groupIds = groupIds as unknown[];
+      contact.groupId = (groupIds[0] || undefined) as unknown as typeof contact.groupId;
+    } else if (groupId !== undefined) {
+      contact.groupId = (groupId || undefined) as unknown as typeof contact.groupId;
+      (contact as unknown as { groupIds: unknown[] }).groupIds = groupId ? [groupId] : [];
+    }
     if (status) contact.status = status as "active" | "blocked" | "unsubscribed";
     if (chatState) (contact as unknown as Record<string, unknown>).chatState = chatState;
 
@@ -148,7 +164,8 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
 
     const populated = await ContactModel.findById(contact._id)
       .populate("tags", "name color")
-      .populate("groupId", "name");
+      .populate("groupId", "name")
+      .populate("groupIds", "name");
 
     res.json({
       contact: {
@@ -159,6 +176,7 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
         status: populated!.status,
         tags: populated!.tags,
         group: populated!.groupId ?? null,
+        groups: ((populated as unknown as { groupIds?: unknown[] }).groupIds ?? []),
       },
     });
   } catch {

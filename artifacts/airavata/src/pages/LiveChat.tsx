@@ -10,7 +10,7 @@ import {
   Search, MessageSquare, MoreVertical,
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
-  UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown,
+  UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -70,6 +70,7 @@ interface ContactProfile {
   chatState?: string;
   tags: ProfileTag[];
   group: ProfileGroup | null;
+  groups?: ProfileGroup[];
 }
 
 interface TemplateRecord {
@@ -435,12 +436,26 @@ function FlowDataBubble({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; contactPhone: string }) {
+function ContactProfilePanel({
+  contactId,
+  contactPhone,
+  lastActiveAt,
+  windowOpen,
+  conversationStatus,
+}: {
+  contactId: string;
+  contactPhone: string;
+  lastActiveAt: string;
+  windowOpen: boolean;
+  conversationStatus: string;
+}) {
   const qc = useQueryClient();
   const [draftName, setDraftName] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
   const [draftTags, setDraftTags] = useState<string[]>([]);
-  const [draftGroupId, setDraftGroupId] = useState('');
+  const [draftGroupIds, setDraftGroupIds] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState('');
+  const [showNewTag, setShowNewTag] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
   const [showTags, setShowTags] = useState(true);
   const [showGroups, setShowGroups] = useState(true);
@@ -472,8 +487,8 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
     setDraftName(contact.name);
     setDraftEmail(contact.email ?? '');
     setDraftTags(contact.tags.map(tag => tag.id));
-    setDraftGroupId(contact.group?.id ?? '');
-  }, [contact?.id, contact?.name, contact?.email, contact?.group?.id, contact?.tags]);
+    setDraftGroupIds((contact.groups ?? (contact.group ? [contact.group] : [])).map(group => group.id));
+  }, [contact?.id, contact?.name, contact?.email, contact?.group?.id, contact?.groups, contact?.tags]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -481,13 +496,28 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
         name: draftName.trim(),
         email: draftEmail.trim(),
         tags: draftTags,
-        groupId: draftGroupId || null,
+        groupIds: draftGroupIds,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contact-profile', contactId] });
       qc.invalidateQueries({ queryKey: ['contacts'] });
       qc.invalidateQueries({ queryKey: ['conversations'] });
       toast.success('Customer profile updated');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const createTagMutation = useMutation({
+    mutationFn: () => api.post<{ tag: ProfileTag }>('/tags', {
+      name: newTagName.trim(),
+      color: '#16a34a',
+    }),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ['tags'] });
+      setDraftTags(current => [...current, result.tag.id]);
+      setNewTagName('');
+      setShowNewTag(false);
+      toast.success('Tag created and assigned');
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -514,6 +544,13 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
     );
   }
 
+  const displayName = contact.name === contact.phone ? '' : contact.name;
+  const formatLastActive = (iso: string) => {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+    return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
   return (
     <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
       <div className="px-5 py-4 border-b flex items-center justify-between">
@@ -529,7 +566,7 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
           <div className="w-16 h-16 mx-auto rounded-full bg-primary/15 text-primary flex items-center justify-center text-2xl font-bold">
             {contact.name.charAt(0).toUpperCase()}
           </div>
-          <h4 className="mt-3 font-semibold text-gray-900 truncate">{contact.name}</h4>
+          <h4 className="mt-3 font-semibold text-gray-900 truncate">{displayName || 'Unnamed contact'}</h4>
           <p className="mt-1 text-xs text-gray-500 flex items-center justify-center gap-1">
             <Phone className="w-3 h-3" /> {contact.phone}
           </p>
@@ -538,6 +575,27 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
           }`}>
             {contact.status === 'blocked' ? 'Blocked' : 'Active customer'}
           </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 px-5 py-4 border-b">
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-gray-400">Last active</p>
+            <p className="text-xs font-medium text-gray-700 mt-1">{formatLastActive(lastActiveAt)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-gray-400">Conversation</p>
+            <p className="text-xs font-medium text-gray-700 mt-1">{conversationStatus}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-gray-400">Session window</p>
+            <p className={`text-xs font-medium mt-1 ${windowOpen ? 'text-green-600' : 'text-orange-600'}`}>
+              {windowOpen ? 'Open' : 'Closed'}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-gray-400">Tags</p>
+            <p className="text-xs font-medium text-gray-700 mt-1">{draftTags.length}</p>
+          </div>
         </div>
 
         <div className="border-b">
@@ -555,6 +613,7 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
                 <input
                   value={draftName}
                   onChange={event => setDraftName(event.target.value)}
+                  placeholder="Add customer name"
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </label>
@@ -607,6 +666,38 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
                   })
                 )}
               </div>
+              {showNewTag && (
+                <div className="flex gap-2 mb-3">
+                  <input
+                    value={newTagName}
+                    onChange={event => setNewTagName(event.target.value)}
+                    placeholder="New tag name"
+                    autoFocus
+                    className="min-w-0 flex-1 px-2.5 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        if (newTagName.trim()) createTagMutation.mutate();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (newTagName.trim()) createTagMutation.mutate();
+                    }}
+                    disabled={createTagMutation.isPending || !newTagName.trim()}
+                    className="px-2.5 py-1.5 rounded-lg bg-primary text-white text-xs disabled:opacity-50"
+                  >
+                    {createTagMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Add'}
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => setShowNewTag(value => !value)}
+                className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                <Plus className="w-3 h-3" /> Create tag
+              </button>
               {tags.length > 0 ? (
                 <div className="max-h-28 overflow-y-auto space-y-1">
                   {tags.map(tag => (
@@ -641,18 +732,32 @@ function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; c
           </button>
           {showGroups && (
             <div className="px-5 pb-4">
-              <select
-                value={draftGroupId}
-                onChange={event => setDraftGroupId(event.target.value)}
-                className="w-full px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              >
-                <option value="">No group</option>
-                {groups.map(group => (
-                  <option key={group.id} value={group.id}>{group.name}</option>
-                ))}
-              </select>
-              {groups.length === 0 && (
-                <p className="text-xs text-gray-400 mt-2">Create groups from Contacts to organize customers.</p>
+              {groups.length > 0 ? (
+                <div className="max-h-36 overflow-y-auto space-y-1.5">
+                  {groups.map(group => (
+                    <label key={group.id} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={draftGroupIds.includes(group.id)}
+                        onChange={() => setDraftGroupIds(current =>
+                          current.includes(group.id)
+                            ? current.filter(id => id !== group.id)
+                            : [...current, group.id],
+                        )}
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="flex-1">{group.name}</span>
+                      {group.memberCount !== undefined && (
+                        <span className="text-[10px] text-gray-400">{group.memberCount}</span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">Create groups from Contacts to organize customers.</p>
+              )}
+              {draftGroupIds.length > 0 && (
+                <p className="text-[11px] text-gray-400 mt-2">{draftGroupIds.length} group(s) assigned</p>
               )}
             </div>
           )}
