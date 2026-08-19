@@ -341,7 +341,7 @@ export default function Dashboard() {
                 </colgroup>
                 <thead className="border-b border-gray-200 text-[11px] uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="pb-3 text-left font-semibold">Campaign</th>
+                    <th className="pb-3 text-center font-semibold">Campaign</th>
                     <th className="pb-3 text-center font-semibold">Date</th>
                     <th className="pb-3 text-center font-semibold">Targeted</th>
                     <th className="pb-3 text-center font-semibold">Sent</th>
@@ -356,7 +356,7 @@ export default function Dashboard() {
                 <tbody className="divide-y divide-gray-100">
                   {recentCampaigns.map(c => (
                     <tr key={c.id}>
-                      <td className="max-w-[220px] truncate py-4 pr-4 font-semibold text-black">{c.name}</td>
+                      <td className="max-w-[220px] truncate py-4 pr-4 text-center font-semibold text-black">{c.name}</td>
                       <td className="whitespace-nowrap py-4 text-center text-gray-800">{new Date(c.createdAt).toLocaleDateString()}</td>
                       <td className="py-4 text-center font-semibold text-black">{fmtCompact(campaignTargeted(c))}</td>
                       <td className="py-4 text-center text-gray-800">{fmtCompact(c.stats.sent)}</td>
