@@ -110,7 +110,7 @@ export function Shell({ children }: { children: ReactNode }) {
                           src={item.iconSrc}
                           alt=""
                           aria-hidden="true"
-                          className={`w-8 h-8 shrink-0 object-contain ${item.title === 'Dashboard' ? '' : 'brightness-0'}`}
+                          className={`${item.title === 'Dashboard' ? 'w-10 h-10' : 'w-8 h-8'} shrink-0 object-contain ${item.title === 'Dashboard' ? '' : 'brightness-0'}`}
                         />
                       ) : (
                         <item.icon className="w-6 h-6 shrink-0 text-black" />
