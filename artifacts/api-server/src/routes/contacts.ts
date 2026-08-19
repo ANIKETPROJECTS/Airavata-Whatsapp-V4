@@ -46,7 +46,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
       ContactModel.find(filter)
         .populate("tags", "name color")
         .populate("groupId", "name")
-        .populate("groupIds", "name")
+        .populate({ path: "groupIds", select: "name", strictPopulate: false })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -101,6 +101,7 @@ router.post("/contacts", async (req: AuthRequest, res) => {
       email: email?.trim(),
       tags: tags ?? [],
       groupId: groupId || undefined,
+      groupIds: groupId ? [groupId] : [],
     });
 
     const populated = await ContactModel.findById(contact._id)
@@ -165,7 +166,7 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
     const populated = await ContactModel.findById(contact._id)
       .populate("tags", "name color")
       .populate("groupId", "name")
-      .populate("groupIds", "name");
+      .populate({ path: "groupIds", select: "name", strictPopulate: false });
 
     res.json({
       contact: {

@@ -1379,7 +1379,13 @@ export default function LiveChat() {
         </div>
       )}
       {activeConv && rightPanelOpen && (
-        <ContactProfilePanel contactId={activeConv.contactId} contactPhone={activeConv.contactPhone} />
+        <ContactProfilePanel
+          contactId={activeConv.contactId}
+          contactPhone={activeConv.contactPhone}
+          lastActiveAt={activeConv.lastMessageAt}
+          windowOpen={activeConv.windowOpen}
+          conversationStatus={activeConv.status}
+        />
       )}
     </div>
   );

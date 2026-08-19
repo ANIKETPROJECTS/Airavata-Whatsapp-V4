@@ -57,7 +57,7 @@ router.post("/groups", async (req: AuthRequest, res) => {
           _id: { $in: contactIds.map(id => new mongoose.Types.ObjectId(id)) },
           userId: req.user!.userId,
         },
-        { groupId: group._id },
+        { $addToSet: { groupIds: group._id }, $set: { groupId: group._id } },
       );
       memberCount = result.modifiedCount;
     }
