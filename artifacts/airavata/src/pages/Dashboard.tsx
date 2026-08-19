@@ -70,6 +70,7 @@ interface ChatbotFlow {
     triggered?: number;
     completed?: number;
     dropped?: number;
+    responses?: number;
     completionRate?: number;
   };
 }
@@ -477,10 +478,10 @@ export default function Dashboard() {
                   <MetricCard label="Completed" value={fmt(totalFlowCompleted)} detail="Successful completions" icon={CheckCircle2} hideIcon large tone="green" />
                   <MetricCard label="Dropped" value={fmt(totalFlowDropped)} detail="Started but not completed" icon={CircleAlert} hideIcon large tone="amber" />
                   <MetricCard label="Responses" value={fmt(totalFlowCompleted)} detail="Stored flow responses" icon={MessageSquareReply} hideIcon large tone="blue" />
-                  <MetricCard label="Completion rate" value={flowCompletionRate} detail="" icon={Activity} hideIcon large tone="teal" />
+                  <MetricCard label="Completion rate" value={flowCompletionRate} detail="Completed of triggered" icon={Activity} hideIcon large tone="teal" />
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-[15px]">
+                  <table className="w-full min-w-[760px] text-[15px]">
                     <thead className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500">
                     <tr>
                       <th className="pb-3 text-left font-semibold">Flow</th>
@@ -488,6 +489,7 @@ export default function Dashboard() {
                       <th className="pb-3 text-center font-semibold">Triggered</th>
                       <th className="pb-3 text-center font-semibold">Completed</th>
                       <th className="pb-3 text-center font-semibold">Dropped</th>
+                      <th className="pb-3 text-center font-semibold">Responses</th>
                       <th className="pb-3 text-center font-semibold">Completion</th>
                     </tr>
                     </thead>
@@ -496,6 +498,7 @@ export default function Dashboard() {
                       const triggered = flow.analytics?.triggered ?? 0;
                       const completed = flow.analytics?.completed ?? 0;
                       const dropped = flow.analytics?.dropped ?? Math.max(0, triggered - completed);
+                      const responses = flow.analytics?.responses ?? completed;
                       return (
                         <tr key={flow.id}>
                           <td className="max-w-[220px] truncate py-4 pr-3 font-semibold text-gray-800">{flow.name}</td>
@@ -503,6 +506,7 @@ export default function Dashboard() {
                           <td className="py-4 text-center text-gray-800">{fmtCompact(triggered)}</td>
                           <td className="py-4 text-center text-gray-800">{fmtCompact(completed)}</td>
                           <td className="py-4 text-center text-gray-800">{fmtCompact(dropped)}</td>
+                          <td className="py-4 text-center text-gray-800">{fmtCompact(responses)}</td>
                           <td className="py-4 text-center font-semibold text-gray-800">{flow.analytics?.completionRate ?? (triggered > 0 ? Math.round((completed / triggered) * 100) : 0)}%</td>
                         </tr>
                       );
