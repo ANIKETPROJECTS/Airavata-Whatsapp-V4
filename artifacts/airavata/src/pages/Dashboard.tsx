@@ -95,17 +95,17 @@ function MetricCard({
     teal: 'bg-teal-50 text-teal-600 border-teal-100',
   };
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-none border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-gray-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold tracking-tight text-gray-900">{value}</p>
+          <p className="text-xs font-medium text-gray-800">{label}</p>
+          <p className="mt-2 text-2xl font-bold tracking-tight text-black">{value}</p>
         </div>
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tones[tone]}`}>
           <Icon className="h-4.5 w-4.5" />
         </div>
       </div>
-      <p className="mt-3 text-[11px] text-gray-500">{detail}</p>
+      <p className="mt-3 text-[11px] text-gray-800">{detail}</p>
     </div>
   );
 }
@@ -125,7 +125,7 @@ function SectionHeading({
     <div className="mb-4 flex items-end justify-between gap-3">
       <div>
         {eyebrow && <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">{eyebrow}</p>}
-        <h2 className="text-base font-bold text-gray-900">{title}</h2>
+        <h2 className="text-base font-bold text-black">{title}</h2>
       </div>
       {action ?? (href && (
         <a href={href} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
@@ -232,13 +232,13 @@ export default function Dashboard() {
   const isLoading = statsLoading || campaignsLoading;
 
   return (
-    <div className="h-full overflow-y-auto bg-[#f7f9fb]">
+    <div className="h-full overflow-y-auto bg-white text-black">
       <div className="mx-auto max-w-[1440px] space-y-6 p-5 lg:p-7">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Workspace overview</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-950">Good to see you, {user?.businessName ?? 'there'}</h1>
-            <p className="mt-1 text-sm text-gray-500">A clear view of your WhatsApp activity and automation health.</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-black">Good to see you, {user?.businessName ?? 'there'}</h1>
+            <p className="mt-1 text-sm text-gray-800">A clear view of your WhatsApp activity and automation health.</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={refreshAll} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
@@ -251,12 +251,12 @@ export default function Dashboard() {
         </div>
 
         {showConnection && !user?.metaWabaConnected && (
-          <div className="flex flex-col justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50/70 px-5 py-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col justify-between gap-4 rounded-none border border-amber-200 bg-amber-50/70 px-5 py-4 sm:flex-row sm:items-center">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 rounded-lg bg-white p-2 text-amber-600"><CircleAlert className="h-4 w-4" /></div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Connect WhatsApp Business</p>
-                <p className="mt-1 text-xs text-gray-600">Connect a number to unlock sending, delivery analytics, templates, and live conversations.</p>
+                <p className="text-sm font-bold text-black">Connect WhatsApp Business</p>
+                <p className="mt-1 text-xs text-gray-800">Connect a number to unlock sending, delivery analytics, templates, and live conversations.</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -269,18 +269,18 @@ export default function Dashboard() {
         )}
 
         {user?.metaWabaConnected && (
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-green-200 bg-white px-5 py-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-none border border-green-200 bg-white px-5 py-4 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="h-2.5 w-2.5 rounded-full bg-green-500 ring-4 ring-green-100" />
               <div>
-                <p className="text-xs text-gray-500">WhatsApp connection</p>
-                <p className="text-sm font-bold text-gray-900">{phoneLoading ? 'Checking status…' : connectedPhone?.status || 'Connected'}</p>
+                <p className="text-xs text-gray-800">WhatsApp connection</p>
+                <p className="text-sm font-bold text-black">{phoneLoading ? 'Checking status…' : connectedPhone?.status || 'Connected'}</p>
               </div>
             </div>
             <div className="flex gap-6 text-xs">
-              <div><p className="text-gray-500">Quality</p><p className="mt-1 font-semibold text-gray-900">{connectedPhone?.quality || '—'}</p></div>
-              <div><p className="text-gray-500">Messaging tier</p><p className="mt-1 font-semibold text-gray-900">{connectedPhone?.messagingTier || '—'}</p></div>
-              <div><p className="text-gray-500">Number</p><p className="mt-1 font-semibold text-gray-900">{connectedPhone?.number || '—'}</p></div>
+              <div><p className="text-gray-800">Quality</p><p className="mt-1 font-semibold text-black">{connectedPhone?.quality || '—'}</p></div>
+              <div><p className="text-gray-800">Messaging tier</p><p className="mt-1 font-semibold text-black">{connectedPhone?.messagingTier || '—'}</p></div>
+              <div><p className="text-gray-800">Number</p><p className="mt-1 font-semibold text-black">{connectedPhone?.number || '—'}</p></div>
             </div>
           </div>
         )}
@@ -307,12 +307,12 @@ export default function Dashboard() {
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+           <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
             <SectionHeading eyebrow="Recent activity" title="Campaign performance" href="/campaigns-report" />
             {campaignsLoading ? <div className="h-32 animate-pulse rounded-lg bg-gray-50" /> : recentCampaigns.length === 0 ? (
               <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 text-center">
                 <BarChart3 className="h-6 w-6 text-gray-300" />
-                <p className="mt-2 text-xs font-semibold text-gray-600">No campaigns yet</p>
+                <p className="mt-2 text-xs font-semibold text-gray-800">No campaigns yet</p>
                 <a href="/create-campaign" className="mt-1 text-xs text-primary hover:underline">Create your first campaign</a>
               </div>
             ) : (
@@ -325,9 +325,9 @@ export default function Dashboard() {
                     {recentCampaigns.map(c => (
                       <tr key={c.id}>
                         <td className="max-w-[190px] truncate py-3 pr-3 font-semibold text-gray-800">{c.name}</td>
-                        <td className="py-3 text-gray-600">{fmt(c.stats.sent)}</td>
-                        <td className="py-3 text-gray-600">{fmt(c.stats.delivered)}</td>
-                        <td className="py-3 text-gray-600">{fmt(c.stats.read)}</td>
+                        <td className="py-3 text-gray-800">{fmt(c.stats.sent)}</td>
+                        <td className="py-3 text-gray-800">{fmt(c.stats.delivered)}</td>
+                        <td className="py-3 text-gray-800">{fmt(c.stats.read)}</td>
                         <td className="py-3 text-right"><StatusPill status={c.status} /></td>
                       </tr>
                     ))}
@@ -337,10 +337,10 @@ export default function Dashboard() {
             )}
           </section>
 
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+           <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
             <SectionHeading eyebrow="Live chat" title="Latest customer replies" href="/live-chat" />
             {conversationsLoading ? <div className="h-32 animate-pulse rounded-lg bg-gray-50" /> : recentConversations.length === 0 ? (
-              <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-500">No conversation activity yet</div>
+              <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-gray-200 text-xs text-gray-800">No conversation activity yet</div>
             ) : (
               <div className="divide-y divide-gray-100">
                 {recentConversations.map(c => (
@@ -348,7 +348,7 @@ export default function Dashboard() {
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{c.contactName.slice(0, 1).toUpperCase()}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2"><p className="truncate text-xs font-semibold text-gray-800">{c.contactName}</p>{c.unread > 0 && <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white">{c.unread}</span>}</div>
-                      <p className="mt-0.5 truncate text-[11px] text-gray-500">{c.lastMessage || 'No message preview'}</p>
+                       <p className="mt-0.5 truncate text-[11px] text-gray-800">{c.lastMessage || 'No message preview'}</p>
                     </div>
                     <ChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-300" />
                   </div>
@@ -373,14 +373,14 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
           <SectionHeading eyebrow="Automation analytics" title="Flow performance and responses" href="/chatbot" />
           {flowsLoading ? (
             <div className="h-32 animate-pulse rounded-lg bg-gray-50" />
           ) : flows.length === 0 ? (
             <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 text-center">
               <Bot className="h-6 w-6 text-gray-300" />
-              <p className="mt-2 text-xs font-semibold text-gray-600">No chatbot flow data yet</p>
+              <p className="mt-2 text-xs font-semibold text-gray-800">No chatbot flow data yet</p>
               <a href="/chatbot" className="mt-1 text-xs text-primary hover:underline">Build your first flow</a>
             </div>
           ) : (
@@ -412,9 +412,9 @@ export default function Dashboard() {
                         <tr key={flow.id}>
                           <td className="max-w-[220px] truncate py-3 pr-3 font-semibold text-gray-800">{flow.name}</td>
                           <td className="py-3"><StatusPill status={flow.status} /></td>
-                          <td className="py-3 text-gray-600">{fmt(triggered)}</td>
-                          <td className="py-3 text-gray-600">{fmt(completed)}</td>
-                          <td className="py-3 text-gray-600">{fmt(dropped)}</td>
+                          <td className="py-3 text-gray-800">{fmt(triggered)}</td>
+                          <td className="py-3 text-gray-800">{fmt(completed)}</td>
+                          <td className="py-3 text-gray-800">{fmt(dropped)}</td>
                           <td className="py-3 text-right font-semibold text-gray-800">{flow.analytics?.completionRate ?? (triggered > 0 ? Math.round((completed / triggered) * 100) : 0)}%</td>
                         </tr>
                       );
@@ -427,7 +427,7 @@ export default function Dashboard() {
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
             <SectionHeading eyebrow="Account usage" title="Messaging health" />
             <div className="grid gap-4 sm:grid-cols-3">
               <HealthItem label="Delivery rate" value={deliveryRate} progress={stats?.totalSent ? (stats.totalDelivered / stats.totalSent) * 100 : 0} tone="green" />
@@ -435,10 +435,10 @@ export default function Dashboard() {
               <HealthItem label="Failure rate" value={failureRate} progress={stats?.totalSent ? (stats.totalFailed / stats.totalSent) * 100 : 0} tone="red" />
             </div>
           </section>
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
             <SectionHeading eyebrow="Credits" title="Available balance" href="/wa-pay" />
             <div className="flex items-center justify-between gap-4">
-              <div><p className="text-3xl font-bold text-gray-900">{fmt(user?.creditBalance ?? 0)}</p><p className="mt-1 text-xs text-gray-500">credits available for outbound messaging</p></div>
+              <div><p className="text-3xl font-bold text-black">{fmt(user?.creditBalance ?? 0)}</p><p className="mt-1 text-xs text-gray-800">credits available for outbound messaging</p></div>
               <a href="/wa-pay" className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800">Manage balance</a>
             </div>
           </section>
@@ -453,26 +453,26 @@ function ResourceCard({ title, count, total, detail, icon: Icon, tone, href, chi
 }) {
   const colors = { green: 'bg-green-50 text-green-600', blue: 'bg-blue-50 text-blue-600', violet: 'bg-violet-50 text-violet-600' };
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3"><div className={`flex h-9 w-9 items-center justify-center rounded-lg ${colors[tone]}`}><Icon className="h-4 w-4" /></div><div><h3 className="text-sm font-bold text-gray-900">{title}</h3><p className="text-[11px] text-gray-500">{detail}</p></div></div>
+        <div className="flex items-center gap-3"><div className={`flex h-9 w-9 items-center justify-center rounded-lg ${colors[tone]}`}><Icon className="h-4 w-4" /></div><div><h3 className="text-sm font-bold text-black">{title}</h3><p className="text-[11px] text-gray-800">{detail}</p></div></div>
         <a href={href} className="text-gray-400 hover:text-primary"><ArrowRight className="h-4 w-4" /></a>
       </div>
-      <div className="mt-4 flex items-end gap-2"><span className="text-2xl font-bold text-gray-900">{count}</span><span className="pb-0.5 text-xs text-gray-400">of {total} total</span></div>
+      <div className="mt-4 flex items-end gap-2"><span className="text-2xl font-bold text-black">{count}</span><span className="pb-0.5 text-xs text-gray-800">of {total} total</span></div>
       <div className="mt-4 space-y-1">{children}</div>
     </div>
   );
 }
 
 function ResourceRow({ name, meta, status }: { name: string; meta: string; status: string }) {
-  return <div className="flex items-center justify-between gap-3 border-t border-gray-100 py-2.5"><div className="min-w-0"><p className="truncate text-xs font-semibold text-gray-800">{name}</p><p className="mt-0.5 text-[10px] text-gray-500">{meta}</p></div><StatusPill status={status} /></div>;
+  return <div className="flex items-center justify-between gap-3 border-t border-gray-100 py-2.5"><div className="min-w-0"><p className="truncate text-xs font-semibold text-black">{name}</p><p className="mt-0.5 text-[10px] text-gray-800">{meta}</p></div><StatusPill status={status} /></div>;
 }
 
 function EmptyResource({ text, href, action }: { text: string; href: string; action: string }) {
-  return <div className="border-t border-dashed border-gray-200 py-4"><p className="text-[11px] text-gray-500">{text}</p><a href={href} className="mt-1 inline-block text-[11px] font-semibold text-primary hover:underline">{action} <ArrowRight className="inline h-3 w-3" /></a></div>;
+  return <div className="border-t border-dashed border-gray-200 py-4"><p className="text-[11px] text-gray-800">{text}</p><a href={href} className="mt-1 inline-block text-[11px] font-semibold text-primary hover:underline">{action} <ArrowRight className="inline h-3 w-3" /></a></div>;
 }
 
 function HealthItem({ label, value, progress, tone }: { label: string; value: string; progress: number; tone: 'green' | 'violet' | 'red' }) {
   const color = { green: 'bg-green-500', violet: 'bg-violet-500', red: 'bg-red-500' }[tone];
-  return <div><div className="flex items-center justify-between text-xs"><span className="text-gray-500">{label}</span><span className="font-bold text-gray-900">{value}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} /></div></div>;
+  return <div><div className="flex items-center justify-between text-xs"><span className="text-gray-800">{label}</span><span className="font-bold text-black">{value}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} /></div></div>;
 }
