@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import dashboardIcon from '@assets/dashboard-interface_1787117354773.png';
+import dashboardIcon from '@assets/dashboard_(2)_1787117667340.png';
 import chatBubblesIcon from '@assets/comment_1787117439589.png';
 import contactsIcon from '@assets/contact-us_(1)_1787117484074.png';
 import marketingIcon from '@assets/marketing_(1)_1784820162202.png';
@@ -110,7 +110,7 @@ export function Shell({ children }: { children: ReactNode }) {
                           src={item.iconSrc}
                           alt=""
                           aria-hidden="true"
-                          className={`${item.title === 'Dashboard' ? 'w-10 h-10' : 'w-8 h-8'} shrink-0 object-contain brightness-0`}
+                          className="w-8 h-8 shrink-0 object-contain brightness-0"
                         />
                       ) : (
                         <item.icon className="w-6 h-6 shrink-0 text-black" />
