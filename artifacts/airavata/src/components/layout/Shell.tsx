@@ -26,7 +26,7 @@ import fullLogo from '@assets/HFULL_NOBGSVG.svg';
 import supportIcon from '@assets/support_1787151920696.png';
 import indiaIcon from '@assets/world_1787152034254.png';
 import bellIcon from '@assets/bell_1787153116428.png';
-import metaIcon from '@assets/animation-png_1787154112701.png';
+import metaPartnerLogo from '@assets/image_1787154204724.png';
 
 const SIDEBAR_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, iconSrc: dashboardIcon, href: '/dashboard' },
@@ -154,16 +154,12 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center gap-2 border-r border-black pr-2.5 font-sans">
+              <div className="flex items-center border-r border-black pr-2.5">
                 <img
-                  src={metaIcon}
-                  alt="Meta"
-                  className="w-9 h-9 object-contain"
+                  src={metaPartnerLogo}
+                  alt="Meta Business Partner"
+                  className="w-[112px] h-[38px] object-contain"
                 />
-                <div className="leading-tight whitespace-nowrap">
-                  <div className="text-[13px] font-semibold text-black">Meta</div>
-                  <div className="text-[11px] font-medium text-gray-700">Business Partner</div>
-                </div>
               </div>
               <div className="flex items-center border-r border-black pr-2.5">
                 <button
