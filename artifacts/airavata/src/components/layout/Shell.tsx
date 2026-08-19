@@ -84,8 +84,8 @@ export function Shell({ children }: { children: ReactNode }) {
           `}
         >
           {/* Logo */}
-          <div className={`flex items-center justify-center bg-[#25d366] shrink-0 h-16 ${collapsed ? 'px-0' : 'px-4'}`}>
-            <div className={`flex items-center justify-center bg-white shadow-sm overflow-hidden ${collapsed ? 'w-14 h-14 p-1.5' : 'w-full h-14 px-2'}`}>
+          <div className={`flex items-center justify-center bg-[#25d366] shrink-0 h-16 ${collapsed ? 'px-2' : 'px-2'}`}>
+            <div className={`flex items-center justify-center bg-white shadow-sm overflow-hidden rounded-none ${collapsed ? 'w-14 h-14 p-1.5' : 'w-full h-14 px-2'}`}>
               <img
                 src={collapsed ? logoIcon : fullLogo}
                 alt="Airavata"
@@ -105,7 +105,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       onClick={() => handleNav(item.href)}
                       title={collapsed ? item.title : undefined}
                       className={`
-                        w-full flex items-center rounded-lg text-[16px] font-semibold text-black transition-colors
+                        w-full flex items-center rounded-none text-[16px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3.5' : 'gap-3.5 px-3.5 py-3'}
                         bg-white text-black hover:bg-white border-2
                         ${isActive ? 'border-black' : 'border-transparent'}
