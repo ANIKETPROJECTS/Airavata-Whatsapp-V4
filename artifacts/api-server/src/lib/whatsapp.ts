@@ -139,15 +139,24 @@ async function graphFetchWithCreds<T>(
  */
 export async function getCredentials(
   userId: string,
-): Promise<{ phoneNumberId: string; accessToken: string }> {
+  options: { allowEnvFallback?: boolean } = {},
+): Promise<{ phoneNumberId: string; accessToken: string; wabaId?: string }> {
+  const allowEnvFallback = options.allowEnvFallback ?? true;
   try {
     const cred = await WhatsAppCredentialModel.findOne({ userId }).lean();
     if (cred) {
       const accessToken = decryptToken(cred.accessTokenEncrypted);
-      return { phoneNumberId: cred.phoneNumberId, accessToken };
+      return { phoneNumberId: cred.phoneNumberId, accessToken, wabaId: cred.wabaId };
     }
   } catch (err) {
+    if (!allowEnvFallback) {
+      throw new Error("Stored WhatsApp credentials could not be read");
+    }
     logger.warn({ userId, err }, "[getCredentials] Failed to read/decrypt whatsappcredentials — falling back to shared env token");
+  }
+
+  if (!allowEnvFallback) {
+    throw new Error("WhatsApp is not connected for this account");
   }
 
   // ── Env-var fallback ──────────────────────────────────────────────────────

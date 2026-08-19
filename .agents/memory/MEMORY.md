@@ -5,3 +5,4 @@
 - [Meta webhook secret name](meta-webhook-secret-name.md) — webhook verification uses WEBHOOK_VERIFY_TOKEN with a WHATSAPP_VERIFY_TOKEN compatibility fallback.
 - [Chatbot condition edge handles](chatbot-condition-edges.md) — condition branch edges must store the matching true/false sourceHandle or runtime execution stops.
 - [Service pricing catalog](service-pricing-catalog.md) — workspace-owned MongoDB pricing rows power built-in chatbot lookups and XLSX imports.
+- [Per-user Meta read isolation](per-user-meta-read-isolation.md) — user-specific Meta read routes must use strict credentials with no shared environment fallback.

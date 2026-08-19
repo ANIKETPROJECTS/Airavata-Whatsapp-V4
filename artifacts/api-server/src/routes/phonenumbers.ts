@@ -3,21 +3,22 @@
  * Fetches the phone number details registered to this WABA from Meta's Graph API.
  */
 import { Router } from "express";
-import { authenticate } from "../middlewares/authenticate";
+import { authenticate, type AuthRequest } from "../middlewares/authenticate";
+import { getCredentials } from "../lib/whatsapp";
 
 const router = Router();
 
 const GRAPH_BASE = "https://graph.facebook.com/v20.0";
 
-router.get("/phonenumbers", authenticate, async (_req, res) => {
-  const wabaId = process.env.META_WABA_ID;
-  const accessToken = process.env.META_ACCESS_TOKEN;
-
-  if (!wabaId || !accessToken) {
-    return res.status(500).json({ error: "Meta credentials not configured" });
-  }
-
+router.get("/phonenumbers", authenticate, async (req: AuthRequest, res) => {
   try {
+    const { wabaId, accessToken } = await getCredentials(req.user!.userId, {
+      allowEnvFallback: false,
+    });
+    if (!wabaId) {
+      return res.status(409).json({ error: "WhatsApp is not connected for this account" });
+    }
+
     const resp = await fetch(
       `${GRAPH_BASE}/${wabaId}/phone_numbers?fields=display_phone_number,verified_name,quality_rating,messaging_limit_tier,status`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -50,6 +51,9 @@ router.get("/phonenumbers", authenticate, async (_req, res) => {
 
     res.json({ numbers });
   } catch (err: unknown) {
+    if (err instanceof Error && err.message === "WhatsApp is not connected for this account") {
+      return res.status(409).json({ error: err.message });
+    }
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
