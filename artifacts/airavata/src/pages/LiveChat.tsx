@@ -111,7 +111,7 @@ function extractTemplateVars(body: string): number[] {
 function fillTemplatePreview(body: string, values: string[]): string {
   return body.replace(/\{\{(\d+)\}\}/g, (_, index) => {
     const value = values[parseInt(index, 10) - 1];
-    return value?.trim() ? value.trim() : `{{${index}}}`;
+    return value?.trim() ? value.trim() : `[Enter value ${index}]`;
   });
 }
 
@@ -290,7 +290,7 @@ function LiveChatTemplateDialog({
                   {varIndices.map((index, position) => (
                     <div key={index} className="flex items-center gap-2">
                       <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0 text-gray-600">
-                        {`{{${index}}}`}
+                        Variable {index}
                       </span>
                       <input
                         type="text"
@@ -301,7 +301,7 @@ function LiveChatTemplateDialog({
                           setVarValues(next);
                           setError(null);
                         }}
-                        placeholder={`Value for {{${index}}}`}
+                        placeholder={`Enter value for variable ${index}`}
                         className="flex-1 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                       />
                     </div>
@@ -1510,6 +1510,20 @@ export default function LiveChat() {
                         </div>
                       )}
                     </div>
+
+                    {/* Direct WhatsApp template sender */}
+                    <button
+                      onClick={() => {
+                        setShowTemplateDialog(true);
+                        setShowCannedMessages(false);
+                        setShowEmojiPicker(false);
+                        setShowAttachMenu(false);
+                      }}
+                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      title="Send template"
+                    >
+                      <FileText className="w-5 h-5" />
+                    </button>
 
                     {/* Attachment button + popup menu */}
                     <div className="relative" ref={attachMenuRef}>
