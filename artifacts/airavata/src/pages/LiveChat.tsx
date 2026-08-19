@@ -96,6 +96,13 @@ interface TemplateRecord {
   status: string;
 }
 
+interface CannedMessageRecord {
+  id: string;
+  name: string;
+  message: string;
+  type: string;
+}
+
 function extractTemplateVars(body: string): number[] {
   const matches = [...body.matchAll(/\{\{(\d+)\}\}/g)];
   return [...new Set(matches.map(match => parseInt(match[1]!, 10)))].sort((a, b) => a - b);
@@ -960,15 +967,14 @@ export default function LiveChat() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const { data: cannedData, isLoading: cannedLoading } = useQuery<{ templates: TemplateRecord[] }>({
-    queryKey: ['templates'],
-    queryFn: () => api.get('/templates'),
+  const { data: cannedData, isLoading: cannedLoading } = useQuery<{ messages: CannedMessageRecord[] }>({
+    queryKey: ['canned-messages'],
+    queryFn: () => api.get('/canned-messages'),
   });
-  const cannedMessages = (cannedData?.templates ?? [])
-    .filter(template => template.status.toUpperCase() === 'APPROVED')
+  const cannedMessages = (cannedData?.messages ?? [])
     .filter(template => {
       const term = cannedSearch.trim().toLowerCase();
-      return !term || template.name.toLowerCase().includes(term) || template.body.toLowerCase().includes(term);
+      return !term || template.name.toLowerCase().includes(term) || template.message.toLowerCase().includes(term);
     });
 
   // ── Conversations list (poll every 10s) ──────────────────────────────────
@@ -1468,7 +1474,7 @@ export default function LiveChat() {
                         <div className="absolute bottom-12 left-0 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
                           <div className="p-3 border-b">
                             <p className="text-sm font-semibold text-gray-800">Quick replies</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Choose a saved template to insert into the message box.</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Choose a predefined canned message from Manage.</p>
                             <input
                               value={cannedSearch}
                               onChange={event => setCannedSearch(event.target.value)}
@@ -1481,22 +1487,22 @@ export default function LiveChat() {
                             {cannedLoading ? (
                               <div className="flex justify-center py-5"><Loader2 className="w-4 h-4 animate-spin text-gray-400" /></div>
                             ) : cannedMessages.length === 0 ? (
-                              <p className="px-3 py-5 text-xs text-center text-gray-400">No approved quick replies found.</p>
+                              <p className="px-3 py-5 text-xs text-center text-gray-400">No canned messages found. Add one from Manage.</p>
                             ) : (
-                              cannedMessages.map(template => (
+                              cannedMessages.map(cannedMessage => (
                                 <button
-                                  key={template.id}
+                                  key={cannedMessage.id}
                                   type="button"
                                   onClick={() => {
-                                    setMessageInput(current => current.trim() ? `${current.trim()}\n${template.body}` : template.body);
+                                    setMessageInput(current => current.trim() ? `${current.trim()}\n${cannedMessage.message}` : cannedMessage.message);
                                     setShowCannedMessages(false);
                                     setCannedSearch('');
                                     requestAnimationFrame(() => textareaRef.current?.focus());
                                   }}
                                   className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
-                                  <p className="text-xs font-semibold text-gray-800 truncate">{template.name}</p>
-                                  <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">{template.body}</p>
+                                  <p className="text-xs font-semibold text-gray-800 truncate">{cannedMessage.name}</p>
+                                  <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">{cannedMessage.message}</p>
                                 </button>
                               ))
                             )}
