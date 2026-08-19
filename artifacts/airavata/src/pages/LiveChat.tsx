@@ -470,7 +470,6 @@ function ContactProfilePanel({
   const [newTagName, setNewTagName] = useState('');
   const [showNewTag, setShowNewTag] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
-  const [showAttributes, setShowAttributes] = useState(true);
   const [showCampaigns, setShowCampaigns] = useState(true);
   const [showTags, setShowTags] = useState(true);
   const [showGroups, setShowGroups] = useState(true);
