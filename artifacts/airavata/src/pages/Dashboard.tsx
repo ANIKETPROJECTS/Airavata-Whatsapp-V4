@@ -130,7 +130,7 @@ function MetricCard({
           </div>
         )}
       </div>
-      <p className={large ? 'mt-3 text-xs text-gray-800' : 'mt-3 text-[11px] text-gray-800'}>{detail}</p>
+      {detail && <p className={large ? 'mt-3 text-xs text-gray-800' : 'mt-3 text-[11px] text-gray-800'}>{detail}</p>}
     </div>
   );
 }
@@ -470,10 +470,11 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
-                <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
                   <MetricCard label="Triggered" value={fmt(totalFlowTriggered)} detail="Flow starts" icon={Bot} hideIcon large tone="violet" />
                   <MetricCard label="Completed" value={fmt(totalFlowCompleted)} detail="Successful completions" icon={CheckCircle2} hideIcon large tone="green" />
                   <MetricCard label="Dropped" value={fmt(totalFlowDropped)} detail="Started but not completed" icon={CircleAlert} hideIcon large tone="amber" />
+                  <MetricCard label="Responses" value={fmt(totalFlowCompleted)} detail="Stored flow responses" icon={MessageSquareReply} hideIcon large tone="blue" />
                   <MetricCard label="Completion rate" value={flowCompletionRate} detail="" icon={Activity} hideIcon large tone="teal" />
                 </div>
                 <div className="overflow-x-auto">
