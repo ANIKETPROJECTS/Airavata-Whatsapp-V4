@@ -61,6 +61,15 @@ interface ContactsSummary {
   total: number;
 }
 
+interface CreditTransaction {
+  id: string;
+  type: 'PURCHASE' | 'DEDUCTION' | 'REFUND' | 'ADJUSTMENT';
+  amount: number;
+  balanceAfter: number;
+  description?: string | null;
+  createdAt: string;
+}
+
 interface ChatbotFlow {
   id: string;
   name: string;
@@ -83,6 +92,16 @@ const pct = (value: number, total: number) => total > 0 ? `${Math.round((value /
 const formatConversationTime = (value: string) => value
   ? new Date(value).toLocaleString([], { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   : '—';
+const creditTransactionLabel = (transaction: CreditTransaction) => {
+  const description = transaction.description?.toLowerCase() ?? '';
+  if (description.includes('campaign')) return 'Campaign';
+  if (description.includes('template')) return 'Template';
+  if (description.includes('message')) return 'Message';
+  if (transaction.type === 'DEDUCTION') return 'Credit debit';
+  if (transaction.type === 'REFUND') return 'Refund';
+  if (transaction.type === 'PURCHASE') return 'Credit purchase';
+  return 'Adjustment';
+};
 const campaignTargeted = (campaign: Campaign) => campaign.stats.totalRecipients ?? campaign.stats.sent + campaign.stats.failed;
 const campaignCompletion = (campaign: Campaign) => pct(campaign.stats.sent, campaignTargeted(campaign));
 const campaignSuccess = (campaign: Campaign) => {
@@ -219,12 +238,18 @@ export default function Dashboard() {
     queryFn: () => api.get('/chatbot/flows'),
     refetchInterval: 60_000,
   });
+  const { data: billingData, isLoading: billingLoading } = useQuery<{ balance: number; transactions: CreditTransaction[] }>({
+    queryKey: ['dashboard-billing'],
+    queryFn: () => api.get('/billing'),
+    refetchInterval: 30_000,
+  });
 
   const stats = statsData?.stats;
   const campaigns = campaignsData?.campaigns ?? [];
   const templates = templatesData?.templates ?? [];
   const conversations = conversationsData?.conversations ?? [];
   const flows = flowsData?.flows ?? [];
+  const creditTransactions = billingData?.transactions ?? [];
   const connectedPhone = phoneData?.numbers?.[0];
   const contactTotal = contactsData?.total ?? 0;
 
@@ -519,23 +544,87 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
-          <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
-            <SectionHeading eyebrow="Account usage" title="Messaging health" />
-            <div className="grid gap-4 sm:grid-cols-3">
-              <HealthItem label="Delivery rate" value={deliveryRate} progress={stats?.totalSent ? (stats.totalDelivered / stats.totalSent) * 100 : 0} tone="green" />
-              <HealthItem label="Read rate" value={readRate} progress={stats?.totalDelivered ? (stats.totalRead / stats.totalDelivered) * 100 : 0} tone="violet" />
-              <HealthItem label="Failure rate" value={failureRate} progress={stats?.totalSent ? (stats.totalFailed / stats.totalSent) * 100 : 0} tone="red" />
+        <section>
+          <SectionHeading eyebrow="Account usage" title="Messaging health" />
+          <div className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="grid gap-5 sm:grid-cols-3">
+              <HealthItem
+                label="Delivery rate"
+                value={deliveryRate}
+                detail={`${fmt(stats?.totalDelivered ?? 0)} delivered of ${fmt(stats?.totalSent ?? 0)} sent`}
+                progress={stats?.totalSent ? (stats.totalDelivered / stats.totalSent) * 100 : 0}
+                tone="green"
+              />
+              <HealthItem
+                label="Read rate"
+                value={readRate}
+                detail={`${fmt(stats?.totalRead ?? 0)} read of ${fmt(stats?.totalDelivered ?? 0)} delivered`}
+                progress={stats?.totalDelivered ? (stats.totalRead / stats.totalDelivered) * 100 : 0}
+                tone="violet"
+              />
+              <HealthItem
+                label="Failure rate"
+                value={failureRate}
+                detail={`${fmt(stats?.totalFailed ?? 0)} failed of ${fmt(stats?.totalSent ?? 0)} sent`}
+                progress={stats?.totalSent ? (stats.totalFailed / stats.totalSent) * 100 : 0}
+                tone="red"
+              />
             </div>
-          </section>
-          <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
-            <SectionHeading eyebrow="Credits" title="Available balance" href="/wa-pay" />
-            <div className="flex items-center justify-between gap-4">
-              <div><p className="text-3xl font-bold text-black">{fmt(user?.creditBalance ?? 0)}</p><p className="mt-1 text-xs text-gray-800">credits available for outbound messaging</p></div>
-              <a href="/wa-pay" className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800">Manage balance</a>
+          </div>
+        </section>
+
+        <section>
+          <SectionHeading eyebrow="Credits" title="Available balance" href="/wa-pay" />
+          <div className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col justify-between gap-5 border-b border-gray-200 pb-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Current balance</p>
+                <p className="mt-2 text-4xl font-bold tracking-tight text-black">{fmt(billingData?.balance ?? user?.creditBalance ?? 0)}</p>
+                <p className="mt-1 text-sm text-gray-800">credits available for outbound messaging</p>
+              </div>
+              <a href="/wa-pay" className="inline-flex w-fit rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">Manage balance</a>
             </div>
-          </section>
-        </div>
+            <div className="mt-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-base font-bold text-black">Recent credit activity</h3>
+                <span className="text-sm text-gray-600">Latest 10 transactions</span>
+              </div>
+              {billingLoading ? <div className="h-32 animate-pulse bg-gray-50" /> : creditTransactions.length === 0 ? (
+                <div className="flex min-h-32 items-center justify-center border border-dashed border-gray-200 text-sm text-gray-800">No credit transactions yet</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-[15px]">
+                    <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
+                      <tr>
+                        <th className="pb-3 text-left font-semibold">Activity</th>
+                        <th className="pb-3 text-left font-semibold">Description</th>
+                        <th className="pb-3 text-center font-semibold">Credits</th>
+                        <th className="pb-3 text-center font-semibold">Balance after</th>
+                        <th className="pb-3 text-right font-semibold">Date and time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {creditTransactions.slice(0, 10).map(transaction => {
+                        const positive = transaction.amount >= 0;
+                        return (
+                          <tr key={transaction.id}>
+                            <td className="py-4 font-semibold text-black">{creditTransactionLabel(transaction)}</td>
+                            <td className="max-w-[300px] truncate py-4 text-gray-800">{transaction.description || 'Credit balance adjustment'}</td>
+                            <td className={`py-4 text-center font-bold ${positive ? 'text-green-600' : 'text-red-600'}`}>
+                              {positive ? '+' : ''}{fmtCompact(transaction.amount)}
+                            </td>
+                            <td className="py-4 text-center font-semibold text-black">{fmtCompact(transaction.balanceAfter)}</td>
+                            <td className="whitespace-nowrap py-4 text-right text-sm text-gray-700">{formatConversationTime(transaction.createdAt)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -582,7 +671,7 @@ function EmptyResource({ text, href, action }: { text: string; href: string; act
   return <div className="border-t border-dashed border-gray-200 py-4"><p className="text-[11px] text-gray-800">{text}</p><a href={href} className="mt-1 inline-block text-[11px] font-semibold text-primary hover:underline">{action} <ArrowRight className="inline h-3 w-3" /></a></div>;
 }
 
-function HealthItem({ label, value, progress, tone }: { label: string; value: string; progress: number; tone: 'green' | 'violet' | 'red' }) {
+function HealthItem({ label, value, detail, progress, tone }: { label: string; value: string; detail: string; progress: number; tone: 'green' | 'violet' | 'red' }) {
   const color = { green: 'bg-green-500', violet: 'bg-violet-500', red: 'bg-red-500' }[tone];
-  return <div><div className="flex items-center justify-between text-xs"><span className="text-gray-800">{label}</span><span className="font-bold text-black">{value}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} /></div></div>;
+  return <div><div className="flex items-center justify-between text-sm"><span className="font-semibold text-gray-800">{label}</span><span className="text-xl font-bold text-black">{value}</span></div><p className="mt-2 text-sm text-gray-700">{detail}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} /></div></div>;
 }
