@@ -25,6 +25,7 @@ import logoIcon from '@assets/ICON_NOBG.svg';
 import fullLogo from '@assets/HFULL_NOBGSVG.svg';
 import supportIcon from '@assets/support_1787151920696.png';
 import indiaIcon from '@assets/world_1787152034254.png';
+import bellIcon from '@assets/bell_1787153116428.png';
 
 const SIDEBAR_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, iconSrc: dashboardIcon, href: '/dashboard' },
@@ -51,6 +52,7 @@ export const useSidebar = () => useContext(SidebarContext);
 export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
 
@@ -143,7 +145,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* Main Content */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Topbar */}
-          <header className="h-[60px] bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
+          <header className="relative h-[60px] bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
             <div className="flex items-center gap-3">
               <div className="hidden md:flex items-center text-sm text-gray-500">
                 <span className="text-xl font-semibold text-gray-900">{currentItem?.title || 'Profile'}</span>
@@ -151,6 +153,25 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-2.5">
+              <div className="flex items-center border-r border-black pr-2.5">
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen(open => !open)}
+                  aria-label="Notifications"
+                  aria-expanded={notificationsOpen}
+                  className="relative flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  <img
+                    src={bellIcon}
+                    alt=""
+                    aria-hidden="true"
+                    className="w-6 h-6 object-contain"
+                  />
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-green-600 text-[10px] leading-4 font-semibold text-white">
+                    3
+                  </span>
+                </button>
+              </div>
               <div className="hidden sm:block w-[112px] text-left leading-tight whitespace-nowrap">
                 <div className="text-[13px] font-medium text-black">
                   {currentTime.toLocaleDateString('en-IN', {
@@ -190,6 +211,28 @@ export function Shell({ children }: { children: ReactNode }) {
                 />
               </div>
             </div>
+            {notificationsOpen && (
+              <div className="absolute top-[54px] right-[250px] w-72 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+                <div className="border-b border-gray-100 px-4 py-3">
+                  <div className="text-sm font-semibold text-gray-900">Notifications</div>
+                  <div className="mt-0.5 text-xs text-gray-500">Recent account activity</div>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  <div className="px-4 py-3">
+                    <div className="text-sm font-medium text-gray-800">Template approval update</div>
+                    <div className="mt-1 text-xs text-gray-500">Your WhatsApp template status has changed.</div>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="text-sm font-medium text-gray-800">New message activity</div>
+                    <div className="mt-1 text-xs text-gray-500">You have new customer messages to review.</div>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="text-sm font-medium text-gray-800">Campaign delivery report</div>
+                    <div className="mt-1 text-xs text-gray-500">Your latest campaign report is ready.</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </header>
 
           {/* Page content — pages manage their own overflow */}
@@ -198,12 +241,6 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </main>
 
-        {/* Floating Chat Widget */}
-        <div className="fixed bottom-6 right-6 z-50">
-          <button className="w-12 h-12 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-transform hover:scale-105">
-            <MessageCircle className="w-5 h-5" />
-          </button>
-        </div>
       </div>
     </SidebarContext.Provider>
   );
