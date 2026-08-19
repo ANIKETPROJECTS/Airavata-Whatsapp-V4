@@ -48,6 +48,256 @@ interface AttachmentFile {
   previewUrl: string | null; // only for images
 }
 
+interface TemplateRecord {
+  id: string;
+  name: string;
+  category: string;
+  language: string;
+  body: string;
+  status: string;
+}
+
+function extractTemplateVars(body: string): number[] {
+  const matches = [...body.matchAll(/\{\{(\d+)\}\}/g)];
+  return [...new Set(matches.map(match => parseInt(match[1]!, 10)))].sort((a, b) => a - b);
+}
+
+function fillTemplatePreview(body: string, values: string[]): string {
+  return body.replace(/\{\{(\d+)\}\}/g, (_, index) => {
+    const value = values[parseInt(index, 10) - 1];
+    return value?.trim() ? value.trim() : `{{${index}}}`;
+  });
+}
+
+function LiveChatTemplateDialog({
+  contactPhone,
+  onClose,
+  onSent,
+}: {
+  contactPhone: string;
+  onClose: () => void;
+  onSent: () => Promise<void>;
+}) {
+  const { data, isLoading } = useQuery<{ templates: TemplateRecord[] }>({
+    queryKey: ['templates'],
+    queryFn: () => api.get('/templates'),
+  });
+  const approvedTemplates = (data?.templates ?? []).filter(
+    template => template.status.toUpperCase() === 'APPROVED',
+  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [varValues, setVarValues] = useState<string[]>([]);
+  const [otpCode, setOtpCode] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectedTemplate = approvedTemplates.find(template => template.id === selectedTemplateId) ?? null;
+  const isAuth = selectedTemplate?.category.toUpperCase() === 'AUTHENTICATION';
+  const varIndices = selectedTemplate && !isAuth ? extractTemplateVars(selectedTemplate.body) : [];
+
+  useEffect(() => {
+    const nextTemplate = approvedTemplates[0];
+    if (!selectedTemplateId && nextTemplate) {
+      setSelectedTemplateId(nextTemplate.id);
+    }
+  }, [approvedTemplates, selectedTemplateId]);
+
+  useEffect(() => {
+    if (!selectedTemplate) {
+      setVarValues([]);
+      setOtpCode('');
+      return;
+    }
+    setVarValues(varIndices.map(() => ''));
+    setOtpCode(isAuth ? String(Math.floor(100000 + Math.random() * 900000)) : '');
+    setError(null);
+  }, [selectedTemplateId, isAuth, selectedTemplate, varIndices.length]);
+
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setError(null);
+  };
+
+  const handleSend = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedTemplate) {
+      setError('Select an approved template to continue.');
+      return;
+    }
+    if (isAuth) {
+      if (!otpCode.trim()) {
+        setError('Enter the OTP code to send.');
+        return;
+      }
+    } else {
+      for (let index = 0; index < varIndices.length; index++) {
+        if (!varValues[index]?.trim()) {
+          setError(`Fill in variable {{${varIndices[index]}}}.`);
+          return;
+        }
+      }
+    }
+
+    setSending(true);
+    setError(null);
+    try {
+      await api.post('/templates/send-test', {
+        templateId: selectedTemplate.id,
+        to: contactPhone,
+        variables: isAuth ? [otpCode.trim()] : varValues.map(value => value.trim()),
+      });
+      await onSent();
+      toast.success('Template message sent!');
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Template send failed. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const preview = selectedTemplate
+    ? isAuth
+      ? `Your OTP code is ${otpCode.trim() || '______'}. Tap "Copy Code" to copy it.`
+      : fillTemplatePreview(selectedTemplate.body, varValues)
+    : '';
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4"
+        onClick={event => event.stopPropagation()}
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Send Template Message</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Re-engage this customer outside the 24-hour window.</p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg" aria-label="Close">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            {error}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10 text-gray-400">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span className="ml-2 text-sm">Loading approved templates...</span>
+          </div>
+        ) : approvedTemplates.length === 0 ? (
+          <div className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-4 text-sm text-orange-800">
+            No approved templates are available. Create and approve a template before sending.
+          </div>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700" htmlFor="live-chat-template">
+                Approved template
+              </label>
+              <select
+                id="live-chat-template"
+                value={selectedTemplateId}
+                onChange={event => handleTemplateChange(event.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              >
+                {approvedTemplates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} ({template.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedTemplate && (
+              <div className="bg-[#efeae2] rounded-lg p-3">
+                <div className="bg-white rounded-lg p-3 shadow-sm text-sm text-gray-800 whitespace-pre-wrap">
+                  {preview}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSend} className="space-y-3">
+              {isAuth && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700" htmlFor="live-chat-otp">
+                    OTP / verification code
+                  </label>
+                  <input
+                    id="live-chat-otp"
+                    type="text"
+                    value={otpCode}
+                    onChange={event => setOtpCode(event.target.value)}
+                    placeholder="e.g. 483921"
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono tracking-widest"
+                  />
+                </div>
+              )}
+
+              {!isAuth && varIndices.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fill in variables</p>
+                  {varIndices.map((index, position) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded shrink-0 text-gray-600">
+                        {`{{${index}}}`}
+                      </span>
+                      <input
+                        type="text"
+                        value={varValues[position] ?? ''}
+                        onChange={event => {
+                          const next = [...varValues];
+                          next[position] = event.target.value;
+                          setVarValues(next);
+                          setError(null);
+                        }}
+                        placeholder={`Value for {{${index}}}`}
+                        className="flex-1 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700" htmlFor="live-chat-recipient">
+                  Recipient
+                </label>
+                <input
+                  id="live-chat-recipient"
+                  type="text"
+                  value={contactPhone}
+                  readOnly
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500">Locked to the current conversation contact.</p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-1">
+                <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sending || !selectedTemplate}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-60"
+                >
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Send
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Media renderer ────────────────────────────────────────────────────────────
 
 function MediaBubble({ mediaType, mediaId, filename }: {
@@ -172,6 +422,7 @@ export default function LiveChat() {
   const [search, setSearch] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [attachment, setAttachment] = useState<AttachmentFile | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -295,6 +546,13 @@ export default function LiveChat() {
   });
 
   const isPending = sendMutation.isPending || sendMediaMutation.isPending;
+
+  const handleTemplateSent = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['messages', activeConvId] }),
+      qc.invalidateQueries({ queryKey: ['conversations'] }),
+    ]);
+  };
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -480,6 +738,13 @@ export default function LiveChat() {
       {/* Middle Panel: Active Chat */}
       {activeConv ? (
         <div className="flex-1 flex flex-col min-w-0">
+          {showTemplateDialog && (
+            <LiveChatTemplateDialog
+              contactPhone={activeConv.contactPhone}
+              onClose={() => setShowTemplateDialog(false)}
+              onSent={handleTemplateSent}
+            />
+          )}
           {/* Chat Header */}
           <div className="h-16 px-6 border-b flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-3">
@@ -727,7 +992,10 @@ export default function LiveChat() {
                 <p className="text-sm text-orange-800">
                   The 24-hour customer service window has closed. You can only send approved Template Messages until the customer replies.
                 </p>
-                <button className="mt-2 px-4 py-1.5 bg-white text-orange-700 text-sm font-medium border border-orange-200 rounded hover:bg-orange-100">
+                <button
+                  onClick={() => setShowTemplateDialog(true)}
+                  className="mt-2 px-4 py-1.5 bg-white text-orange-700 text-sm font-medium border border-orange-200 rounded hover:bg-orange-100"
+                >
                   Send Template
                 </button>
               </div>
