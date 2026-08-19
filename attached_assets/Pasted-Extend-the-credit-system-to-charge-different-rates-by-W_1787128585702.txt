@@ -1,0 +1,46 @@
+Extend the credit system to charge different rates by WhatsApp 
+message category (Authentication, Utility, Marketing), editable 
+from the Admin panel — replacing the current single flat rate.
+
+CONTEXT: creditsettings currently holds one document 
+(creditsPerMessage: 1), used by the shared credit deduction helper 
+(creditDeduction.ts) for every send. The Admin panel already has a 
+working "Credits per WhatsApp message" field wired to this — extend 
+that same pattern, don't rebuild it.
+
+1. UPDATE creditsettings STRUCTURE
+   Replace the single creditsPerMessage value with three rates:
+   - authenticationRate: 1
+   - utilityRate: 1
+   - marketingRate: 3
+   Seed these three on startup, same pattern as the existing seed 
+   logic.
+
+2. UPDATE THE CREDIT DEDUCTION HELPER
+   - The helper currently deducts a flat rate. It needs to determine 
+     the message's category and look up the matching rate instead.
+   - Templates already carry a category (Marketing/Utility/
+     Authentication — confirm this field name in the Template model 
+     and use it).
+   - For messages that aren't template-based (plain session replies, 
+     which are free-form and don't have a Meta category) — these 
+     stay outside the 24-hour-window template system, so decide 
+     and tell me: should these deduct at the Utility rate as a 
+     default, or not deduct at all since they're free-form 
+     session messages? Flag this to me rather than guessing.
+
+3. UPDATE THE ADMIN PANEL
+   - Replace the single "Credits per WhatsApp message" input with 
+     three separate fields: Authentication rate, Utility rate, 
+     Marketing rate — same save pattern as the existing one field
+   - Keep everything else on that page (user list, manual top-up) 
+     unchanged
+
+Apply this to all existing send paths (campaigns, Live Chat, chatbot) 
+using the same shared helper they already call — don't duplicate the 
+category-lookup logic per file. Do not touch conversations.ts, 
+campaigns.ts, or chatbotEngine.ts beyond what's needed to pass the 
+category through to the helper. Do not modify the WhatsApp credential 
+fixes from earlier. If any send path doesn't have clear access to the 
+message's category at the point of calling the helper, stop and tell 
+me rather than guessing.
