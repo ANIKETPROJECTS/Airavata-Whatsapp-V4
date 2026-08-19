@@ -75,6 +75,9 @@ interface ChatbotFlow {
 }
 
 const fmt = (value: number) => value.toLocaleString();
+const fmtCompact = (value: number) => value >= 1000
+  ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`
+  : String(value);
 const pct = (value: number, total: number) => total > 0 ? `${Math.round((value / total) * 100)}%` : '—';
 const campaignTargeted = (campaign: Campaign) => campaign.stats.totalRecipients ?? campaign.stats.sent + campaign.stats.failed;
 const campaignCompletion = (campaign: Campaign) => pct(campaign.stats.sent, campaignTargeted(campaign));
@@ -323,11 +326,23 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] text-left text-sm">
+              <table className="w-full min-w-[1080px] table-fixed text-sm">
+                <colgroup>
+                  <col className="w-[21%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[9%]" />
+                </colgroup>
                 <thead className="border-b border-gray-200 text-[11px] uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="pb-3 font-semibold">Campaign</th>
-                    <th className="pb-3 font-semibold">Date</th>
+                    <th className="pb-3 text-left font-semibold">Campaign</th>
+                    <th className="pb-3 text-center font-semibold">Date</th>
                     <th className="pb-3 text-center font-semibold">Targeted</th>
                     <th className="pb-3 text-center font-semibold">Sent</th>
                     <th className="pb-3 text-center font-semibold">Delivered</th>
@@ -335,22 +350,22 @@ export default function Dashboard() {
                     <th className="pb-3 text-center font-semibold">Failed</th>
                     <th className="pb-3 text-center font-semibold">Completed</th>
                     <th className="pb-3 text-center font-semibold">Success ratio</th>
-                    <th className="pb-3 text-right font-semibold">Status</th>
+                    <th className="pb-3 text-center font-semibold">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {recentCampaigns.map(c => (
                     <tr key={c.id}>
                       <td className="max-w-[220px] truncate py-4 pr-4 font-semibold text-black">{c.name}</td>
-                      <td className="whitespace-nowrap py-4 text-gray-800">{new Date(c.createdAt).toLocaleDateString()}</td>
-                      <td className="py-4 text-center font-semibold text-black">{fmt(campaignTargeted(c))}</td>
-                      <td className="py-4 text-center text-gray-800">{fmt(c.stats.sent)}</td>
-                      <td className="py-4 text-center text-gray-800">{fmt(c.stats.delivered)}</td>
-                      <td className="py-4 text-center text-gray-800">{fmt(c.stats.read)}</td>
-                      <td className="py-4 text-center font-semibold text-red-700">{fmt(c.stats.failed)}</td>
+                      <td className="whitespace-nowrap py-4 text-center text-gray-800">{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4 text-center font-semibold text-black">{fmtCompact(campaignTargeted(c))}</td>
+                      <td className="py-4 text-center text-gray-800">{fmtCompact(c.stats.sent)}</td>
+                      <td className="py-4 text-center text-gray-800">{fmtCompact(c.stats.delivered)}</td>
+                      <td className="py-4 text-center text-gray-800">{fmtCompact(c.stats.read)}</td>
+                      <td className="py-4 text-center font-semibold text-red-700">{fmtCompact(c.stats.failed)}</td>
                       <td className="py-4 text-center font-semibold text-black">{campaignCompletion(c)}</td>
                       <td className="py-4 text-center font-semibold text-black">{campaignSuccess(c)}</td>
-                      <td className="py-4 text-right"><StatusPill status={c.status} /></td>
+                      <td className="py-4 text-center"><StatusPill status={c.status} /></td>
                     </tr>
                   ))}
                 </tbody>
