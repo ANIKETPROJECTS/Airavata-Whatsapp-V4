@@ -33,12 +33,27 @@ interface Campaign {
   createdAt: string;
 }
 
+interface PhoneNumber {
+  id: string;
+  number: string;
+  quality: string;
+  messagingTier: string;
+  status: string;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [showChecklist, setShowChecklist] = useState(true);
   const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup();
+
+  const { data: phoneData, isLoading: phoneLoading } = useQuery<{ numbers: PhoneNumber[] }>({
+    queryKey: ['dashboard-phonenumbers'],
+    queryFn: () => api.get('/phonenumbers'),
+    enabled: Boolean(user?.metaWabaConnected),
+    refetchInterval: 60_000,
+  });
 
   const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useQuery<{ stats: CampaignStats }>({
     queryKey: ['campaigns-stats'],
@@ -54,6 +69,7 @@ export default function Dashboard() {
 
   const stats = statsData?.stats;
   const recentCampaigns = (campaignsData?.campaigns ?? []).slice(0, 6);
+  const connectedPhone = phoneData?.numbers?.[0];
 
   const statCards = [
     {
@@ -134,6 +150,49 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      {/* WhatsApp connection status */}
+      {!user?.metaWabaConnected ? (
+        <div className="bg-white rounded-xl border border-amber-200 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-amber-800">WhatsApp connection</p>
+            <h2 className="text-lg font-bold text-gray-900 mt-1">Not connected yet</h2>
+            <p className="text-sm text-gray-600 mt-1">Connect your WhatsApp Business Account to start sending messages.</p>
+          </div>
+          <button
+            onClick={launchFbSignup}
+            disabled={fbConnecting}
+            className="shrink-0 px-4 py-2 bg-[#1877F2] text-white font-medium rounded-lg shadow-sm hover:bg-[#1877F2]/90 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {fbConnecting && <Loader2 className="w-4 h-4 animate-spin" />}
+            {fbConnecting ? 'Connecting…' : 'Connect Facebook'}
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-green-200 p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-500">WhatsApp connection</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                <h2 className="text-lg font-bold text-gray-900">
+                  {phoneLoading ? 'Loading status…' : (connectedPhone?.status || 'CONNECTED')}
+                </h2>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+              <div>
+                <p className="text-gray-500">Quality Rating</p>
+                <p className="font-semibold text-gray-900">{phoneLoading ? '—' : (connectedPhone?.quality || '—')}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Tier / Quota</p>
+                <p className="font-semibold text-gray-900">{phoneLoading ? '—' : (connectedPhone?.messagingTier || '—')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Onboarding Checklist */}
       {showChecklist && (

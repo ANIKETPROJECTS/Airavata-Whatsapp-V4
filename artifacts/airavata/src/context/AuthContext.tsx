@@ -15,6 +15,7 @@ export interface AuthUser {
   phone?: string;
   timezone?: string;
   creditBalance?: number;
+  metaWabaConnected?: boolean;
 }
 
 interface AuthContextValue {

@@ -68,6 +68,7 @@ router.post("/auth/signup", async (req, res) => {
         phone: user.phone,
         timezone: user.timezone,
         creditBalance: user.creditBalance,
+        metaWabaConnected: user.metaWabaConnected,
       },
     });
   } catch (err) {
@@ -112,6 +113,7 @@ router.post("/auth/login", async (req, res) => {
         phone: user.phone,
         timezone: user.timezone,
         creditBalance: user.creditBalance,
+        metaWabaConnected: user.metaWabaConnected,
       },
     });
   } catch (err) {
@@ -143,6 +145,7 @@ router.get("/auth/me", authenticate, async (req: AuthRequest, res) => {
         phone: user.phone,
         timezone: user.timezone,
         creditBalance: user.creditBalance,
+        metaWabaConnected: user.metaWabaConnected,
       },
     });
   } catch {
