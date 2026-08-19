@@ -7,4 +7,5 @@ export * from "./Campaign";
 export * from "./Message";
 export * from "./ApiKey";
 export * from "./CreditTransaction";
+export * from "./CreditSetting";
 export * from "./ServicePricingCatalog";

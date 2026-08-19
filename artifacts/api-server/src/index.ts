@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { connectToDatabase } from "./lib/mongodb";
+import { CreditSettingModel } from "./models/CreditSetting";
 
 const rawPort = process.env["PORT"];
 
@@ -17,6 +18,13 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 connectToDatabase()
+  .then(() => {
+    return CreditSettingModel.updateOne(
+      { key: "creditsPerMessage" },
+      { $setOnInsert: { value: 1 } },
+      { upsert: true },
+    );
+  })
   .then(() => {
     app.listen(port, (err) => {
       if (err) {
