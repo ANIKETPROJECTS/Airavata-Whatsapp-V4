@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, ArrowRight, BarChart3, Bot, CheckCircle2, ChevronRight,
-  CircleAlert, Clock3, MessageCircle, MessageSquareReply, RefreshCw,
-  Send, Smartphone, Users, XCircle, Zap,
+  CircleAlert, MessageCircle, MessageSquareReply, Send, Users, XCircle, Zap,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useFacebookEmbeddedSignup } from '@/hooks/use-facebook-embedded-signup';
+import facebookIcon from '@assets/facebook_(1)_1787158279371.png';
+import verifiedIcon from '@assets/social-media_1787158389051.png';
 
 interface CampaignStats {
   totalSent: number;
@@ -149,7 +149,6 @@ function StatusPill({ status }: { status: string }) {
 export default function Dashboard() {
   const { user, refreshUser } = useAuth();
   const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup();
-  const [showConnection, setShowConnection] = useState(true);
 
   useEffect(() => {
     void refreshUser();
@@ -164,12 +163,12 @@ export default function Dashboard() {
     enabled: Boolean(user?.metaWabaConnected),
     refetchInterval: 60_000,
   });
-  const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useQuery<{ stats: CampaignStats }>({
+  const { data: statsData, isLoading: statsLoading } = useQuery<{ stats: CampaignStats }>({
     queryKey: ['campaigns-stats'],
     queryFn: () => api.get('/campaigns/stats/summary'),
     refetchInterval: 30_000,
   });
-  const { data: campaignsData, isLoading: campaignsLoading, refetch: refetchCampaigns } = useQuery<{ campaigns: Campaign[] }>({
+  const { data: campaignsData, isLoading: campaignsLoading } = useQuery<{ campaigns: Campaign[] }>({
     queryKey: ['campaigns'],
     queryFn: () => api.get('/campaigns'),
     refetchInterval: 30_000,
@@ -184,7 +183,7 @@ export default function Dashboard() {
     queryFn: () => api.get('/conversations'),
     refetchInterval: 30_000,
   });
-  const { data: contactsData, isLoading: contactsLoading, refetch: refetchContacts } = useQuery<ContactsSummary>({
+  const { data: contactsData, isLoading: contactsLoading } = useQuery<ContactsSummary>({
     queryKey: ['dashboard-contacts-summary'],
     queryFn: () => api.get('/contacts?limit=1'),
     refetchInterval: 60_000,
@@ -224,11 +223,6 @@ export default function Dashboard() {
   const readRate = pct(stats?.totalRead ?? 0, stats?.totalDelivered ?? 0);
   const failureRate = pct(stats?.totalFailed ?? 0, stats?.totalSent ?? 0);
 
-  const refreshAll = async () => {
-    await Promise.all([refetchStats(), refetchCampaigns(), refetchContacts(), refreshUser()]);
-    toast.success('Dashboard refreshed');
-  };
-
   const isLoading = statsLoading || campaignsLoading;
 
   return (
@@ -240,33 +234,25 @@ export default function Dashboard() {
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-black">Good to see you, {user?.businessName ?? 'there'}</h1>
             <p className="mt-1 text-sm text-gray-800">A clear view of your WhatsApp activity and automation health.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={refreshAll} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </button>
-            <a href="/create-campaign" className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary/90">
-              <Send className="h-3.5 w-3.5" /> Create campaign
-            </a>
+          <div className="flex items-center">
+            {user?.metaWabaConnected ? (
+              <div className="inline-flex items-center gap-2 border border-blue-100 bg-white px-3 py-2 text-xs font-semibold text-black shadow-sm">
+                <img src={facebookIcon} alt="Facebook" className="h-5 w-5 object-contain" />
+                <img src={verifiedIcon} alt="Verified" className="h-5 w-5 object-contain" />
+                <span>Connected &amp; verified</span>
+              </div>
+            ) : (
+              <button
+                onClick={launchFbSignup}
+                disabled={fbConnecting}
+                className="inline-flex items-center gap-2 border border-blue-100 bg-white px-3 py-2 text-xs font-semibold text-black shadow-sm hover:bg-blue-50 disabled:opacity-60"
+              >
+                <img src={facebookIcon} alt="Facebook" className="h-5 w-5 object-contain" />
+                <span>{fbConnecting ? 'Connecting…' : 'Connect Facebook'}</span>
+              </button>
+            )}
           </div>
         </div>
-
-        {showConnection && !user?.metaWabaConnected && (
-          <div className="flex flex-col justify-between gap-4 rounded-none border border-amber-200 bg-amber-50/70 px-5 py-4 sm:flex-row sm:items-center">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg bg-white p-2 text-amber-600"><CircleAlert className="h-4 w-4" /></div>
-              <div>
-                <p className="text-sm font-bold text-black">Connect WhatsApp Business</p>
-                <p className="mt-1 text-xs text-gray-800">Connect a number to unlock sending, delivery analytics, templates, and live conversations.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => setShowConnection(false)} className="text-xs font-medium text-gray-500 hover:text-gray-700">Dismiss</button>
-              <button onClick={launchFbSignup} disabled={fbConnecting} className="rounded-lg bg-[#1877F2] px-3 py-2 text-xs font-semibold text-white disabled:opacity-60">
-                {fbConnecting ? 'Connecting…' : 'Connect Facebook'}
-              </button>
-            </div>
-          </div>
-        )}
 
         {user?.metaWabaConnected && (
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-none border border-green-200 bg-white px-5 py-4 shadow-sm">
