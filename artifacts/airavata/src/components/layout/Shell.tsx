@@ -84,12 +84,14 @@ export function Shell({ children }: { children: ReactNode }) {
           `}
         >
           {/* Logo */}
-          <div className={`flex items-center justify-center bg-white border-b border-gray-200 shrink-0 h-16 ${collapsed ? 'px-0' : 'px-4'}`}>
-            <img
-              src={collapsed ? logoIcon : fullLogo}
-              alt="Airavata"
-              className={collapsed ? 'w-12 h-12 object-contain' : 'w-full h-14 object-cover'}
-            />
+          <div className={`flex items-center justify-center bg-[#25d366] border-b border-[#20bd5a] shrink-0 h-16 ${collapsed ? 'px-0' : 'px-4'}`}>
+            <div className={`flex items-center justify-center bg-white rounded-lg shadow-sm ${collapsed ? 'w-14 h-14' : 'w-full h-14'}`}>
+              <img
+                src={collapsed ? logoIcon : fullLogo}
+                alt="Airavata"
+                className={collapsed ? 'w-12 h-12 object-contain' : 'w-full h-14 object-cover'}
+              />
+            </div>
           </div>
 
           {/* Nav items */}
