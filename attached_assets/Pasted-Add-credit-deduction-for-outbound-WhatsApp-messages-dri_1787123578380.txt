@@ -1,0 +1,44 @@
+Add credit deduction for outbound WhatsApp messages, driven by a 
+configurable admin setting — not a hardcoded number.
+
+CONTEXT (confirmed from investigation): creditBalance currently 
+only increases via manual top-up (billing.ts). Nothing decrements 
+it. No DEDUCTION transactions are ever created, even though the 
+CreditTransaction model already supports that type. This must be 
+fixed without breaking the existing top-up flow.
+
+1. NEW COLLECTION: creditsettings
+   Fields: key (string, e.g. "creditsPerMessage"), value (number), 
+   updatedAt
+   - Seed one document: { key: "creditsPerMessage", value: 1 }
+   - This is the ONLY place the per-message rate is defined — no 
+     hardcoded numbers anywhere else in the send logic
+
+2. DEDUCTION LOGIC — add a shared helper function (new file in lib/), 
+   used by every send path (campaigns.ts, conversations.ts, 
+   chatbotEngine.ts):
+   - Before calling Meta's API: look up the sending user's 
+     creditBalance and the current creditsPerMessage rate from 
+     creditsettings
+   - If creditBalance < creditsPerMessage: block the send, return a 
+     clear "insufficient credits" error, do NOT call Meta's API
+   - If sufficient: proceed to call Meta's API as normal
+   - AFTER a successful Meta send only (not on failure): decrement 
+     creditBalance by creditsPerMessage using $inc with a negative 
+     value, and create a CreditTransaction with type: "DEDUCTION", 
+     referencing the userId and the message/campaign it was for
+   - On a failed Meta send: do not deduct, do not log a transaction
+
+3. APPLY TO ALL SEND PATHS
+   - campaigns.ts: the creditCost field already exists as metadata — 
+     keep it, but now actually enforce and deduct per-recipient using 
+     the shared helper
+   - conversations.ts (Live Chat sends, text and media)
+   - chatbotEngine.ts (all message-sending call sites already 
+     identified: lines 461, 548, 559, 565, 679)
+
+Do not modify the existing manual top-up flow in billing.ts. Do not 
+touch chatbot flow UI, templates UI, or campaign UI. Do not add new 
+npm dependencies. If any send path doesn't cleanly have a userId 
+available at the point of sending, stop and tell me rather than 
+guessing.
