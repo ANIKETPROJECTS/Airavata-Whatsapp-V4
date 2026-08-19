@@ -92,7 +92,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 className={collapsed ? 'w-12 h-12 object-contain' : 'w-full h-14 object-cover object-center'}
               />
             </div>
-            <div className="absolute bottom-0 left-2 right-2 h-px bg-white" aria-hidden="true" />
+            <div className="absolute bottom-[-5px] left-2 right-2 h-px bg-white" aria-hidden="true" />
           </div>
 
           {/* Nav items */}
