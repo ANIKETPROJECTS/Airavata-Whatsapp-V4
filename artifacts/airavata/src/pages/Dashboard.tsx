@@ -388,14 +388,14 @@ export default function Dashboard() {
               <div className="grid gap-x-8 divide-y divide-gray-100 md:grid-cols-2 md:divide-y-0">
                 {recentConversations.map(c => (
                   <div key={c.id} className="flex items-center gap-4 border-b border-gray-100 py-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{c.contactName.slice(0, 1).toUpperCase()}</div>
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base font-bold text-primary">{c.contactName.slice(0, 1).toUpperCase()}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-semibold text-black">{c.contactName}</p>
-                        {c.unread > 0 && <span className="bg-primary px-2 py-1 text-xs font-bold text-white">{c.unread}</span>}
+                        <p className="truncate text-base font-semibold text-black">{c.contactName}</p>
+                        {c.unread > 0 && <span className="bg-primary px-2.5 py-1 text-sm font-bold text-white">{c.unread}</span>}
                       </div>
-                      <p className="mt-1 truncate text-sm text-gray-800">{c.lastMessage || 'No message preview'}</p>
-                      <p className="mt-1 text-xs font-medium text-gray-600">{formatConversationTime(c.lastMessageAt)}</p>
+                      <p className="mt-1 truncate text-base text-gray-800">{c.lastMessage || 'No message preview'}</p>
+                      <p className="mt-1 text-sm font-medium text-gray-600">{formatConversationTime(c.lastMessageAt)}</p>
                     </div>
                     <a
                       href={`/live-chat?conversationId=${encodeURIComponent(c.id)}`}
