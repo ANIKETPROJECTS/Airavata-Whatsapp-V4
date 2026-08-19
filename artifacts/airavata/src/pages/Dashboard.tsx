@@ -53,12 +53,21 @@ interface Conversation {
   status: string;
 }
 
+interface ContactsSummary {
+  total: number;
+}
+
 interface ChatbotFlow {
   id: string;
   name: string;
   status: string;
   updatedAt: string;
-  analytics?: { triggered: number; completed: number };
+  analytics?: {
+    triggered?: number;
+    completed?: number;
+    dropped?: number;
+    completionRate?: number;
+  };
 }
 
 const fmt = (value: number) => value.toLocaleString();
@@ -175,6 +184,11 @@ export default function Dashboard() {
     queryFn: () => api.get('/conversations'),
     refetchInterval: 30_000,
   });
+  const { data: contactsData, isLoading: contactsLoading, refetch: refetchContacts } = useQuery<ContactsSummary>({
+    queryKey: ['dashboard-contacts-summary'],
+    queryFn: () => api.get('/contacts?limit=1'),
+    refetchInterval: 60_000,
+  });
   const { data: flowsData, isLoading: flowsLoading } = useQuery<{ flows: ChatbotFlow[] }>({
     queryKey: ['dashboard-chatbot-flows'],
     queryFn: () => api.get('/chatbot/flows'),
@@ -187,6 +201,7 @@ export default function Dashboard() {
   const conversations = conversationsData?.conversations ?? [];
   const flows = flowsData?.flows ?? [];
   const connectedPhone = phoneData?.numbers?.[0];
+  const contactTotal = contactsData?.total ?? 0;
 
   const activeChats = conversations.filter(c => c.status.toLowerCase() === 'open').length;
   const customerReplies = conversations.reduce((sum, c) => sum + (c.unread ?? 0), 0);
@@ -197,13 +212,20 @@ export default function Dashboard() {
   const recentTemplates = templates.slice(0, 4);
   const recentConversations = conversations.slice(0, 4);
   const recentFlows = flows.slice(0, 4);
+  const totalFlowTriggered = flows.reduce((sum, flow) => sum + (flow.analytics?.triggered ?? 0), 0);
+  const totalFlowCompleted = flows.reduce((sum, flow) => sum + (flow.analytics?.completed ?? 0), 0);
+  const totalFlowDropped = flows.reduce(
+    (sum, flow) => sum + (flow.analytics?.dropped ?? Math.max(0, (flow.analytics?.triggered ?? 0) - (flow.analytics?.completed ?? 0))),
+    0,
+  );
+  const flowCompletionRate = pct(totalFlowCompleted, totalFlowTriggered);
 
   const deliveryRate = pct(stats?.totalDelivered ?? 0, stats?.totalSent ?? 0);
   const readRate = pct(stats?.totalRead ?? 0, stats?.totalDelivered ?? 0);
   const failureRate = pct(stats?.totalFailed ?? 0, stats?.totalSent ?? 0);
 
   const refreshAll = async () => {
-    await Promise.all([refetchStats(), refetchCampaigns(), refreshUser()]);
+    await Promise.all([refetchStats(), refetchCampaigns(), refetchContacts(), refreshUser()]);
     toast.success('Dashboard refreshed');
   };
 
@@ -275,7 +297,8 @@ export default function Dashboard() {
 
         <section>
           <SectionHeading eyebrow="Customer activity" title="Conversation health" href="/live-chat" />
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <MetricCard label="Total contacts" value={contactsLoading ? '—' : fmt(contactTotal)} detail="Contacts in your workspace" icon={Users} tone="blue" />
             <MetricCard label="Active chats" value={conversationsLoading ? '—' : fmt(activeChats)} detail="Open conversations needing attention" icon={MessageCircle} tone="teal" />
             <MetricCard label="Customer replies" value={conversationsLoading ? '—' : fmt(customerReplies)} detail="Unread inbound messages" icon={MessageSquareReply} tone="amber" />
             <MetricCard label="Total conversations" value={conversationsLoading ? '—' : fmt(conversations.length)} detail="Contacts with message history" icon={Users} tone="blue" />
@@ -348,6 +371,59 @@ export default function Dashboard() {
               {flowsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentFlows.length === 0 ? <EmptyResource text="No chatbot flows created yet" href="/chatbot" action="Build a chatbot" /> : recentFlows.slice(0, 3).map(f => <ResourceRow key={f.id} name={f.name} meta={`${fmt(f.analytics?.triggered ?? 0)} triggered`} status={f.status} />)}
             </ResourceCard>
           </div>
+        </section>
+
+        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <SectionHeading eyebrow="Automation analytics" title="Flow performance and responses" href="/chatbot" />
+          {flowsLoading ? (
+            <div className="h-32 animate-pulse rounded-lg bg-gray-50" />
+          ) : flows.length === 0 ? (
+            <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 text-center">
+              <Bot className="h-6 w-6 text-gray-300" />
+              <p className="mt-2 text-xs font-semibold text-gray-600">No chatbot flow data yet</p>
+              <a href="/chatbot" className="mt-1 text-xs text-primary hover:underline">Build your first flow</a>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <MetricCard label="Triggered" value={fmt(totalFlowTriggered)} detail="Flow starts" icon={Bot} tone="violet" />
+                <MetricCard label="Completed" value={fmt(totalFlowCompleted)} detail="Successful completions" icon={CheckCircle2} tone="green" />
+                <MetricCard label="Dropped" value={fmt(totalFlowDropped)} detail="Started but not completed" icon={CircleAlert} tone="amber" />
+                <MetricCard label="Completion rate" value={flowCompletionRate} detail="Completed of triggered" icon={Activity} tone="teal" />
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-xs">
+                  <thead className="border-b border-gray-100 text-[10px] uppercase tracking-wide text-gray-400">
+                    <tr>
+                      <th className="pb-3 font-semibold">Flow</th>
+                      <th className="pb-3 font-semibold">Status</th>
+                      <th className="pb-3 font-semibold">Triggered</th>
+                      <th className="pb-3 font-semibold">Completed</th>
+                      <th className="pb-3 font-semibold">Dropped</th>
+                      <th className="pb-3 text-right font-semibold">Completion</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {flows.slice(0, 8).map(flow => {
+                      const triggered = flow.analytics?.triggered ?? 0;
+                      const completed = flow.analytics?.completed ?? 0;
+                      const dropped = flow.analytics?.dropped ?? Math.max(0, triggered - completed);
+                      return (
+                        <tr key={flow.id}>
+                          <td className="max-w-[220px] truncate py-3 pr-3 font-semibold text-gray-800">{flow.name}</td>
+                          <td className="py-3"><StatusPill status={flow.status} /></td>
+                          <td className="py-3 text-gray-600">{fmt(triggered)}</td>
+                          <td className="py-3 text-gray-600">{fmt(completed)}</td>
+                          <td className="py-3 text-gray-600">{fmt(dropped)}</td>
+                          <td className="py-3 text-right font-semibold text-gray-800">{flow.analytics?.completionRate ?? (triggered > 0 ? Math.round((completed / triggered) * 100) : 0)}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
