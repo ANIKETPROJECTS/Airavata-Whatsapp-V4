@@ -151,26 +151,23 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-5">
-              <div className="hidden sm:block w-[136px] leading-tight whitespace-nowrap">
-                <div className="text-right text-[13px] font-medium text-black">
+              <div className="hidden sm:block w-[136px] text-left leading-tight whitespace-nowrap">
+                <div className="text-[13px] font-medium text-black">
                   {currentTime.toLocaleDateString('en-IN', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric',
                   })}
+                  {', '}
+                  {currentTime.toLocaleDateString('en-IN', { weekday: 'short' })}
                 </div>
-                <div className="mt-1 flex items-center justify-between text-xs font-medium text-gray-700">
-                  <span className="w-[68px] text-left">
-                    {currentTime.toLocaleDateString('en-IN', { weekday: 'long' })}
-                  </span>
-                  <span className="w-[68px] text-right tabular-nums">
-                    {currentTime.toLocaleTimeString('en-IN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                      hour12: true,
-                    })}
-                  </span>
+                <div className="mt-1 text-[13px] font-medium text-black tabular-nums">
+                  {currentTime.toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                  })}
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
