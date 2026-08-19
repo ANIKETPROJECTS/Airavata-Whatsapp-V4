@@ -458,57 +458,58 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+        <section>
           <SectionHeading eyebrow="Automation analytics" title="Flow performance and responses" href="/chatbot" />
-          {flowsLoading ? (
-            <div className="h-32 animate-pulse rounded-lg bg-gray-50" />
-          ) : flows.length === 0 ? (
-            <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 text-center">
-              <Bot className="h-6 w-6 text-gray-300" />
-              <p className="mt-2 text-xs font-semibold text-gray-800">No chatbot flow data yet</p>
-              <a href="/chatbot" className="mt-1 text-xs text-primary hover:underline">Build your first flow</a>
-            </div>
-          ) : (
-            <>
-              <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <MetricCard label="Triggered" value={fmt(totalFlowTriggered)} detail="Flow starts" icon={Bot} tone="violet" />
-                <MetricCard label="Completed" value={fmt(totalFlowCompleted)} detail="Successful completions" icon={CheckCircle2} tone="green" />
-                <MetricCard label="Dropped" value={fmt(totalFlowDropped)} detail="Started but not completed" icon={CircleAlert} tone="amber" />
-                <MetricCard label="Completion rate" value={flowCompletionRate} detail="Completed of triggered" icon={Activity} tone="teal" />
+          <div className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+            {flowsLoading ? (
+              <div className="h-32 animate-pulse bg-gray-50" />
+            ) : flows.length === 0 ? (
+              <div className="flex min-h-32 flex-col items-center justify-center border border-dashed border-gray-200 text-center">
+                <p className="text-sm font-semibold text-gray-800">No chatbot flow data yet</p>
+                <a href="/chatbot" className="mt-1 text-sm text-primary hover:underline">Build your first flow</a>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-xs">
-                  <thead className="border-b border-gray-100 text-[10px] uppercase tracking-wide text-gray-400">
+            ) : (
+              <>
+                <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <MetricCard label="Triggered" value={fmt(totalFlowTriggered)} detail="Flow starts" icon={Bot} hideIcon large tone="violet" />
+                  <MetricCard label="Completed" value={fmt(totalFlowCompleted)} detail="Successful completions" icon={CheckCircle2} hideIcon large tone="green" />
+                  <MetricCard label="Dropped" value={fmt(totalFlowDropped)} detail="Started but not completed" icon={CircleAlert} hideIcon large tone="amber" />
+                  <MetricCard label="Completion rate" value={flowCompletionRate} detail="Completed of triggered" icon={Activity} hideIcon large tone="teal" />
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-[15px]">
+                    <thead className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500">
                     <tr>
-                      <th className="pb-3 font-semibold">Flow</th>
-                      <th className="pb-3 font-semibold">Status</th>
-                      <th className="pb-3 font-semibold">Triggered</th>
-                      <th className="pb-3 font-semibold">Completed</th>
-                      <th className="pb-3 font-semibold">Dropped</th>
-                      <th className="pb-3 text-right font-semibold">Completion</th>
+                      <th className="pb-3 text-left font-semibold">Flow</th>
+                      <th className="pb-3 text-center font-semibold">Status</th>
+                      <th className="pb-3 text-center font-semibold">Triggered</th>
+                      <th className="pb-3 text-center font-semibold">Completed</th>
+                      <th className="pb-3 text-center font-semibold">Dropped</th>
+                      <th className="pb-3 text-center font-semibold">Completion</th>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {flows.slice(0, 8).map(flow => {
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {flows.slice(0, 8).map(flow => {
                       const triggered = flow.analytics?.triggered ?? 0;
                       const completed = flow.analytics?.completed ?? 0;
                       const dropped = flow.analytics?.dropped ?? Math.max(0, triggered - completed);
                       return (
                         <tr key={flow.id}>
-                          <td className="max-w-[220px] truncate py-3 pr-3 font-semibold text-gray-800">{flow.name}</td>
-                          <td className="py-3"><StatusPill status={flow.status} /></td>
-                          <td className="py-3 text-gray-800">{fmt(triggered)}</td>
-                          <td className="py-3 text-gray-800">{fmt(completed)}</td>
-                          <td className="py-3 text-gray-800">{fmt(dropped)}</td>
-                          <td className="py-3 text-right font-semibold text-gray-800">{flow.analytics?.completionRate ?? (triggered > 0 ? Math.round((completed / triggered) * 100) : 0)}%</td>
+                          <td className="max-w-[220px] truncate py-4 pr-3 font-semibold text-gray-800">{flow.name}</td>
+                          <td className="py-4 text-center"><StatusPill status={flow.status} large /></td>
+                          <td className="py-4 text-center text-gray-800">{fmtCompact(triggered)}</td>
+                          <td className="py-4 text-center text-gray-800">{fmtCompact(completed)}</td>
+                          <td className="py-4 text-center text-gray-800">{fmtCompact(dropped)}</td>
+                          <td className="py-4 text-center font-semibold text-gray-800">{flow.analytics?.completionRate ?? (triggered > 0 ? Math.round((completed / triggered) * 100) : 0)}%</td>
                         </tr>
                       );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
