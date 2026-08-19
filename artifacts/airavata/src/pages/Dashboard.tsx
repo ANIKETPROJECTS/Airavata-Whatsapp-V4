@@ -242,9 +242,9 @@ export default function Dashboard() {
   const draftChatbots = flows.filter(f => ['DRAFT', 'INACTIVE', 'PAUSED'].includes(f.status.toUpperCase())).length;
   const failedChatbots = flows.filter(f => ['FAILED', 'ERROR', 'REJECTED'].includes(f.status.toUpperCase())).length;
   const recentCampaigns = campaigns.slice(0, 8);
-  const recentTemplates = templates.slice(0, 4);
+  const recentTemplates = templates.slice(0, 7);
   const recentConversations = conversations.slice(0, 10);
-  const recentFlows = flows.slice(0, 4);
+  const recentFlows = flows.slice(0, 7);
   const totalFlowTriggered = flows.reduce((sum, flow) => sum + (flow.analytics?.triggered ?? 0), 0);
   const totalFlowCompleted = flows.reduce((sum, flow) => sum + (flow.analytics?.completed ?? 0), 0);
   const totalFlowDropped = flows.reduce(
@@ -431,7 +431,7 @@ export default function Dashboard() {
                 { label: 'Failed', value: failedTemplates, tone: 'red' },
               ]}
             >
-              {templatesLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentTemplates.length === 0 ? <EmptyResource text="No templates created yet" href="/add-template" action="Add template" /> : recentTemplates.slice(0, 3).map(t => <ResourceRow key={t.id} name={t.name} meta={t.category || 'WhatsApp template'} status={t.status} />)}
+              {templatesLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentTemplates.length === 0 ? <EmptyResource text="No templates created yet" href="/add-template" action="Add template" /> : recentTemplates.slice(0, 7).map(t => <ResourceRow key={t.id} name={t.name} meta={t.category || 'WhatsApp template'} status={t.status} />)}
             </ResourceCard>
             <ResourceCard
               title="Campaigns"
@@ -443,7 +443,7 @@ export default function Dashboard() {
                 { label: 'Failed', value: failedCampaigns, tone: 'red' },
               ]}
             >
-              {campaignsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentCampaigns.length === 0 ? <EmptyResource text="No campaigns created yet" href="/create-campaign" action="Create campaign" /> : recentCampaigns.slice(0, 3).map(c => <ResourceRow key={c.id} name={c.name} meta={`${fmt(c.stats.sent)} sent`} status={c.status} />)}
+              {campaignsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentCampaigns.length === 0 ? <EmptyResource text="No campaigns created yet" href="/create-campaign" action="Create campaign" /> : recentCampaigns.slice(0, 7).map(c => <ResourceRow key={c.id} name={c.name} meta={`${fmt(c.stats.sent)} sent`} status={c.status} />)}
             </ResourceCard>
             <ResourceCard
               title="Chatbots"
@@ -455,7 +455,7 @@ export default function Dashboard() {
                 { label: 'Failed', value: failedChatbots, tone: 'red' },
               ]}
             >
-              {flowsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentFlows.length === 0 ? <EmptyResource text="No chatbot flows created yet" href="/chatbot" action="Build a chatbot" /> : recentFlows.slice(0, 3).map(f => <ResourceRow key={f.id} name={f.name} meta={`${fmt(f.analytics?.triggered ?? 0)} triggered`} status={f.status} />)}
+              {flowsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentFlows.length === 0 ? <EmptyResource text="No chatbot flows created yet" href="/chatbot" action="Build a chatbot" /> : recentFlows.slice(0, 7).map(f => <ResourceRow key={f.id} name={f.name} meta={`${fmt(f.analytics?.triggered ?? 0)} triggered`} status={f.status} />)}
             </ResourceCard>
           </div>
         </section>
@@ -555,7 +555,7 @@ function ResourceCard({ title, total, href, details, children }: {
         <div><h3 className="text-base font-bold text-black">{title}</h3><p className="mt-0.5 text-sm text-gray-800">{fmt(total)} total</p></div>
         <a href={href} aria-label={`View ${title}`} className="text-gray-900 hover:text-primary"><ArrowRight className="h-5 w-5" /></a>
       </div>
-      <div className="mt-5 grid grid-cols-3 divide-x divide-gray-200 border-y border-gray-100 py-3">
+      <div className="mt-5 grid grid-cols-3 justify-items-center divide-x divide-gray-200 border-y border-gray-100 py-3 text-center">
         {details.map(detail => (
           <div key={detail.label} className="px-2 first:pl-0 last:pr-0">
             <p className={`text-2xl font-bold ${colors[detail.tone]}`}>{fmtCompact(detail.value)}</p>
