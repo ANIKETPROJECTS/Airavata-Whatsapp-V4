@@ -150,8 +150,8 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <div className="hidden sm:block w-[136px] text-left leading-tight whitespace-nowrap">
+            <div className="flex items-center gap-2.5">
+              <div className="hidden sm:block w-[112px] text-left leading-tight whitespace-nowrap">
                 <div className="text-[13px] font-medium text-black">
                   {currentTime.toLocaleDateString('en-IN', {
                     day: '2-digit',
@@ -170,7 +170,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   })}
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 border-l border-black pl-5">
+              <div className="flex items-center gap-2.5 border-l border-black pl-2.5">
                 <img
                   src={supportIcon}
                   alt=""
@@ -182,7 +182,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   <div className="mt-1 text-[13px] font-medium text-black">+91 9167959756</div>
                 </div>
               </div>
-              <div className="flex items-center border-l border-black pl-5">
+              <div className="flex items-center border-l border-black pl-2.5">
                 <img
                   src={indiaIcon}
                   alt="India"
