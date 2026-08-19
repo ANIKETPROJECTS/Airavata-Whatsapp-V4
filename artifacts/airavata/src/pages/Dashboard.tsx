@@ -232,8 +232,15 @@ export default function Dashboard() {
   const activeChats = conversations.filter(c => c.status.toLowerCase() === 'open').length;
   const customerReplies = conversations.reduce((sum, c) => sum + (c.unread ?? 0), 0);
   const approvedTemplates = templates.filter(t => t.status.toUpperCase() === 'APPROVED').length;
+  const pendingTemplates = templates.filter(t => ['PENDING', 'IN_REVIEW', 'SUBMITTED'].includes(t.status.toUpperCase())).length;
+  const failedTemplates = templates.filter(t => ['FAILED', 'REJECTED', 'ERROR'].includes(t.status.toUpperCase())).length;
   const activeCampaigns = campaigns.filter(c => ['SENDING', 'SCHEDULED'].includes(c.status.toUpperCase())).length;
+  const runningCampaigns = campaigns.filter(c => ['SENDING', 'RUNNING', 'IN_PROGRESS'].includes(c.status.toUpperCase())).length;
+  const scheduledCampaigns = campaigns.filter(c => c.status.toUpperCase() === 'SCHEDULED').length;
+  const failedCampaigns = campaigns.filter(c => ['FAILED', 'REJECTED', 'ERROR'].includes(c.status.toUpperCase())).length;
   const liveChatbots = flows.filter(f => f.status.toUpperCase() === 'PUBLISHED').length;
+  const draftChatbots = flows.filter(f => ['DRAFT', 'INACTIVE', 'PAUSED'].includes(f.status.toUpperCase())).length;
+  const failedChatbots = flows.filter(f => ['FAILED', 'ERROR', 'REJECTED'].includes(f.status.toUpperCase())).length;
   const recentCampaigns = campaigns.slice(0, 8);
   const recentTemplates = templates.slice(0, 4);
   const recentConversations = conversations.slice(0, 10);
@@ -414,13 +421,40 @@ export default function Dashboard() {
         <section>
           <SectionHeading eyebrow="Automation workspace" title="Templates, campaigns and chatbots" />
           <div className="grid gap-4 lg:grid-cols-3">
-            <ResourceCard title="Active templates" count={approvedTemplates} total={templates.length} detail="Approved and ready to send" icon={Zap} tone="green" href="/manage-templates">
+            <ResourceCard
+              title="Templates"
+              total={templates.length}
+              href="/manage-templates"
+              details={[
+                { label: 'Applied', value: approvedTemplates, tone: 'green' },
+                { label: 'Pending', value: pendingTemplates, tone: 'amber' },
+                { label: 'Failed', value: failedTemplates, tone: 'red' },
+              ]}
+            >
               {templatesLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentTemplates.length === 0 ? <EmptyResource text="No templates created yet" href="/add-template" action="Add template" /> : recentTemplates.slice(0, 3).map(t => <ResourceRow key={t.id} name={t.name} meta={t.category || 'WhatsApp template'} status={t.status} />)}
             </ResourceCard>
-            <ResourceCard title="Campaigns" count={activeCampaigns} total={campaigns.length} detail="Currently running or scheduled" icon={BarChart3} tone="blue" href="/campaigns-report">
+            <ResourceCard
+              title="Campaigns"
+              total={campaigns.length}
+              href="/campaigns-report"
+              details={[
+                { label: 'Running', value: runningCampaigns, tone: 'blue' },
+                { label: 'Scheduled', value: scheduledCampaigns, tone: 'amber' },
+                { label: 'Failed', value: failedCampaigns, tone: 'red' },
+              ]}
+            >
               {campaignsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentCampaigns.length === 0 ? <EmptyResource text="No campaigns created yet" href="/create-campaign" action="Create campaign" /> : recentCampaigns.slice(0, 3).map(c => <ResourceRow key={c.id} name={c.name} meta={`${fmt(c.stats.sent)} sent`} status={c.status} />)}
             </ResourceCard>
-            <ResourceCard title="Chatbots" count={liveChatbots} total={flows.length} detail="Published flows handling conversations" icon={Bot} tone="violet" href="/chatbot">
+            <ResourceCard
+              title="Chatbots"
+              total={flows.length}
+              href="/chatbot"
+              details={[
+                { label: 'Published', value: liveChatbots, tone: 'green' },
+                { label: 'Draft', value: draftChatbots, tone: 'violet' },
+                { label: 'Failed', value: failedChatbots, tone: 'red' },
+              ]}
+            >
               {flowsLoading ? <div className="h-16 animate-pulse rounded-lg bg-gray-50" /> : recentFlows.length === 0 ? <EmptyResource text="No chatbot flows created yet" href="/chatbot" action="Build a chatbot" /> : recentFlows.slice(0, 3).map(f => <ResourceRow key={f.id} name={f.name} meta={`${fmt(f.analytics?.triggered ?? 0)} triggered`} status={f.status} />)}
             </ResourceCard>
           </div>
@@ -501,18 +535,35 @@ export default function Dashboard() {
   );
 }
 
-function ResourceCard({ title, count, total, detail, icon: Icon, tone, href, children }: {
-  title: string; count: number; total: number; detail: string; icon: typeof Zap; tone: 'green' | 'blue' | 'violet'; href: string; children: React.ReactNode;
+function ResourceCard({ title, total, href, details, children }: {
+  title: string;
+  total: number;
+  href: string;
+  details: { label: string; value: number; tone: 'green' | 'blue' | 'violet' | 'amber' | 'red' }[];
+  children: React.ReactNode;
 }) {
-  const colors = { green: 'bg-green-50 text-green-600', blue: 'bg-blue-50 text-blue-600', violet: 'bg-violet-50 text-violet-600' };
+  const colors = {
+    green: 'text-green-600',
+    blue: 'text-blue-600',
+    violet: 'text-violet-600',
+    amber: 'text-amber-600',
+    red: 'text-red-600',
+  };
   return (
     <div className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3"><div className={`flex h-9 w-9 items-center justify-center rounded-lg ${colors[tone]}`}><Icon className="h-4 w-4" /></div><div><h3 className="text-sm font-bold text-black">{title}</h3><p className="text-[11px] text-gray-800">{detail}</p></div></div>
-        <a href={href} className="text-gray-400 hover:text-primary"><ArrowRight className="h-4 w-4" /></a>
+        <div><h3 className="text-base font-bold text-black">{title}</h3><p className="mt-0.5 text-sm text-gray-800">{fmt(total)} total</p></div>
+        <a href={href} aria-label={`View ${title}`} className="text-gray-900 hover:text-primary"><ArrowRight className="h-5 w-5" /></a>
       </div>
-      <div className="mt-4 flex items-end gap-2"><span className="text-2xl font-bold text-black">{count}</span><span className="pb-0.5 text-xs text-gray-800">of {total} total</span></div>
-      <div className="mt-4 space-y-1">{children}</div>
+      <div className="mt-5 grid grid-cols-3 divide-x divide-gray-200 border-y border-gray-100 py-3">
+        {details.map(detail => (
+          <div key={detail.label} className="px-2 first:pl-0 last:pr-0">
+            <p className={`text-2xl font-bold ${colors[detail.tone]}`}>{fmtCompact(detail.value)}</p>
+            <p className="mt-1 text-xs font-medium text-gray-800">{detail.label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 space-y-1">{children}</div>
     </div>
   );
 }
