@@ -251,7 +251,7 @@ export default function Dashboard() {
           <p className="text-sm text-gray-500">Credit Balance</p>
           <p className="font-bold text-gray-900">{(user?.creditBalance ?? 0).toLocaleString()} credits</p>
         </div>
-        <a href="/manage" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+        <a href="/wa-pay" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
           Top up <ArrowRight className="w-3 h-3" />
         </a>
       </div>
