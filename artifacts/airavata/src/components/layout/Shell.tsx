@@ -84,7 +84,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <img
               src={collapsed ? logoIcon : fullLogo}
               alt="Airavata"
-              className={collapsed ? 'w-9 h-9 object-contain' : 'w-full max-w-[190px] max-h-10 object-contain'}
+              className={collapsed ? 'w-9 h-9 object-contain' : 'w-full h-14 object-fill'}
             />
           </div>
 
