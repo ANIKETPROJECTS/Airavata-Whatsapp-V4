@@ -10,6 +10,7 @@ import {
   Search, MessageSquare, MoreVertical,
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
+  UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -46,6 +47,29 @@ interface Message {
 interface AttachmentFile {
   file: File;
   previewUrl: string | null; // only for images
+}
+
+interface ProfileTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface ProfileGroup {
+  id: string;
+  name: string;
+  memberCount?: number;
+}
+
+interface ContactProfile {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  status: string;
+  chatState?: string;
+  tags: ProfileTag[];
+  group: ProfileGroup | null;
 }
 
 interface TemplateRecord {
@@ -408,6 +432,244 @@ function FlowDataBubble({ data }: { data: Record<string, unknown> }) {
         </div>
       )}
     </div>
+  );
+}
+
+function ContactProfilePanel({ contactId, contactPhone }: { contactId: string; contactPhone: string }) {
+  const qc = useQueryClient();
+  const [draftName, setDraftName] = useState('');
+  const [draftEmail, setDraftEmail] = useState('');
+  const [draftTags, setDraftTags] = useState<string[]>([]);
+  const [draftGroupId, setDraftGroupId] = useState('');
+  const [showDetails, setShowDetails] = useState(true);
+  const [showTags, setShowTags] = useState(true);
+  const [showGroups, setShowGroups] = useState(true);
+
+  const { data: contactData, isLoading: contactLoading } = useQuery<{
+    contacts: ContactProfile[];
+  }>({
+    queryKey: ['contact-profile', contactId],
+    queryFn: () => api.get(`/contacts?search=${encodeURIComponent(contactPhone)}&limit=100`),
+    enabled: Boolean(contactId && contactPhone),
+  });
+
+  const { data: tagsData } = useQuery<{ tags: ProfileTag[] }>({
+    queryKey: ['tags'],
+    queryFn: () => api.get('/tags'),
+  });
+
+  const { data: groupsData } = useQuery<{ groups: ProfileGroup[] }>({
+    queryKey: ['groups'],
+    queryFn: () => api.get('/groups'),
+  });
+
+  const contact = contactData?.contacts.find(item => item.id === contactId) ?? null;
+  const tags = tagsData?.tags ?? [];
+  const groups = groupsData?.groups ?? [];
+
+  useEffect(() => {
+    if (!contact) return;
+    setDraftName(contact.name);
+    setDraftEmail(contact.email ?? '');
+    setDraftTags(contact.tags.map(tag => tag.id));
+    setDraftGroupId(contact.group?.id ?? '');
+  }, [contact?.id, contact?.name, contact?.email, contact?.group?.id, contact?.tags]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      api.put(`/contacts/${contactId}`, {
+        name: draftName.trim(),
+        email: draftEmail.trim(),
+        tags: draftTags,
+        groupId: draftGroupId || null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['contact-profile', contactId] });
+      qc.invalidateQueries({ queryKey: ['contacts'] });
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+      toast.success('Customer profile updated');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const toggleTag = (tagId: string) => {
+    setDraftTags(current =>
+      current.includes(tagId) ? current.filter(id => id !== tagId) : [...current, tagId],
+    );
+  };
+
+  if (contactLoading) {
+    return (
+      <aside className="w-80 border-l bg-white shrink-0 flex items-center justify-center text-gray-400">
+        <Loader2 className="w-5 h-5 animate-spin" />
+      </aside>
+    );
+  }
+
+  if (!contact) {
+    return (
+      <aside className="w-80 border-l bg-white shrink-0 p-5">
+        <p className="text-sm text-gray-500">Customer profile is not available for this conversation.</p>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
+      <div className="px-5 py-4 border-b flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Chat profile</p>
+          <h3 className="text-base font-semibold text-gray-900 mt-0.5">Customer details</h3>
+        </div>
+        <UserRound className="w-5 h-5 text-primary" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-5 py-5 bg-gradient-to-b from-primary/5 to-white border-b text-center">
+          <div className="w-16 h-16 mx-auto rounded-full bg-primary/15 text-primary flex items-center justify-center text-2xl font-bold">
+            {contact.name.charAt(0).toUpperCase()}
+          </div>
+          <h4 className="mt-3 font-semibold text-gray-900 truncate">{contact.name}</h4>
+          <p className="mt-1 text-xs text-gray-500 flex items-center justify-center gap-1">
+            <Phone className="w-3 h-3" /> {contact.phone}
+          </p>
+          <span className={`inline-flex mt-3 px-2 py-1 rounded-full text-[11px] font-medium ${
+            contact.status === 'blocked' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          }`}>
+            {contact.status === 'blocked' ? 'Blocked' : 'Active customer'}
+          </span>
+        </div>
+
+        <div className="border-b">
+          <button
+            onClick={() => setShowDetails(value => !value)}
+            className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-gray-50"
+          >
+            <span className="text-sm font-semibold text-gray-800">Profile details</span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+          </button>
+          {showDetails && (
+            <div className="px-5 pb-4 space-y-3">
+              <label className="block">
+                <span className="text-xs font-medium text-gray-500">Name</span>
+                <input
+                  value={draftName}
+                  onChange={event => setDraftName(event.target.value)}
+                  className="mt-1 w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                  <Mail className="w-3 h-3" /> Email
+                </span>
+                <input
+                  type="email"
+                  value={draftEmail}
+                  onChange={event => setDraftEmail(event.target.value)}
+                  placeholder="Add an email address"
+                  className="mt-1 w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </label>
+            </div>
+          )}
+        </div>
+
+        <div className="border-b">
+          <button
+            onClick={() => setShowTags(value => !value)}
+            className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-gray-50"
+          >
+            <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Tag className="w-4 h-4 text-gray-400" /> Tags
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showTags ? 'rotate-180' : ''}`} />
+          </button>
+          {showTags && (
+            <div className="px-5 pb-4">
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {draftTags.length === 0 ? (
+                  <span className="text-xs text-gray-400">No tags added</span>
+                ) : (
+                  draftTags.map(tagId => {
+                    const tag = tags.find(item => item.id === tagId);
+                    if (!tag) return null;
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTag(tag.id)}
+                        className="px-2 py-1 rounded-full text-[11px] font-medium"
+                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                        title="Remove tag"
+                      >
+                        {tag.name} ×
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              {tags.length > 0 ? (
+                <div className="max-h-28 overflow-y-auto space-y-1">
+                  {tags.map(tag => (
+                    <label key={tag.id} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={draftTags.includes(tag.id)}
+                        onChange={() => toggleTag(tag.id)}
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                      {tag.name}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">Create tags from Contacts to organize customers.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="border-b">
+          <button
+            onClick={() => setShowGroups(value => !value)}
+            className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-gray-50"
+          >
+            <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <UsersRound className="w-4 h-4 text-gray-400" /> Group
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showGroups ? 'rotate-180' : ''}`} />
+          </button>
+          {showGroups && (
+            <div className="px-5 pb-4">
+              <select
+                value={draftGroupId}
+                onChange={event => setDraftGroupId(event.target.value)}
+                className="w-full px-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="">No group</option>
+                {groups.map(group => (
+                  <option key={group.id} value={group.id}>{group.name}</option>
+                ))}
+              </select>
+              {groups.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2">Create groups from Contacts to organize customers.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4 border-t bg-gray-50">
+        <button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending || !draftName.trim()}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-60"
+        >
+          {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save profile
+        </button>
+      </div>
+    </aside>
   );
 }
 
@@ -1010,6 +1272,9 @@ export default function LiveChat() {
             <p className="text-sm mt-1">Choose a contact from the left to start chatting</p>
           </div>
         </div>
+      )}
+      {activeConv && rightPanelOpen && (
+        <ContactProfilePanel contactId={activeConv.contactId} contactPhone={activeConv.contactPhone} />
       )}
     </div>
   );
