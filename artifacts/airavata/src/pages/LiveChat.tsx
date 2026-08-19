@@ -13,6 +13,7 @@ import {
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
   Check, Clock3, CircleAlert, Trash2, BookOpen, CalendarDays,
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
@@ -932,6 +933,7 @@ function ContactProfilePanel({
 
 export default function LiveChat() {
   const qc = useQueryClient();
+  const [location] = useLocation();
   const [activeTab, setActiveTab] = useState('All');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
@@ -992,13 +994,16 @@ export default function LiveChat() {
 
   const conversations = convsData?.conversations ?? [];
   const activeConv = conversations.find(c => c.id === activeConvId) ?? null;
+  const requestedConversationId = new URLSearchParams(location.split('?')[1] ?? '').get('conversationId');
 
-  // Auto-select first conversation
+  // Open the conversation requested by the dashboard link, otherwise select the first one.
   useEffect(() => {
-    if (!activeConvId && conversations.length > 0) {
+    if (requestedConversationId && conversations.some(c => c.id === requestedConversationId)) {
+      setActiveConvId(requestedConversationId);
+    } else if (!activeConvId && conversations.length > 0) {
       setActiveConvId(conversations[0]!.id);
     }
-  }, [conversations, activeConvId]);
+  }, [conversations, activeConvId, requestedConversationId]);
 
   // ── Messages for active conversation (poll every 5s) ─────────────────────
 

@@ -397,7 +397,13 @@ export default function Dashboard() {
                       <p className="mt-1 truncate text-sm text-gray-800">{c.lastMessage || 'No message preview'}</p>
                       <p className="mt-1 text-xs font-medium text-gray-600">{formatConversationTime(c.lastMessageAt)}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-gray-500" />
+                    <a
+                      href={`/live-chat?conversationId=${encodeURIComponent(c.id)}`}
+                      aria-label={`Open chat with ${c.contactName}`}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center text-gray-900 transition-colors hover:bg-gray-100"
+                    >
+                      <ChevronRight className="h-6 w-6 stroke-[2.5]" />
+                    </a>
                   </div>
                 ))}
               </div>
