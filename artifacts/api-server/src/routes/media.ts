@@ -7,14 +7,15 @@
  */
 
 import { Router } from "express";
-import { authenticate } from "../middlewares/authenticate";
+import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+import { getCredentials } from "../lib/whatsapp";
 
 const router = Router();
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 
-router.get("/media/proxy", authenticate, async (req, res) => {
+router.get("/media/proxy", authenticate, async (req: AuthRequest, res) => {
   const mediaId = req.query.mediaId as string | undefined;
 
   if (!mediaId) {
@@ -22,13 +23,11 @@ router.get("/media/proxy", authenticate, async (req, res) => {
     return;
   }
 
-  const accessToken = process.env.META_ACCESS_TOKEN;
-  if (!accessToken) {
-    res.status(500).json({ error: "META_ACCESS_TOKEN is not configured" });
-    return;
-  }
-
   try {
+    const { accessToken } = await getCredentials(req.user!.userId, {
+      allowEnvFallback: false,
+    });
+
     // Step 1: resolve the download URL + mime type from the media ID
     const metaRes = await fetch(`${GRAPH_BASE}/${mediaId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -76,6 +75,10 @@ router.get("/media/proxy", authenticate, async (req, res) => {
     res.end();
   } catch (err) {
     logger.error({ err, mediaId }, "Media proxy error");
+    if (err instanceof Error && err.message === "WhatsApp is not connected for this account") {
+      res.status(409).json({ error: err.message });
+      return;
+    }
     if (!res.headersSent) {
       res.status(500).json({ error: "Media proxy failed" });
     }

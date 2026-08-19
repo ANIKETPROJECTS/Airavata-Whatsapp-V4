@@ -7,13 +7,11 @@ import mongoose from "mongoose";
 import { FlowModel } from "../models/Flow";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+import { getCredentials } from "../lib/whatsapp";
 
 const router = Router();
 
 const META_BASE = "https://graph.facebook.com/v21.0";
-const WABA_ID = process.env["META_WABA_ID"];
-const ACCESS_TOKEN = process.env["META_ACCESS_TOKEN"];
-const PHONE_NUMBER_ID = process.env["META_PHONE_NUMBER_ID"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -174,10 +172,11 @@ function compileToMetaJson(flow: {
 }
 
 /** Fetch flow metadata from Meta and persist it locally */
-async function syncFlowFromMeta(flowId: unknown, metaFlowId: string) {
+async function syncFlowFromMeta(flowId: unknown, metaFlowId: string, accessToken: string) {
   const meta = (await metaRequest(
     `/${metaFlowId}?fields=id,name,status,health_status,validation_errors,endpoint_uri`,
     "GET",
+    accessToken,
   )) as {
     id?: string;
     name?: string;
@@ -198,12 +197,12 @@ async function syncFlowFromMeta(flowId: unknown, metaFlowId: string) {
 }
 
 /** Make an authenticated request to the Meta Graph API */
-async function metaRequest(path: string, method: string, body?: unknown) {
+async function metaRequest(path: string, method: string, accessToken: string, body?: unknown) {
   const url = `${META_BASE}${path}`;
   const res = await fetch(url, {
     method,
     headers: {
-      Authorization: `Bearer ${ACCESS_TOKEN}`,
+      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -217,6 +216,10 @@ async function metaRequest(path: string, method: string, body?: unknown) {
   return data;
 }
 
+function isWhatsAppDisconnectedError(err: unknown): boolean {
+  return err instanceof Error && err.message === "WhatsApp is not connected for this account";
+}
+
 // ── GET /api/flows ────────────────────────────────────────────────────────────
 
 router.get("/flows", authenticate, async (req: AuthRequest, res) => {
@@ -225,6 +228,9 @@ router.get("/flows", authenticate, async (req: AuthRequest, res) => {
     const flows = await FlowModel.find({ userId }).sort({ createdAt: -1 }).lean();
     res.json({ flows: flows.map(shapeFlow) });
   } catch (err: unknown) {
+    if (isWhatsAppDisconnectedError(err)) {
+      return res.status(409).json({ error: err.message });
+    }
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
@@ -319,7 +325,10 @@ router.delete("/flows/:id", authenticate, async (req: AuthRequest, res) => {
 
     if (flow.metaFlowId) {
       try {
-        await metaRequest(`/${flow.metaFlowId}`, "DELETE");
+        const { accessToken } = await getCredentials(req.user!.userId, {
+          allowEnvFallback: false,
+        });
+        await metaRequest(`/${flow.metaFlowId}`, "DELETE", accessToken);
       } catch (e) {
         logger.warn({ err: e }, "Failed to delete flow from Meta (may already be deleted)");
       }
@@ -335,6 +344,12 @@ router.delete("/flows/:id", authenticate, async (req: AuthRequest, res) => {
 
 router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) => {
   try {
+    const { wabaId, accessToken } = await getCredentials(req.user!.userId, {
+      allowEnvFallback: false,
+    });
+    if (!wabaId) {
+      return res.status(409).json({ error: "WhatsApp is not connected for this account" });
+    }
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const flow = await FlowModel.findOne({
       _id: new mongoose.Types.ObjectId(req.params["id"]),
@@ -349,7 +364,7 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
 
     // Step 1: Create on Meta if not yet created
     if (!metaFlowId) {
-      const created = (await metaRequest(`/${WABA_ID}/flows`, "POST", {
+      const created = (await metaRequest(`/${wabaId}/flows`, "POST", accessToken, {
         name: flow.name,
         categories: flow.categories,
         ...(flow.endpointUri ? { endpoint_uri: flow.endpointUri } : {}),
@@ -371,7 +386,7 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
 
     const uploadRes = await fetch(`${META_BASE}/${metaFlowId}/assets`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
       body: formData,
     });
     const uploadData = (await uploadRes.json()) as { error?: { message?: string }; validation_errors?: Array<{ error: string; message: string }> };
@@ -389,16 +404,19 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
     }
 
     // Step 3: Publish
-    await metaRequest(`/${metaFlowId}/publish`, "POST");
+    await metaRequest(`/${metaFlowId}/publish`, "POST", accessToken);
 
     // Step 4: Save metaFlowId + PUBLISHED status, then sync full metadata from Meta
     await FlowModel.findByIdAndUpdate(flow._id, { $set: { status: "PUBLISHED", metaFlowId } });
-    const updated = await syncFlowFromMeta(flow._id, metaFlowId);
+    const updated = await syncFlowFromMeta(flow._id, metaFlowId, accessToken);
 
     logger.info({ flowId: String(flow._id), metaFlowId }, "Flow published to Meta");
     res.json({ flow: shapeFlow(updated as Record<string, unknown> & { _id: unknown }) });
   } catch (err: unknown) {
     logger.error({ err }, "Failed to publish flow to Meta");
+    if (isWhatsAppDisconnectedError(err)) {
+      return res.status(409).json({ error: err.message });
+    }
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
@@ -407,6 +425,9 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
 
 router.post("/flows/:id/sync", authenticate, async (req: AuthRequest, res) => {
   try {
+    const { accessToken } = await getCredentials(req.user!.userId, {
+      allowEnvFallback: false,
+    });
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const flow = await FlowModel.findOne({
       _id: new mongoose.Types.ObjectId(req.params["id"]),
@@ -417,9 +438,12 @@ router.post("/flows/:id/sync", authenticate, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "Flow has not been published to Meta yet" });
     }
 
-    const updated = await syncFlowFromMeta(flow._id, flow.metaFlowId);
+    const updated = await syncFlowFromMeta(flow._id, flow.metaFlowId, accessToken);
     res.json({ flow: shapeFlow(updated as Record<string, unknown> & { _id: unknown }) });
   } catch (err: unknown) {
+    if (isWhatsAppDisconnectedError(err)) {
+      return res.status(409).json({ error: err.message });
+    }
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
@@ -428,6 +452,9 @@ router.post("/flows/:id/sync", authenticate, async (req: AuthRequest, res) => {
 
 router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
   try {
+    const { phoneNumberId, accessToken } = await getCredentials(req.user!.userId, {
+      allowEnvFallback: false,
+    });
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const flow = await FlowModel.findOne({
       _id: new mongoose.Types.ObjectId(req.params["id"]),
@@ -453,10 +480,10 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
     // The first screen ID must match the sanitized ID that was uploaded to Meta
     const firstScreenId = sanitizeScreenId(flow.screens?.[0]?.id ?? "SCREEN_A");
 
-    const msgRes = await fetch(`${META_BASE}/${PHONE_NUMBER_ID}/messages`, {
+    const msgRes = await fetch(`${META_BASE}/${phoneNumberId}/messages`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -517,6 +544,9 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
     res.json({ success: true, messageId: msgData.messages?.[0]?.id });
   } catch (err: unknown) {
     logger.error({ err }, "Unexpected error in send-flow route");
+    if (isWhatsAppDisconnectedError(err)) {
+      return res.status(409).json({ error: err.message });
+    }
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });
