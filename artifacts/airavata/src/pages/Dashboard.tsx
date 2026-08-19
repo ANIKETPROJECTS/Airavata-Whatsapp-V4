@@ -163,13 +163,11 @@ function SectionHeading({
 
 function StatusPill({ status, large = false }: { status: string; large?: boolean }) {
   const normalized = status.toUpperCase();
-  const style = normalized === 'COMPLETED'
+  const style = ['COMPLETED', 'APPROVED', 'PUBLISHED'].includes(normalized)
     ? 'bg-green-500 text-white'
-    : normalized === 'APPROVED' || normalized === 'PUBLISHED'
-      ? 'bg-green-50 text-green-700'
-    : normalized === 'REJECTED' || normalized === 'FAILED'
-      ? 'bg-red-50 text-red-700'
-      : 'bg-amber-50 text-amber-700';
+    : ['REJECTED', 'FAILED', 'ERROR'].includes(normalized)
+      ? 'bg-red-500 text-white'
+      : 'bg-amber-400 text-white';
   return <span className={`rounded-full px-2.5 py-1 ${large ? 'text-xs' : 'text-[10px]'} font-semibold ${style}`}>{status.toLowerCase().replace(/^\w/, c => c.toUpperCase())}</span>;
 }
 
@@ -555,11 +553,11 @@ function ResourceCard({ title, total, href, details, children }: {
         <div><h3 className="text-base font-bold text-black">{title}</h3><p className="mt-0.5 text-sm text-gray-800">{fmt(total)} total</p></div>
         <a href={href} aria-label={`View ${title}`} className="text-gray-900 hover:text-primary"><ArrowRight className="h-5 w-5" /></a>
       </div>
-      <div className="mt-5 grid grid-cols-3 justify-items-center divide-x divide-gray-200 border-y border-gray-100 py-3 text-center">
+      <div className="mt-5 grid grid-cols-3 divide-x divide-gray-200 border-y border-gray-100 py-4 text-center">
         {details.map(detail => (
-          <div key={detail.label} className="px-2 first:pl-0 last:pr-0">
-            <p className={`text-2xl font-bold ${colors[detail.tone]}`}>{fmtCompact(detail.value)}</p>
-            <p className="mt-1 text-xs font-medium text-gray-800">{detail.label}</p>
+          <div key={detail.label} className="flex w-full min-w-0 flex-col items-center px-2 text-center">
+            <p className={`text-3xl font-bold leading-none ${colors[detail.tone]}`}>{fmtCompact(detail.value)}</p>
+            <p className="mt-2 text-sm font-semibold text-gray-800">{detail.label}</p>
           </div>
         ))}
       </div>
@@ -569,7 +567,7 @@ function ResourceCard({ title, total, href, details, children }: {
 }
 
 function ResourceRow({ name, meta, status }: { name: string; meta: string; status: string }) {
-  return <div className="flex items-center justify-between gap-3 border-t border-gray-100 py-2.5"><div className="min-w-0"><p className="truncate text-xs font-semibold text-black">{name}</p><p className="mt-0.5 text-[10px] text-gray-800">{meta}</p></div><StatusPill status={status} /></div>;
+  return <div className="flex items-center justify-between gap-3 border-t border-gray-100 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-black">{name}</p><p className="mt-1 text-xs text-gray-800">{meta}</p></div><StatusPill status={status} large /></div>;
 }
 
 function EmptyResource({ text, href, action }: { text: string; href: string; action: string }) {
