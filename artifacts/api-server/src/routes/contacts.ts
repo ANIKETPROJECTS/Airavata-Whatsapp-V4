@@ -73,8 +73,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
       page: pageNum,
       pages: Math.ceil(total / limitNum),
     });
-  } catch (err) {
-    console.error("GET /contacts failed:", err);
+  } catch {
     res.status(500).json({ error: "Internal server error" });
   }
 });
