@@ -134,7 +134,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <button
             onClick={() => setCollapsed(v => !v)}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="absolute -right-5 top-1/2 -translate-y-1/2 w-4 h-4 bg-white border border-gray-300 rounded-full flex items-center justify-center shadow-sm hover:shadow-md hover:border-gray-500 transition-all z-30 text-gray-800 hover:text-black"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white border border-gray-300 rounded-full flex items-center justify-center shadow-sm hover:shadow-md hover:border-gray-500 transition-all z-30 text-gray-800 hover:text-black"
           >
             {collapsed
               ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
