@@ -137,7 +137,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* Main Content */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Topbar */}
-          <header className="h-16 bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
+          <header className="h-[60px] bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
             <div className="flex items-center gap-3">
               <div className="hidden md:flex items-center text-sm text-gray-500">
                 <span className="text-gray-400">Airavata</span>
@@ -155,10 +155,8 @@ export function Shell({ children }: { children: ReactNode }) {
                   className="w-8 h-8 object-contain"
                 />
                 <div className="leading-tight whitespace-nowrap">
-                  <div className="text-xs font-semibold text-gray-800">Customer Support</div>
-                  <div className="mt-1 text-[11px] text-gray-500">
-                    +91 9167959756 <span className="mx-1 text-gray-300">•</span> support@atwassup.com
-                  </div>
+                  <div className="text-sm font-semibold text-black">+91 9167959756</div>
+                  <div className="mt-1 text-sm font-semibold text-black">support@atwassup.com</div>
                 </div>
               </div>
               <img
