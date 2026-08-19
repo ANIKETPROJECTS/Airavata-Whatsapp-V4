@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFacebookEmbeddedSignup } from '@/hooks/use-facebook-embedded-signup';
 import facebookIcon from '@assets/facebook_(1)_1787158279371.png';
 import verifiedIcon from '@assets/social-media_1787158389051.png';
-import sendCardIcon from '@assets/send_1787158775414.png';
+import sentCardIcon from '@assets/sent_1787158963032.png';
 import messageCardIcon from '@assets/message_1787158795063.png';
 import viewCardIcon from '@assets/view_1787158851964.png';
 import reportCardIcon from '@assets/report_1787158875535.png';
@@ -83,6 +83,7 @@ function MetricCard({
   detail,
   icon: Icon,
   iconSrc,
+  large,
   tone,
 }: {
   label: string;
@@ -90,6 +91,7 @@ function MetricCard({
   detail: string;
   icon: typeof Send;
   iconSrc?: string;
+  large?: boolean;
   tone: 'blue' | 'green' | 'violet' | 'red' | 'amber' | 'teal';
 }) {
   const tones = {
@@ -104,8 +106,8 @@ function MetricCard({
     <div className="rounded-none border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-gray-800">{label}</p>
-          <p className="mt-2 text-2xl font-bold tracking-tight text-black">{value}</p>
+          <p className={large ? 'text-sm font-semibold text-gray-800' : 'text-xs font-medium text-gray-800'}>{label}</p>
+          <p className={large ? 'mt-2 text-3xl font-bold tracking-tight text-black' : 'mt-2 text-2xl font-bold tracking-tight text-black'}>{value}</p>
         </div>
         {iconSrc ? (
           <img src={iconSrc} alt="" className="h-8 w-8 shrink-0 object-contain" />
@@ -115,7 +117,7 @@ function MetricCard({
           </div>
         )}
       </div>
-      <p className="mt-3 text-[11px] text-gray-800">{detail}</p>
+      <p className={large ? 'mt-3 text-xs text-gray-800' : 'mt-3 text-[11px] text-gray-800'}>{detail}</p>
     </div>
   );
 }
@@ -284,10 +286,10 @@ export default function Dashboard() {
         <section>
           <SectionHeading eyebrow="Messaging performance" title="Delivery overview" href="/campaigns-report" />
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <MetricCard label="Sent" value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)} detail="Messages sent from campaigns" icon={Send} iconSrc={sendCardIcon} tone="blue" />
-            <MetricCard label="Delivered" value={isLoading ? '—' : fmt(stats?.totalDelivered ?? 0)} detail={`${deliveryRate} delivery rate`} icon={CheckCircle2} iconSrc={messageCardIcon} tone="green" />
-            <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages`} icon={MessageCircle} iconSrc={viewCardIcon} tone="violet" />
-            <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate`} icon={XCircle} iconSrc={reportCardIcon} tone="red" />
+            <MetricCard label="Sent" value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)} detail="Messages sent from campaigns" icon={Send} iconSrc={sentCardIcon} large tone="blue" />
+            <MetricCard label="Delivered" value={isLoading ? '—' : fmt(stats?.totalDelivered ?? 0)} detail={`${deliveryRate} delivery rate`} icon={CheckCircle2} iconSrc={messageCardIcon} large tone="green" />
+            <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages`} icon={MessageCircle} iconSrc={viewCardIcon} large tone="violet" />
+            <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate`} icon={XCircle} iconSrc={reportCardIcon} large tone="red" />
           </div>
         </section>
 
