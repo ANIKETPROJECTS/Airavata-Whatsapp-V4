@@ -22,6 +22,7 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
+  refreshUser: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
@@ -40,14 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = useCallback(async () => {
+    const { user: freshUser } = await api.get<{ user: AuthUser }>('/auth/me');
+    setUser(freshUser);
+  }, []);
+
   // Restore session on mount
   useEffect(() => {
-    api
-      .get<{ user: AuthUser }>('/auth/me')
-      .then(({ user }) => setUser(user))
+    refreshUser()
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshUser]);
 
   const login = useCallback(async (email: string, password: string) => {
     const { token, user } = await api.post<{ token: string; user: AuthUser }>('/auth/login', { email, password });
@@ -68,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, refreshUser, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

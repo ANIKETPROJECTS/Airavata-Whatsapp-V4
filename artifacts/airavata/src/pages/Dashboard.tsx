@@ -2,7 +2,7 @@
  * Dashboard — stat cards and recent campaigns wired to real data from MongoDB.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Send, CheckCircle2, XCircle, MessageSquare,
@@ -44,9 +44,19 @@ interface PhoneNumber {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [showChecklist, setShowChecklist] = useState(true);
   const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup();
+
+  useEffect(() => {
+    void refreshUser();
+
+    const handleWindowFocus = () => {
+      void refreshUser();
+    };
+    window.addEventListener('focus', handleWindowFocus);
+    return () => window.removeEventListener('focus', handleWindowFocus);
+  }, [refreshUser]);
 
   const { data: phoneData, isLoading: phoneLoading } = useQuery<{ numbers: PhoneNumber[] }>({
     queryKey: ['dashboard-phonenumbers'],
