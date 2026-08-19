@@ -937,6 +937,7 @@ export default function LiveChat() {
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [search, setSearch] = useState('');
+  const [chatDate, setChatDate] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -1152,7 +1153,14 @@ export default function LiveChat() {
 
   // ── Filter conversations ──────────────────────────────────────────────────
 
-  const filtered = conversations.filter(c => {
+  const dateFiltered = conversations.filter(c => {
+    if (!chatDate) return true;
+    const activityDate = new Date(c.lastMessageAt);
+    if (Number.isNaN(activityDate.getTime())) return false;
+    return activityDate.toLocaleDateString('en-CA') === chatDate;
+  });
+
+  const filtered = dateFiltered.filter(c => {
     const matchTab = activeTab === 'All' || c.status === activeTab;
     const matchSearch =
       !search ||
@@ -1162,11 +1170,11 @@ export default function LiveChat() {
   });
 
   const unreadTotals = {
-    All: conversations.reduce((sum, conversation) => sum + conversation.unread, 0),
-    Open: conversations
+    All: dateFiltered.reduce((sum, conversation) => sum + conversation.unread, 0),
+    Open: dateFiltered
       .filter(conversation => conversation.status === 'Open')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
-    Resolved: conversations
+    Resolved: dateFiltered
       .filter(conversation => conversation.status === 'Resolved')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
   };
@@ -1198,6 +1206,27 @@ export default function LiveChat() {
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-500 whitespace-nowrap" htmlFor="chat-date-filter">
+              Chats on
+            </label>
+            <input
+              id="chat-date-filter"
+              type="date"
+              value={chatDate}
+              onChange={event => setChatDate(event.target.value)}
+              className="flex-1 min-w-0 px-2.5 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+            {chatDate && (
+              <button
+                onClick={() => setChatDate('')}
+                className="px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg"
+                title="Show all dates"
+              >
+                Clear
+              </button>
+            )}
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {tabs.map(tab => (
