@@ -228,7 +228,7 @@ export default function Dashboard() {
   return (
     <div className="h-full overflow-y-auto bg-white text-black">
       <div className="mx-auto max-w-[1440px] space-y-6 p-5 lg:p-7">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Workspace overview</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-black">Good to see you, {user?.businessName ?? 'there'}</h1>
@@ -236,18 +236,18 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center">
             {user?.metaWabaConnected ? (
-              <div className="inline-flex items-center gap-2 border border-blue-100 bg-white px-3 py-2 text-xs font-semibold text-black shadow-sm">
-                <img src={facebookIcon} alt="Facebook" className="h-5 w-5 object-contain" />
-                <img src={verifiedIcon} alt="Verified" className="h-5 w-5 object-contain" />
+              <div className="inline-flex items-center gap-2.5 border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm">
+                <img src={facebookIcon} alt="Facebook" className="h-7 w-7 object-contain" />
+                <img src={verifiedIcon} alt="Verified" className="h-7 w-7 object-contain" />
                 <span>Connected &amp; verified</span>
               </div>
             ) : (
               <button
                 onClick={launchFbSignup}
                 disabled={fbConnecting}
-                className="inline-flex items-center gap-2 border border-blue-100 bg-white px-3 py-2 text-xs font-semibold text-black shadow-sm hover:bg-blue-50 disabled:opacity-60"
+                className="inline-flex items-center gap-2.5 border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm hover:bg-blue-50 disabled:opacity-60"
               >
-                <img src={facebookIcon} alt="Facebook" className="h-5 w-5 object-contain" />
+                <img src={facebookIcon} alt="Facebook" className="h-7 w-7 object-contain" />
                 <span>{fbConnecting ? 'Connecting…' : 'Connect Facebook'}</span>
               </button>
             )}
