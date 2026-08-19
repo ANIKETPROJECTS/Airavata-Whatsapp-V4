@@ -158,7 +158,7 @@ function SectionHeading({
   );
 }
 
-function StatusPill({ status }: { status: string }) {
+function StatusPill({ status, large = false }: { status: string; large?: boolean }) {
   const normalized = status.toUpperCase();
   const style = normalized === 'COMPLETED'
     ? 'bg-green-500 text-white'
@@ -167,7 +167,7 @@ function StatusPill({ status }: { status: string }) {
     : normalized === 'REJECTED' || normalized === 'FAILED'
       ? 'bg-red-50 text-red-700'
       : 'bg-amber-50 text-amber-700';
-  return <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${style}`}>{status.toLowerCase().replace(/^\w/, c => c.toUpperCase())}</span>;
+  return <span className={`rounded-full px-2.5 py-1 ${large ? 'text-xs' : 'text-[10px]'} font-semibold ${style}`}>{status.toLowerCase().replace(/^\w/, c => c.toUpperCase())}</span>;
 }
 
 export default function Dashboard() {
@@ -316,17 +316,18 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+        <section>
           <SectionHeading eyebrow="Recent activity" title="Campaign performance" href="/campaigns-report" />
-          {campaignsLoading ? <div className="h-40 animate-pulse bg-gray-50" /> : recentCampaigns.length === 0 ? (
-            <div className="flex min-h-40 flex-col items-center justify-center border border-dashed border-gray-200 text-center">
-              <BarChart3 className="h-6 w-6 text-gray-300" />
-              <p className="mt-2 text-sm font-semibold text-gray-800">No campaigns yet</p>
-              <a href="/create-campaign" className="mt-1 text-sm text-primary hover:underline">Create your first campaign</a>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] table-fixed text-sm">
+          <div className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
+            {campaignsLoading ? <div className="h-40 animate-pulse bg-gray-50" /> : recentCampaigns.length === 0 ? (
+              <div className="flex min-h-40 flex-col items-center justify-center border border-dashed border-gray-200 text-center">
+                <BarChart3 className="h-6 w-6 text-gray-300" />
+                <p className="mt-2 text-sm font-semibold text-gray-800">No campaigns yet</p>
+                <a href="/create-campaign" className="mt-1 text-sm text-primary hover:underline">Create your first campaign</a>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1080px] table-fixed text-[15px]">
                 <colgroup>
                   <col className="w-[16%]" />
                   <col className="w-[12%]" />
@@ -339,7 +340,7 @@ export default function Dashboard() {
                   <col className="w-[10%]" />
                   <col className="w-[10%]" />
                 </colgroup>
-                <thead className="border-b border-gray-200 text-[11px] uppercase tracking-wide text-gray-500">
+                <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
                   <tr>
                     <th className="pb-3 text-center font-semibold">Campaign</th>
                     <th className="pb-3 text-center font-semibold">Date</th>
@@ -365,13 +366,14 @@ export default function Dashboard() {
                       <td className="py-4 text-center font-semibold text-red-700">{fmtCompact(c.stats.failed)}</td>
                       <td className="py-4 text-center font-semibold text-black">{campaignCompletion(c)}</td>
                       <td className="py-4 text-center font-semibold text-black">{campaignSuccess(c)}</td>
-                      <td className="py-4 text-center"><StatusPill status={c.status} /></td>
+                      <td className="py-4 text-center"><StatusPill status={c.status} large /></td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </div>
-          )}
+                </table>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
