@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import menuIcon from '@assets/dashboard-interface_1784816353863.png';
+import dashboardIcon from '@assets/Untitled_design_(2)_1787116805930.png';
 import chatBubblesIcon from '@assets/chat_(1)_1784831596587.png';
 import contactsIcon from '@assets/contact-us_(1)_1784820130355.png';
 import marketingIcon from '@assets/marketing_(1)_1784820162202.png';
@@ -26,7 +26,7 @@ import logoIcon from '@assets/ICON_NOBG.svg';
 import fullLogo from '@assets/HFULL_NOBGSVG.svg';
 
 const SIDEBAR_ITEMS = [
-  { title: 'Dashboard', icon: LayoutDashboard, iconSrc: menuIcon, href: '/dashboard' },
+  { title: 'Dashboard', icon: LayoutDashboard, iconSrc: dashboardIcon, href: '/dashboard' },
   { title: 'Live Chat', icon: MessageCircle, iconSrc: chatBubblesIcon, href: '/live-chat' },
   { title: 'Contacts', icon: Users, iconSrc: contactsIcon, href: '/contacts' },
   { title: 'Create Campaign', icon: Megaphone, iconSrc: marketingIcon, href: '/create-campaign' },
@@ -110,7 +110,7 @@ export function Shell({ children }: { children: ReactNode }) {
                           src={item.iconSrc}
                           alt=""
                           aria-hidden="true"
-                          className="w-8 h-8 shrink-0 object-contain brightness-0"
+                          className={`w-8 h-8 shrink-0 object-contain ${item.title === 'Dashboard' ? '' : 'brightness-0'}`}
                         />
                       ) : (
                         <item.icon className="w-6 h-6 shrink-0 text-black" />
