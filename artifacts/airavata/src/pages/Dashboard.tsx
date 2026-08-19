@@ -560,21 +560,18 @@ export default function Dashboard() {
               <HealthItem
                 label="Delivery rate"
                 value={deliveryRate}
-                detail={`${fmt(stats?.totalDelivered ?? 0)} delivered of ${fmt(stats?.totalSent ?? 0)} sent`}
                 progress={stats?.totalSent ? (stats.totalDelivered / stats.totalSent) * 100 : 0}
                 tone="green"
               />
               <HealthItem
                 label="Read rate"
                 value={readRate}
-                detail={`${fmt(stats?.totalRead ?? 0)} read of ${fmt(stats?.totalDelivered ?? 0)} delivered`}
                 progress={stats?.totalDelivered ? (stats.totalRead / stats.totalDelivered) * 100 : 0}
                 tone="violet"
               />
               <HealthItem
                 label="Failure rate"
                 value={failureRate}
-                detail={`${fmt(stats?.totalFailed ?? 0)} failed of ${fmt(stats?.totalSent ?? 0)} sent`}
                 progress={stats?.totalSent ? (stats.totalFailed / stats.totalSent) * 100 : 0}
                 tone="red"
               />
@@ -591,7 +588,7 @@ export default function Dashboard() {
                 <p className="mt-2 text-4xl font-bold tracking-tight text-black">{fmt(billingData?.balance ?? user?.creditBalance ?? 0)}</p>
                 <p className="mt-1 text-sm text-gray-800">credits available for outbound messaging</p>
               </div>
-              <a href="/wa-pay" className="inline-flex w-fit rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">Manage balance</a>
+              <a href="/wa-pay" className="inline-flex w-fit rounded-full bg-green-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-600">Manage balance</a>
             </div>
             <div className="mt-5">
               <div className="mb-3 flex items-center justify-between">
@@ -680,7 +677,7 @@ function EmptyResource({ text, href, action }: { text: string; href: string; act
   return <div className="border-t border-dashed border-gray-200 py-4"><p className="text-[11px] text-gray-800">{text}</p><a href={href} className="mt-1 inline-block text-[11px] font-semibold text-primary hover:underline">{action} <ArrowRight className="inline h-3 w-3" /></a></div>;
 }
 
-function HealthItem({ label, value, detail, progress, tone }: { label: string; value: string; detail: string; progress: number; tone: 'green' | 'violet' | 'red' }) {
+function HealthItem({ label, value, progress, tone }: { label: string; value: string; progress: number; tone: 'green' | 'violet' | 'red' }) {
   const color = { green: 'bg-green-500', violet: 'bg-violet-500', red: 'bg-red-500' }[tone];
-  return <div><div className="flex items-center justify-between text-sm"><span className="font-semibold text-gray-800">{label}</span><span className="text-xl font-bold text-black">{value}</span></div><p className="mt-2 text-sm text-gray-700">{detail}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} /></div></div>;
+  return <div><div className="flex items-center justify-between text-sm"><span className="font-semibold text-gray-800">{label}</span><span className="text-xl font-bold text-black">{value}</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} /></div></div>;
 }
