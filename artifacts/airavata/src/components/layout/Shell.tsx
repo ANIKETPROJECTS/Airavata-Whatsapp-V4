@@ -155,13 +155,6 @@ export function Shell({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-2.5">
               <div className="flex items-center border-r border-black pr-2.5">
-                <img
-                  src={metaPartnerLogo}
-                  alt="Meta Business Partner"
-                  className="w-[112px] h-[38px] object-contain"
-                />
-              </div>
-              <div className="flex items-center border-r border-black pr-2.5">
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(open => !open)}
@@ -210,6 +203,13 @@ export function Shell({ children }: { children: ReactNode }) {
                   <div className="text-[13px] font-medium text-black">support@atwassup.com</div>
                   <div className="mt-1 text-[13px] font-medium text-black">+91 9167959756</div>
                 </div>
+              </div>
+              <div className="flex items-center border-r border-black pr-2.5">
+                <img
+                  src={metaPartnerLogo}
+                  alt="Meta Business Partner"
+                  className="w-[112px] h-[38px] object-contain"
+                />
               </div>
               <div className="flex items-center border-l border-black pl-2.5">
                 <img
