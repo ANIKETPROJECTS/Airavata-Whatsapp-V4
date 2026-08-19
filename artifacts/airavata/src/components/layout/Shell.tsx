@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { 
   LayoutDashboard, MessageCircle, Users, Megaphone, BarChart3, 
@@ -50,8 +50,14 @@ export const useSidebar = () => useContext(SidebarContext);
 
 export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleNav = (href: string) => {
     setLocation(href);
@@ -144,7 +150,26 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
+              <div className="hidden sm:block text-right leading-tight whitespace-nowrap">
+                <div className="text-[13px] font-medium text-black">
+                  {currentTime.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </div>
+                <div className="mt-1 text-xs font-medium text-gray-700">
+                  {currentTime.toLocaleDateString('en-IN', { weekday: 'long' })}
+                  <span className="mx-1.5 text-gray-400">•</span>
+                  {currentTime.toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                  })}
+                </div>
+              </div>
               <div className="flex items-center gap-2.5">
                 <img
                   src={supportIcon}
