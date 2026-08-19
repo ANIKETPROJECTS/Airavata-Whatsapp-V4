@@ -14,6 +14,7 @@ import { ChatbotFlowModel } from "../models/ChatbotFlow";
 import { ContactModel } from "../models/Contact";
 import { MessageModel } from "../models/Message";
 import { FlowModel } from "../models/Flow";
+import { TemplateModel } from "../models/Template";
 import { logger } from "./logger";
 import {
   sendTextMessage,
@@ -26,7 +27,7 @@ import {
   getCredentials,
 } from "./whatsapp";
 import { resolvePricingLookupForUser } from "./pricing";
-import { withCreditCharge } from "./creditDeduction";
+import { withCreditCharge, type MessageCategory } from "./creditDeduction";
 
 // ── Internal Types ─────────────────────────────────────────────────────────────
 
@@ -41,6 +42,20 @@ interface ChatbotEdge {
   source: string;
   target: string;
   sourceHandle?: string | null;
+}
+
+async function resolveTemplateCategory(
+  userId: mongoose.Types.ObjectId,
+  templateName: string,
+): Promise<MessageCategory> {
+  const template = await TemplateModel.findOne({ userId, name: templateName })
+    .select("category")
+    .lean();
+  const category = String(template?.category ?? "").toUpperCase();
+  if (category !== "AUTHENTICATION" && category !== "UTILITY" && category !== "MARKETING") {
+    throw new Error(`Template "${templateName}" was not found or has no valid category`);
+  }
+  return category;
 }
 
 interface ChatbotFlow {
@@ -588,6 +603,7 @@ async function executeNode(
               : undefined;
           await withCreditCharge({
             userId,
+            category: await resolveTemplateCategory(userId, templateName),
             description: `Chatbot template message to ${phone}`,
             send: () =>
               sendTemplateMessage(

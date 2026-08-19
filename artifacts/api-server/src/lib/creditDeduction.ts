@@ -3,7 +3,8 @@ import { CreditSettingModel } from "../models/CreditSetting";
 import { CreditTransactionModel } from "../models/CreditTransaction";
 import { UserModel } from "../models/User";
 
-const CREDITS_PER_MESSAGE_KEY = "creditsPerMessage";
+const MESSAGE_RATES_KEY = "messageRates";
+export type MessageCategory = "AUTHENTICATION" | "UTILITY" | "MARKETING";
 
 export class InsufficientCreditsError extends Error {
   constructor() {
@@ -15,6 +16,7 @@ export class InsufficientCreditsError extends Error {
 type CreditChargeOptions<T> = {
   userId: mongoose.Types.ObjectId | string;
   description: string;
+  category?: MessageCategory;
   campaignId?: mongoose.Types.ObjectId | string;
   send: () => Promise<T>;
 };
@@ -25,20 +27,30 @@ function objectId(value: mongoose.Types.ObjectId | string) {
     : new mongoose.Types.ObjectId(value);
 }
 
-async function creditsPerMessage(): Promise<number> {
+async function creditsForCategory(category?: MessageCategory): Promise<number> {
+  // Non-template/session messages have no Meta template category and remain free.
+  if (!category) return 0;
+
   const setting = await CreditSettingModel.findOne({
-    key: CREDITS_PER_MESSAGE_KEY,
+    key: MESSAGE_RATES_KEY,
   })
-    .select("value")
+    .select("authenticationRate utilityRate marketingRate")
     .lean();
 
-  if (!setting || !Number.isInteger(setting.value) || setting.value <= 0) {
+  const field = {
+    AUTHENTICATION: "authenticationRate",
+    UTILITY: "utilityRate",
+    MARKETING: "marketingRate",
+  }[category] as "authenticationRate" | "utilityRate" | "marketingRate";
+  const amount = setting?.[field];
+
+  if (!setting || !Number.isInteger(amount) || amount <= 0) {
     throw new Error(
-      `Credit setting "${CREDITS_PER_MESSAGE_KEY}" is missing or invalid.`,
+      `Credit rate "${field}" is missing or invalid.`,
     );
   }
 
-  return setting.value;
+  return amount;
 }
 
 /**
@@ -48,11 +60,15 @@ async function creditsPerMessage(): Promise<number> {
 export async function withCreditCharge<T>({
   userId,
   description,
+  category,
   campaignId,
   send,
 }: CreditChargeOptions<T>): Promise<T> {
   const resolvedUserId = objectId(userId);
-  const amount = await creditsPerMessage();
+  const amount = await creditsForCategory(category);
+  if (amount === 0) {
+    return send();
+  }
 
   const reservedUser = await UserModel.findOneAndUpdate(
     {

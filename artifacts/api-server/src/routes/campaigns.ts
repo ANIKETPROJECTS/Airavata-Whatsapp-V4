@@ -332,6 +332,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
         const components = buildComponents(variableValues, contact);
         const result = await withCreditCharge({
           userId,
+          category: template.category,
           campaignId: camp._id,
           description: `Campaign message to ${contact.phone}`,
           send: () =>

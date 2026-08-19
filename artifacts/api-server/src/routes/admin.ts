@@ -79,14 +79,19 @@ router.post("/admin/users/:id/credits", async (req: AuthRequest, res) => {
 
 router.get("/admin/credit-setting", async (_req, res) => {
   try {
-    const setting = await CreditSettingModel.findOne({ key: "creditsPerMessage" })
-      .select("value updatedAt")
+    const setting = await CreditSettingModel.findOne({ key: "messageRates" })
+      .select("authenticationRate utilityRate marketingRate updatedAt")
       .lean();
     if (!setting) {
       res.status(404).json({ error: "Credit rate setting is not configured" });
       return;
     }
-    res.json({ creditsPerMessage: setting.value, updatedAt: setting.updatedAt });
+    res.json({
+      authenticationRate: setting.authenticationRate,
+      utilityRate: setting.utilityRate,
+      marketingRate: setting.marketingRate,
+      updatedAt: setting.updatedAt,
+    });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unable to load credit rate" });
   }
@@ -94,24 +99,29 @@ router.get("/admin/credit-setting", async (_req, res) => {
 
 router.put("/admin/credit-setting", async (req, res) => {
   try {
-    const { creditsPerMessage } = req.body as { creditsPerMessage?: number };
-    if (
-      !Number.isInteger(creditsPerMessage) ||
-      !creditsPerMessage ||
-      creditsPerMessage < 1 ||
-      creditsPerMessage > 1000
-    ) {
-      res.status(400).json({ error: "creditsPerMessage must be an integer between 1 and 1,000" });
+    const { authenticationRate, utilityRate, marketingRate } = req.body as {
+      authenticationRate?: number;
+      utilityRate?: number;
+      marketingRate?: number;
+    };
+    const rates = { authenticationRate, utilityRate, marketingRate };
+    if (Object.values(rates).some((value) => !Number.isInteger(value) || !value || value < 1 || value > 1000)) {
+      res.status(400).json({ error: "All message rates must be whole numbers from 1 to 1,000" });
       return;
     }
 
     const setting = await CreditSettingModel.findOneAndUpdate(
-      { key: "creditsPerMessage" },
-      { $set: { value: creditsPerMessage } },
+      { key: "messageRates" },
+      { $set: { authenticationRate, utilityRate, marketingRate } },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     ).lean();
 
-    res.json({ creditsPerMessage: setting!.value, updatedAt: setting!.updatedAt });
+    res.json({
+      authenticationRate: setting!.authenticationRate,
+      utilityRate: setting!.utilityRate,
+      marketingRate: setting!.marketingRate,
+      updatedAt: setting!.updatedAt,
+    });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unable to save credit rate" });
   }

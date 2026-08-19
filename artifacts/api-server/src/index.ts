@@ -19,11 +19,28 @@ if (Number.isNaN(port) || port <= 0) {
 
 connectToDatabase()
   .then(() => {
-    return CreditSettingModel.updateOne(
-      { key: "creditsPerMessage" },
-      { $setOnInsert: { value: 1 } },
-      { upsert: true },
-    );
+    return CreditSettingModel.findOne({ key: "messageRates" }).then(async (setting) => {
+      if (!setting) {
+        const legacy = await CreditSettingModel.findOne({ key: "creditsPerMessage" }).lean();
+        const legacyRate =
+          legacy && Number.isInteger((legacy as { value?: number }).value)
+            ? (legacy as { value: number }).value
+            : 1;
+        await CreditSettingModel.create({
+          key: "messageRates",
+          authenticationRate: legacyRate,
+          utilityRate: legacyRate,
+          marketingRate: 3,
+        });
+      } else {
+        const updates: Record<string, number> = {};
+        if (!Number.isInteger(setting.authenticationRate) || setting.authenticationRate < 1) updates.authenticationRate = 1;
+        if (!Number.isInteger(setting.utilityRate) || setting.utilityRate < 1) updates.utilityRate = 1;
+        if (!Number.isInteger(setting.marketingRate) || setting.marketingRate < 1) updates.marketingRate = 3;
+        if (Object.keys(updates).length > 0) await CreditSettingModel.updateOne({ _id: setting._id }, { $set: updates });
+      }
+      await CreditSettingModel.deleteMany({ key: "creditsPerMessage" });
+    });
   })
   .then(() => {
     app.listen(port, (err) => {

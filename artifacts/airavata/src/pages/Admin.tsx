@@ -21,14 +21,20 @@ interface UsersResponse {
 }
 
 interface CreditSettingResponse {
-  creditsPerMessage: number;
+  authenticationRate: number;
+  utilityRate: number;
+  marketingRate: number;
   updatedAt?: string;
 }
 
 export default function Admin() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [rate, setRate] = useState('');
+  const [rates, setRates] = useState({
+    authenticationRate: '',
+    utilityRate: '',
+    marketingRate: '',
+  });
   const [topUpAmounts, setTopUpAmounts] = useState<Record<string, string>>({});
 
   const usersQuery = useQuery<UsersResponse>({
@@ -44,14 +50,24 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    if (settingQuery.data) setRate(String(settingQuery.data.creditsPerMessage));
+    if (settingQuery.data) {
+      setRates({
+        authenticationRate: String(settingQuery.data.authenticationRate),
+        utilityRate: String(settingQuery.data.utilityRate),
+        marketingRate: String(settingQuery.data.marketingRate),
+      });
+    }
   }, [settingQuery.data]);
 
   const saveRate = useMutation({
-    mutationFn: (creditsPerMessage: number) =>
-      api.put<CreditSettingResponse>('/admin/credit-setting', { creditsPerMessage }),
+    mutationFn: (nextRates: { authenticationRate: number; utilityRate: number; marketingRate: number }) =>
+      api.put<CreditSettingResponse>('/admin/credit-setting', nextRates),
     onSuccess: (data) => {
-      setRate(String(data.creditsPerMessage));
+      setRates({
+        authenticationRate: String(data.authenticationRate),
+        utilityRate: String(data.utilityRate),
+        marketingRate: String(data.marketingRate),
+      });
       queryClient.invalidateQueries({ queryKey: ['admin-credit-setting'] });
       toast.success('Credit rate updated');
     },
@@ -82,12 +98,16 @@ export default function Admin() {
   }
 
   const handleSaveRate = () => {
-    const value = Number(rate);
-    if (!Number.isInteger(value) || value < 1 || value > 1000) {
-      toast.error('Enter a whole number from 1 to 1,000');
+    const nextRates = {
+      authenticationRate: Number(rates.authenticationRate),
+      utilityRate: Number(rates.utilityRate),
+      marketingRate: Number(rates.marketingRate),
+    };
+    if (Object.values(nextRates).some((value) => !Number.isInteger(value) || value < 1 || value > 1000)) {
+      toast.error('Enter whole numbers from 1 to 1,000 for all rates');
       return;
     }
-    saveRate.mutate(value);
+    saveRate.mutate(nextRates);
   };
 
   const handleTopUp = (adminUser: AdminUser) => {
@@ -112,19 +132,28 @@ export default function Admin() {
       <section className="bg-white border rounded-xl p-5">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h2 className="font-semibold text-gray-900">Credits per WhatsApp message</h2>
-            <p className="text-sm text-gray-500 mt-1">This rate applies to every successful outbound message.</p>
+            <h2 className="font-semibold text-gray-900">Credits by WhatsApp message category</h2>
+            <p className="text-sm text-gray-500 mt-1">Template messages use their Meta category. Free-form session messages remain free.</p>
           </div>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              min="1"
-              max="1000"
-              value={rate}
-              onChange={(event) => setRate(event.target.value)}
-              className="w-28 px-3 py-2 border rounded-lg text-sm"
-              aria-label="Credits per message"
-            />
+          <div className="flex flex-wrap gap-2 items-end">
+            {([
+              ['authenticationRate', 'Authentication'],
+              ['utilityRate', 'Utility'],
+              ['marketingRate', 'Marketing'],
+            ] as const).map(([key, label]) => (
+              <label key={key} className="text-xs text-gray-500">
+                <span className="block mb-1">{label}</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={rates[key]}
+                  onChange={(event) => setRates((current) => ({ ...current, [key]: event.target.value }))}
+                  className="w-24 px-3 py-2 border rounded-lg text-sm text-gray-900"
+                  aria-label={`${label} credits rate`}
+                />
+              </label>
+            ))}
             <button
               onClick={handleSaveRate}
               disabled={saveRate.isPending || settingQuery.isLoading}

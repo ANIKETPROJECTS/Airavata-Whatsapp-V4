@@ -6,3 +6,4 @@
 - [Chatbot condition edge handles](chatbot-condition-edges.md) — condition branch edges must store the matching true/false sourceHandle or runtime execution stops.
 - [Service pricing catalog](service-pricing-catalog.md) — workspace-owned MongoDB pricing rows power built-in chatbot lookups and XLSX imports.
 - [Per-user Meta read isolation](per-user-meta-read-isolation.md) — user-specific Meta read routes must use strict credentials with no shared environment fallback.
+- [Credit category policy](credit-category-policy.md) — template sends use category rates; non-template session messages remain free.
