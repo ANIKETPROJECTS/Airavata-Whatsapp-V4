@@ -9,6 +9,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useFacebookEmbeddedSignup } from '@/hooks/use-facebook-embedded-signup';
 import facebookIcon from '@assets/facebook_(1)_1787158279371.png';
 import verifiedIcon from '@assets/social-media_1787158389051.png';
+import sendCardIcon from '@assets/send_1787158775414.png';
+import messageCardIcon from '@assets/message_1787158795063.png';
+import viewCardIcon from '@assets/view_1787158851964.png';
+import reportCardIcon from '@assets/report_1787158875535.png';
 
 interface CampaignStats {
   totalSent: number;
@@ -78,12 +82,14 @@ function MetricCard({
   value,
   detail,
   icon: Icon,
+  iconSrc,
   tone,
 }: {
   label: string;
   value: string;
   detail: string;
   icon: typeof Send;
+  iconSrc?: string;
   tone: 'blue' | 'green' | 'violet' | 'red' | 'amber' | 'teal';
 }) {
   const tones = {
@@ -101,9 +107,13 @@ function MetricCard({
           <p className="text-xs font-medium text-gray-800">{label}</p>
           <p className="mt-2 text-2xl font-bold tracking-tight text-black">{value}</p>
         </div>
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tones[tone]}`}>
-          <Icon className="h-4.5 w-4.5" />
-        </div>
+        {iconSrc ? (
+          <img src={iconSrc} alt="" className="h-8 w-8 shrink-0 object-contain" />
+        ) : (
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tones[tone]}`}>
+            <Icon className="h-4.5 w-4.5" />
+          </div>
+        )}
       </div>
       <p className="mt-3 text-[11px] text-gray-800">{detail}</p>
     </div>
@@ -274,10 +284,10 @@ export default function Dashboard() {
         <section>
           <SectionHeading eyebrow="Messaging performance" title="Delivery overview" href="/campaigns-report" />
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <MetricCard label="Sent" value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)} detail="Messages sent from campaigns" icon={Send} tone="blue" />
-            <MetricCard label="Delivered" value={isLoading ? '—' : fmt(stats?.totalDelivered ?? 0)} detail={`${deliveryRate} delivery rate`} icon={CheckCircle2} tone="green" />
-            <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages`} icon={MessageCircle} tone="violet" />
-            <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate`} icon={XCircle} tone="red" />
+            <MetricCard label="Sent" value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)} detail="Messages sent from campaigns" icon={Send} iconSrc={sendCardIcon} tone="blue" />
+            <MetricCard label="Delivered" value={isLoading ? '—' : fmt(stats?.totalDelivered ?? 0)} detail={`${deliveryRate} delivery rate`} icon={CheckCircle2} iconSrc={messageCardIcon} tone="green" />
+            <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages`} icon={MessageCircle} iconSrc={viewCardIcon} tone="violet" />
+            <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate`} icon={XCircle} iconSrc={reportCardIcon} tone="red" />
           </div>
         </section>
 
