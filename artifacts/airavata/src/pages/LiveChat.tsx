@@ -11,7 +11,7 @@ import {
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
-  Check, Clock3, CircleAlert, Trash2, BookOpen,
+  Check, Clock3, CircleAlert, Trash2, BookOpen, CalendarDays,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -937,7 +937,11 @@ export default function LiveChat() {
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [search, setSearch] = useState('');
-  const [chatDate, setChatDate] = useState('');
+  const [chatDateFrom, setChatDateFrom] = useState('');
+  const [chatDateTo, setChatDateTo] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [dateDraftFrom, setDateDraftFrom] = useState('');
+  const [dateDraftTo, setDateDraftTo] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -1154,10 +1158,11 @@ export default function LiveChat() {
   // ── Filter conversations ──────────────────────────────────────────────────
 
   const dateFiltered = conversations.filter(c => {
-    if (!chatDate) return true;
+    if (!chatDateFrom && !chatDateTo) return true;
     const activityDate = new Date(c.lastMessageAt);
     if (Number.isNaN(activityDate.getTime())) return false;
-    return activityDate.toLocaleDateString('en-CA') === chatDate;
+    const dateKey = activityDate.toLocaleDateString('en-CA');
+    return (!chatDateFrom || dateKey >= chatDateFrom) && (!chatDateTo || dateKey <= chatDateTo);
   });
 
   const filtered = dateFiltered.filter(c => {
@@ -1197,36 +1202,86 @@ export default function LiveChat() {
       {/* Left Panel: Conversation List */}
       <div className="w-80 border-r flex flex-col bg-gray-50/30 shrink-0">
         <div className="p-4 border-b space-y-3">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-            />
-          </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs font-medium text-gray-500 whitespace-nowrap" htmlFor="chat-date-filter">
-              Chats on
-            </label>
-            <input
-              id="chat-date-filter"
-              type="date"
-              value={chatDate}
-              onChange={event => setChatDate(event.target.value)}
-              className="flex-1 min-w-0 px-2.5 py-1.5 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-            {chatDate && (
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              />
+            </div>
+            <div className="relative">
               <button
-                onClick={() => setChatDate('')}
-                className="px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg"
-                title="Show all dates"
+                onClick={() => {
+                  setDateDraftFrom(chatDateFrom);
+                  setDateDraftTo(chatDateTo);
+                  setShowDateFilter(value => !value);
+                }}
+                className={`p-2 rounded-lg border transition-colors ${
+                  chatDateFrom || chatDateTo
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-gray-100 border-transparent text-gray-500 hover:bg-gray-200'
+                }`}
+                title="Filter chats by date"
               >
-                Clear
+                <CalendarDays className="w-5 h-5" />
               </button>
-            )}
+              {showDateFilter && (
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl">
+                  <p className="text-sm font-semibold text-gray-800">Filter chats by date</p>
+                  <p className="mt-1 text-[11px] text-gray-400">Choose one date or a date range.</p>
+                  <label className="mt-3 block text-xs font-medium text-gray-500" htmlFor="chat-date-from">
+                    From
+                  </label>
+                  <input
+                    id="chat-date-from"
+                    type="date"
+                    value={dateDraftFrom}
+                    onChange={event => setDateDraftFrom(event.target.value)}
+                    className="mt-1 w-full px-2.5 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <label className="mt-2 block text-xs font-medium text-gray-500" htmlFor="chat-date-to">
+                    To
+                  </label>
+                  <input
+                    id="chat-date-to"
+                    type="date"
+                    min={dateDraftFrom || undefined}
+                    value={dateDraftTo}
+                    onChange={event => setDateDraftTo(event.target.value)}
+                    className="mt-1 w-full px-2.5 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => {
+                        setDateDraftFrom('');
+                        setDateDraftTo('');
+                        setChatDateFrom('');
+                        setChatDateTo('');
+                        setShowDateFilter(false);
+                      }}
+                      className="px-2.5 py-1.5 text-xs text-gray-500 hover:text-gray-800"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={() => {
+                        setChatDateFrom(dateDraftFrom);
+                        setChatDateTo(dateDraftTo || dateDraftFrom);
+                        setShowDateFilter(false);
+                      }}
+                      disabled={!dateDraftFrom && !dateDraftTo}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {tabs.map(tab => (
