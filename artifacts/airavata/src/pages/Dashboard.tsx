@@ -249,7 +249,9 @@ export default function Dashboard() {
     (sum, flow) => sum + (flow.analytics?.dropped ?? Math.max(0, (flow.analytics?.triggered ?? 0) - (flow.analytics?.completed ?? 0))),
     0,
   );
-  const flowCompletionRate = pct(totalFlowCompleted, totalFlowTriggered);
+  const flowCompletionRate = totalFlowTriggered > 0
+    ? `${Math.round((totalFlowCompleted / totalFlowTriggered) * 100)}%`
+    : '0%';
 
   const deliveryRate = pct(stats?.totalDelivered ?? 0, stats?.totalSent ?? 0);
   const readRate = pct(stats?.totalRead ?? 0, stats?.totalDelivered ?? 0);
@@ -475,7 +477,7 @@ export default function Dashboard() {
                   <MetricCard label="Completed" value={fmt(totalFlowCompleted)} detail="Successful completions" icon={CheckCircle2} hideIcon large tone="green" />
                   <MetricCard label="Dropped" value={fmt(totalFlowDropped)} detail="Started but not completed" icon={CircleAlert} hideIcon large tone="amber" />
                   <MetricCard label="Responses" value={fmt(totalFlowCompleted)} detail="Stored flow responses" icon={MessageSquareReply} hideIcon large tone="blue" />
-                  <MetricCard label="Completion rate" value={flowCompletionRate} detail="Completed of triggered" icon={Activity} hideIcon large tone="teal" />
+                  <MetricCard label="Completion rate" value={flowCompletionRate} detail="" icon={Activity} hideIcon large tone="teal" />
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[640px] text-[15px]">
