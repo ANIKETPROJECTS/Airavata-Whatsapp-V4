@@ -10,7 +10,8 @@ import {
   Search, MessageSquare, MoreVertical,
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
-  UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus,
+  UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
+  Check, Clock3, CircleAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -71,6 +72,18 @@ interface ContactProfile {
   tags: ProfileTag[];
   group: ProfileGroup | null;
   groups?: ProfileGroup[];
+}
+
+interface ContactCampaign {
+  id: string;
+  name: string;
+  templateName?: string | null;
+  status: string;
+  recipientStatus: string;
+  sentAt?: string | null;
+  deliveredAt?: string | null;
+  readAt?: string | null;
+  createdAt: string;
 }
 
 interface TemplateRecord {
@@ -457,6 +470,8 @@ function ContactProfilePanel({
   const [newTagName, setNewTagName] = useState('');
   const [showNewTag, setShowNewTag] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
+  const [showAttributes, setShowAttributes] = useState(true);
+  const [showCampaigns, setShowCampaigns] = useState(true);
   const [showTags, setShowTags] = useState(true);
   const [showGroups, setShowGroups] = useState(true);
 
@@ -478,9 +493,18 @@ function ContactProfilePanel({
     queryFn: () => api.get('/groups'),
   });
 
+  const { data: campaignData, isLoading: campaignsLoading } = useQuery<{
+    campaigns: ContactCampaign[];
+  }>({
+    queryKey: ['contact-campaigns', contactId],
+    queryFn: () => api.get(`/contacts/${contactId}/campaigns`),
+    enabled: Boolean(contactId),
+  });
+
   const contact = contactData?.contacts.find(item => item.id === contactId) ?? null;
   const tags = tagsData?.tags ?? [];
   const groups = groupsData?.groups ?? [];
+  const campaigns = campaignData?.campaigns ?? [];
 
   useEffect(() => {
     if (!contact) return;
@@ -550,6 +574,21 @@ function ContactProfilePanel({
     if (Number.isNaN(date.getTime())) return 'Unknown';
     return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   };
+  const formatCampaignDate = (iso?: string | null) => {
+    if (!iso) return 'Not available';
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime())
+      ? 'Not available'
+      : date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  };
+  const recipientStatus = (status: string) => {
+    const normalized = status.toUpperCase();
+    if (normalized === 'READ') return { label: 'Read', className: 'bg-green-100 text-green-700', icon: <Check className="w-3 h-3" /> };
+    if (normalized === 'DELIVERED') return { label: 'Delivered', className: 'bg-blue-100 text-blue-700', icon: <Check className="w-3 h-3" /> };
+    if (normalized === 'FAILED') return { label: 'Failed', className: 'bg-red-100 text-red-700', icon: <CircleAlert className="w-3 h-3" /> };
+    if (normalized === 'SENT') return { label: 'Sent', className: 'bg-indigo-100 text-indigo-700', icon: <Check className="w-3 h-3" /> };
+    return { label: 'Not read', className: 'bg-gray-100 text-gray-600', icon: <Clock3 className="w-3 h-3" /> };
+  };
 
   return (
     <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
@@ -603,7 +642,7 @@ function ContactProfilePanel({
             onClick={() => setShowDetails(value => !value)}
             className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-gray-50"
           >
-            <span className="text-sm font-semibold text-gray-800">Profile details</span>
+            <span className="text-sm font-semibold text-gray-800">Attributes</span>
             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
           </button>
           {showDetails && (
@@ -629,6 +668,54 @@ function ContactProfilePanel({
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </label>
+            </div>
+          )}
+        </div>
+
+        <div className="border-b">
+          <button
+            onClick={() => setShowCampaigns(value => !value)}
+            className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-gray-50"
+          >
+            <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-gray-400" /> Campaigns
+              {campaigns.length > 0 && (
+                <span className="text-[10px] rounded-full bg-primary/10 text-primary px-1.5 py-0.5">{campaigns.length}</span>
+              )}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCampaigns ? 'rotate-180' : ''}`} />
+          </button>
+          {showCampaigns && (
+            <div className="px-5 pb-4">
+              {campaignsLoading ? (
+                <div className="flex justify-center py-3"><Loader2 className="w-4 h-4 animate-spin text-gray-400" /></div>
+              ) : campaigns.length === 0 ? (
+                <p className="text-xs text-gray-400 py-1">No campaigns have run for this contact.</p>
+              ) : (
+                <div className="space-y-2">
+                  {campaigns.map(campaign => {
+                    const status = recipientStatus(campaign.recipientStatus);
+                    return (
+                      <div key={campaign.id} className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 truncate">{campaign.name}</p>
+                            {campaign.templateName && (
+                              <p className="text-[10px] text-gray-400 truncate mt-0.5">{campaign.templateName}</p>
+                            )}
+                          </div>
+                          <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${status.className}`}>
+                            {status.icon}{status.label}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-2">
+                          Campaign: {campaign.status.toLowerCase()} · Last update: {formatCampaignDate(campaign.readAt ?? campaign.deliveredAt ?? campaign.sentAt ?? campaign.createdAt)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

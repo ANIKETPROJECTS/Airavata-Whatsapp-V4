@@ -193,6 +193,57 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// ── GET /api/contacts/:contactId/campaigns ───────────────────────────────────
+// Return campaigns that have actually run for this contact, with the latest
+// per-recipient WhatsApp status (SENT, DELIVERED, READ, or FAILED).
+router.get("/contacts/:contactId/campaigns", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const contactId = new mongoose.Types.ObjectId(req.params.contactId);
+
+    const messages = await MessageModel.find({
+      userId,
+      contactId,
+      campaignId: { $exists: true, $ne: null },
+    })
+      .sort({ createdAt: -1 })
+      .select("campaignId status createdAt sentAt deliveredAt readAt")
+      .lean();
+
+    const latestByCampaign = new Map<string, (typeof messages)[number]>();
+    for (const message of messages) {
+      const campaignId = String(message.campaignId);
+      if (!latestByCampaign.has(campaignId)) latestByCampaign.set(campaignId, message);
+    }
+
+    const campaignIds = [...latestByCampaign.keys()].map(id => new mongoose.Types.ObjectId(id));
+    const campaigns = await CampaignModel.find({ _id: { $in: campaignIds }, userId })
+      .populate("templateId", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({
+      campaigns: campaigns.map(campaign => {
+        const message = latestByCampaign.get(String(campaign._id));
+        const template = campaign.templateId as unknown as { name?: string } | null;
+        return {
+          id: String(campaign._id),
+          name: campaign.name,
+          templateName: template?.name ?? null,
+          status: campaign.status,
+          recipientStatus: message?.status ?? "QUEUED",
+          sentAt: message?.sentAt ?? null,
+          deliveredAt: message?.deliveredAt ?? null,
+          readAt: message?.readAt ?? null,
+          createdAt: campaign.createdAt,
+        };
+      }),
+    });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
 // ── POST /api/campaigns ───────────────────────────────────────────────────────
 // Creates and immediately launches (or schedules) a campaign.
 

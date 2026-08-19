@@ -99,7 +99,10 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
       return {
         id: String(c._id),
         contactId: String(c._id),
-        contactName: c.contact.name ?? "Unknown",
+        contactName:
+          c.contact.name && c.contact.name !== c.contact.phone
+            ? c.contact.name
+            : "Unnamed contact",
         contactPhone: c.contact.phone ?? "",
         lastMessage: c.lastMessage ?? "",
         lastMessageAt: c.lastMessageAt,
