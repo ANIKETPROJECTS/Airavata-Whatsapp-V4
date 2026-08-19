@@ -83,6 +83,7 @@ function MetricCard({
   detail,
   icon: Icon,
   iconSrc,
+  hideIcon,
   large,
   tone,
 }: {
@@ -109,7 +110,7 @@ function MetricCard({
           <p className={large ? 'text-sm font-semibold text-gray-800' : 'text-xs font-medium text-gray-800'}>{label}</p>
           <p className={large ? 'mt-2 text-3xl font-bold tracking-tight text-black' : 'mt-2 text-2xl font-bold tracking-tight text-black'}>{value}</p>
         </div>
-        {iconSrc ? (
+        {hideIcon ? null : iconSrc ? (
           <img src={iconSrc} alt="" className="h-8 w-8 shrink-0 object-contain" />
         ) : (
           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tones[tone]}`}>
