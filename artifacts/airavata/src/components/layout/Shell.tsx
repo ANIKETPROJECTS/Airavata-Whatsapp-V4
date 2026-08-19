@@ -84,7 +84,7 @@ export function Shell({ children }: { children: ReactNode }) {
           `}
         >
           {/* Logo */}
-          <div className={`flex items-center justify-center bg-[#25d366] border-b border-white shrink-0 h-16 px-2`}>
+          <div className="relative flex items-center justify-center bg-[#25d366] shrink-0 h-16 px-2">
             <div className={`flex items-center justify-center bg-white shadow-sm overflow-hidden rounded-none ${collapsed ? 'w-full h-14 p-1.5' : 'w-full h-14 px-2'}`}>
               <img
                 src={collapsed ? logoIcon : fullLogo}
@@ -92,6 +92,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 className={collapsed ? 'w-12 h-12 object-contain' : 'w-full h-14 object-cover object-center'}
               />
             </div>
+            <div className="absolute bottom-0 left-2 right-2 h-px bg-white" aria-hidden="true" />
           </div>
 
           {/* Nav items */}
