@@ -3,10 +3,9 @@ import { useLocation } from 'wouter';
 import { 
   LayoutDashboard, MessageCircle, Users, Megaphone, BarChart3, 
   FileText, Settings, Workflow, Bot, Blocks, UsersRound, ShoppingBag, 
-  CreditCard, Search, Bell, User, LogOut, ChevronRight, ChevronLeft,
+  CreditCard, ChevronRight, ChevronLeft,
   PanelLeftClose, PanelLeftOpen, ShieldCheck,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import dashboardIcon from '@assets/dashboard_(2)_1787117667340.png';
 import chatBubblesIcon from '@assets/comment_1787117439589.png';
@@ -24,6 +23,8 @@ import creditCardIcon from '@assets/credit-card_(1)_1784832045706.png';
 import settingsIcon from '@assets/settings_(1)_1784831863555.png';
 import logoIcon from '@assets/ICON_NOBG.svg';
 import fullLogo from '@assets/HFULL_NOBGSVG.svg';
+import supportIcon from '@assets/support_1787151920696.png';
+import indiaIcon from '@assets/world_1787152034254.png';
 
 const SIDEBAR_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, iconSrc: dashboardIcon, href: '/dashboard' },
@@ -50,20 +51,10 @@ export const useSidebar = () => useContext(SidebarContext);
 export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [location, setLocation] = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const handleNav = (href: string) => {
     setLocation(href);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      setLocation('/login');
-      toast.success('Logged out successfully');
-    } catch {
-      toast.error('Logout failed');
-    }
   };
 
   const visibleSidebarItems = SIDEBAR_ITEMS.filter(
@@ -146,7 +137,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* Main Content */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Topbar */}
-          <header className="h-14 bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
+          <header className="h-16 bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
             <div className="flex items-center gap-3">
               <div className="hidden md:flex items-center text-sm text-gray-500">
                 <span className="text-gray-400">Airavata</span>
@@ -155,43 +146,26 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="relative hidden sm:block">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-8 pr-4 py-1.5 text-sm bg-gray-100 border-transparent rounded-full focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all w-56"
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5">
+                <img
+                  src={supportIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-8 h-8 object-contain"
                 />
+                <div className="leading-tight whitespace-nowrap">
+                  <div className="text-xs font-semibold text-gray-800">Customer Support</div>
+                  <div className="mt-1 text-[11px] text-gray-500">
+                    +91 9167959756 <span className="mx-1 text-gray-300">•</span> support@atwassup.com
+                  </div>
+                </div>
               </div>
-
-              <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
-              </button>
-
-              <button
-                onClick={() => handleNav('/profile')}
-                title={user?.businessName ?? 'Profile'}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                  <User className="w-4 h-4 text-gray-600" />
-                </div>
-                <div className="hidden lg:block text-left max-w-36">
-                  <div className="text-[13px] font-semibold truncate leading-tight">{user?.businessName ?? 'Profile'}</div>
-                  <div className="text-[11px] text-gray-500 truncate leading-tight">{user?.email ?? ''}</div>
-                </div>
-              </button>
-
-              <button
-                onClick={handleLogout}
-                title="Sign out"
-                aria-label="Sign out"
-                className="p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-full transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+              <img
+                src={indiaIcon}
+                alt="India"
+                className="w-10 h-10 object-contain"
+              />
             </div>
           </header>
 
