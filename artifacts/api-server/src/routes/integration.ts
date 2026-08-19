@@ -253,19 +253,6 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
     }
 
     /**
-     * Save WhatsApp connection.
-     */
-    await UserModel.findByIdAndUpdate(req.user!.userId, {
-      metaWabaAccessToken: accessToken,
-      metaWabaConnected: true,
-      metaWabaId: wabaId,
-      metaPhoneNumberId: phoneNumberId,
-      $unset: {
-        metaEmbeddedSignupCode: 1,
-      },
-    });
-
-    /**
      * Also upsert encrypted credentials into whatsappcredentials collection.
      * This is the source of truth used by all outbound message sending.
      */
@@ -287,12 +274,34 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         "WhatsApp credentials encrypted and stored in whatsappcredentials",
       );
     } catch (credErr) {
-      // Log but do not fail the onboarding — user can reconnect to retry
       logger.error(
-        { err: credErr, userId: req.user!.userId },
-        "Failed to store encrypted WhatsApp credentials",
+        {
+          err: credErr,
+          userId: req.user!.userId,
+          errorDetail: credErr instanceof Error ? credErr.message : String(credErr),
+        },
+        "WhatsApp onboarding failed: could not encrypt or store credentials",
       );
+      res.status(502).json({
+        error:
+          "WhatsApp connection could not be saved securely. Please retry the connection.",
+      });
+      return;
     }
+
+    /**
+     * Save the User connection state only after encrypted credential storage
+     * succeeds, so the UI cannot show connected without usable credentials.
+     */
+    await UserModel.findByIdAndUpdate(req.user!.userId, {
+      metaWabaAccessToken: accessToken,
+      metaWabaConnected: true,
+      metaWabaId: wabaId,
+      metaPhoneNumberId: phoneNumberId,
+      $unset: {
+        metaEmbeddedSignupCode: 1,
+      },
+    });
 
     logger.info(
       {
