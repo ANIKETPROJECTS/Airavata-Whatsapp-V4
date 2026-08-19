@@ -153,8 +153,8 @@ export function Shell({ children }: { children: ReactNode }) {
                   className="w-8 h-8 object-contain"
                 />
                 <div className="leading-tight whitespace-nowrap">
-                  <div className="text-xs font-normal text-black">support@atwassup.com</div>
-                  <div className="mt-1 text-xs font-normal text-black">+91 9167959756</div>
+                  <div className="text-[13px] font-medium text-black">support@atwassup.com</div>
+                  <div className="mt-1 text-[13px] font-medium text-black">+91 9167959756</div>
                 </div>
               </div>
               <img
