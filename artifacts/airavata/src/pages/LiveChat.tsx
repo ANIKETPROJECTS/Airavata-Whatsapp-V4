@@ -11,7 +11,7 @@ import {
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
-  Check, Clock3, CircleAlert, Trash2,
+  Check, Clock3, CircleAlert, Trash2, BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -933,10 +933,13 @@ export default function LiveChat() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [showCannedMessages, setShowCannedMessages] = useState(false);
+  const [cannedSearch, setCannedSearch] = useState('');
   const [attachment, setAttachment] = useState<AttachmentFile | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const cannedMessagesRef = useRef<HTMLDivElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -949,10 +952,24 @@ export default function LiveChat() {
       if (attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
         setShowAttachMenu(false);
       }
+      if (cannedMessagesRef.current && !cannedMessagesRef.current.contains(e.target as Node)) {
+        setShowCannedMessages(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const { data: cannedData, isLoading: cannedLoading } = useQuery<{ templates: TemplateRecord[] }>({
+    queryKey: ['templates'],
+    queryFn: () => api.get('/templates'),
+  });
+  const cannedMessages = (cannedData?.templates ?? [])
+    .filter(template => template.status.toUpperCase() === 'APPROVED')
+    .filter(template => {
+      const term = cannedSearch.trim().toLowerCase();
+      return !term || template.name.toLowerCase().includes(term) || template.body.toLowerCase().includes(term);
+    });
 
   // ── Conversations list (poll every 10s) ──────────────────────────────────
 
@@ -1430,6 +1447,60 @@ export default function LiveChat() {
                             previewPosition="none"
                             skinTonePosition="none"
                           />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Canned message picker */}
+                    <div className="relative" ref={cannedMessagesRef}>
+                      <button
+                        onClick={() => {
+                          setShowCannedMessages(value => !value);
+                          setShowEmojiPicker(false);
+                          setShowAttachMenu(false);
+                        }}
+                        className={`p-2 rounded-lg transition-colors ${showCannedMessages ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        title="Canned messages"
+                      >
+                        <BookOpen className="w-5 h-5" />
+                      </button>
+                      {showCannedMessages && (
+                        <div className="absolute bottom-12 left-0 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+                          <div className="p-3 border-b">
+                            <p className="text-sm font-semibold text-gray-800">Quick replies</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Choose a saved template to insert into the message box.</p>
+                            <input
+                              value={cannedSearch}
+                              onChange={event => setCannedSearch(event.target.value)}
+                              placeholder="Search quick replies..."
+                              autoFocus
+                              className="w-full mt-2 px-2.5 py-2 text-xs border rounded-lg outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            />
+                          </div>
+                          <div className="max-h-64 overflow-y-auto p-1.5">
+                            {cannedLoading ? (
+                              <div className="flex justify-center py-5"><Loader2 className="w-4 h-4 animate-spin text-gray-400" /></div>
+                            ) : cannedMessages.length === 0 ? (
+                              <p className="px-3 py-5 text-xs text-center text-gray-400">No approved quick replies found.</p>
+                            ) : (
+                              cannedMessages.map(template => (
+                                <button
+                                  key={template.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setMessageInput(current => current.trim() ? `${current.trim()}\n${template.body}` : template.body);
+                                    setShowCannedMessages(false);
+                                    setCannedSearch('');
+                                    requestAnimationFrame(() => textareaRef.current?.focus());
+                                  }}
+                                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                  <p className="text-xs font-semibold text-gray-800 truncate">{template.name}</p>
+                                  <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">{template.body}</p>
+                                </button>
+                              ))
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
