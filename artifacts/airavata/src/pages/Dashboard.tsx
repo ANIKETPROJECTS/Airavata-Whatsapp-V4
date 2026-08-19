@@ -328,16 +328,16 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1080px] table-fixed text-sm">
                 <colgroup>
-                  <col className="w-[21%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[8%]" />
                   <col className="w-[10%]" />
                   <col className="w-[8%]" />
-                  <col className="w-[7%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[7%]" />
-                  <col className="w-[7%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[9%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[10%]" />
                 </colgroup>
                 <thead className="border-b border-gray-200 text-[11px] uppercase tracking-wide text-gray-500">
                   <tr>
