@@ -11,7 +11,7 @@ import {
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
-  Check, Clock3, CircleAlert,
+  Check, Clock3, CircleAlert, Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
@@ -67,6 +67,7 @@ interface ContactProfile {
   name: string;
   phone: string;
   email?: string | null;
+  attributes?: Record<string, unknown>;
   status: string;
   chatState?: string;
   tags: ProfileTag[];
@@ -465,6 +466,7 @@ function ContactProfilePanel({
   const qc = useQueryClient();
   const [draftName, setDraftName] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
+  const [draftAttributes, setDraftAttributes] = useState<Array<{ key: string; value: string }>>([]);
   const [draftTags, setDraftTags] = useState<string[]>([]);
   const [draftGroupIds, setDraftGroupIds] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
@@ -509,15 +511,24 @@ function ContactProfilePanel({
     if (!contact) return;
     setDraftName(contact.name);
     setDraftEmail(contact.email ?? '');
+    setDraftAttributes(Object.entries(contact.attributes ?? {}).map(([key, value]) => ({
+      key,
+      value: typeof value === 'string' ? value : JSON.stringify(value),
+    })));
     setDraftTags(contact.tags.map(tag => tag.id));
     setDraftGroupIds((contact.groups ?? (contact.group ? [contact.group] : [])).map(group => group.id));
-  }, [contact?.id, contact?.name, contact?.email, contact?.group?.id, contact?.groups, contact?.tags]);
+  }, [contact?.id, contact?.name, contact?.email, contact?.attributes, contact?.group?.id, contact?.groups, contact?.tags]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
       api.put(`/contacts/${contactId}`, {
         name: draftName.trim(),
         email: draftEmail.trim(),
+        attributes: Object.fromEntries(
+          draftAttributes
+            .map(attribute => ({ key: attribute.key.trim(), value: attribute.value.trim() }))
+            .filter(attribute => attribute.key),
+        ),
         tags: draftTags,
         groupIds: draftGroupIds,
       }),
@@ -667,6 +678,52 @@ function ContactProfilePanel({
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </label>
+              <div className="pt-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-500">Custom attributes</span>
+                  <button
+                    type="button"
+                    onClick={() => setDraftAttributes(current => [...current, { key: '', value: '' }])}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
+                  >
+                    <Plus className="w-3 h-3" /> Add attribute
+                  </button>
+                </div>
+                {draftAttributes.length === 0 ? (
+                  <p className="text-[11px] text-gray-400">Add details such as company, city, plan, or birthday.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {draftAttributes.map((attribute, index) => (
+                      <div key={`${index}-${attribute.key}`} className="flex items-center gap-1.5">
+                        <input
+                          value={attribute.key}
+                          onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, key: event.target.value } : item,
+                          ))}
+                          placeholder="Attribute name"
+                          className="min-w-0 w-[42%] px-2.5 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        />
+                        <input
+                          value={attribute.value}
+                          onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, value: event.target.value } : item,
+                          ))}
+                          placeholder="Value"
+                          className="min-w-0 flex-1 px-2.5 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setDraftAttributes(current => current.filter((_, itemIndex) => itemIndex !== index))}
+                          className="p-1.5 text-gray-400 hover:text-red-500"
+                          title="Remove attribute"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

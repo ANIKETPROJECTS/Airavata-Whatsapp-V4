@@ -6,6 +6,7 @@ const contactSchema = new Schema(
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
     email: { type: String, trim: true },
+    attributes: { type: Schema.Types.Mixed, default: {} },
     tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
     groupId: { type: Schema.Types.ObjectId, ref: "Group" },
     groupIds: [{ type: Schema.Types.ObjectId, ref: "Group" }],

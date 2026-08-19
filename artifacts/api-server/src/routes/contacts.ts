@@ -14,6 +14,7 @@ async function populateContact(doc: InstanceType<typeof ContactModel>) {
     name: doc.name,
     phone: doc.phone,
     email: doc.email,
+    attributes: (doc as unknown as { attributes?: Record<string, unknown> }).attributes ?? {},
     status: doc.status,
     lastContactedAt: doc.lastContactedAt ?? null,
     createdAt: doc.createdAt,
@@ -59,6 +60,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         name: c.name,
         phone: c.phone,
         email: c.email ?? null,
+        attributes: (c as unknown as { attributes?: Record<string, unknown> }).attributes ?? {},
         status: c.status,
         chatState: (c as Record<string, unknown>).chatState ?? "DOR",
         lastContactedAt: c.lastContactedAt ?? null,
@@ -71,7 +73,8 @@ router.get("/contacts", async (req: AuthRequest, res) => {
       page: pageNum,
       pages: Math.ceil(total / limitNum),
     });
-  } catch {
+  } catch (err) {
+    console.error("GET /contacts failed:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -132,8 +135,9 @@ router.post("/contacts", async (req: AuthRequest, res) => {
 // PUT /api/contacts/:id
 router.put("/contacts/:id", async (req: AuthRequest, res) => {
   try {
-    const { name, phone, email, tags, groupId, groupIds, status, chatState } = req.body as {
+    const { name, phone, email, attributes, tags, groupId, groupIds, status, chatState } = req.body as {
       name?: string; phone?: string; email?: string; tags?: string[];
+      attributes?: Record<string, unknown>;
       groupId?: string | null; groupIds?: string[]; status?: string; chatState?: string;
     };
 
@@ -143,6 +147,9 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
     if (name?.trim()) contact.name = name.trim();
     if (phone?.trim()) contact.phone = phone.trim();
     if (email !== undefined) contact.email = email?.trim();
+    if (attributes !== undefined) {
+      contact.set("attributes", attributes);
+    }
     if (tags !== undefined) contact.tags = tags as unknown as typeof contact.tags;
     if (groupIds !== undefined) {
       const validGroups = await GroupModel.find({
@@ -174,6 +181,7 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
         name: populated!.name,
         phone: populated!.phone,
         email: populated!.email ?? null,
+        attributes: (populated as unknown as { attributes?: Record<string, unknown> }).attributes ?? {},
         status: populated!.status,
         tags: populated!.tags,
         group: populated!.groupId ?? null,
