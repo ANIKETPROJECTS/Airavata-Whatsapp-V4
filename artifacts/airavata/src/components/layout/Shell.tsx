@@ -85,7 +85,10 @@ export function Shell({ children }: { children: ReactNode }) {
         >
           {/* Logo */}
           <div className="relative flex items-center justify-center bg-[#25d366] shrink-0 h-16 px-2">
-            <div className={`flex items-center justify-center bg-white shadow-sm overflow-hidden rounded-none ${collapsed ? 'w-full h-14 p-1.5' : 'w-full h-14 px-2'}`}>
+            <div
+              className={`!bg-white flex items-center justify-center shadow-sm overflow-hidden rounded-none ${collapsed ? 'w-full h-14 p-1.5' : 'w-full h-14 px-2'}`}
+              style={{ backgroundColor: '#ffffff' }}
+            >
               <img
                 src={collapsed ? logoIcon : fullLogo}
                 alt="Airavata"
