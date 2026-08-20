@@ -261,8 +261,10 @@ router.get("/master-admin/users/:id/report", async (req, res) => {
   });
 });
 
-router.get("/master-admin/analytics", async (_req, res) => {
-  const [users, activeUsers, connectedUsers, credits, recentTransactions] = await Promise.all([
+router.get("/master-admin/analytics", async (req, res) => {
+  const rangeDays = Math.min(365, Math.max(7, Number(req.query.range) || 30));
+  const since = new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000);
+  const [users, activeUsers, connectedUsers, credits, recentTransactions, dailyActivity, typeBreakdown, topUserUsage] = await Promise.all([
     UserModel.countDocuments(),
     UserModel.countDocuments({ active: { $ne: false } }),
     UserModel.countDocuments({ metaWabaConnected: true }),
@@ -275,16 +277,46 @@ router.get("/master-admin/analytics", async (_req, res) => {
       } },
     ]),
     CreditTransactionModel.find().sort({ createdAt: -1 }).limit(8).select("userId type amount balanceAfter description createdAt").lean(),
+    CreditTransactionModel.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+        purchased: { $sum: { $cond: [{ $eq: ["$type", "PURCHASE"] }, "$amount", 0] } },
+        used: { $sum: { $cond: [{ $eq: ["$type", "DEDUCTION"] }, "$amount", 0] } },
+        adjustments: { $sum: { $cond: [{ $eq: ["$type", "ADJUSTMENT"] }, "$amount", 0] } },
+        transactions: { $sum: 1 },
+      } },
+      { $sort: { _id: 1 } },
+    ]),
+    CreditTransactionModel.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: "$type", amount: { $sum: "$amount" }, transactions: { $sum: 1 } } },
+      { $sort: { amount: -1 } },
+    ]),
+    CreditTransactionModel.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: "$userId", used: { $sum: { $cond: [{ $eq: ["$type", "DEDUCTION"] }, "$amount", 0] } }, purchased: { $sum: { $cond: [{ $eq: ["$type", "PURCHASE"] }, "$amount", 0] } }, transactions: { $sum: 1 } } },
+      { $sort: { used: -1, transactions: -1 } },
+      { $limit: 10 },
+    ]),
   ]);
   const recentUserIds = [...new Set(recentTransactions.map((transaction) => String(transaction.userId)))];
   const recentUsers = await UserModel.find({ _id: { $in: recentUserIds } }).select("businessName").lean();
   const recentById = new Map(recentUsers.map((user) => [String(user._id), user.businessName]));
+  const topUserIds = topUserUsage.map((item) => item._id);
+  const topUsers = await UserModel.find({ _id: { $in: topUserIds } }).select("businessName email").lean();
+  const topById = new Map(topUsers.map((user) => [String(user._id), user]));
   res.json({
     users,
     activeUsers,
     inactiveUsers: users - activeUsers,
     connectedUsers,
+    unconnectedUsers: users - connectedUsers,
+    rangeDays,
     credits: credits[0] ?? { purchased: 0, used: 0, transactions: 0 },
+    dailyActivity: dailyActivity.map((item) => ({ date: item._id, purchased: item.purchased, used: item.used, adjustments: item.adjustments, transactions: item.transactions })),
+    typeBreakdown: typeBreakdown.map((item) => ({ type: item._id, amount: item.amount, transactions: item.transactions })),
+    topUsers: topUserUsage.map((item) => ({ user: topById.get(String(item._id))?.businessName ?? "Unknown user", email: topById.get(String(item._id))?.email ?? "", used: item.used, purchased: item.purchased, transactions: item.transactions })),
     recentTransactions: recentTransactions.map((transaction) => ({
       id: String(transaction._id),
       user: recentById.get(String(transaction.userId)) ?? "Unknown user",
