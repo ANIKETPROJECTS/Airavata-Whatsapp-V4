@@ -5,9 +5,11 @@ import {
   Copy, Eye, EyeOff, RefreshCw, Loader2, CheckCircle2,
   Plus, Trash2, X, Search, Pencil,
   FileSpreadsheet, Upload, Save,
+  LogOut,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ApiKeyRecord { id: string; label: string; keyPrefix: string; lastUsedAt: string | null; createdAt: string; }
@@ -862,6 +864,18 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 
 export default function Manage() {
   const [activeTab, setActiveTab] = useState<TabId>('api');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to log out');
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -881,6 +895,17 @@ export default function Manage() {
               <tab.icon className="w-4 h-4 shrink-0" /> {tab.label}
             </button>
           ))}
+          <div className="pt-3">
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              disabled={loggingOut}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left disabled:opacity-60"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              {loggingOut ? 'Logging out…' : 'Log out'}
+            </button>
+          </div>
         </div>
 
         {/* Content */}
