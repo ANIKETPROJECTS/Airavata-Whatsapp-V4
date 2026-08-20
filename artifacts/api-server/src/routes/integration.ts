@@ -262,8 +262,34 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
      * Also upsert encrypted credentials into whatsappcredentials collection.
      * This is the source of truth used by all outbound message sending.
      */
+    let accessTokenEncrypted: string;
     try {
-      const accessTokenEncrypted = encryptToken(accessToken);
+      const credentialsKey = process.env["WHATSAPP_CREDENTIALS_KEY"] ?? "";
+      logger.info(
+        {
+          keyConfigured: credentialsKey.length > 0,
+          keyLength: credentialsKey.length,
+          keyLooksLike64Hex: /^[0-9a-fA-F]{64}$/.test(credentialsKey),
+        },
+        "WhatsApp credential encryption: starting",
+      );
+      accessTokenEncrypted = encryptToken(accessToken);
+    } catch (encryptionErr) {
+      logger.error(
+        {
+          err: encryptionErr,
+          userId: req.user!.userId,
+          errorDetail: encryptionErr instanceof Error ? encryptionErr.message : String(encryptionErr),
+        },
+        "WhatsApp credential encryption failed",
+      );
+      res.status(502).json({
+        error: "WhatsApp credentials could not be encrypted securely. Please retry the connection.",
+      });
+      return;
+    }
+
+    try {
       await WhatsAppCredentialModel.findOneAndUpdate(
         { userId: new mongoose.Types.ObjectId(req.user!.userId) },
         {
@@ -276,21 +302,23 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       );
 
       logger.info(
-        { userId: req.user!.userId },
+        { userId: req.user!.userId, wabaId, phoneNumberId },
         "WhatsApp credentials encrypted and stored in whatsappcredentials",
       );
-    } catch (credErr) {
+    } catch (databaseErr) {
       logger.error(
         {
-          err: credErr,
+          err: databaseErr,
           userId: req.user!.userId,
-          errorDetail: credErr instanceof Error ? credErr.message : String(credErr),
+          wabaId,
+          phoneNumberId,
+          errorDetail: databaseErr instanceof Error ? databaseErr.message : String(databaseErr),
         },
-        "WhatsApp onboarding failed: could not encrypt or store credentials",
+        "WhatsApp credential MongoDB save failed",
       );
       res.status(502).json({
         error:
-          "WhatsApp connection could not be saved securely. Please retry the connection.",
+          "WhatsApp credentials could not be saved to the account. Please retry the connection.",
       });
       return;
     }

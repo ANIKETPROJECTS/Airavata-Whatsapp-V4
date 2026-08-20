@@ -26,6 +26,11 @@ function getKey(): Buffer {
       `WHATSAPP_CREDENTIALS_KEY must be a 64-character hex string (32 bytes). Got ${hexKey.length} characters.`,
     );
   }
+  if (!/^[0-9a-fA-F]{64}$/.test(hexKey)) {
+    throw new Error(
+      "WHATSAPP_CREDENTIALS_KEY must contain only hexadecimal characters.",
+    );
+  }
   return Buffer.from(hexKey, "hex");
 }
 
