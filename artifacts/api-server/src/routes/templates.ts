@@ -310,6 +310,7 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
           template.name,
           template.language ?? "en_US",
           components,
+          req.user!.userId,
         ),
     });
     const whatsappMessageId = result.messages?.[0]?.id ?? null;
