@@ -92,7 +92,18 @@ router.post("/auth/login", async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await UserModel.findOne({ email: normalizedEmail });
+    let user = await UserModel.findOne({ email: normalizedEmail });
+    if (!user) {
+      // Handle legacy records created before the schema normalized email values.
+      user = await UserModel.findOne({
+        $expr: {
+          $eq: [
+            { $toLower: { $trim: { input: "$email" } } },
+            normalizedEmail,
+          ],
+        },
+      });
+    }
     logger.info(
       {
         emailPresent: true,
