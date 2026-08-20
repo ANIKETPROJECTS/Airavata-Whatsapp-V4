@@ -33,7 +33,7 @@ function MasterLogin({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -73,7 +73,7 @@ export default function MasterAdmin() {
   const [form, setForm] = useState<UserForm>(blankForm);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
 
   const load = async () => {
     setLoading(true);
