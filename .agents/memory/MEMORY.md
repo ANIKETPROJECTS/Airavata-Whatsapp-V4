@@ -8,3 +8,4 @@
 - [Per-user Meta read isolation](per-user-meta-read-isolation.md) — user-specific Meta read routes must use strict credentials with no shared environment fallback.
 - [Credit category policy](credit-category-policy.md) — template sends use category rates; non-template session messages remain free.
 - [Campaign execution architecture](campaign-engine.md) — enroll audiences once, recheck eligibility at send time, and claim campaign/contact/step work before calling Meta.
+- [Master Admin report pages](master-admin-report-pages.md) — user reports live at dedicated per-user routes with detailed usage and transaction history.
