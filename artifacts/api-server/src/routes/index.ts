@@ -23,6 +23,7 @@ import chatbotRouter from "./chatbot";
 import servicePricingRouter from "./service-pricing";
 import adminRouter from "./admin";
 import audienceSegmentsRouter from "./audience-segments";
+import masterAdminRouter from "./master-admin";
 
 const router: IRouter = Router();
 
@@ -32,6 +33,7 @@ router.use(metaComplianceRouter);
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(masterAdminRouter);
 router.use(apiKeysRouter);
 router.use(contactsRouter);
 router.use(groupsRouter);

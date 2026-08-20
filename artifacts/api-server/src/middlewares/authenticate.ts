@@ -46,3 +46,33 @@ export async function requireAdmin(
     res.status(500).json({ error: "Unable to verify admin access" });
   }
 }
+
+export function requireMasterAdmin(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (req.user?.kind !== "master") {
+    res.status(403).json({ error: "Master Admin access required" });
+    return;
+  }
+  next();
+}
+
+export function requireActiveUser(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): void {
+  UserModel.findById(req.user!.userId)
+    .select("active")
+    .lean()
+    .then((user) => {
+      if (!user || user.active === false) {
+        res.status(403).json({ error: "This account is inactive" });
+        return;
+      }
+      next();
+    })
+    .catch(() => res.status(500).json({ error: "Unable to verify account status" }));
+}

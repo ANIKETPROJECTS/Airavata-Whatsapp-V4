@@ -57,7 +57,7 @@ router.post("/auth/signup", async (req, res) => {
       phone: phone?.trim(),
     });
 
-    const token = signToken({ userId: user._id.toString(), email: user.email });
+    const token = signToken({ userId: user._id.toString(), email: user.email, kind: "user" });
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     res.status(201).json({
@@ -129,7 +129,12 @@ router.post("/auth/login", async (req, res) => {
       return;
     }
 
-    const token = signToken({ userId: user._id.toString(), email: user.email });
+    if (user.active === false) {
+      res.status(403).json({ error: "This account is inactive" });
+      return;
+    }
+
+    const token = signToken({ userId: user._id.toString(), email: user.email, kind: "user" });
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     res.json({
@@ -143,6 +148,8 @@ router.post("/auth/login", async (req, res) => {
         role: user.role,
         creditBalance: user.creditBalance,
         metaWabaConnected: user.metaWabaConnected,
+        active: user.active !== false,
+        permissions: user.permissions ?? [],
       },
     });
   } catch (err) {
@@ -176,6 +183,8 @@ router.get("/auth/me", authenticate, async (req: AuthRequest, res) => {
         role: user.role,
         creditBalance: user.creditBalance,
         metaWabaConnected: user.metaWabaConnected,
+        active: user.active !== false,
+        permissions: user.permissions ?? [],
       },
     });
   } catch {

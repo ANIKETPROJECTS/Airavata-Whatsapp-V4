@@ -6,6 +6,7 @@ if (!SECRET) throw new Error("SESSION_SECRET environment variable is required");
 export interface JwtPayload {
   userId: string;
   email: string;
+  kind?: "user" | "master";
 }
 
 const EXPIRY = "7d";
