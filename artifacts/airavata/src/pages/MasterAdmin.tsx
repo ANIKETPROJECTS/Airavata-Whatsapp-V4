@@ -83,6 +83,10 @@ export default function MasterAdmin() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [location, navigate] = useLocation();
+  const pathParts = location.split('/').filter(Boolean);
+  const reportUserId = pathParts[1] === 'reports' && pathParts[2] ? pathParts[2] : null;
+  const page = reportUserId ? 'reports' : (pathParts[1] ?? 'dashboard');
+  const activePage = ['dashboard', 'users', 'credits', 'connections', 'reports', 'analytics'].includes(page) ? page : 'dashboard';
 
   const load = async () => {
     setLoading(true);
@@ -177,10 +181,6 @@ export default function MasterAdmin() {
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to update rates'); }
   };
   const signOut = () => { masterTokenStorage.clear(); setAuthenticated(false); navigate('/MasterAdmin'); };
-  const pathParts = location.split('/').filter(Boolean);
-  const reportUserId = pathParts[1] === 'reports' && pathParts[2] ? pathParts[2] : null;
-  const page = reportUserId ? 'reports' : (pathParts[1] ?? 'dashboard');
-  const activePage = ['dashboard', 'users', 'credits', 'connections', 'reports', 'analytics'].includes(page) ? page : 'dashboard';
   const goTo = (nextPage: string) => navigate(`/MasterAdmin/${nextPage}`);
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
