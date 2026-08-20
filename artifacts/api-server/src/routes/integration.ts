@@ -23,27 +23,27 @@ const META_APP_SECRET = process.env.META_APP_SECRET;
 const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
-  const { code } = req.body as {
-    code?: string;
-    waba_id?: string;
-    phone_number_id?: string;
-  };
-
-  if (!code) {
-    res.status(400).json({
-      error: "Missing auth code from Facebook SDK",
-    });
-    return;
-  }
-
-  if (!META_APP_SECRET) {
-    res.status(503).json({
-      error: "META_APP_SECRET is not configured",
-    });
-    return;
-  }
-
   try {
+    const { code } = (req.body ?? {}) as {
+      code?: string;
+      waba_id?: string;
+      phone_number_id?: string;
+    };
+
+    if (!code) {
+      res.status(400).json({
+        error: "Missing auth code from Facebook SDK",
+      });
+      return;
+    }
+
+    if (!META_APP_SECRET) {
+      res.status(503).json({
+        error: "META_APP_SECRET is not configured",
+      });
+      return;
+    }
+
     logger.info(
       {
         codePresent: true,
@@ -88,7 +88,6 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         {
           status: tokenRes.status,
           error: tokenData.error?.message,
-          redirectUri,
           codeLength: code.length,
         },
         "Meta token exchange failed",

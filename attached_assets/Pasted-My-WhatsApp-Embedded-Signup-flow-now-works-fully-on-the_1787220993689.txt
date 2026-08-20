@@ -1,0 +1,21 @@
+My WhatsApp Embedded Signup flow now works fully on the frontend — the OAuth dialog completes, the postMessage FINISH event is captured with waba_id and phone_number_id, and the authorization code is sent to my backend. But the POST request to /api/whatsapp/onboard is now failing with a 502 Bad Gateway, meaning the server isn't returning any valid response — likely a crash or unhandled exception.
+
+Please do the following:
+
+1. Open artifacts/api-server/src/routes/integration.ts and show me the full onboardWhatsApp handler as it currently exists after the recent redirect_uri removal.
+
+2. Check for any leftover reference to the removed `redirect_uri` or `redirectUri` variables that might now be undefined and causing a ReferenceError or crash.
+
+3. Check whether the try/catch block around the Graph API token exchange call actually catches ALL errors, including network errors, JSON parsing errors, and non-2xx HTTP responses from Meta. If Meta returns an error response body instead of throwing, make sure it's not silently proceeding and crashing later when accessing a field that doesn't exist.
+
+4. Check the server process logs (not just this route) for a stack trace or crash log around the time this request came in. Look specifically for unhandled promise rejections or uncaught exceptions that could take down the whole server process, not just fail the request.
+
+5. Check if there's a body size limit, timeout limit, or middleware (auth middleware, rate limiter, JSON parser) that could be rejecting this specific request given the code is 451 characters long.
+
+6. Add a top-level try/catch around the entire onboardWhatsApp handler if one doesn't already fully wrap it, so any error returns a proper 400/500 JSON response instead of crashing and causing a 502.
+
+7. Restart the API server workflow and confirm it's actually running and healthy (not crash-looping) by checking a simple health check endpoint.
+
+8. After adding proper error handling, show me the exact error message that was actually happening, since currently it's being masked by the 502.
+
+Show me the full corrected onboardWhatsApp handler and the actual underlying error you find in the logs.
