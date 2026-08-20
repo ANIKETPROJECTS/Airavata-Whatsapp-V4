@@ -835,7 +835,9 @@ async function sendWhatsAppFlowMessage(
   bodyText: string,
   ctaLabel: string,
 ): Promise<void> {
-  const { accessToken, phoneNumberId } = await getCredentials(userId.toString());
+  const { accessToken, phoneNumberId } = await getCredentials(userId.toString(), {
+    allowEnvFallback: false,
+  });
 
   // Look up internal flow to generate a trackable token
   // The chatbot UI stores our internal Flow document ID. Keep accepting a

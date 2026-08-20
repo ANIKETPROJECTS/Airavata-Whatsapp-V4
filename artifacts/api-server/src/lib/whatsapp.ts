@@ -480,7 +480,7 @@ export async function sendMediaMessage(
   userId?: string,
 ) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   const mediaPayload =
     type === "document"
@@ -506,7 +506,7 @@ export async function sendMediaMessage(
 /** Send a free-text message within the 24-hour customer-service window. */
 export async function sendTextMessage(to: string, body: string, userId?: string) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     `/${phoneNumberId}/messages`,
@@ -533,7 +533,7 @@ export async function sendInteractiveButtons(
   userId?: string,
 ) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
@@ -567,7 +567,7 @@ export async function sendInteractiveList(
   userId?: string,
 ) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
@@ -599,7 +599,7 @@ export async function sendInteractiveList(
 /** Request the user's live location (interactive). */
 export async function sendLocationRequest(to: string, body: string, userId?: string) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
@@ -625,7 +625,7 @@ export async function sendLocationMessage(
   userId?: string,
 ) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
@@ -648,7 +648,7 @@ export async function sendMediaByUrl(
   userId?: string,
 ) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   const mediaPayload =
     type === "document"
@@ -680,7 +680,7 @@ export async function sendTemplateMessage(
   userId?: string,
 ) {
   const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId)
+    ? await getCredentials(userId, { allowEnvFallback: false })
     : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
   const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     `/${phoneNumberId}/messages`,
