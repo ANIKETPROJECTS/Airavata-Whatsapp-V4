@@ -238,9 +238,27 @@ router.get("/master-admin/users/:id/report", async (req, res) => {
       monthUsed: { $sum: { $cond: [{ $and: [{ $eq: ["$type", "DEDUCTION"] }, { $gte: ["$createdAt", ranges.month] }] }, "$amount", 0] } },
     } },
   ]);
-  const user = await UserModel.findById(id).select("businessName email createdAt creditBalance").lean();
+  const transactions = await CreditTransactionModel.find({ userId: id })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .select("type amount balanceAfter description createdAt")
+    .lean();
+  const user = await UserModel.findById(id)
+    .select("businessName email createdAt creditBalance active role metaWabaConnected")
+    .lean();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
-  res.json({ user, usage: rows[0] ?? { totalTransactions: 0, totalPurchased: 0, totalUsed: 0, dayUsed: 0, weekUsed: 0, monthUsed: 0 } });
+  res.json({
+    user,
+    usage: rows[0] ?? { totalTransactions: 0, totalPurchased: 0, totalUsed: 0, dayUsed: 0, weekUsed: 0, monthUsed: 0 },
+    transactions: transactions.map((transaction) => ({
+      id: String(transaction._id),
+      type: transaction.type,
+      amount: transaction.amount,
+      balanceAfter: transaction.balanceAfter,
+      description: transaction.description ?? "",
+      createdAt: transaction.createdAt,
+    })),
+  });
 });
 
 router.get("/master-admin/analytics", async (_req, res) => {
