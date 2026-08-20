@@ -24,7 +24,21 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
 
   try {
     req.user = verifyToken(token);
-    next();
+    if (req.user.kind === "master") {
+      next();
+      return;
+    }
+    UserModel.findById(req.user.userId)
+      .select("active")
+      .lean()
+      .then((user) => {
+        if (!user || user.active === false) {
+          res.status(403).json({ error: "This account is inactive" });
+          return;
+        }
+        next();
+      })
+      .catch(() => res.status(500).json({ error: "Unable to verify account status" }));
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });
   }

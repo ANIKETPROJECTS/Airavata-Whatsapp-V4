@@ -17,6 +17,8 @@ export interface AuthUser {
   role?: 'admin' | 'client';
   creditBalance?: number;
   metaWabaConnected?: boolean;
+  active?: boolean;
+  permissions?: string[];
 }
 
 interface AuthContextValue {

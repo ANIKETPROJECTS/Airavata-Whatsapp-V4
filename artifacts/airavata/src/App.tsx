@@ -8,6 +8,7 @@ import { routes } from './routes';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Privacy from './pages/Privacy';
+import MasterAdmin from './pages/MasterAdmin';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,19 @@ function ProtectedRouter() {
 
   if (!user) {
     return <Redirect to={`/login?next=${encodeURIComponent(location)}`} />;
+  }
+
+  const requestedRoute = routes.find(route => route.path === location);
+  const section = requestedRoute?.path.slice(1);
+  if (section && user.permissions?.length && !user.permissions.includes(section)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div className="max-w-md rounded-xl border bg-white p-8 text-center shadow-sm">
+          <h1 className="text-xl font-bold text-slate-900">Section access restricted</h1>
+          <p className="mt-2 text-sm text-slate-500">Your Master Admin has not assigned access to this section.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -56,6 +70,8 @@ function AppRouter() {
 
   return (
     <Switch>
+      <Route path="/MasterAdmin" component={MasterAdmin} />
+      <Route path="/MasterAdmin/dashboard" component={MasterAdmin} />
       {/* Public routes — no auth required */}
       <Route path="/login" component={() => (user ? <Redirect to="/dashboard" /> : <Login />)} />
       <Route path="/signup" component={() => (user ? <Redirect to="/dashboard" /> : <Signup />)} />

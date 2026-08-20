@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { UserModel } from "../models/User";
 import { CreditTransactionModel } from "../models/CreditTransaction";
+import { CreditSettingModel } from "../models/CreditSetting";
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
 import { signToken } from "../lib/jwt";
 import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
@@ -54,7 +55,7 @@ router.post("/master-admin/login", async (req, res) => {
   res.json({ token, admin: { email: MASTER_EMAIL, name: "Master Admin" } });
 });
 
-router.use(authenticate, requireMasterAdmin);
+router.use("/master-admin", authenticate, requireMasterAdmin);
 
 router.get("/master-admin/me", (_req, res) => {
   res.json({ admin: { email: MASTER_EMAIL ?? "", name: "Master Admin" } });
@@ -186,6 +187,38 @@ router.get("/master-admin/analytics", async (_req, res) => {
     ]),
   ]);
   res.json({ users, activeUsers, connectedUsers, credits: credits[0] ?? { purchased: 0, used: 0, transactions: 0 } });
+});
+
+router.get("/master-admin/credit-setting", async (_req, res) => {
+  const setting = await CreditSettingModel.findOne({ key: "messageRates" })
+    .select("authenticationRate utilityRate marketingRate updatedAt")
+    .lean();
+  res.json({
+    authenticationRate: setting?.authenticationRate ?? 1,
+    utilityRate: setting?.utilityRate ?? 1,
+    marketingRate: setting?.marketingRate ?? 1,
+    updatedAt: setting?.updatedAt,
+  });
+});
+
+router.put("/master-admin/credit-setting", async (req, res) => {
+  const { authenticationRate, utilityRate, marketingRate } = req.body as Record<string, unknown>;
+  const rates = { authenticationRate, utilityRate, marketingRate };
+  if (Object.values(rates).some((value) => !Number.isInteger(value) || Number(value) < 1 || Number(value) > 1000)) {
+    res.status(400).json({ error: "All message rates must be whole numbers from 1 to 1,000" });
+    return;
+  }
+  const setting = await CreditSettingModel.findOneAndUpdate(
+    { key: "messageRates" },
+    { $set: rates },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  ).lean();
+  res.json({
+    authenticationRate: setting!.authenticationRate,
+    utilityRate: setting!.utilityRate,
+    marketingRate: setting!.marketingRate,
+    updatedAt: setting!.updatedAt,
+  });
 });
 
 router.post("/master-admin/users/:id/disconnect", async (req, res) => {
