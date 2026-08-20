@@ -7,6 +7,7 @@ import {
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useFacebookEmbeddedSignup } from '@/hooks/use-facebook-embedded-signup';
+import { toast } from 'sonner';
 import facebookIcon from '@assets/facebook_(1)_1787158279371.png';
 import verifiedIcon from '@assets/social-media_1787158389051.png';
 import sentCardIcon from '@assets/send_(1)_1787159297533.png';
@@ -195,6 +196,15 @@ function StatusPill({ status, large = false }: { status: string; large?: boolean
 export default function Dashboard() {
   const { user, refreshUser } = useAuth();
   const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup();
+  const handleReconnectFacebook = async () => {
+    try {
+      await api.post('/integration/facebook/reset');
+      await refreshUser();
+      launchFbSignup();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to reset the Facebook connection');
+    }
+  };
 
   useEffect(() => {
     void refreshUser();
@@ -305,11 +315,15 @@ export default function Dashboard() {
               <span>{fmt(billingData?.balance ?? user?.creditBalance ?? 0)} Credits</span>
             </a>
             {user?.metaWabaConnected ? (
-              <div className="inline-flex items-center gap-2.5 border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm">
+              <button
+                onClick={() => void handleReconnectFacebook()}
+                disabled={fbConnecting}
+                className="inline-flex items-center gap-2.5 border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm hover:bg-blue-50 disabled:opacity-60"
+              >
                 <img src={facebookIcon} alt="Facebook" className="h-7 w-7 object-contain" />
                 <img src={verifiedIcon} alt="Verified" className="h-7 w-7 object-contain" />
-                <span>Connected &amp; verified</span>
-              </div>
+                <span>{fbConnecting ? 'Connecting…' : 'Reconnect Facebook'}</span>
+              </button>
             ) : (
               <button
                 onClick={launchFbSignup}

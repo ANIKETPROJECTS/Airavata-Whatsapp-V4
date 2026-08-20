@@ -294,12 +294,12 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
      * succeeds, so the UI cannot show connected without usable credentials.
      */
     await UserModel.findByIdAndUpdate(req.user!.userId, {
-      metaWabaAccessToken: accessToken,
       metaWabaConnected: true,
       metaWabaId: wabaId,
       metaPhoneNumberId: phoneNumberId,
       $unset: {
         metaEmbeddedSignupCode: 1,
+        metaWabaAccessToken: 1,
       },
     });
 
@@ -338,6 +338,39 @@ router.post("/whatsapp/onboard", authenticate, onboardWhatsApp);
  * Keep the old route working.
  */
 router.post("/integration/facebook/connect", authenticate, onboardWhatsApp);
+
+/**
+ * POST /api/integration/facebook/reset
+ * Clears only the authenticated user's old WhatsApp connection. Workspace
+ * records such as contacts, templates, campaigns, and messages are preserved.
+ */
+router.post(
+  "/integration/facebook/reset",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user!.userId);
+      await WhatsAppCredentialModel.deleteOne({ userId });
+      await UserModel.updateOne(
+        { _id: userId },
+        {
+          $set: { metaWabaConnected: false },
+          $unset: {
+            metaWabaId: 1,
+            metaPhoneNumberId: 1,
+            metaWabaAccessToken: 1,
+            metaEmbeddedSignupCode: 1,
+          },
+        },
+      );
+      logger.info({ userId: req.user!.userId }, "WhatsApp connection reset for reconnect");
+      res.json({ ok: true });
+    } catch (error) {
+      logger.error({ err: error, userId: req.user!.userId }, "WhatsApp connection reset failed");
+      res.status(500).json({ error: "Unable to reset the WhatsApp connection" });
+    }
+  },
+);
 
 /**
  * GET /api/integration/facebook/status
