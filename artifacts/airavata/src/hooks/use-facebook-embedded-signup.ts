@@ -9,7 +9,7 @@
  * App ID:    1324395306544610
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -43,6 +43,61 @@ interface FBLoginResponse {
 
 export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
   const [isConnecting, setIsConnecting] = useState(false);
+  const signupIdsRef = useRef<{ wabaId?: string; phoneNumberId?: string }>({});
+
+  useEffect(() => {
+    const handleSignupMessage = (event: MessageEvent) => {
+      let originHost = "";
+      try {
+        originHost = new URL(event.origin).hostname;
+      } catch {
+        return;
+      }
+
+      if (originHost !== "facebook.com" && !originHost.endsWith(".facebook.com")) {
+        return;
+      }
+
+      let message: unknown = event.data;
+      if (typeof message === "string") {
+        try {
+          message = JSON.parse(message);
+        } catch {
+          return;
+        }
+      }
+
+      if (!message || typeof message !== "object") return;
+      const data = message as {
+        type?: string;
+        event?: string;
+        data?: { waba_id?: string; phone_number_id?: string };
+      };
+
+      if (data.type !== "WA_EMBEDDED_SIGNUP") return;
+      console.log("[WhatsApp Embedded Signup] postMessage received", {
+        origin: event.origin,
+        type: data.type,
+        event: data.event,
+        hasWabaId: Boolean(data.data?.waba_id),
+        hasPhoneNumberId: Boolean(data.data?.phone_number_id),
+      });
+
+      if (data.event === "FINISH" && data.data) {
+        signupIdsRef.current = {
+          wabaId: data.data.waba_id,
+          phoneNumberId: data.data.phone_number_id,
+        };
+        console.log("[WhatsApp Embedded Signup] FINISH IDs captured", {
+          wabaId: data.data.waba_id,
+          phoneNumberId: data.data.phone_number_id,
+        });
+      }
+    };
+
+    window.addEventListener("message", handleSignupMessage);
+    return () => window.removeEventListener("message", handleSignupMessage);
+  }, []);
 
   const launch = useCallback(() => {
     if (typeof window.FB === "undefined" || !window.fbSDKReady) {
@@ -53,6 +108,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
     }
 
     setIsConnecting(true);
+    signupIdsRef.current = {};
     console.group("[WhatsApp Embedded Signup] Starting OAuth dialog");
     console.log("Current page:", window.location.href);
     console.log("redirect_uri:", REDIRECT_URI);
@@ -89,11 +145,17 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
             console.log("redirect_uri:", REDIRECT_URI);
             console.log("code present:", true);
             console.log("code length:", response.authResponse!.code!.length);
+            console.log("captured postMessage IDs:", {
+              wabaId: signupIdsRef.current.wabaId ?? null,
+              phoneNumberId: signupIdsRef.current.phoneNumberId ?? null,
+            });
             console.groupEnd();
 
             await api.post("/whatsapp/onboard", {
               code: response.authResponse!.code,
               redirect_uri: REDIRECT_URI,
+              waba_id: signupIdsRef.current.wabaId,
+              phone_number_id: signupIdsRef.current.phoneNumberId,
             });
 
             toast.success("WhatsApp Business Account connected successfully!");
