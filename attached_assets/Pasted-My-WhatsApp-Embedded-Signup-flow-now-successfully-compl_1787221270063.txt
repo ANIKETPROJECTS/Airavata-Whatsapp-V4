@@ -1,0 +1,23 @@
+My WhatsApp Embedded Signup flow now successfully completes the Meta OAuth dialog and token exchange (confirmed via logs — no more "Error validating verification code"). But now I'm getting a new error surfaced in the UI: "WhatsApp connection could not be saved securely. Please retry the connection." This message is different from the Meta token exchange error, so it seems to be coming from the encryption/persistence step of saving the WhatsAppCredential record.
+
+Please do the following:
+
+1. Find where "WhatsApp connection could not be saved securely" (or similar wording) is defined — search both frontend and backend for this exact string or a close match, and show me the exact code path that produces it.
+
+2. Show me the encryption function used to produce `accessTokenEncrypted` before it's saved to WhatsAppCredential. Check:
+   - Is the encryption key/secret being read from an environment variable?
+   - Is that environment variable actually set in this environment (check process.env for it, without printing its value)?
+   - Is the key the correct length/format for whatever encryption algorithm is used (e.g. AES-256 needs a 32-byte key)?
+   - Is the encryption function wrapped in a try/catch, and if it throws, what happens?
+
+3. Show me the actual server logs from the most recent request — specifically look for any error logged right before or during the WhatsAppCredential save step (findOneAndUpdate call), including the full error message and stack trace, not just a generic message.
+
+4. Check if MongoDB write itself is failing (e.g. schema validation error, required field missing, connection issue) versus the encryption step failing before it even reaches Mongo.
+
+5. Confirm whether the encryption secret env var name matches between where it's set (e.g. Replit Secrets) and where it's read in code — a common bug is a typo'd env var name causing it to read as undefined.
+
+6. Show me the exact error being caught and returned as this 'could not be saved securely' message, with full details, not the generic user-facing text.
+
+7. Fix the root cause and confirm with a fresh log showing the encrypted credential was actually saved to MongoDB with a real wabaId and phoneNumberId.
+
+Show me the actual underlying error message/stack trace that's currently being hidden behind this generic UI message.
