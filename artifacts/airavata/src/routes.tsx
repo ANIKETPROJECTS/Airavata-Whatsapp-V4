@@ -12,6 +12,7 @@ import Integration from './pages/Integration';
 import Group from './pages/Group';
 import Catalogue from './pages/Catalogue';
 import WAPay from './pages/WAPay';
+import Credits from './pages/Credits';
 import Manage from './pages/Manage';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
@@ -30,6 +31,7 @@ export const routes = [
   { path: '/group', component: Group },
   { path: '/catalogue', component: Catalogue },
   { path: '/wa-pay', component: WAPay },
+  { path: '/credits', component: Credits },
   { path: '/manage', component: Manage },
   { path: '/profile', component: Profile },
   { path: '/admin', component: Admin },

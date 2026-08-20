@@ -4,6 +4,7 @@ import {
   LayoutDashboard, MessageCircle, Users, Megaphone, BarChart3, 
   FileText, Settings, Workflow, Bot, Blocks, UsersRound, ShoppingBag, 
   CreditCard, ChevronRight, ChevronLeft,
+  WalletCards,
   PanelLeftClose, PanelLeftOpen, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -42,6 +43,7 @@ const SIDEBAR_ITEMS = [
   { title: 'Group', icon: UsersRound, iconSrc: multipleUsersIcon, href: '/group' },
   { title: 'Catalogue', icon: ShoppingBag, iconSrc: catalogIcon, href: '/catalogue' },
   { title: 'WA Pay', icon: CreditCard, iconSrc: creditCardIcon, href: '/wa-pay' },
+  { title: 'Credits', icon: WalletCards, href: '/credits' },
   { title: 'Manage', icon: Settings, iconSrc: settingsIcon, href: '/manage' },
   { title: 'Admin', icon: ShieldCheck, href: '/admin', adminOnly: true },
 ];
@@ -158,6 +160,15 @@ export function Shell({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-2.5">
               <div className="flex items-center border-r border-black pr-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleNav('/wa-pay')}
+                  aria-label="Top up credits"
+                  title="Top up credits"
+                  className="relative mr-1 flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  <WalletCards className="w-5 h-5 text-green-700" />
+                </button>
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(open => !open)}
