@@ -21,13 +21,10 @@ const router = Router();
 const META_APP_ID = process.env.META_APP_ID ?? "1324395306544610";
 const META_APP_SECRET = process.env.META_APP_SECRET;
 const GRAPH_API_VERSION = "v21.0";
-const FACEBOOK_SDK_REDIRECT_URI =
-  "https://www.facebook.com/connect/login_success.html";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
-  const { code, redirect_uri } = req.body as {
+  const { code } = req.body as {
     code?: string;
-    redirect_uri?: string;
     waba_id?: string;
     phone_number_id?: string;
   };
@@ -47,10 +44,8 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   }
 
   try {
-    const redirectUri = redirect_uri ?? FACEBOOK_SDK_REDIRECT_URI;
     logger.info(
       {
-        redirectUri,
         codePresent: true,
         codeLength: code.length,
         frontendWabaId: req.body?.waba_id ?? null,
@@ -65,8 +60,7 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       `https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token` +
       `?client_id=${META_APP_ID}` +
       `&client_secret=${encodeURIComponent(META_APP_SECRET)}` +
-      `&code=${encodeURIComponent(code)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      `&code=${encodeURIComponent(code)}`;
 
     const tokenRes = await fetch(tokenUrl);
 

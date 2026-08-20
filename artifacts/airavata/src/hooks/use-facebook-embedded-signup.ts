@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 
 const CONFIG_ID = "2519748081877556";
-const REDIRECT_URI = "https://airavataintelligence.com/dashboard";
 
 declare global {
   interface Window {
@@ -111,7 +110,6 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
     signupIdsRef.current = {};
     console.group("[WhatsApp Embedded Signup] Starting OAuth dialog");
     console.log("Current page:", window.location.href);
-    console.log("redirect_uri:", REDIRECT_URI);
     console.log("config_id:", CONFIG_ID);
     console.log("response_type:", "code");
     console.groupEnd();
@@ -142,7 +140,6 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
           try {
             console.group("[WhatsApp Embedded Signup] Sending code to backend");
             console.log("POST /whatsapp/onboard");
-            console.log("redirect_uri:", REDIRECT_URI);
             console.log("code present:", true);
             console.log("code length:", response.authResponse!.code!.length);
             console.log("captured postMessage IDs:", {
@@ -153,7 +150,6 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
 
             await api.post("/whatsapp/onboard", {
               code: response.authResponse!.code,
-              redirect_uri: REDIRECT_URI,
               waba_id: signupIdsRef.current.wabaId,
               phone_number_id: signupIdsRef.current.phoneNumberId,
             });
@@ -173,7 +169,6 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
       },
       {
         config_id: CONFIG_ID,
-        redirect_uri: REDIRECT_URI,
         response_type: "code",
         override_default_response_type: true,
 
