@@ -14,7 +14,6 @@ import sentCardIcon from '@assets/send_(1)_1787159297533.png';
 import messageCardIcon from '@assets/message_1787158795063.png';
 import viewCardIcon from '@assets/view_1787158851964.png';
 import reportCardIcon from '@assets/report_1787158875535.png';
-import walletIcon from '@assets/wallet_(1)_1787164327595.png';
 
 interface CampaignStats {
   totalSent: number;
@@ -306,14 +305,6 @@ export default function Dashboard() {
             <p className="mt-1 text-sm text-gray-800">A clear view of your WhatsApp activity and automation health.</p>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href="/wa-pay"
-              aria-label="View wallet balance"
-              className="inline-flex items-center gap-2.5 border border-orange-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm hover:bg-orange-50"
-            >
-              <img src={walletIcon} alt="Wallet" className="h-7 w-7 rounded object-contain" />
-              <span>{fmt(billingData?.balance ?? user?.creditBalance ?? 0)} Credits</span>
-            </a>
             {user?.metaWabaConnected ? (
               <button
                 onClick={() => void handleReconnectFacebook()}

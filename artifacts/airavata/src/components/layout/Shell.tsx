@@ -162,15 +162,6 @@ export function Shell({ children }: { children: ReactNode }) {
               <div className="flex items-center border-r border-black pr-2.5">
                 <button
                   type="button"
-                  onClick={() => handleNav('/wa-pay')}
-                  aria-label="Top up credits"
-                  title="Top up credits"
-                  className="relative mr-1 flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 transition-colors"
-                >
-                  <WalletCards className="w-5 h-5 text-green-700" />
-                </button>
-                <button
-                  type="button"
                   onClick={() => setNotificationsOpen(open => !open)}
                   aria-label="Notifications"
                   aria-expanded={notificationsOpen}
