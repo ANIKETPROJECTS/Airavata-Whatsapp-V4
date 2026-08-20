@@ -13,7 +13,7 @@ import mongoose from "mongoose";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { UserModel } from "../models/User";
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
-import { encryptToken } from "../lib/credentialCrypto";
+import { decryptToken, encryptToken } from "../lib/credentialCrypto";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -380,12 +380,28 @@ router.get(
   authenticate,
   async (req: AuthRequest, res) => {
     const user = await UserModel.findById(req.user!.userId).select(
-      "metaWabaConnected metaWabaId",
+      "metaWabaConnected metaWabaId metaPhoneNumberId",
     );
+    const credential = await WhatsAppCredentialModel.findOne({
+      userId: req.user!.userId,
+    }).select("wabaId phoneNumberId accessTokenEncrypted").lean();
+
+    let credentialReadable = false;
+    if (credential) {
+      try {
+        decryptToken(credential.accessTokenEncrypted);
+        credentialReadable = true;
+      } catch {
+        credentialReadable = false;
+      }
+    }
 
     res.json({
       connected: user?.metaWabaConnected ?? false,
       wabaId: user?.metaWabaId ?? null,
+      phoneNumberId: user?.metaPhoneNumberId ?? credential?.phoneNumberId ?? null,
+      credentialStored: Boolean(credential),
+      credentialReadable,
     });
   },
 );
