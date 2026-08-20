@@ -63,6 +63,12 @@ function AdminToolbar({
   </div>;
 }
 
+function Pagination({ page, total, onPage }: { page: number; total: number; onPage: (page: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / 10));
+  if (total <= 10) return null;
+  return <div className="flex items-center justify-between border-t bg-white px-5 py-3 text-sm"><span className="text-slate-500">Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, total)} of {total}</span><div className="flex items-center gap-1"><button disabled={page === 1} onClick={() => onPage(page - 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Previous</button>{Array.from({ length: pages }, (_, index) => index + 1).slice(Math.max(0, page - 3), Math.min(pages, page + 2)).map(item => <button key={item} onClick={() => onPage(item)} className={`rounded-lg px-3 py-1.5 ${item === page ? 'bg-emerald-600 text-white' : 'border'}`}>{item}</button>)}<button disabled={page === pages} onClick={() => onPage(page + 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">Next</button></div></div>;
+}
+
 const blankForm: UserForm = {
   businessName: '', email: '', phone: '', password: '', role: 'client', active: true,
   permissions: PERMISSIONS.map(([value]) => value),
@@ -117,11 +123,13 @@ function DetailedAnalytics({ analytics, range, onRange }: { analytics: any; rang
 }
 
 function CreditTransactionsPanel({ users, transactions, visibleTransactions, transactionSearch, setTransactionSearch, transactionFilter, setTransactionFilter, transactionSort, setTransactionSort, transactionView, setTransactionView }: any) {
+  const [page, setPage] = useState(1);
   const rows = visibleTransactions.filter((item: any) => !transactionFilter.userId || item.userId === transactionFilter.userId);
+  const pageRows = rows.slice((page - 1) * 10, page * 10);
   return <section className="rounded-xl bg-white border overflow-hidden">
     <div className="p-6 border-b flex items-start gap-3"><ReceiptText className="w-6 h-6 text-emerald-600 mt-0.5" /><div><h2 className="text-xl font-bold">Credit transaction details</h2><p className="text-sm text-slate-500 mt-1">A dedicated audit trail for every purchase, deduction, refund and adjustment.</p></div></div>
     <div className="p-5 border-b space-y-3"><AdminToolbar search={transactionSearch} onSearch={setTransactionSearch} searchPlaceholder="Search by user or transaction reason…" filter={transactionFilter.type} onFilter={(value: string) => setTransactionFilter({...transactionFilter, type: value})} filterOptions={[['ALL', 'All types'], ['PURCHASE', 'Purchases'], ['ADJUSTMENT', 'Adjustments'], ['DEDUCTION', 'Deductions'], ['REFUND', 'Refunds']]} sort={transactionSort} onSort={setTransactionSort} sortOptions={[['newest', 'Newest first'], ['amount', 'Highest amount']]} viewMode={transactionView} onViewMode={setTransactionView} /><select value={transactionFilter.userId} onChange={e => setTransactionFilter({...transactionFilter, userId: e.target.value})} className="rounded-lg border px-3 py-2 text-sm"><option value="">All users</option>{users.map((user: any) => <option key={user.id} value={user.id}>{user.businessName}</option>)}</select></div>
-    {transactionView === 'list' ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-slate-500"><tr>{['Date', 'User', 'Type', 'Amount', 'Balance after', 'Reason'].map(label => <th key={label} className="px-5 py-3">{label}</th>)}</tr></thead><tbody className="divide-y">{rows.map((item: any) => <tr key={item.id}><td className="px-5 py-3 whitespace-nowrap">{new Date(item.createdAt).toLocaleString()}</td><td className="px-5 py-3">{item.user?.businessName ?? 'Deleted user'}</td><td className="px-5 py-3">{item.type}</td><td className="px-5 py-3 font-semibold">{item.amount.toLocaleString()}</td><td className="px-5 py-3">{item.balanceAfter.toLocaleString()}</td><td className="px-5 py-3 text-slate-500">{item.description || '—'}</td></tr>)}</tbody></table>{!rows.length && <div className="p-8 text-center text-sm text-slate-500">No transactions match these filters.</div>}</div> : <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4 p-5">{rows.map((item: any) => <div key={item.id} className="rounded-xl border p-4"><div className="flex justify-between gap-3"><span className="text-xs font-semibold text-slate-500">{item.type}</span><span className="font-bold">{item.amount.toLocaleString()} credits</span></div><p className="mt-3 font-semibold">{item.user?.businessName ?? 'Deleted user'}</p><p className="mt-1 text-xs text-slate-500">{item.description || 'No reason provided'}</p><p className="mt-4 text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()} · Balance {item.balanceAfter.toLocaleString()}</p></div>)}</div>}
+    {transactionView === 'list' ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-slate-500"><tr>{['Date', 'User', 'Type', 'Amount', 'Balance after', 'Reason'].map(label => <th key={label} className="px-5 py-3">{label}</th>)}</tr></thead><tbody className="divide-y">{pageRows.map((item: any) => <tr key={item.id}><td className="px-5 py-3 whitespace-nowrap">{new Date(item.createdAt).toLocaleString()}</td><td className="px-5 py-3">{item.user?.businessName ?? 'Deleted user'}</td><td className="px-5 py-3">{item.type}</td><td className="px-5 py-3 font-semibold">{item.amount.toLocaleString()}</td><td className="px-5 py-3">{item.balanceAfter.toLocaleString()}</td><td className="px-5 py-3 text-slate-500">{item.description || '—'}</td></tr>)}</tbody></table>{!rows.length && <div className="p-8 text-center text-sm text-slate-500">No transactions match these filters.</div>}</div> : <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4 p-5">{pageRows.map((item: any) => <div key={item.id} className="rounded-xl border p-4"><div className="flex justify-between gap-3"><span className="text-xs font-semibold text-slate-500">{item.type}</span><span className="font-bold">{item.amount.toLocaleString()} credits</span></div><p className="mt-3 font-semibold">{item.user?.businessName ?? 'Deleted user'}</p><p className="mt-1 text-xs text-slate-500">{item.description || 'No reason provided'}</p><p className="mt-4 text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()} · Balance {item.balanceAfter.toLocaleString()}</p></div>)}</div>}<Pagination page={page} total={rows.length} onPage={setPage} />
   </section>;
 }
 
@@ -141,6 +149,7 @@ export default function MasterAdmin() {
   const [directoryFilter, setDirectoryFilter] = useState('all');
   const [directorySort, setDirectorySort] = useState('newest');
   const [directoryView, setDirectoryView] = useState<ViewMode>('list');
+  const [userPage, setUserPage] = useState(1);
   const [transactionSearch, setTransactionSearch] = useState('');
   const [transactionSort, setTransactionSort] = useState('newest');
   const [transactionView, setTransactionView] = useState<ViewMode>('list');
@@ -261,7 +270,7 @@ export default function MasterAdmin() {
     { id: 'reports', label: 'User Reports', icon: FileBarChart },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
-  const visibleUsers = useMemo(() => {
+  const allVisibleUsers = useMemo(() => {
     const query = directorySearch.trim().toLowerCase();
     return [...users]
       .filter(user => !query || `${user.businessName} ${user.email} ${user.phone ?? ''}`.toLowerCase().includes(query))
@@ -272,6 +281,8 @@ export default function MasterAdmin() {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [users, directorySearch, directoryFilter, directorySort]);
+  const visibleUsers = useMemo(() => allVisibleUsers.slice((userPage - 1) * 10, userPage * 10), [allVisibleUsers, userPage]);
+  useEffect(() => { setUserPage(1); }, [directorySearch, directoryFilter, directorySort]);
   const visibleTransactions = useMemo(() => {
     const query = transactionSearch.trim().toLowerCase();
     return [...transactions]
@@ -313,6 +324,7 @@ export default function MasterAdmin() {
         </header>
         <main className="p-5 sm:p-8 max-w-[1500px] space-y-6">
           {activePage === 'credit-transactions' && <CreditTransactionsPanel users={users} transactions={transactions} visibleTransactions={visibleTransactions} transactionSearch={transactionSearch} setTransactionSearch={setTransactionSearch} transactionFilter={transactionFilter} setTransactionFilter={setTransactionFilter} transactionSort={transactionSort} setTransactionSort={setTransactionSort} transactionView={transactionView} setTransactionView={setTransactionView} />}
+          {['users', 'connections', 'reports', 'credits'].includes(activePage) && <Pagination page={userPage} total={allVisibleUsers.length} onPage={setUserPage} />}
           {activePage === 'dashboard' && <>
             <div><h2 className="text-2xl font-bold">Good day, Master Admin</h2><p className="mt-1 text-sm text-slate-500">Here’s what is happening across Airavata.</p></div>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">{[['Total users', analytics?.users ?? '—'], ['Active users', analytics?.activeUsers ?? '—'], ['Connected accounts', analytics?.connectedUsers ?? '—'], ['Credits used', analytics?.credits?.used?.toLocaleString?.() ?? '—']].map(([label, value]) => <div key={label} className="rounded-xl bg-white border p-5"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div>)}</div>
