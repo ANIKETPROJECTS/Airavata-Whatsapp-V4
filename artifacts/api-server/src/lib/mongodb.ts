@@ -22,7 +22,13 @@ export function connectToDatabase(): Promise<typeof mongoose> {
     connectPromise = mongoose
       .connect(MONGODB_URI as string)
       .then((instance) => {
-        logger.info("Connected to MongoDB");
+        logger.info(
+          {
+            mongoHost: instance.connection.host,
+            mongoDatabase: instance.connection.name,
+          },
+          "Connected to MongoDB",
+        );
         return instance;
       })
       .catch((err) => {
