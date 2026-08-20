@@ -80,13 +80,13 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside
           className={`
-            airavata-sidebar relative flex flex-col bg-white text-black
+            airavata-sidebar relative flex flex-col bg-[#25d366] text-black
             transition-all duration-200 ease-in-out shrink-0 z-20
             ${collapsed ? 'w-20' : 'w-[260px]'}
           `}
         >
           {/* Logo */}
-          <div className="relative flex items-center justify-center bg-white shrink-0 h-16 px-2">
+          <div className="relative flex items-center justify-center bg-[#25d366] shrink-0 h-16 px-2">
             <div
               className={`!bg-white flex items-center justify-center shadow-sm overflow-hidden rounded-none ${collapsed ? 'w-full h-14 p-1.5' : 'w-full h-14 px-2'}`}
               style={{ backgroundColor: '#ffffff' }}
@@ -113,8 +113,8 @@ export function Shell({ children }: { children: ReactNode }) {
                       className={`
                         w-full flex items-center rounded-none text-[16px] font-semibold text-black transition-colors
                         ${collapsed ? 'justify-center px-0 py-3.5' : 'gap-3.5 px-3.5 py-3'}
-                         bg-white text-black hover:bg-[#f0fdf4] border-2 border-[#25d366]
-                         ${isActive ? 'bg-[#f0fdf4]' : ''}
+                        bg-white text-black hover:bg-white border-2
+                        ${isActive ? 'border-black' : 'border-transparent'}
                       `}
                     >
                       {item.iconSrc ? (
@@ -139,7 +139,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <button
             onClick={() => setCollapsed(v => !v)}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-             className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white border border-[#25d366] rounded-full flex items-center justify-center shadow-sm hover:shadow-md hover:border-[#128c4a] transition-all z-30 text-black hover:text-black"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white border border-black rounded-full flex items-center justify-center shadow-sm hover:shadow-md hover:border-black transition-all z-30 text-black hover:text-black"
           >
             {collapsed
               ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
