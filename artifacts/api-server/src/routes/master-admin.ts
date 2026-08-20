@@ -146,6 +146,77 @@ router.post("/master-admin/users/:id/credits", async (req, res) => {
   res.json({ balance: user.creditBalance ?? 0 });
 });
 
+router.post("/master-admin/users/:id/credits/adjust", async (req, res) => {
+  const id = validId(req.params.id);
+  const amount = Number(req.body?.amount);
+  const direction = req.body?.direction === "deduct" ? "deduct" : "add";
+  const description = typeof req.body?.description === "string" ? req.body.description.trim() : "";
+  if (!id || !Number.isInteger(amount) || amount < 1 || amount > 100000 || !description) {
+    res.status(400).json({ error: "A credit amount from 1 to 100,000 and a reason are required" });
+    return;
+  }
+
+  const query: Record<string, unknown> = { _id: id };
+  if (direction === "deduct") query.creditBalance = { $gte: amount };
+  const user = await UserModel.findOneAndUpdate(
+    query,
+    { $inc: { creditBalance: direction === "add" ? amount : -amount } },
+    { new: true },
+  ).lean();
+  if (!user) {
+    res.status(direction === "deduct" ? 409 : 404).json({
+      error: direction === "deduct" ? "The user does not have enough credits for this deduction" : "User not found",
+    });
+    return;
+  }
+  await CreditTransactionModel.create({
+    userId: id,
+    type: direction === "add" ? "PURCHASE" : "ADJUSTMENT",
+    amount,
+    balanceAfter: user.creditBalance ?? 0,
+    description,
+  });
+  res.json({ balance: user.creditBalance ?? 0, direction, amount });
+});
+
+router.get("/master-admin/credit-transactions", async (req, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(10, Number(req.query.limit) || 25));
+  const filter: Record<string, any> = {};
+  if (typeof req.query.userId === "string" && validId(req.query.userId)) filter.userId = validId(req.query.userId);
+  if (req.query.type === "PURCHASE" || req.query.type === "DEDUCTION" || req.query.type === "ADJUSTMENT" || req.query.type === "REFUND") {
+    filter.type = req.query.type;
+  }
+  if (typeof req.query.from === "string" || typeof req.query.to === "string") {
+    filter.createdAt = {};
+    if (typeof req.query.from === "string") filter.createdAt.$gte = new Date(req.query.from);
+    if (typeof req.query.to === "string") filter.createdAt.$lte = new Date(req.query.to);
+  }
+  const [transactions, total] = await Promise.all([
+    CreditTransactionModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+    CreditTransactionModel.countDocuments(filter),
+  ]);
+  const userIds = [...new Set(transactions.map((transaction) => String(transaction.userId)))];
+  const users = await UserModel.find({ _id: { $in: userIds } }).select("businessName email").lean();
+  const byId = new Map(users.map((user) => [String(user._id), user]));
+  res.json({
+    transactions: transactions.map((transaction) => ({
+      id: String(transaction._id),
+      userId: String(transaction.userId),
+      user: byId.get(String(transaction.userId)) ?? null,
+      type: transaction.type,
+      amount: transaction.amount,
+      balanceAfter: transaction.balanceAfter,
+      description: transaction.description ?? "",
+      createdAt: transaction.createdAt,
+    })),
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
+});
+
 router.get("/master-admin/users/:id/report", async (req, res) => {
   const id = validId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
@@ -173,7 +244,7 @@ router.get("/master-admin/users/:id/report", async (req, res) => {
 });
 
 router.get("/master-admin/analytics", async (_req, res) => {
-  const [users, activeUsers, connectedUsers, credits] = await Promise.all([
+  const [users, activeUsers, connectedUsers, credits, recentTransactions] = await Promise.all([
     UserModel.countDocuments(),
     UserModel.countDocuments({ active: { $ne: false } }),
     UserModel.countDocuments({ metaWabaConnected: true }),
@@ -185,8 +256,27 @@ router.get("/master-admin/analytics", async (_req, res) => {
         transactions: { $sum: 1 },
       } },
     ]),
+    CreditTransactionModel.find().sort({ createdAt: -1 }).limit(8).select("userId type amount balanceAfter description createdAt").lean(),
   ]);
-  res.json({ users, activeUsers, connectedUsers, credits: credits[0] ?? { purchased: 0, used: 0, transactions: 0 } });
+  const recentUserIds = [...new Set(recentTransactions.map((transaction) => String(transaction.userId)))];
+  const recentUsers = await UserModel.find({ _id: { $in: recentUserIds } }).select("businessName").lean();
+  const recentById = new Map(recentUsers.map((user) => [String(user._id), user.businessName]));
+  res.json({
+    users,
+    activeUsers,
+    inactiveUsers: users - activeUsers,
+    connectedUsers,
+    credits: credits[0] ?? { purchased: 0, used: 0, transactions: 0 },
+    recentTransactions: recentTransactions.map((transaction) => ({
+      id: String(transaction._id),
+      user: recentById.get(String(transaction.userId)) ?? "Unknown user",
+      type: transaction.type,
+      amount: transaction.amount,
+      balanceAfter: transaction.balanceAfter,
+      description: transaction.description ?? "",
+      createdAt: transaction.createdAt,
+    })),
+  });
 });
 
 router.get("/master-admin/credit-setting", async (_req, res) => {
