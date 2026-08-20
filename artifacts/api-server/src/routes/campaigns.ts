@@ -9,10 +9,11 @@ import { CampaignModel } from "../models/Campaign";
 import { ContactModel } from "../models/Contact";
 import { TemplateModel } from "../models/Template";
 import { MessageModel } from "../models/Message";
-import { sendTemplateMessage } from "../lib/whatsapp";
+import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
-import { withCreditCharge } from "../lib/creditDeduction";
+import { executeCampaignSend } from "../lib/campaignExecutor";
+import { resolveAudience } from "../lib/audienceResolver";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ function shapeCampaign(
   return {
     id: String(c._id),
     name: c.name,
+    type: c.type ?? "QUICK",
     templateId: c.templateId ? String(c.templateId) : null,
     templateName:
       (c as Record<string, unknown> & { template?: Array<{ name: string }> })
@@ -193,6 +195,51 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+router.get("/campaigns/:id/recipients", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const campaignId = new mongoose.Types.ObjectId(req.params.id);
+    const campaign = await CampaignModel.exists({ _id: campaignId, userId });
+    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+    const recipients = await CampaignRecipientModel.find({ campaignId, userId })
+      .populate("contactId", "name phone")
+      .sort({ createdAt: 1 })
+      .lean();
+    res.json({ recipients });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/campaigns/:id/enroll", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const campaign = await CampaignModel.findOne({ _id: req.params.id, userId }).lean();
+    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+    if (campaign.type !== "TRIGGER") return res.status(400).json({ error: "Only Trigger campaigns can be event-enrolled" });
+    const { contactIds = [] } = req.body as { contactIds?: string[] };
+    const contacts = await ContactModel.find({
+      userId,
+      _id: { $in: contactIds.filter((id) => mongoose.isValidObjectId(id)).map((id) => new mongoose.Types.ObjectId(id)) },
+      status: "active",
+    }).select("_id").lean();
+    const recipients = await CampaignRecipientModel.insertMany(
+      contacts.map((contact) => ({
+        userId,
+        campaignId: campaign._id,
+        contactId: contact._id,
+        status: "QUEUED",
+        currentStepId: "initial",
+        nextActionAt: new Date(),
+      })),
+      { ordered: false },
+    );
+    res.status(201).json({ enrolled: recipients.length });
+  } catch {
+    res.status(500).json({ error: "Unable to enroll trigger contacts" });
+  }
+});
+
 // ── GET /api/contacts/:contactId/campaigns ───────────────────────────────────
 // Return campaigns that have actually run for this contact, with the latest
 // per-recipient WhatsApp status (SENT, DELIVERED, READ, or FAILED).
@@ -255,6 +302,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const {
       name,
+      type = "QUICK",
       templateId,
       contactIds = [],
       groupIds = [],
@@ -262,8 +310,14 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       scheduledAt,
       phoneNumbers = [],
       tagId,
+      tagIds = [],
+      segmentId,
+      filter,
+      steps = [],
+      trigger,
     } = req.body as {
       name: string;
+      type?: "QUICK" | "CSV" | "SEGMENT" | "FLOW" | "DRIP" | "TRIGGER";
       templateId: string;
       contactIds?: string[];
       groupIds?: string[];
@@ -271,6 +325,11 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       scheduledAt?: string;
       phoneNumbers?: string[];
       tagId?: string;
+      tagIds?: string[];
+      segmentId?: string;
+      filter?: Record<string, unknown>;
+      steps?: Array<Record<string, unknown>>;
+      trigger?: Record<string, unknown>;
     };
 
     if (!name || !templateId) {
@@ -317,11 +376,20 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       tagContactIds = byTag.map((c) => String(c._id));
     }
 
+    const audienceContacts = segmentId || filter || tagIds.length
+      ? await resolveAudience(userId, {
+          contactIds: [...contactIds, ...phoneContactIds],
+          groupIds,
+          tagIds: tagIds.length ? tagIds : tagId ? [tagId] : [],
+          segmentId,
+          filter: filter as never,
+        })
+      : null;
     const allContactIds = [
       ...new Set([...contactIds, ...phoneContactIds, ...tagContactIds]),
     ];
 
-    const recipients = await resolveRecipients(userId, allContactIds, groupIds);
+    const recipients = audienceContacts ?? await resolveRecipients(userId, allContactIds, groupIds);
     if (recipients.length === 0) {
       return res
         .status(400)
@@ -330,19 +398,25 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
 
     // Create campaign record
     const isScheduled = !!scheduledAt && new Date(scheduledAt) > new Date();
+    const deferred = isScheduled || type === "DRIP" || type === "TRIGGER";
     const campaign = await CampaignModel.create(
       [
         {
           userId,
           name,
+          type,
           templateId: new mongoose.Types.ObjectId(templateId),
           audience: {
             contactIds: contactIds.map((id) => new mongoose.Types.ObjectId(id)),
             groupIds: groupIds.map((id) => new mongoose.Types.ObjectId(id)),
+            ...(segmentId ? { segmentId: new mongoose.Types.ObjectId(segmentId) } : {}),
+            ...(filter ? { filter } : {}),
           },
           variableValues,
           scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
-          status: isScheduled ? "SCHEDULED" : "SENDING",
+          status: deferred ? "SCHEDULED" : "SENDING",
+          ...(steps.length ? { steps } : {}),
+          ...(trigger ? { trigger } : {}),
           stats: {
             totalRecipients: recipients.length,
             sent: 0,
@@ -357,6 +431,19 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     );
 
     const camp = campaign[0]!;
+    const enrolledRecipients = await CampaignRecipientModel.insertMany(
+      recipients.map((contact) => ({
+        userId,
+        campaignId: camp._id,
+        contactId: contact._id,
+        status: deferred ? "QUEUED" : "ACTIVE",
+        currentStepId: "initial",
+        ...(type === "TRIGGER"
+          ? {}
+          : { nextActionAt: scheduledAt ? new Date(scheduledAt) : new Date() }),
+      })),
+      { ordered: false, session },
+    );
 
     await session.commitTransaction();
     session.endSession();
@@ -372,75 +459,32 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       },
     });
 
-    if (isScheduled) return;
+    if (deferred) return;
 
-    // ── Send messages asynchronously ──────────────────────────────────────────
+    // ── Send through the shared executor asynchronously ──────────────────────
     let sent = 0;
     let failed = 0;
-
-    for (const contact of recipients) {
+    for (const recipient of enrolledRecipients) {
       try {
-        const components = buildComponents(variableValues, contact);
-        const result = await withCreditCharge({
+        const result = await executeCampaignSend({
           userId,
-          category: template.category,
           campaignId: camp._id,
-          description: `Campaign message to ${contact.phone}`,
-          send: () =>
-            sendTemplateMessage(
-              contact.phone,
-              template.name,
-              template.language ?? "en_US",
-              components,
-              userId,
-            ),
-        });
-
-        await MessageModel.create({
-          userId,
-          contactId: contact._id,
-          campaignId: camp._id,
-          direction: "OUTBOUND",
-          body: resolveBody(template.body, variableValues, contact),
+          recipientId: recipient._id,
+          contactId: recipient.contactId,
           templateId: template._id,
-          whatsappMessageId: result.messages?.[0]?.id ?? null,
-          status: "SENT",
-          sentAt: new Date(),
+          variableValues,
         });
-
-        await ContactModel.findByIdAndUpdate(contact._id, {
-          lastContactedAt: new Date(),
-        });
-        sent++;
+        if ("sent" in result && result.sent) sent++;
       } catch (err) {
-        logger.error(
-          { err, contactId: String(contact._id) },
-          "Failed to send to contact",
-        );
-        await MessageModel.create({
-          userId,
-          contactId: contact._id,
-          campaignId: camp._id,
-          direction: "OUTBOUND",
-          body: resolveBody(template.body, variableValues, contact),
-          templateId: template._id,
-          status: "FAILED",
-          failureReason: err instanceof Error ? err.message : "Unknown error",
-        });
         failed++;
+        logger.error({ err, recipientId: String(recipient._id) }, "Shared campaign executor failed");
       }
     }
-
-    // Finalize campaign stats
-    await CampaignModel.findByIdAndUpdate(camp._id, {
-      status: "COMPLETED",
-      $set: { "stats.sent": sent, "stats.failed": failed },
-    });
-
-    logger.info(
-      { campaignId: String(camp._id), sent, failed },
-      "Campaign completed",
+    await CampaignModel.findOneAndUpdate(
+      { _id: camp._id, userId },
+      { $set: { status: failed > 0 && sent === 0 ? "FAILED" : "COMPLETED" } },
     );
+    logger.info({ campaignId: String(camp._id), sent, failed }, "Campaign completed");
   } catch (err: unknown) {
     await session.abortTransaction().catch(() => {});
     session.endSession();

@@ -26,6 +26,14 @@ interface Campaign {
   createdAt: string;
 }
 
+interface CampaignRecipient {
+  _id: string;
+  status: string;
+  currentStepId?: string;
+  lastError?: string;
+  contactId?: { name?: string; phone?: string };
+}
+
 interface Stats {
   totalSent: number;
   totalDelivered: number;
@@ -49,6 +57,13 @@ export default function CampaignsReport() {
     queryKey: ['campaigns-stats'],
     queryFn: () => api.get('/campaigns/stats/summary'),
     refetchInterval: 15_000,
+  });
+
+  const { data: recipientData, isLoading: recipientsLoading } = useQuery<{ recipients: CampaignRecipient[] }>({
+    queryKey: ['campaign-recipients', selectedCampaign?.id],
+    queryFn: () => api.get(`/campaigns/${selectedCampaign!.id}/recipients`),
+    enabled: Boolean(selectedCampaign),
+    refetchInterval: selectedCampaign ? 10_000 : false,
   });
 
   const campaigns = data?.campaigns ?? [];
@@ -257,6 +272,33 @@ export default function CampaignsReport() {
                     <span className="font-medium text-gray-900">{selectedCampaign.creditCost}</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">Recipient status</h3>
+                  <span className="text-xs text-gray-400">{recipientData?.recipients.length ?? 0} enrolled</span>
+                </div>
+                {recipientsLoading ? (
+                  <div className="flex justify-center py-6 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+                ) : !recipientData?.recipients.length ? (
+                  <p className="text-sm text-gray-500">Recipient records will appear when the campaign is enrolled.</p>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto rounded-lg border divide-y">
+                    {recipientData.recipients.map(recipient => (
+                      <div key={recipient._id} className="px-3 py-2.5 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{recipient.contactId?.name || 'Unnamed contact'}</p>
+                          <p className="text-xs text-gray-500">{recipient.contactId?.phone ?? '—'}</p>
+                          {recipient.lastError && <p className="text-[11px] text-red-600 truncate">{recipient.lastError}</p>}
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${statusColor(recipient.status)}`}>
+                          {recipient.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

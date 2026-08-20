@@ -22,6 +22,7 @@ import flowsRouter from "./flows";
 import chatbotRouter from "./chatbot";
 import servicePricingRouter from "./service-pricing";
 import adminRouter from "./admin";
+import audienceSegmentsRouter from "./audience-segments";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(flowsRouter);
 router.use(chatbotRouter);
 router.use(servicePricingRouter);
 router.use(adminRouter);
+router.use(audienceSegmentsRouter);
 
 export default router;

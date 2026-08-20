@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { connectToDatabase } from "./lib/mongodb";
 import { CreditSettingModel } from "./models/CreditSetting";
+import { startCampaignWorker } from "./lib/campaignWorker";
 
 const rawPort = process.env["PORT"];
 
@@ -50,6 +51,7 @@ connectToDatabase()
       }
 
       logger.info({ port }, "Server listening");
+      startCampaignWorker();
     });
   })
   .catch((err) => {

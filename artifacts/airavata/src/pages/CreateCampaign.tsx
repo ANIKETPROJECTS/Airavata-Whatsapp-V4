@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type CampaignView = 'select' | 'quick' | 'csv' | 'groups' | 'tags' | 'flow';
+type CampaignView = 'select' | 'quick' | 'csv' | 'segment' | 'groups' | 'tags' | 'flow' | 'drip' | 'trigger';
 
 interface Template {
   id: string; name: string; body: string; status: string; language: string;
@@ -379,6 +379,10 @@ export default function CreateCampaign() {
   const [numbers, setNumbers]               = useState('');
   const [groupId, setGroupId]               = useState('');
   const [tagId, setTagId]                   = useState('');
+  const [segmentGroupId, setSegmentGroupId] = useState('');
+  const [segmentTagId, setSegmentTagId]     = useState('');
+  const [dripSteps, setDripSteps]           = useState('1:0');
+  const [triggerEvent, setTriggerEvent]     = useState('inbound_message');
   const [csvFile, setCsvFile]               = useState<File | null>(null);
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -414,14 +418,14 @@ export default function CreateCampaign() {
   const { data: groupsData } = useQuery<{ groups: Group[] }>({
     queryKey: ['groups'],
     queryFn: () => api.get('/groups'),
-    enabled: view === 'groups',
+    enabled: view === 'groups' || view === 'segment',
   });
   const groups = groupsData?.groups ?? [];
 
   const { data: tagsData } = useQuery<{ tags: TagItem[] }>({
     queryKey: ['tags'],
     queryFn: () => api.get('/tags'),
-    enabled: view === 'tags',
+    enabled: view === 'tags' || view === 'segment',
   });
   const tags = tagsData?.tags ?? [];
 
@@ -458,6 +462,15 @@ export default function CreateCampaign() {
       name: campaignName,
       templateId,
       variableValues,
+      type: view === 'segment' ? 'SEGMENT' : view === 'drip' ? 'DRIP' : view === 'trigger' ? 'TRIGGER' : view === 'flow' ? 'FLOW' : view === 'csv' ? 'CSV' : 'QUICK',
+      ...(view === 'drip' ? {
+        steps: dripSteps.split(',').map((delay, index) => ({
+          id: `step-${index + 1}`,
+          templateId,
+          delayMinutes: Math.max(0, Number(delay.trim()) || 0),
+        })),
+      } : {}),
+      ...(view === 'trigger' ? { trigger: { event: triggerEvent } } : {}),
       ...(scheduled && scheduledAt ? { scheduledAt } : {}),
       ...extra,
     };
@@ -490,7 +503,8 @@ export default function CreateCampaign() {
 
   function resetAndGo(v: CampaignView) {
     setTemplateId(''); setCampaignName(''); setCountryCode('');
-    setNumbers(''); setGroupId(''); setTagId(''); setCsvFile(null);
+    setNumbers(''); setGroupId(''); setTagId(''); setSegmentGroupId(''); setSegmentTagId(''); setCsvFile(null);
+    setDripSteps('1:0'); setTriggerEvent('inbound_message');
     setVariableValues({});
     setView(v);
   }
@@ -636,17 +650,24 @@ export default function CreateCampaign() {
       btnClass: 'bg-primary text-white hover:bg-primary/90',
     },
     {
-      key: 'groups' as CampaignView,
-      title: 'Groups Campaign',
-      desc: 'Send messages to predefined contact groups. Efficiently target segments of your audience with tailored communications.',
-      btnLabel: 'Start Groups Campaign',
+      key: 'segment' as CampaignView,
+      title: 'Segment Campaign',
+      desc: 'Build a unified audience from groups, tags, and contact filters, then send an approved WhatsApp template to the matching contacts.',
+      btnLabel: 'Start Segment Campaign',
       btnClass: 'bg-primary text-white hover:bg-primary/90',
     },
     {
-      key: 'tags' as CampaignView,
-      title: 'Tags Campaign',
-      desc: 'Target contacts by tags or attributes. Perfect for audience segmentation and personalized outreach based on specific criteria.',
-      btnLabel: 'Start Tags Campaign',
+      key: 'drip' as CampaignView,
+      title: 'Drip Campaign',
+      desc: 'Send a time-based sequence of approved WhatsApp templates with per-contact progress and delay controls.',
+      btnLabel: 'Start Drip Campaign',
+      btnClass: 'bg-primary text-white hover:bg-primary/90',
+    },
+    {
+      key: 'trigger' as CampaignView,
+      title: 'Trigger Campaign',
+      desc: 'Enroll contacts into an automated campaign when a supported event occurs, while keeping each send idempotent.',
+      btnLabel: 'Start Trigger Campaign',
       btnClass: 'bg-primary text-white hover:bg-primary/90',
     },
     {
@@ -668,19 +689,103 @@ export default function CreateCampaign() {
           <p className="text-gray-500 text-base">Select a campaign type to get started with your WhatsApp messaging</p>
         </div>
 
-        <div className="px-8 pb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto w-full">
-          {types.slice(0, 4).map(t => (
+        <div className="px-8 pb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto w-full">
+          {types.map(t => (
             <CampaignTypeCard key={t.key} {...t} onStart={() => resetAndGo(t.key)} />
           ))}
         </div>
-
-        {/* Flow card — bottom-left, same width as top cards */}
-        <div className="px-8 pb-12 max-w-6xl mx-auto w-full">
-          <div className="max-w-[calc(25%-15px)]">
-            <CampaignTypeCard {...types[4]!} onStart={() => resetAndGo('flow')} />
-          </div>
-        </div>
       </div>
+    );
+  }
+
+  // ── Segment Campaign ───────────────────────────────────────────────────────
+
+  if (view === 'segment') {
+    return (
+      <SubViewShell title="Segment Campaign" onBack={() => setView('select')}>
+        <ConfigRow
+          templates={approvedTemplates} tmplLoading={tmplLoading}
+          templateId={templateId} setTemplateId={setTemplateId}
+          campaignName={campaignName} setCampaignName={setCampaignName}
+          countryCode={countryCode} setCountryCode={setCountryCode}
+          extra={
+            <div className="flex flex-1 min-w-[320px] gap-2">
+              <select value={segmentGroupId} onChange={e => setSegmentGroupId(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="">Any group</option>
+                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+              <select value={segmentTagId} onChange={e => setSegmentTagId(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="">Any tag</option>
+                {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+          }
+        />
+        <VariableValuesSection />
+        <div className="bg-white border rounded-xl p-4 text-sm text-gray-600">
+          {segmentGroupId || segmentTagId
+            ? 'The selected group or tag will be resolved again at send time and inactive or unsubscribed contacts will be skipped.'
+            : 'Choose a group or tag to define the segment audience.'}
+        </div>
+        <ActionButtons
+          validCount={segmentGroupId || segmentTagId ? 1 : 0}
+          onSchedule={() => handleSchedule({
+            groupIds: segmentGroupId ? [segmentGroupId] : [],
+            tagIds: segmentTagId ? [segmentTagId] : [],
+          })}
+          onSend={() => {
+            if (!validateCommon()) return;
+            if (!segmentGroupId && !segmentTagId) { toast.error('Choose a group or tag'); return; }
+            launchMutation.mutate(buildPayload({
+              groupIds: segmentGroupId ? [segmentGroupId] : [],
+              tagIds: segmentTagId ? [segmentTagId] : [],
+            }));
+          }}
+          loading={launchMutation.isPending}
+        />
+      </SubViewShell>
+    );
+  }
+
+  // ── Drip / Trigger Campaigns ───────────────────────────────────────────────
+
+  if (view === 'drip' || view === 'trigger') {
+    return (
+      <SubViewShell title={view === 'drip' ? 'Drip Campaign' : 'Trigger Campaign'} onBack={() => setView('select')}>
+        <ConfigRow
+          templates={approvedTemplates} tmplLoading={tmplLoading}
+          templateId={templateId} setTemplateId={setTemplateId}
+          campaignName={campaignName} setCampaignName={setCampaignName}
+          countryCode={countryCode} setCountryCode={setCountryCode}
+        />
+        {view === 'drip' ? (
+          <div className="bg-white border rounded-xl p-4 space-y-2">
+            <p className="text-sm font-semibold text-gray-800">Sequence delays</p>
+            <p className="text-xs text-gray-500">Enter comma-separated delays in minutes. The first step sends immediately.</p>
+            <input value={dripSteps} onChange={e => setDripSteps(e.target.value)} placeholder="0, 1440, 4320" className="w-full border rounded-lg px-3 py-2 text-sm" />
+          </div>
+        ) : (
+          <div className="bg-white border rounded-xl p-4 space-y-2">
+            <p className="text-sm font-semibold text-gray-800">Enrollment trigger</p>
+            <select value={triggerEvent} onChange={e => setTriggerEvent(e.target.value)} className="border rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="inbound_message">Inbound message</option>
+              <option value="contact_created">Contact created</option>
+              <option value="tag_added">Tag added</option>
+            </select>
+          </div>
+        )}
+        <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} contacts={contacts} />
+        <ActionButtons
+          validCount={parsed.valid.length}
+          onSchedule={() => handleSchedule({ phoneNumbers: parsed.valid })}
+          onSend={() => {
+            if (!validateCommon()) return;
+            if (!parsed.valid.length) { toast.error('Add at least one recipient'); return; }
+            launchMutation.mutate(buildPayload({ phoneNumbers: parsed.valid }));
+          }}
+          loading={launchMutation.isPending}
+        />
+      </SubViewShell>
     );
   }
 
