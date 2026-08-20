@@ -56,18 +56,64 @@ router.get("/billing/transactions", authenticate, async (req: AuthRequest, res) 
       ? Math.min(100, Math.max(1, requestedLimit))
       : 25;
     const skip = (page - 1) * limit;
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+    const transactionFilter: { userId: mongoose.Types.ObjectId; createdAt?: { $gte?: Date; $lt?: Date } } = { userId };
+
+    if (from) {
+      const fromDate = new Date(`${from}T00:00:00.000Z`);
+      if (Number.isNaN(fromDate.getTime())) return res.status(400).json({ error: "Invalid from date" });
+      transactionFilter.createdAt = { ...(transactionFilter.createdAt ?? {}), $gte: fromDate };
+    }
+    if (to) {
+      const toDate = new Date(`${to}T00:00:00.000Z`);
+      if (Number.isNaN(toDate.getTime())) return res.status(400).json({ error: "Invalid to date" });
+      toDate.setUTCDate(toDate.getUTCDate() + 1);
+      transactionFilter.createdAt = { ...(transactionFilter.createdAt ?? {}), $lt: toDate };
+    }
+    if (transactionFilter.createdAt?.$gte && transactionFilter.createdAt?.$lt
+      && transactionFilter.createdAt.$gte >= transactionFilter.createdAt.$lt) {
+      return res.status(400).json({ error: "The from date must be on or before the to date" });
+    }
+
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
+    const currentMonth = new Date().toISOString().slice(0, 7);
 
-    const [user, transactions, total, monthlyUsageRows] = await Promise.all([
+    const [user, transactions, total, monthlyUsageRows, currentMonthRows] = await Promise.all([
       UserModel.findById(userId).select("creditBalance").lean(),
-      CreditTransactionModel.find({ userId })
+      CreditTransactionModel.find(transactionFilter)
         .sort({ createdAt: -1, _id: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      CreditTransactionModel.countDocuments({ userId }),
+      CreditTransactionModel.countDocuments(transactionFilter),
+      CreditTransactionModel.aggregate<{ month: string; total: number }>([
+        {
+          $match: {
+            userId,
+            type: "DEDUCTION",
+          },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt", timezone: "UTC" } },
+            month: { $first: { $dateToString: { format: "%Y-%m", date: "$createdAt", timezone: "UTC" } } },
+            total: {
+              $sum: {
+                $cond: [
+                  { $lt: ["$amount", 0] },
+                  { $multiply: ["$amount", -1] },
+                  "$amount",
+                ],
+              },
+            },
+          },
+        },
+        { $sort: { _id: -1 } },
+        { $project: { _id: 0, month: 1, total: 1 } },
+      ]),
       CreditTransactionModel.aggregate<{ total: number }>([
         {
           $match: {
@@ -101,7 +147,10 @@ router.get("/billing/transactions", authenticate, async (req: AuthRequest, res) 
       page,
       limit,
       totalPages: Math.max(1, Math.ceil(total / limit)),
-      totalUsedThisMonth: monthlyUsageRows[0]?.total ?? 0,
+      totalUsedThisMonth: currentMonthRows[0]?.total ?? 0,
+      monthlyUsage: monthlyUsageRows,
+      from: from ?? null,
+      to: to ?? null,
       transactions: transactions.map((transaction) => ({
         id: String(transaction._id),
         type: transaction.type,

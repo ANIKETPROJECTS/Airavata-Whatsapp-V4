@@ -29,6 +29,9 @@ interface CreditsResponse {
   limit: number;
   totalPages: number;
   totalUsedThisMonth: number;
+  monthlyUsage: { month: string; total: number }[];
+  from: string | null;
+  to: string | null;
   transactions: CreditTransaction[];
 }
 
@@ -41,6 +44,14 @@ const formatDate = (value: string) =>
     hour: '2-digit',
     minute: '2-digit',
   });
+const formatMonth = (value: string) => {
+  const [year, month] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-IN', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+};
 
 function TypeBadge({ type }: { type: CreditTransactionType }) {
   const styles: Record<CreditTransactionType, string> = {
@@ -54,14 +65,42 @@ function TypeBadge({ type }: { type: CreditTransactionType }) {
 
 export default function Credits() {
   const [page, setPage] = useState(1);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const { data, isLoading, isError } = useQuery<CreditsResponse>({
-    queryKey: ['credits-transactions', page],
-    queryFn: () => api.get(`/billing/transactions?page=${page}&limit=25`),
+    queryKey: ['credits-transactions', page, from, to],
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(page), limit: '25' });
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      return api.get(`/billing/transactions?${params.toString()}`);
+    },
     refetchOnMount: 'always',
   });
 
   const transactions = data?.transactions ?? [];
   const totalPages = data?.totalPages ?? 1;
+  const monthlyUsage = data?.monthlyUsage ?? [];
+  const maxMonthlyUsage = Math.max(...monthlyUsage.map((item) => item.total), 1);
+
+  const applyRange = (nextFrom: string, nextTo: string) => {
+    setFrom(nextFrom);
+    setTo(nextTo);
+    setPage(1);
+  };
+  const today = new Date();
+  const dateValue = (date: Date) => date.toISOString().slice(0, 10);
+  const applyPreset = (days: number) => {
+    const start = new Date(today);
+    start.setDate(start.getDate() - days + 1);
+    applyRange(dateValue(start), dateValue(today));
+  };
+  const applyThisMonth = () => {
+    applyRange(
+      dateValue(new Date(today.getFullYear(), today.getMonth(), 1)),
+      dateValue(today),
+    );
+  };
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 p-6">
@@ -98,6 +137,30 @@ export default function Credits() {
         </div>
       </div>
 
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Monthly usage</h2>
+            <p className="mt-0.5 text-xs text-gray-500">Total credits deducted each month.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {monthlyUsage.length === 0 ? (
+              <span className="text-sm text-gray-500">No monthly deductions yet.</span>
+            ) : monthlyUsage.slice(0, 6).map((item) => (
+              <div key={item.month} className="min-w-[150px] rounded-lg bg-gray-50 px-3 py-2">
+                <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+                  <span>{formatMonth(item.month)}</span>
+                  <strong className="text-gray-900">{formatCredits(item.total)}</strong>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200">
+                  <div className="h-full rounded-full bg-orange-400" style={{ width: `${Math.max(8, (item.total / maxMonthlyUsage) * 100)}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
@@ -105,6 +168,36 @@ export default function Credits() {
             <p className="mt-0.5 text-xs text-gray-500">{data?.total ?? 0} total transactions</p>
           </div>
           <Receipt className="h-5 w-5 text-gray-400" />
+        </div>
+        <div className="border-b border-gray-100 bg-gray-50/70 px-5 py-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="text-xs font-semibold text-gray-600">
+              From
+              <input
+                type="date"
+                value={from}
+                max={to || undefined}
+                onChange={(event) => applyRange(event.target.value, to)}
+                className="mt-1 block rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-normal text-gray-900"
+              />
+            </label>
+            <label className="text-xs font-semibold text-gray-600">
+              To
+              <input
+                type="date"
+                value={to}
+                min={from || undefined}
+                onChange={(event) => applyRange(from, event.target.value)}
+                className="mt-1 block rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-normal text-gray-900"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => applyPreset(7)} className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100">Last 7 days</button>
+              <button type="button" onClick={() => applyPreset(30)} className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100">Last 30 days</button>
+              <button type="button" onClick={applyThisMonth} className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100">This month</button>
+              {(from || to) && <button type="button" onClick={() => applyRange('', '')} className="px-2 py-2 text-xs font-semibold text-gray-500 hover:text-gray-900">Clear</button>}
+            </div>
+          </div>
         </div>
 
         {isLoading ? (
