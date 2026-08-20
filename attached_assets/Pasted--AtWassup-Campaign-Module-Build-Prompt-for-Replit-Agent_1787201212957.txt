@@ -1,0 +1,56 @@
+# AtWassup — Campaign Module Build Prompt (for Replit Agent)
+
+## Context
+
+You are building the **Campaign Module** for AtWassup, a WhatsApp Business API SaaS platform (competitor to AiSensy, Wati, Interakt). The existing UI already has a "Create Campaign" screen with cards for different campaign types. Your job is to implement the backend logic, data models, scheduling engine, and UI flows for each campaign type described below.
+
+Each campaign type has its own detailed spec in `/campaigns/*.md`. **Read every file in `/campaigns/` before writing any code** — they contain the exact data models, state machines, and edge cases you must implement. Do not invent your own campaign logic; follow the specs exactly. If a spec is ambiguous, ask before assuming.
+
+## Campaign types to build, in priority order
+
+1. `campaigns/01-quick-campaign.md` — single/small recipient send (already partially exists, verify against spec)
+2. `campaigns/02-csv-campaign.md` — bulk personalized send via CSV upload
+3. `campaigns/03-segment-campaign.md` — replaces the old separate "Groups Campaign" and "Tags Campaign" cards with one unified segment builder
+4. `campaigns/04-flow-campaign.md` — WhatsApp Flows (interactive forms/surveys) sent in bulk
+5. `campaigns/05-drip-campaign.md` — **NEW**, multi-step automated sequences over time (highest priority new build)
+6. `campaigns/06-trigger-campaign.md` — **NEW**, event-based automated sends (build after Drip, shares the same engine)
+
+## Non-negotiable architectural rules
+
+1. **Shared sending engine.** All campaign types must funnel through a single `CampaignExecutor` service that handles: WhatsApp API calls, rate limiting, retry logic, delivery status webhooks, and quality-rating protection. Do not build separate sending logic per campaign type — only the *scheduling/trigger* logic differs.
+2. **Shared audience resolution.** All campaign types resolve their recipient list through a single `AudienceResolver` that accepts: explicit contact IDs, CSV upload, group ID, tag filter, or a combination (AND/OR filter tree). Segment, CSV, and Drip campaigns must all use this resolver.
+3. **Template compliance.** Every outbound message in every campaign type must reference an approved WhatsApp template ID. No campaign type should allow free-text sends outside the 24-hour customer service window, except Live Chat (out of scope here).
+4. **State machine, not cron spaghetti.** Drip and Trigger campaigns must be modeled as explicit state machines per-contact (see their specs), not as a single global cron job iterating all contacts. This is critical for scale — read the Drip spec's "Execution model" section carefully.
+5. **Idempotency.** Every scheduled send must be idempotent — if the job runner fires twice for the same contact+step, only one message should go out. Use a unique constraint on `(campaign_id, contact_id, step_id)` in the send log table.
+6. **Opt-out respected everywhere.** Every campaign type must check contact opt-out/DND status before sending, at send-time (not just at campaign creation time — a contact could opt out mid-drip).
+7. **Multi-tenant safe.** Every table and query must be scoped by `workspace_id` / `account_id` (whatever your existing tenant key is called) — this is a multi-tenant SaaS, not a single-business tool.
+
+## Deliverables expected from you (Replit agent)
+
+For **each** campaign type:
+- Database schema (migration files)
+- Backend service/controller logic
+- API endpoints (REST, matching the existing app's conventions)
+- Frontend: campaign creation wizard UI (multi-step form matching the existing card-based design system — green/white, rounded cards)
+- Frontend: campaign detail/report view (status per recipient, delivery/read stats)
+- Basic test coverage for the state machine logic (Drip and Trigger especially)
+
+## Build order
+
+1. First, build the shared `AudienceResolver` and `CampaignExecutor` services described above — everything else depends on these.
+2. Then implement campaigns in the priority order listed above.
+3. After each campaign type, pause and summarize what you built + any deviations from spec, before moving to the next.
+
+## Design system constraints
+
+- Reuse existing sidebar navigation, header, and card components — do not introduce a new component library.
+- Primary action color: green (`#0F9D58`-ish, match existing "Start X Campaign" buttons).
+- Campaign creation should always be a **step-by-step wizard** (Audience → Content/Template → Schedule/Trigger → Review & Launch), consistent across all 6 types, even though step 3 differs a lot between e.g. CSV (send now) and Drip (multi-step delays).
+
+## What NOT to do
+
+- Do not build a generic "workflow builder" (like a full visual automation canvas) — that's a v2 feature, out of scope. Drip and Trigger campaigns should have simpler, purpose-built UIs per their specs, not a generic node-based editor.
+- Do not merge Drip and Trigger into one campaign type — they are different (time-based vs. event-based) even though they share the execution engine.
+- Do not let campaign sending logic call the WhatsApp API directly from route handlers — always go through `CampaignExecutor`.
+
+Start by reading all files in `/campaigns/`, then propose a database schema for the shared tables (`campaigns`, `campaign_recipients`, `campaign_sends`, `audience_segments`) before writing any code. Wait for my confirmation on the schema before proceeding to implementation.
