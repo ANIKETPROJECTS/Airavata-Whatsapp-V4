@@ -10,7 +10,7 @@
 
 import { Router, type Response } from "express";
 import mongoose from "mongoose";
-import { authenticate, type AuthRequest } from "../middlewares/authenticate";
+import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
 import { UserModel } from "../models/User";
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
 import { decryptToken, encryptToken } from "../lib/credentialCrypto";
@@ -24,6 +24,26 @@ const GRAPH_API_VERSION = "v21.0";
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   try {
+    const requestedTargetUserId = typeof req.body?.targetUserId === "string"
+      ? req.body.targetUserId
+      : undefined;
+    if (requestedTargetUserId && req.user?.kind !== "master" && requestedTargetUserId !== req.user?.userId) {
+      res.status(403).json({ error: "You can only connect your own WhatsApp account" });
+      return;
+    }
+    const ownerUserId = requestedTargetUserId ?? req.user!.userId;
+    if (!mongoose.Types.ObjectId.isValid(ownerUserId)) {
+      res.status(400).json({ error: "A valid target user is required" });
+      return;
+    }
+    if (req.user?.kind === "master" && !requestedTargetUserId) {
+      res.status(400).json({ error: "Master Admin connections require a target user" });
+      return;
+    }
+    if (!(await UserModel.exists({ _id: ownerUserId }))) {
+      res.status(404).json({ error: "Target user not found" });
+      return;
+    }
     const { code } = (req.body ?? {}) as {
       code?: string;
       waba_id?: string;
