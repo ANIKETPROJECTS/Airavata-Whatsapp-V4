@@ -1,0 +1,19 @@
+My WhatsApp Embedded Signup flow is now failing at the encryption step specifically — the server logs "WhatsApp credential encryption failed" and the error is caught but not yet shown to me. Meta's OAuth and token exchange are confirmed working; this is purely an issue inside the encryptToken() function.
+
+Please do the following:
+
+1. Open artifacts/api-server/src/lib/credentialCrypto.ts and show me the complete encryptToken() function exactly as it currently exists, including how it reads the key, creates the cipher, generates the IV, and returns the final encrypted string.
+
+2. Check the server logs from the most recent /api/whatsapp/onboard request and show me the FULL error message and stack trace under "WhatsApp credential encryption failed" — not the generic user-facing text, the actual err.message and err.stack that were logged.
+
+3. Check whether process.env.WHATSAPP_CREDENTIALS_KEY has any leading/trailing whitespace, newline characters, or quote characters that could make Buffer.from(key, 'hex') produce a buffer that isn't exactly 32 bytes even though the string length is 64. Log the actual byte length of the resulting Buffer (not the string), e.g. Buffer.from(key.trim(), 'hex').length, and confirm it equals 32.
+
+4. Check the exact Node.js crypto API calls being used — confirm crypto.createCipheriv is called with 'aes-256-gcm', the correct key buffer, and a properly generated IV (typically crypto.randomBytes(12) for GCM, not 16). A common bug is using a 16-byte IV instead of 12-byte IV for GCM mode.
+
+5. Confirm the auth tag (cipher.getAuthTag()) is being captured and included in what gets stored, since GCM requires it for decryption — if it's missing, encryption might technically succeed but something downstream could be misinterpreting a subsequent step as encryption failure.
+
+6. Show me exactly what line the exception is thrown from, and fix the root cause.
+
+7. Re-test with a fresh Embedded Signup attempt and confirm the log now shows 'WhatsApp credentials encrypted and stored in whatsappcredentials' with real waba_id and phone_number_id values.
+
+Show me the actual exception message and stack trace that's been happening, and the corrected encryptToken() function.
