@@ -301,7 +301,7 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       logger.error(
         {
           err: encryptionErr,
-          userId: req.user!.userId,
+          userId: ownerUserId,
           errorDetail: encryptionErr instanceof Error ? encryptionErr.message : String(encryptionErr),
         },
         "WhatsApp credential encryption failed",
@@ -314,9 +314,9 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
 
     try {
       await WhatsAppCredentialModel.findOneAndUpdate(
-        { userId: new mongoose.Types.ObjectId(req.user!.userId) },
+        { userId: new mongoose.Types.ObjectId(ownerUserId) },
         {
-          userId: new mongoose.Types.ObjectId(req.user!.userId),
+          userId: new mongoose.Types.ObjectId(ownerUserId),
           wabaId,
           phoneNumberId,
           accessTokenEncrypted,
@@ -325,14 +325,14 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       );
 
       logger.info(
-        { userId: req.user!.userId, wabaId, phoneNumberId },
+        { userId: ownerUserId, wabaId, phoneNumberId },
         "WhatsApp credentials encrypted and stored in whatsappcredentials",
       );
     } catch (databaseErr) {
       logger.error(
         {
           err: databaseErr,
-          userId: req.user!.userId,
+          userId: ownerUserId,
           wabaId,
           phoneNumberId,
           errorDetail: databaseErr instanceof Error ? databaseErr.message : String(databaseErr),
@@ -350,7 +350,7 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
      * Save the User connection state only after encrypted credential storage
      * succeeds, so the UI cannot show connected without usable credentials.
      */
-    await UserModel.findByIdAndUpdate(req.user!.userId, {
+    await UserModel.findByIdAndUpdate(ownerUserId, {
       metaWabaConnected: true,
       metaWabaId: wabaId,
       metaPhoneNumberId: phoneNumberId,
@@ -362,7 +362,7 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
 
     logger.info(
       {
-        userId: req.user!.userId,
+        userId: ownerUserId,
         wabaId,
         phoneNumberId,
       },
@@ -395,6 +395,16 @@ router.post("/whatsapp/onboard", authenticate, onboardWhatsApp);
  * Keep the old route working.
  */
 router.post("/integration/facebook/connect", authenticate, onboardWhatsApp);
+
+router.post(
+  "/master-admin/users/:id/connect",
+  authenticate,
+  requireMasterAdmin,
+  async (req: AuthRequest, res) => {
+    req.body = { ...(req.body ?? {}), targetUserId: req.params.id };
+    await onboardWhatsApp(req, res);
+  },
+);
 
 /**
  * POST /api/integration/facebook/reset

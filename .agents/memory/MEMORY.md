@@ -9,3 +9,4 @@
 - [Credit category policy](credit-category-policy.md) — template sends use category rates; non-template session messages remain free.
 - [Campaign execution architecture](campaign-engine.md) — enroll audiences once, recheck eligibility at send time, and claim campaign/contact/step work before calling Meta.
 - [Master Admin report pages](master-admin-report-pages.md) — user reports live at dedicated per-user routes with detailed usage and transaction history.
+- [Master Admin delegated connections](master-admin-delegated-connections.md) — Master Admin can run Embedded Signup for a selected user while credentials remain encrypted and tenant-scoped.

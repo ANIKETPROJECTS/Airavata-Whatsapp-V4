@@ -11,7 +11,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, masterApi } from "@/lib/api";
 
 const CONFIG_ID = "2519748081877556";
 
@@ -40,7 +40,7 @@ interface FBLoginResponse {
   };
 }
 
-export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
+export function useFacebookEmbeddedSignup(onSuccess?: () => void, targetUserId?: string) {
   const [isConnecting, setIsConnecting] = useState(false);
   const signupIdsRef = useRef<{ wabaId?: string; phoneNumberId?: string }>({});
 
@@ -98,7 +98,8 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
     return () => window.removeEventListener("message", handleSignupMessage);
   }, []);
 
-  const launch = useCallback(() => {
+  const launch = useCallback((overrideTargetUserId?: string) => {
+    const connectionTargetUserId = overrideTargetUserId ?? targetUserId;
     if (typeof window.FB === "undefined" || !window.fbSDKReady) {
       toast.error(
         "Facebook SDK is still loading — please try again in a moment.",
@@ -148,7 +149,11 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
             });
             console.groupEnd();
 
-            await api.post("/whatsapp/onboard", {
+            const client = connectionTargetUserId ? masterApi : api;
+            const endpoint = connectionTargetUserId
+              ? `/master-admin/users/${connectionTargetUserId}/connect`
+              : "/whatsapp/onboard";
+            await client.post(endpoint, {
               code: response.authResponse!.code,
               waba_id: signupIdsRef.current.wabaId,
               phone_number_id: signupIdsRef.current.phoneNumberId,
@@ -179,7 +184,7 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void) {
         },
       },
     );
-  }, [onSuccess]);
+  }, [onSuccess, targetUserId]);
 
   return {
     launch,
