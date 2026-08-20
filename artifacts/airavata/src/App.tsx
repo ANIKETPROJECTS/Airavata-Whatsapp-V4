@@ -76,6 +76,7 @@ function AppRouter() {
       <Route path="/MasterAdmin/credits" component={MasterAdmin} />
       <Route path="/MasterAdmin/connections" component={MasterAdmin} />
       <Route path="/MasterAdmin/reports" component={MasterAdmin} />
+      <Route path="/MasterAdmin/reports/:userId" component={MasterAdmin} />
       <Route path="/MasterAdmin/analytics" component={MasterAdmin} />
       {/* Public routes — no auth required */}
       <Route path="/login" component={() => (user ? <Redirect to="/dashboard" /> : <Login />)} />
