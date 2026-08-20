@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
-import { ArrowDownAZ, ArrowUpAZ, BarChart3, CreditCard, FileBarChart, Grid2X2, LayoutDashboard, Link2Off, List, LogOut, Plus, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
+import { ArrowDownAZ, ArrowUpAZ, BarChart3, CreditCard, FileBarChart, Grid2X2, LayoutDashboard, Link2Off, List, LogOut, PanelLeftClose, PanelLeftOpen, Plus, ReceiptText, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { masterApi, masterTokenStorage } from '../lib/api';
 import { useFacebookEmbeddedSignup } from '../hooks/use-facebook-embedded-signup';
@@ -116,6 +116,15 @@ function DetailedAnalytics({ analytics, range, onRange }: { analytics: any; rang
   </section>;
 }
 
+function CreditTransactionsPanel({ users, transactions, visibleTransactions, transactionSearch, setTransactionSearch, transactionFilter, setTransactionFilter, transactionSort, setTransactionSort, transactionView, setTransactionView }: any) {
+  const rows = visibleTransactions.filter((item: any) => !transactionFilter.userId || item.userId === transactionFilter.userId);
+  return <section className="rounded-xl bg-white border overflow-hidden">
+    <div className="p-6 border-b flex items-start gap-3"><ReceiptText className="w-6 h-6 text-emerald-600 mt-0.5" /><div><h2 className="text-xl font-bold">Credit transaction details</h2><p className="text-sm text-slate-500 mt-1">A dedicated audit trail for every purchase, deduction, refund and adjustment.</p></div></div>
+    <div className="p-5 border-b space-y-3"><AdminToolbar search={transactionSearch} onSearch={setTransactionSearch} searchPlaceholder="Search by user or transaction reason…" filter={transactionFilter.type} onFilter={(value: string) => setTransactionFilter({...transactionFilter, type: value})} filterOptions={[['ALL', 'All types'], ['PURCHASE', 'Purchases'], ['ADJUSTMENT', 'Adjustments'], ['DEDUCTION', 'Deductions'], ['REFUND', 'Refunds']]} sort={transactionSort} onSort={setTransactionSort} sortOptions={[['newest', 'Newest first'], ['amount', 'Highest amount']]} viewMode={transactionView} onViewMode={setTransactionView} /><select value={transactionFilter.userId} onChange={e => setTransactionFilter({...transactionFilter, userId: e.target.value})} className="rounded-lg border px-3 py-2 text-sm"><option value="">All users</option>{users.map((user: any) => <option key={user.id} value={user.id}>{user.businessName}</option>)}</select></div>
+    {transactionView === 'list' ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-slate-500"><tr>{['Date', 'User', 'Type', 'Amount', 'Balance after', 'Reason'].map(label => <th key={label} className="px-5 py-3">{label}</th>)}</tr></thead><tbody className="divide-y">{rows.map((item: any) => <tr key={item.id}><td className="px-5 py-3 whitespace-nowrap">{new Date(item.createdAt).toLocaleString()}</td><td className="px-5 py-3">{item.user?.businessName ?? 'Deleted user'}</td><td className="px-5 py-3">{item.type}</td><td className="px-5 py-3 font-semibold">{item.amount.toLocaleString()}</td><td className="px-5 py-3">{item.balanceAfter.toLocaleString()}</td><td className="px-5 py-3 text-slate-500">{item.description || '—'}</td></tr>)}</tbody></table>{!rows.length && <div className="p-8 text-center text-sm text-slate-500">No transactions match these filters.</div>}</div> : <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4 p-5">{rows.map((item: any) => <div key={item.id} className="rounded-xl border p-4"><div className="flex justify-between gap-3"><span className="text-xs font-semibold text-slate-500">{item.type}</span><span className="font-bold">{item.amount.toLocaleString()} credits</span></div><p className="mt-3 font-semibold">{item.user?.businessName ?? 'Deleted user'}</p><p className="mt-1 text-xs text-slate-500">{item.description || 'No reason provided'}</p><p className="mt-4 text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()} · Balance {item.balanceAfter.toLocaleString()}</p></div>)}</div>}
+  </section>;
+}
+
 export default function MasterAdmin() {
   const [authenticated, setAuthenticated] = useState(Boolean(masterTokenStorage.get()));
   const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -135,6 +144,7 @@ export default function MasterAdmin() {
   const [transactionSearch, setTransactionSearch] = useState('');
   const [transactionSort, setTransactionSort] = useState('newest');
   const [transactionView, setTransactionView] = useState<ViewMode>('list');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [form, setForm] = useState<UserForm>(blankForm);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -146,7 +156,7 @@ export default function MasterAdmin() {
   const pathParts = location.split('/').filter(Boolean);
   const reportUserId = pathParts[1] === 'reports' && pathParts[2] ? pathParts[2] : null;
   const page = reportUserId ? 'reports' : (pathParts[1] ?? 'dashboard');
-  const activePage = ['dashboard', 'users', 'credits', 'connections', 'reports', 'analytics'].includes(page) ? page : 'dashboard';
+  const activePage = ['dashboard', 'users', 'credits', 'credit-transactions', 'connections', 'reports', 'analytics'].includes(page) ? page : 'dashboard';
 
   const load = async () => {
     setLoading(true);
@@ -170,7 +180,7 @@ export default function MasterAdmin() {
     setTransactions(result.transactions);
   };
   useEffect(() => {
-    if (authenticated && activePage === 'credits') void loadTransactions().catch(() => undefined);
+    if (authenticated && ['credits', 'credit-transactions'].includes(activePage)) void loadTransactions().catch(() => undefined);
   }, [authenticated, activePage, transactionFilter.userId, transactionFilter.type]);
 
   const openCreate = () => { setSelected(null); setForm(blankForm); setShowForm(true); };
@@ -246,6 +256,7 @@ export default function MasterAdmin() {
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'credits', label: 'Credits & Rates', icon: CreditCard },
+    { id: 'credit-transactions', label: 'Credit Transactions', icon: ReceiptText },
     { id: 'connections', label: 'Connections', icon: Link2Off },
     { id: 'reports', label: 'User Reports', icon: FileBarChart },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -280,27 +291,28 @@ export default function MasterAdmin() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex">
-      <aside className="w-64 shrink-0 bg-slate-950 text-white min-h-screen hidden md:flex flex-col">
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-[76px]'} shrink-0 bg-slate-950 text-white min-h-screen hidden md:flex flex-col transition-[width] duration-200`}>
         <div className="h-20 px-5 flex items-center gap-3 border-b border-slate-800">
           <div className="rounded-xl bg-emerald-500/15 p-2.5 text-emerald-400"><ShieldCheck className="w-6 h-6" /></div>
-          <div><p className="font-bold">Airavata</p><p className="text-xs text-slate-400">Master Admin</p></div>
+          {sidebarOpen && <div><p className="font-bold">Airavata</p><p className="text-xs text-slate-400">Master Admin</p></div>}
         </div>
         <nav className="p-3 space-y-1 flex-1">
-          <p className="px-3 pt-3 pb-2 text-[11px] uppercase tracking-wider text-slate-500">Control center</p>
+           {sidebarOpen && <p className="px-3 pt-3 pb-2 text-[11px] uppercase tracking-wider text-slate-500">Control center</p>}
           {navItems.map(item => {
             const Icon = item.icon;
-            return <button key={item.id} onClick={() => goTo(item.id)} className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-left transition ${activePage === item.id ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}><Icon className="w-4 h-4" />{item.label}</button>;
+             return <button title={sidebarOpen ? undefined : item.label} key={item.id} onClick={() => goTo(item.id)} className={`w-full flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'} rounded-lg px-3 py-2.5 text-sm text-left transition ${activePage === item.id ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}><Icon className="w-4 h-4 shrink-0" />{sidebarOpen && item.label}</button>;
           })}
         </nav>
-        <div className="p-3 border-t border-slate-800"><button onClick={signOut} className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"><LogOut className="w-4 h-4" />Sign out</button></div>
+         <div className="p-3 border-t border-slate-800 space-y-1"><button title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'} onClick={() => setSidebarOpen(value => !value)} className={`w-full flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'} rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white`}>{sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}{sidebarOpen && 'Collapse sidebar'}</button><button onClick={signOut} className={`w-full flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'} rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white`}><LogOut className="w-4 h-4" />{sidebarOpen && 'Sign out'}</button></div>
       </aside>
       <div className="flex-1 min-w-0">
         <header className="h-20 bg-white border-b px-5 sm:px-8 flex items-center justify-between">
-          <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Master Admin</p><h1 className="text-xl font-bold">{navItems.find(item => item.id === activePage)?.label}</h1></div>
+           <div className="flex items-center gap-3"><button onClick={() => setSidebarOpen(value => !value)} className="hidden md:inline-flex rounded-lg border p-2 text-slate-600 hover:bg-slate-50" title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>{sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}</button><div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Master Admin</p><h1 className="text-xl font-bold">{navItems.find(item => item.id === activePage)?.label}</h1></div></div>
           <button onClick={signOut} className="md:hidden flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"><LogOut className="w-4 h-4" /> Sign out</button>
           <div className="hidden md:flex items-center gap-2 text-sm text-slate-500"><UserRound className="w-4 h-4" /> Full system access</div>
         </header>
         <main className="p-5 sm:p-8 max-w-[1500px] space-y-6">
+          {activePage === 'credit-transactions' && <CreditTransactionsPanel users={users} transactions={transactions} visibleTransactions={visibleTransactions} transactionSearch={transactionSearch} setTransactionSearch={setTransactionSearch} transactionFilter={transactionFilter} setTransactionFilter={setTransactionFilter} transactionSort={transactionSort} setTransactionSort={setTransactionSort} transactionView={transactionView} setTransactionView={setTransactionView} />}
           {activePage === 'dashboard' && <>
             <div><h2 className="text-2xl font-bold">Good day, Master Admin</h2><p className="mt-1 text-sm text-slate-500">Here’s what is happening across Airavata.</p></div>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">{[['Total users', analytics?.users ?? '—'], ['Active users', analytics?.activeUsers ?? '—'], ['Connected accounts', analytics?.connectedUsers ?? '—'], ['Credits used', analytics?.credits?.used?.toLocaleString?.() ?? '—']].map(([label, value]) => <div key={label} className="rounded-xl bg-white border p-5"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div>)}</div>

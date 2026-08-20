@@ -74,6 +74,7 @@ function AppRouter() {
       <Route path="/MasterAdmin/dashboard" component={MasterAdmin} />
       <Route path="/MasterAdmin/users" component={MasterAdmin} />
       <Route path="/MasterAdmin/credits" component={MasterAdmin} />
+      <Route path="/MasterAdmin/credit-transactions" component={MasterAdmin} />
       <Route path="/MasterAdmin/connections" component={MasterAdmin} />
       <Route path="/MasterAdmin/reports" component={MasterAdmin} />
       <Route path="/MasterAdmin/reports/:userId" component={MasterAdmin} />
