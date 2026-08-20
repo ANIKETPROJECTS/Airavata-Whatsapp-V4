@@ -270,6 +270,9 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
           keyConfigured: credentialsKey.length > 0,
           keyLength: credentialsKey.length,
           keyLooksLike64Hex: /^[0-9a-fA-F]{64}$/.test(credentialsKey),
+          decodedKeyByteLength: Buffer.from(credentialsKey, "hex").length,
+          hasOuterWhitespace: credentialsKey !== credentialsKey.trim(),
+          hasQuoteCharacters: credentialsKey.includes('"') || credentialsKey.includes("'"),
         },
         "WhatsApp credential encryption: starting",
       );
