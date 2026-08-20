@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { UserModel } from "../models/User";
 import { signToken } from "../lib/jwt";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -90,14 +91,29 @@ router.post("/auth/login", async (req, res) => {
       return;
     }
 
-    const user = await UserModel.findOne({ email: email.toLowerCase().trim() });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await UserModel.findOne({ email: normalizedEmail });
+    logger.info(
+      {
+        emailPresent: true,
+        emailLength: normalizedEmail.length,
+        userFound: Boolean(user),
+        passwordLength: password.length,
+        passwordHashPresent: Boolean(user?.passwordHash),
+        passwordHashAlgorithm: user?.passwordHash?.split("$")[1] ?? null,
+      },
+      "Password login lookup",
+    );
     if (!user) {
+      logger.warn({ emailLength: normalizedEmail.length }, "Password login rejected: user not found");
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
+    logger.info({ valid }, "Password login comparison completed");
     if (!valid) {
+      logger.warn("Password login rejected: bcrypt comparison failed");
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
