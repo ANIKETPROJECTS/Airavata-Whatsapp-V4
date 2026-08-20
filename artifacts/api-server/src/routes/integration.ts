@@ -28,6 +28,8 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   const { code, redirect_uri } = req.body as {
     code?: string;
     redirect_uri?: string;
+    waba_id?: string;
+    phone_number_id?: string;
   };
 
   if (!code) {
@@ -51,6 +53,8 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         redirectUri,
         codePresent: true,
         codeLength: code.length,
+        frontendWabaId: req.body?.waba_id ?? null,
+        frontendPhoneNumberId: req.body?.phone_number_id ?? null,
         graphApiVersion: GRAPH_API_VERSION,
         tokenExchangePath: "/oauth/access_token",
       },
@@ -75,6 +79,15 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
         message?: string;
       };
     };
+    logger.info(
+      {
+        status: tokenRes.status,
+        accessTokenPresent: Boolean(tokenData.access_token),
+        wabaIdPresent: Boolean(tokenData.waba_id),
+        phoneNumberIdPresent: Boolean(tokenData.phone_number_id),
+      },
+      "WhatsApp Embedded Signup: Meta token exchange response received",
+    );
 
     if (!tokenRes.ok || !tokenData.access_token) {
       logger.error(
@@ -96,8 +109,8 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
 
     const accessToken = tokenData.access_token;
 
-    let wabaId = tokenData.waba_id;
-    let phoneNumberId = tokenData.phone_number_id;
+    let wabaId = tokenData.waba_id ?? req.body?.waba_id;
+    let phoneNumberId = tokenData.phone_number_id ?? req.body?.phone_number_id;
 
     /**
      * Try to discover WABA from debug_token.

@@ -5,7 +5,7 @@
  * On success the auth code is sent to the backend which exchanges it for
  * a WhatsApp Business access token and stores it against the logged-in user.
  *
- * Config ID: 1057575420290304
+ * Config ID: 2519748081877556
  * App ID:    1324395306544610
  */
 
