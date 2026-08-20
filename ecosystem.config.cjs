@@ -18,6 +18,7 @@ module.exports = {
 
         // ── Session ───────────────────────────────────────────────────────────
         SESSION_SECRET: "07O2oC0/xUfVvayY/JZuxiSxV78OiXyJUq6Jwi01lGW5qBSDuDPNYriUwnh5lV5qd4Pu21/C5CeHTjS3vxdt/Q==",
+        WHATSAPP_CREDENTIALS_KEY: process.env.WHATSAPP_CREDENTIALS_KEY,
 
         // ── Meta / WhatsApp ───────────────────────────────────────────────────
         META_ACCESS_TOKEN: "EAAS0h8ZCJ7eIBR9DUEyTZChhRc43DyaRwCiZBzNa440O8K2OdfkpxuKnGZAKqXqdYwqfw1q7EUAW9ZBK2zpjYxXiMqsCgQZCodIa8SZAm0HsIcNLZCLAPZCYF9t3CjVQLu9u5HnBJbmLpDGrQkHTiCWPFRIZBr7ObfPepaPxsDLNrngjwAZBhFeUzVBdYvY3ZALM4aP1FwZDZD",
