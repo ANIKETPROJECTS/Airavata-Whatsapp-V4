@@ -24,6 +24,7 @@ import servicePricingRouter from "./service-pricing";
 import adminRouter from "./admin";
 import audienceSegmentsRouter from "./audience-segments";
 import masterAdminRouter from "./master-admin";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -34,6 +35,7 @@ router.use(metaComplianceRouter);
 router.use(healthRouter);
 router.use(authRouter);
 router.use(masterAdminRouter);
+router.use(notificationsRouter);
 router.use(apiKeysRouter);
 router.use(contactsRouter);
 router.use(groupsRouter);

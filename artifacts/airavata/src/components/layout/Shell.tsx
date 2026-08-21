@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   LayoutDashboard, MessageCircle, Users, Megaphone, BarChart3, 
   FileText, Settings, Workflow, Bot, Blocks, UsersRound, ShoppingBag, 
@@ -28,6 +29,23 @@ import supportIcon from '@assets/support_1787151920696.png';
 import indiaIcon from '@assets/world_1787152034254.png';
 import bellIcon from '@assets/bell_1787153116428.png';
 import metaPartnerLogo from '@assets/image_1787154204724.png';
+import { api } from '../../lib/api';
+
+interface NotificationPreview {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  severity: string;
+  read: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+interface NotificationPreviewResponse {
+  notifications: NotificationPreview[];
+  unreadCount: number;
+}
 
 const SIDEBAR_ITEMS = [
   { title: 'Dashboard', icon: LayoutDashboard, iconSrc: dashboardIcon, href: '/dashboard' },
@@ -58,6 +76,20 @@ export function Shell({ children }: { children: ReactNode }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: notificationData, isLoading: notificationsLoading } = useQuery<NotificationPreviewResponse>({
+    queryKey: ['notifications-preview'],
+    queryFn: () => api.get('/notifications?limit=5&sort=NEWEST'),
+    enabled: Boolean(user),
+    refetchInterval: 30_000,
+  });
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/notifications/${id}/read`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications-preview'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
 
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
@@ -66,6 +98,12 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const handleNav = (href: string) => {
     setLocation(href);
+  };
+
+  const handleNotificationClick = (notification: NotificationPreview) => {
+    if (!notification.read) markReadMutation.mutate(notification.id);
+    setNotificationsOpen(false);
+    setLocation(notification.actionUrl || '/notifications');
   };
 
   const visibleSidebarItems = SIDEBAR_ITEMS.filter(
@@ -175,9 +213,11 @@ export function Shell({ children }: { children: ReactNode }) {
                     aria-hidden="true"
                     className="w-6 h-6 object-contain"
                   />
-                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-green-600 text-[10px] leading-4 font-semibold text-white">
-                    3
-                  </span>
+                  {Boolean(notificationData?.unreadCount) && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-green-600 text-[10px] leading-4 font-semibold text-white">
+                      {(notificationData?.unreadCount ?? 0) > 99 ? '99+' : notificationData?.unreadCount}
+                    </span>
+                  )}
                 </button>
               </div>
               <div className="hidden sm:block w-[112px] text-left leading-tight whitespace-nowrap">
@@ -227,25 +267,58 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
             </div>
             {notificationsOpen && (
-              <div className="absolute top-[54px] right-[250px] w-72 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+              <div className="absolute top-[54px] right-[250px] z-50 w-[360px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
                 <div className="border-b border-gray-100 px-4 py-3">
-                  <div className="text-sm font-semibold text-gray-900">Notifications</div>
-                  <div className="mt-0.5 text-xs text-gray-500">Recent account activity</div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">Notifications</div>
+                      <div className="mt-0.5 text-xs text-gray-500">
+                        {notificationData?.unreadCount ?? 0} unread notification{notificationData?.unreadCount === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setNotificationsOpen(false); setLocation('/notifications'); }}
+                      className="text-xs font-semibold text-green-700 hover:text-green-800"
+                    >
+                      View all
+                    </button>
+                  </div>
                 </div>
-                <div className="divide-y divide-gray-100">
-                  <div className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-800">Template approval update</div>
-                    <div className="mt-1 text-xs text-gray-500">Your WhatsApp template status has changed.</div>
-                  </div>
-                  <div className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-800">New message activity</div>
-                    <div className="mt-1 text-xs text-gray-500">You have new customer messages to review.</div>
-                  </div>
-                  <div className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-800">Campaign delivery report</div>
-                    <div className="mt-1 text-xs text-gray-500">Your latest campaign report is ready.</div>
-                  </div>
+                <div className="max-h-[360px] divide-y divide-gray-100 overflow-y-auto">
+                  {notificationsLoading && (
+                    <div className="px-4 py-8 text-center text-sm text-gray-500">Loading notifications…</div>
+                  )}
+                  {!notificationsLoading && !notificationData?.notifications.length && (
+                    <div className="px-4 py-8 text-center text-sm text-gray-500">You’re all caught up.</div>
+                  )}
+                  {notificationData?.notifications.map((notification) => (
+                    <button
+                      type="button"
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 ${notification.read ? 'bg-white' : 'bg-green-50/50'}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {!notification.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-600" />}
+                        <div className={notification.read ? 'ml-4' : ''}>
+                          <div className="text-sm font-medium text-gray-800">{notification.title}</div>
+                          <div className="mt-1 line-clamp-2 text-xs text-gray-500">{notification.message}</div>
+                          <div className="mt-1 text-[11px] text-gray-400">
+                            {new Date(notification.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => { setNotificationsOpen(false); setLocation('/notifications'); }}
+                  className="w-full border-t border-gray-100 px-4 py-3 text-center text-sm font-semibold text-green-700 hover:bg-gray-50"
+                >
+                  Open notification center
+                </button>
               </div>
             )}
           </header>

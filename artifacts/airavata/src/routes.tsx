@@ -16,6 +16,7 @@ import Credits from './pages/Credits';
 import Manage from './pages/Manage';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import Notifications from './pages/Notifications';
 
 export const routes = [
   { path: '/dashboard', component: Dashboard },
@@ -35,4 +36,5 @@ export const routes = [
   { path: '/manage', component: Manage },
   { path: '/profile', component: Profile },
   { path: '/admin', component: Admin },
+  { path: '/notifications', component: Notifications },
 ];
