@@ -14,7 +14,7 @@ const tenantStorage = new AsyncLocalStorage<TenantContext>();
 const connectionCache = new Map<string, Connection>();
 const tenantSchemas = new Map<string, Schema>();
 // MongoDB rejects ":" in database namespaces, so use the safe equivalent
-// "User_<businessName>" while keeping the requested User + name convention.
+// "User_<businessName>_<phone>" while keeping the requested User + name convention.
 const TENANT_DATABASE_PREFIX = "User_";
 
 function registerTenantModels(connection: Connection) {

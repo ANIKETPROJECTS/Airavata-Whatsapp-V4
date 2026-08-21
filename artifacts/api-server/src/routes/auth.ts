@@ -27,7 +27,13 @@ router.post("/auth/signup", async (req, res) => {
       phone?: string;
     };
 
-    if (!businessName?.trim() || !email?.trim() || !password || !phone?.trim()) {
+    if (
+      !businessName?.trim() ||
+      !email?.trim() ||
+      !password ||
+      !phone?.trim() ||
+      phone.replace(/\D/g, "").length < 7
+    ) {
       res
         .status(400)
         .json({ error: "businessName, email, phone, and password are required" });

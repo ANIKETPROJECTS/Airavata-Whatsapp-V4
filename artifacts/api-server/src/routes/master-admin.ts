@@ -85,7 +85,14 @@ router.get("/master-admin/users", async (_req, res) => {
 router.post("/master-admin/users", async (req, res) => {
   try {
     const { businessName, email, password, phone, role, permissions, active } = req.body as Record<string, any>;
-    if (!businessName?.trim() || !email?.trim() || !phone?.trim() || !password || password.length < 8) {
+    if (
+      !businessName?.trim() ||
+      !email?.trim() ||
+      !phone?.trim() ||
+      phone.replace(/\D/g, "").length < 7 ||
+      !password ||
+      password.length < 8
+    ) {
       res.status(400).json({ error: "Business name, email, phone, and a password of at least 8 characters are required" });
       return;
     }
