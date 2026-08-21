@@ -33,7 +33,9 @@ function ProtectedRouter() {
   }
 
   const requestedRoute = routes.find(route => route.path === location);
-  const section = requestedRoute?.path.slice(1);
+  const section = requestedRoute?.path === '/notifications'
+    ? undefined
+    : requestedRoute?.path.slice(1);
   if (section && user.permissions?.length && !user.permissions.includes(section)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">

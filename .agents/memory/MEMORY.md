@@ -7,6 +7,7 @@
 - [Service pricing catalog](service-pricing-catalog.md) — workspace-owned MongoDB pricing rows power built-in chatbot lookups and XLSX imports.
 - [Per-user Meta read isolation](per-user-meta-read-isolation.md) — user-specific Meta read routes must use strict credentials with no shared environment fallback.
 - [Credit category policy](credit-category-policy.md) — template sends use category rates; non-template session messages remain free.
+- [Tenant notifications](notifications.md) — use persisted, deduplicated tenant events for the bell and notification center; never seed placeholder records.
 - [Campaign execution architecture](campaign-engine.md) — enroll audiences once, recheck eligibility at send time, and claim campaign/contact/step work before calling Meta.
 - [Master Admin report pages](master-admin-report-pages.md) — user reports live at dedicated per-user routes with detailed usage and transaction history.
 - [Master Admin delegated connections](master-admin-delegated-connections.md) — Master Admin can run Embedded Signup for a selected user while credentials remain encrypted and tenant-scoped.

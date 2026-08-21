@@ -194,7 +194,9 @@ export function Shell({ children }: { children: ReactNode }) {
           <header className="relative h-[60px] bg-white border-b flex items-center justify-between px-4 z-10 shrink-0">
             <div className="flex items-center gap-3">
               <div className="hidden md:flex items-center text-sm text-gray-500">
-                <span className="text-xl font-semibold text-gray-900">{currentItem?.title || 'Profile'}</span>
+                <span className="text-xl font-semibold text-gray-900">
+                  {location === '/notifications' ? 'Notifications' : currentItem?.title || 'Profile'}
+                </span>
               </div>
             </div>
 
