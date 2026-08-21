@@ -27,10 +27,10 @@ router.post("/auth/signup", async (req, res) => {
       phone?: string;
     };
 
-    if (!businessName?.trim() || !email?.trim() || !password) {
+    if (!businessName?.trim() || !email?.trim() || !password || !phone?.trim()) {
       res
         .status(400)
-        .json({ error: "businessName, email, and password are required" });
+        .json({ error: "businessName, email, phone, and password are required" });
       return;
     }
 

@@ -45,6 +45,14 @@ export function businessNameDatabaseBase(businessName: string) {
   return normalized.slice(0,  fiftyChars);
 }
 
+export function phoneDatabaseBase(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) {
+    throw new Error("Phone number cannot produce a valid tenant database name");
+  }
+  return digits.slice(0, 30);
+}
+
 const fiftyChars = 50;
 
 export async function getTenantDatabaseName(userId: string) {
@@ -54,9 +62,11 @@ export async function getTenantDatabaseName(userId: string) {
   const users = db.collection("users");
   const user = await users.findOne(
     { _id: new mongoose.Types.ObjectId(normalized) },
-    { projection: { businessName: 1, tenantDatabaseName: 1 } },
+    { projection: { businessName: 1, phone: 1, tenantDatabaseName: 1 } },
   );
   if (!user?.businessName) throw new Error("Tenant user was not found");
+  // Tenant names are immutable after first assignment. This keeps existing
+  // workspaces stable when a user edits their business name or phone number.
   if (
     typeof user.tenantDatabaseName === "string" &&
     user.tenantDatabaseName.startsWith(TENANT_DATABASE_PREFIX)
@@ -65,7 +75,8 @@ export async function getTenantDatabaseName(userId: string) {
   }
 
   const base = businessNameDatabaseBase(user.businessName);
-  const businessDatabaseName = `${TENANT_DATABASE_PREFIX}${base}`;
+  const phone = typeof user.phone === "string" ? phoneDatabaseBase(user.phone) : "";
+  const businessDatabaseName = `${TENANT_DATABASE_PREFIX}${base}${phone ? `_${phone}` : ""}`;
   const duplicate = await users.findOne({
     tenantDatabaseName: businessDatabaseName,
     _id: { $ne: new mongoose.Types.ObjectId(normalized) },

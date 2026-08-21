@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 const schema = z.object({
   businessName: z.string().min(2, 'Business name must be at least 2 characters'),
   email: z.string().email('Enter a valid email'),
-  phone: z.string().optional(),
+  phone: z.string().min(7, 'Enter a valid phone number'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
 }).refine(d => d.password === d.confirmPassword, {
@@ -97,7 +97,7 @@ export default function Signup() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Phone number <span className="text-gray-400 font-normal">(optional)</span>
+                Phone number
               </label>
               <input
                 type="tel"
