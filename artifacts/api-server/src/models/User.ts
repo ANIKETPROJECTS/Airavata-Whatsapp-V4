@@ -2,6 +2,7 @@ import { Schema, model, type InferSchemaType } from "mongoose";
 const userSchema = new Schema(
   {
     businessName: { type: String, required: true, trim: true },
+    tenantDatabaseName: { type: String, trim: true, unique: true, sparse: true },
     email: {
       type: String,
       required: true,

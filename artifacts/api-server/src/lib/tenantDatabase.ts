@@ -29,10 +29,49 @@ function normalizeUserId(userId: string) {
   return String(new mongoose.Types.ObjectId(userId));
 }
 
-export function tenantDatabaseName(userId: string) {
+export function businessNameDatabaseBase(businessName: string) {
+  const normalized = businessName
+    .trim()
+    .replace(/[\/\\."$]/g, "_")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^[_-]+|[_-]+$/g, "");
+  if (!normalized) {
+    throw new Error("Business name cannot produce a valid tenant database name");
+  }
+  return normalized.slice(0,  fiftyChars);
+}
+
+const fiftyChars = 50;
+
+export async function getTenantDatabaseName(userId: string) {
   const normalized = normalizeUserId(userId);
-  const prefix = process.env["TENANT_DB_PREFIX"]?.trim() || "airavata_user_";
-  return `${prefix}${normalized}`;
+  const db = mongoose.connection.db;
+  if (!db) throw new Error("MongoDB is not connected");
+  const users = db.collection("users");
+  const user = await users.findOne(
+    { _id: new mongoose.Types.ObjectId(normalized) },
+    { projection: { businessName: 1, tenantDatabaseName: 1 } },
+  );
+  if (!user?.businessName) throw new Error("Tenant user was not found");
+  if (typeof user.tenantDatabaseName === "string" && user.tenantDatabaseName) {
+    return user.tenantDatabaseName;
+  }
+
+  const base = businessNameDatabaseBase(user.businessName);
+  const duplicate = await users.findOne({
+    tenantDatabaseName: base,
+    _id: { $ne: new mongoose.Types.ObjectId(normalized) },
+  });
+  const databaseName = duplicate
+    ? `${base}_${normalized.slice(-8)}`
+    : base;
+
+  await users.updateOne(
+    { _id: new mongoose.Types.ObjectId(normalized) },
+    { $set: { tenantDatabaseName: databaseName } },
+  );
+  return databaseName;
 }
 
 export function getTenantContext() {
@@ -54,7 +93,7 @@ export async function runWithTenant<T>(
   callback: () => Promise<T> | T,
 ): Promise<T> {
   const normalized = normalizeUserId(userId);
-  const databaseName = tenantDatabaseName(normalized);
+  const databaseName = await getTenantDatabaseName(normalized);
   let connection = connectionCache.get(databaseName);
 
   if (!connection) {

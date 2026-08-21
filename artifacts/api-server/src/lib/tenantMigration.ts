@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ensureTenantDatabase, tenantDatabaseName } from "./tenantDatabase";
+import { ensureTenantDatabase, getTenantDatabaseName } from "./tenantDatabase";
 import { UserModel } from "../models/User";
 
 const TENANT_COLLECTIONS = [
@@ -63,20 +63,23 @@ async function copyCollection(
 
 export async function migrateExistingUser(userId: string) {
   const id = new mongoose.Types.ObjectId(userId);
+  const databaseName = await getTenantDatabaseName(userId);
   await ensureTenantDatabase(userId);
   const source = controlPlaneDb();
   const migrationState = source.collection("tenantmigrations");
   const existingState = await migrationState.findOne({ userId: id, verified: true });
   if (existingState) {
-    return {
-      userId,
-      databaseName: tenantDatabaseName(userId),
-      verified: true,
-      skipped: true,
-      collections: [],
-    };
+    if (existingState.databaseName === databaseName) {
+      return {
+        userId,
+        databaseName,
+        verified: true,
+        skipped: true,
+        collections: [],
+      };
+    }
   }
-  const target = mongoose.connection.useDb(tenantDatabaseName(userId), { useCache: true }).db;
+  const target = mongoose.connection.useDb(databaseName, { useCache: true }).db;
   if (!target) throw new Error("Tenant database is not connected");
 
   const collections = [];
@@ -88,7 +91,7 @@ export async function migrateExistingUser(userId: string) {
   if (verified) {
     await migrationState.updateOne(
       { userId: id },
-      { $set: { userId: id, verified: true, migratedAt: new Date() } },
+      { $set: { userId: id, databaseName, verified: true, migratedAt: new Date() } },
       { upsert: true },
     );
   }
@@ -111,7 +114,7 @@ export async function migrateAllExistingUsers() {
 }
 
 export async function deleteTenantDatabase(userId: string) {
-  const databaseName = tenantDatabaseName(userId);
+  const databaseName = await getTenantDatabaseName(userId);
   if (databaseName === mongoose.connection.name) {
     throw new Error("Refusing to delete the control-plane database");
   }
