@@ -55,6 +55,30 @@ export function phoneDatabaseBase(phone: string) {
 
 const fiftyChars = 50;
 
+export async function databaseNameForUserProfile(
+  userId: string,
+  businessName: string,
+  phone?: string,
+) {
+  const normalized = normalizeUserId(userId);
+  const db = mongoose.connection.db;
+  if (!db) throw new Error("MongoDB is not connected");
+  const users = db.collection("users");
+  const base = businessNameDatabaseBase(businessName);
+  const phoneBase = phone?.trim() ? phoneDatabaseBase(phone) : "";
+  const businessDatabaseName =
+    `${TENANT_DATABASE_PREFIX}${base}${phoneBase ? `_${phoneBase}` : ""}`;
+  const duplicate = await users.findOne({
+    tenantDatabaseName: businessDatabaseName,
+    _id: { $ne: new mongoose.Types.ObjectId(normalized) },
+  });
+  const conflictsWithControlPlane =
+    businessDatabaseName.toLowerCase() === mongoose.connection.name.toLowerCase();
+  return duplicate || conflictsWithControlPlane
+    ? `${businessDatabaseName}_${normalized.slice(-8)}`
+    : businessDatabaseName;
+}
+
 export async function getTenantDatabaseName(userId: string) {
   const normalized = normalizeUserId(userId);
   const db = mongoose.connection.db;
@@ -74,18 +98,11 @@ export async function getTenantDatabaseName(userId: string) {
     return user.tenantDatabaseName;
   }
 
-  const base = businessNameDatabaseBase(user.businessName);
-  const phone = typeof user.phone === "string" ? phoneDatabaseBase(user.phone) : "";
-  const businessDatabaseName = `${TENANT_DATABASE_PREFIX}${base}${phone ? `_${phone}` : ""}`;
-  const duplicate = await users.findOne({
-    tenantDatabaseName: businessDatabaseName,
-    _id: { $ne: new mongoose.Types.ObjectId(normalized) },
-  });
-  const conflictsWithControlPlane =
-    businessDatabaseName.toLowerCase() === mongoose.connection.name.toLowerCase();
-  const databaseName = duplicate || conflictsWithControlPlane
-    ? `${businessDatabaseName}_${normalized.slice(-8)}`
-    : businessDatabaseName;
+  const databaseName = await databaseNameForUserProfile(
+    normalized,
+    user.businessName,
+    typeof user.phone === "string" ? user.phone : undefined,
+  );
 
   await users.updateOne(
     { _id: new mongoose.Types.ObjectId(normalized) },

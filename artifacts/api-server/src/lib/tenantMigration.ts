@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
-import { ensureTenantDatabase, getTenantDatabaseName } from "./tenantDatabase";
+import {
+  clearTenantConnectionCache,
+  databaseNameForUserProfile,
+  ensureTenantDatabase,
+  getTenantDatabaseName,
+} from "./tenantDatabase";
 import { UserModel } from "../models/User";
 
 const TENANT_COLLECTIONS = [
@@ -17,6 +22,7 @@ const TENANT_COLLECTIONS = [
   "groups",
   "livechatsettings",
   "messages",
+  "notifications",
   "servicepricingcatalogs",
   "tags",
   "templates",
@@ -110,6 +116,71 @@ export async function migrateAllExistingUsers() {
     totalUsers: users.length,
     verifiedUsers: results.filter((result) => result.verified).length,
     results,
+  };
+}
+
+export async function renameTenantDatabase(
+  userId: string,
+  businessName: string,
+  phone?: string,
+) {
+  const currentDatabaseName = await getTenantDatabaseName(userId);
+  const nextDatabaseName = await databaseNameForUserProfile(
+    userId,
+    businessName,
+    phone,
+  );
+
+  if (currentDatabaseName === nextDatabaseName) {
+    return { renamed: false, from: currentDatabaseName, to: nextDatabaseName };
+  }
+
+  const source = mongoose.connection.useDb(currentDatabaseName, { useCache: true }).db;
+  const target = mongoose.connection.useDb(nextDatabaseName, { useCache: true }).db;
+  if (!source || !target) throw new Error("Tenant database is not connected");
+
+  const collections = [];
+  for (const collectionName of TENANT_COLLECTIONS) {
+    const documents = await source.collection(collectionName).find({}).toArray();
+    if (documents.length > 0) {
+      await target.collection(collectionName).bulkWrite(
+        documents.map((document) => ({
+          replaceOne: {
+            filter: { _id: document._id },
+            replacement: document,
+            upsert: true,
+          },
+        })),
+        { ordered: false },
+      );
+    }
+    const targetCount = await target.collection(collectionName).countDocuments({});
+    collections.push({
+      collectionName,
+      sourceCount: documents.length,
+      targetCount,
+    });
+  }
+
+  const verified = collections.every(
+    (collection) => collection.sourceCount === collection.targetCount,
+  );
+  if (!verified) {
+    throw new Error("Tenant database rename verification failed");
+  }
+
+  await UserModel.updateOne(
+    { _id: new mongoose.Types.ObjectId(userId) },
+    { $set: { tenantDatabaseName: nextDatabaseName } },
+  );
+  await source.dropDatabase();
+  clearTenantConnectionCache();
+
+  return {
+    renamed: true,
+    from: currentDatabaseName,
+    to: nextDatabaseName,
+    collections,
   };
 }
 

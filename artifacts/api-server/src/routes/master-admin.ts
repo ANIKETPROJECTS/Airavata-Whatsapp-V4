@@ -6,7 +6,11 @@ import { CreditTransactionModel } from "../models/CreditTransaction";
 import { CreditSettingModel } from "../models/CreditSetting";
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
 import { ensureTenantDatabase, runWithTenant } from "../lib/tenantDatabase";
-import { deleteTenantDatabase, migrateAllExistingUsers } from "../lib/tenantMigration";
+import {
+  deleteTenantDatabase,
+  migrateAllExistingUsers,
+  renameTenantDatabase,
+} from "../lib/tenantMigration";
 import { signToken } from "../lib/jwt";
 import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
@@ -142,6 +146,15 @@ router.put("/master-admin/users/:id", async (req, res) => {
     if (typeof active === "boolean") update.active = active;
     if (typeof password === "string" && password.length >= 8) update.passwordHash = await bcrypt.hash(password, 12);
     if (!Object.keys(update).length) { res.status(400).json({ error: "No valid changes provided" }); return; }
+    const existingUser = await UserModel.findById(id).select("businessName phone").lean();
+    if (!existingUser) { res.status(404).json({ error: "User not found" }); return; }
+    if (update.businessName && update.businessName !== existingUser.businessName) {
+      await renameTenantDatabase(
+        String(id),
+        update.businessName,
+        typeof existingUser.phone === "string" ? existingUser.phone : undefined,
+      );
+    }
     const user = await UserModel.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true }).lean();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
     const connection = await runWithTenant(String(id), () =>
