@@ -32,6 +32,8 @@ type CreditTransaction = {
 
 type ViewMode = 'list' | 'grid';
 
+const normalizePhoneInput = (value: string) => value.replace(/\D/g, '').slice(0, 10);
+
 function AdminToolbar({
   search,
   onSearch,
@@ -98,10 +100,10 @@ function MasterLogin({ onLogin }: { onLogin: () => void }) {
           <div className="rounded-xl bg-emerald-100 p-3 text-emerald-700"><ShieldCheck className="w-7 h-7" /></div>
           <div><h1 className="text-2xl font-bold text-slate-900">Master Admin</h1><p className="text-sm text-slate-500">Airavata control center</p></div>
         </div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-        <input value={email} onChange={e => setEmail(e.target.value)} type="email" required className="w-full rounded-lg border px-3 py-2.5 mb-4" />
+         <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+         <input value={email} onChange={e => setEmail(e.target.value)} type="email" required maxLength={254} autoComplete="email" className="w-full rounded-lg border px-3 py-2.5 mb-4" />
         <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-        <input value={password} onChange={e => setPassword(e.target.value)} type="password" required className="w-full rounded-lg border px-3 py-2.5 mb-6" />
+         <input value={password} onChange={e => setPassword(e.target.value)} type="password" required minLength={8} maxLength={128} autoComplete="current-password" className="w-full rounded-lg border px-3 py-2.5 mb-6" />
         <button disabled={busy} className="w-full rounded-lg bg-emerald-600 py-2.5 font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">{busy ? 'Signing in…' : 'Sign in securely'}</button>
       </form>
     </div>
@@ -195,11 +197,27 @@ export default function MasterAdmin() {
   const openCreate = () => { setSelected(null); setForm(blankForm); setShowForm(true); };
   const openEdit = (user: ManagedUser) => {
     setSelected(user);
-    setForm({ businessName: user.businessName, email: user.email, phone: user.phone ?? '', password: '', role: user.role, active: user.active, permissions: user.permissions });
+    setForm({ businessName: user.businessName, email: user.email, phone: normalizePhoneInput(user.phone ?? '').slice(-10), password: '', role: user.role, active: user.active, permissions: user.permissions });
     setShowForm(true);
   };
   const saveUser = async (event: FormEvent) => {
     event.preventDefault();
+    if (form.businessName.trim().length < 2 || form.businessName.trim().length > 100) {
+      toast.error('Business name must be between 2 and 100 characters');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || form.email.trim().length > 254) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+    if ((!selected || form.phone) && !/^\d{10}$/.test(form.phone)) {
+      toast.error('Phone number must contain exactly 10 digits');
+      return;
+    }
+    if (form.password && (form.password.length < 8 || form.password.length > 128)) {
+      toast.error('Password must be between 8 and 128 characters');
+      return;
+    }
     try {
       const body = { ...form, ...(form.password ? {} : { password: undefined }) };
       if (selected) await masterApi.put(`/master-admin/users/${selected.id}`, body);
@@ -231,6 +249,14 @@ export default function MasterAdmin() {
   const submitCreditAdjustment = async (event: FormEvent) => {
     event.preventDefault();
     if (!creditUser) return;
+    if (!/^\d+$/.test(creditForm.amount) || Number(creditForm.amount) < 1 || Number(creditForm.amount) > 100000) {
+      toast.error('Amount must be a whole number from 1 to 100,000');
+      return;
+    }
+    if (!creditForm.description.trim() || creditForm.description.length > 500) {
+      toast.error('Reason is required and must be 500 characters or fewer');
+      return;
+    }
     try {
       await masterApi.post(`/master-admin/users/${creditUser.id}/credits/adjust`, {
         direction: creditForm.direction,

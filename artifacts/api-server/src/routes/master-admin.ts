@@ -23,6 +23,8 @@ const DEFAULT_PERMISSIONS = [
   "add-template", "manage-templates", "flow-builder", "chatbot", "integration",
   "group", "catalogue", "wa-pay", "credits", "manage", "profile",
 ];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\d{10}$/;
 
 function validId(id: string): mongoose.Types.ObjectId | null {
   return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null;
@@ -90,14 +92,19 @@ router.post("/master-admin/users", async (req, res) => {
   try {
     const { businessName, email, password, phone, role, permissions, active } = req.body as Record<string, any>;
     if (
-      !businessName?.trim() ||
-      !email?.trim() ||
-      !phone?.trim() ||
-      phone.replace(/\D/g, "").length < 7 ||
-      !password ||
-      password.length < 8
+      typeof businessName !== "string" ||
+      businessName.trim().length < 2 ||
+      businessName.trim().length > 100 ||
+      typeof email !== "string" ||
+      email.trim().length > 254 ||
+      !EMAIL_PATTERN.test(email.trim()) ||
+      typeof phone !== "string" ||
+      !PHONE_PATTERN.test(phone) ||
+      typeof password !== "string" ||
+      password.length < 8 ||
+      password.length > 128
     ) {
-      res.status(400).json({ error: "Business name, email, phone, and a password of at least 8 characters are required" });
+      res.status(400).json({ error: "Enter a business name (2–100 characters), valid email, 10-digit phone number, and password (8–128 characters)" });
       return;
     }
     const normalizedEmail = email.toLowerCase().trim();
@@ -137,14 +144,38 @@ router.put("/master-admin/users/:id", async (req, res) => {
     if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
     const { businessName, email, phone, timezone, role, permissions, active, password } = req.body as Record<string, any>;
     const update: Record<string, any> = {};
-    if (typeof businessName === "string" && businessName.trim()) update.businessName = businessName.trim();
-    if (typeof email === "string" && email.trim()) update.email = email.toLowerCase().trim();
-    if (typeof phone === "string") update.phone = phone.trim();
+    if (typeof businessName === "string" && businessName.trim()) {
+      if (businessName.trim().length < 2 || businessName.trim().length > 100) {
+        res.status(400).json({ error: "Business name must be between 2 and 100 characters" });
+        return;
+      }
+      update.businessName = businessName.trim();
+    }
+    if (typeof email === "string" && email.trim()) {
+      if (email.trim().length > 254 || !EMAIL_PATTERN.test(email.trim())) {
+        res.status(400).json({ error: "Enter a valid email address" });
+        return;
+      }
+      update.email = email.toLowerCase().trim();
+    }
+    if (typeof phone === "string") {
+      if (phone.trim() && !PHONE_PATTERN.test(phone.trim())) {
+        res.status(400).json({ error: "Phone number must contain exactly 10 digits" });
+        return;
+      }
+      update.phone = phone.trim();
+    }
     if (typeof timezone === "string" && timezone.trim()) update.timezone = timezone.trim();
     if (role === "admin" || role === "client") update.role = role;
     if (Array.isArray(permissions)) update.permissions = permissions;
     if (typeof active === "boolean") update.active = active;
-    if (typeof password === "string" && password.length >= 8) update.passwordHash = await bcrypt.hash(password, 12);
+    if (typeof password === "string" && password) {
+      if (password.length < 8 || password.length > 128) {
+        res.status(400).json({ error: "Password must be between 8 and 128 characters" });
+        return;
+      }
+      update.passwordHash = await bcrypt.hash(password, 12);
+    }
     if (!Object.keys(update).length) { res.status(400).json({ error: "No valid changes provided" }); return; }
     const existingUser = await UserModel.findById(id).select("businessName phone").lean();
     if (!existingUser) { res.status(404).json({ error: "User not found" }); return; }
@@ -208,8 +239,8 @@ router.post("/master-admin/users/:id/credits/adjust", async (req, res) => {
   const amount = Number(req.body?.amount);
   const direction = req.body?.direction === "deduct" ? "deduct" : "add";
   const description = typeof req.body?.description === "string" ? req.body.description.trim() : "";
-  if (!id || !Number.isInteger(amount) || amount < 1 || amount > 100000 || !description) {
-    res.status(400).json({ error: "A credit amount from 1 to 100,000 and a reason are required" });
+  if (!id || !Number.isInteger(amount) || amount < 1 || amount > 100000 || !description || description.length > 500) {
+    res.status(400).json({ error: "Enter a whole-number amount from 1 to 100,000 and a reason up to 500 characters" });
     return;
   }
 
