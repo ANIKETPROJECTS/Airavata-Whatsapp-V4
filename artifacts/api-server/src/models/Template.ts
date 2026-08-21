@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const templateButtonSchema = new Schema(
   {
@@ -35,4 +36,4 @@ const templateSchema = new Schema(
 
 export type Template = InferSchemaType<typeof templateSchema>;
 
-export const TemplateModel = model("Template", templateSchema);
+export const TemplateModel = tenantModel<InferSchemaType<typeof templateSchema>>("Template", templateSchema);

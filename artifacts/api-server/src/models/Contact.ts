@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const contactSchema = new Schema(
   {
@@ -26,4 +27,4 @@ contactSchema.index({ userId: 1, phone: 1 }, { unique: true });
 
 export type Contact = InferSchemaType<typeof contactSchema>;
 
-export const ContactModel = model("Contact", contactSchema);
+export const ContactModel = tenantModel<InferSchemaType<typeof contactSchema>>("Contact", contactSchema);

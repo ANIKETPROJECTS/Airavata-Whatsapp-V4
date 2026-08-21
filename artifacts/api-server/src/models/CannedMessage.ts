@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const cannedMessageSchema = new Schema(
   {
@@ -11,4 +12,4 @@ const cannedMessageSchema = new Schema(
 );
 
 export type CannedMessage = InferSchemaType<typeof cannedMessageSchema>;
-export const CannedMessageModel = model("CannedMessage", cannedMessageSchema);
+export const CannedMessageModel = tenantModel<InferSchemaType<typeof cannedMessageSchema>>("CannedMessage", cannedMessageSchema);

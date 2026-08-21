@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { connectToDatabase } from "./lib/mongodb";
 import { CreditSettingModel } from "./models/CreditSetting";
 import { startCampaignWorker } from "./lib/campaignWorker";
+import { migrateAllExistingUsers } from "./lib/tenantMigration";
 
 const rawPort = process.env["PORT"];
 
@@ -42,6 +43,18 @@ connectToDatabase()
       }
       await CreditSettingModel.deleteMany({ key: "creditsPerMessage" });
     });
+  })
+  .then(() => {
+    return migrateAllExistingUsers();
+  })
+  .then((migrationReport) => {
+    logger.info(
+      {
+        totalUsers: migrationReport.totalUsers,
+        verifiedUsers: migrationReport.verifiedUsers,
+      },
+      "Tenant database migration check completed",
+    );
   })
   .then(() => {
     app.listen(port, (err) => {

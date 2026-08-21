@@ -1,4 +1,5 @@
-import { Schema, model } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const nodeSchema = new Schema(
   {
@@ -52,4 +53,4 @@ const chatbotFlowSchema = new Schema(
   { timestamps: true },
 );
 
-export const ChatbotFlowModel = model("ChatbotFlow", chatbotFlowSchema);
+export const ChatbotFlowModel = tenantModel<InferSchemaType<typeof chatbotFlowSchema>>("ChatbotFlow", chatbotFlowSchema);

@@ -3,6 +3,7 @@ import { ContactModel } from "../models/Contact";
 import { GroupModel } from "../models/Group";
 import { TagModel } from "../models/Tag";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
+import { logger } from "../lib/logger";
 
 const router = Router();
 router.use(authenticate);
@@ -73,7 +74,8 @@ router.get("/contacts", async (req: AuthRequest, res) => {
       page: pageNum,
       pages: Math.ceil(total / limitNum),
     });
-  } catch {
+  } catch (error) {
+    logger.error({ err: error }, "Contact list failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

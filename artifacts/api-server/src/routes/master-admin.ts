@@ -5,6 +5,8 @@ import { UserModel } from "../models/User";
 import { CreditTransactionModel } from "../models/CreditTransaction";
 import { CreditSettingModel } from "../models/CreditSetting";
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
+import { ensureTenantDatabase, runWithTenant } from "../lib/tenantDatabase";
+import { deleteTenantDatabase, migrateAllExistingUsers } from "../lib/tenantMigration";
 import { signToken } from "../lib/jwt";
 import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
 
@@ -65,8 +67,14 @@ router.get("/master-admin/users", async (_req, res) => {
   try {
     const users = await UserModel.find().sort({ createdAt: -1 }).lean();
     const ids = users.map((user) => user._id);
-    const connections = await WhatsAppCredentialModel.find({ userId: { $in: ids } }).lean();
-    const byUser = new Map(connections.map((connection) => [String(connection.userId), connection]));
+    const connections = await Promise.all(
+      ids.map((id) =>
+        runWithTenant(String(id), () => WhatsAppCredentialModel.findOne({ userId: id }).lean()),
+      ),
+    );
+    const byUser = new Map(
+      connections.filter(Boolean).map((connection) => [String(connection!.userId), connection!]),
+    );
     res.json({ users: users.map((user) => publicUser(user, byUser.get(String(user._id)))) });
   } catch {
     res.status(500).json({ error: "Unable to load users" });
@@ -94,6 +102,13 @@ router.post("/master-admin/users", async (req, res) => {
       permissions: Array.isArray(permissions) ? permissions : DEFAULT_PERMISSIONS,
       active: active !== false,
     });
+    try {
+      await ensureTenantDatabase(String(user._id));
+    } catch (tenantError) {
+      await UserModel.deleteOne({ _id: user._id });
+      res.status(503).json({ error: "Unable to initialize the user workspace" });
+      return;
+    }
     res.status(201).json({ user: publicUser(user) });
   } catch {
     res.status(500).json({ error: "Unable to create user" });
@@ -117,7 +132,9 @@ router.put("/master-admin/users/:id", async (req, res) => {
     if (!Object.keys(update).length) { res.status(400).json({ error: "No valid changes provided" }); return; }
     const user = await UserModel.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true }).lean();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
-    const connection = await WhatsAppCredentialModel.findOne({ userId: id }).lean();
+    const connection = await runWithTenant(String(id), () =>
+      WhatsAppCredentialModel.findOne({ userId: id }).lean(),
+    );
     res.json({ user: publicUser(user, connection) });
   } catch (err: any) {
     res.status(err?.code === 11000 ? 409 : 500).json({ error: err?.code === 11000 ? "Email already exists" : "Unable to update user" });
@@ -127,10 +144,25 @@ router.put("/master-admin/users/:id", async (req, res) => {
 router.delete("/master-admin/users/:id", async (req, res) => {
   const id = validId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
-  const user = await UserModel.findByIdAndDelete(id);
+  const user = await UserModel.findById(id);
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
-  await WhatsAppCredentialModel.deleteOne({ userId: id });
+  try {
+    await deleteTenantDatabase(String(id));
+  } catch {
+    res.status(503).json({ error: "Unable to remove the user's workspace database" });
+    return;
+  }
+  await UserModel.deleteOne({ _id: id });
   res.json({ ok: true });
+});
+
+router.post("/master-admin/tenants/migrate", async (_req, res) => {
+  try {
+    const report = await migrateAllExistingUsers();
+    res.json(report);
+  } catch {
+    res.status(500).json({ error: "Unable to migrate existing user workspaces" });
+  }
 });
 
 router.post("/master-admin/users/:id/credits", async (req, res) => {
@@ -364,7 +396,9 @@ router.put("/master-admin/credit-setting", async (req, res) => {
 router.post("/master-admin/users/:id/disconnect", async (req, res) => {
   const id = validId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
-  await WhatsAppCredentialModel.deleteOne({ userId: id });
+  await runWithTenant(String(id), () =>
+    WhatsAppCredentialModel.deleteOne({ userId: id }),
+  );
   await UserModel.findByIdAndUpdate(id, { $set: { metaWabaConnected: false }, $unset: { metaWabaId: 1, metaPhoneNumberId: 1, metaWabaAccessToken: 1 } });
   res.json({ ok: true });
 });

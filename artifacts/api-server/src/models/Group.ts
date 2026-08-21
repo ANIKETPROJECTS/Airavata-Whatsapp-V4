@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const groupSchema = new Schema(
   {
@@ -11,4 +12,4 @@ const groupSchema = new Schema(
 
 export type Group = InferSchemaType<typeof groupSchema>;
 
-export const GroupModel = model("Group", groupSchema);
+export const GroupModel = tenantModel<InferSchemaType<typeof groupSchema>>("Group", groupSchema);

@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const apiKeySchema = new Schema(
   {
@@ -14,4 +15,4 @@ const apiKeySchema = new Schema(
 
 export type ApiKey = InferSchemaType<typeof apiKeySchema>;
 
-export const ApiKeyModel = model("ApiKey", apiKeySchema);
+export const ApiKeyModel = tenantModel<InferSchemaType<typeof apiKeySchema>>("ApiKey", apiKeySchema);

@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 /**
  * Stores per-user WhatsApp Cloud API credentials.
@@ -26,4 +27,4 @@ const whatsAppCredentialSchema = new Schema(
 );
 
 export type WhatsAppCredential = InferSchemaType<typeof whatsAppCredentialSchema>;
-export const WhatsAppCredentialModel = model("WhatsAppCredential", whatsAppCredentialSchema);
+export const WhatsAppCredentialModel = tenantModel<InferSchemaType<typeof whatsAppCredentialSchema>>("WhatsAppCredential", whatsAppCredentialSchema);

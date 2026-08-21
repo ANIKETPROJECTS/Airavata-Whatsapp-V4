@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const audienceSegmentSchema = new Schema(
   {
@@ -14,4 +15,4 @@ audienceSegmentSchema.index({ userId: 1, name: 1 }, { unique: true });
 audienceSegmentSchema.index({ userId: 1, updatedAt: -1 });
 
 export type AudienceSegment = InferSchemaType<typeof audienceSegmentSchema>;
-export const AudienceSegmentModel = model("AudienceSegment", audienceSegmentSchema);
+export const AudienceSegmentModel = tenantModel<InferSchemaType<typeof audienceSegmentSchema>>("AudienceSegment", audienceSegmentSchema);

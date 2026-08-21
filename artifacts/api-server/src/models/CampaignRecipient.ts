@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const campaignRecipientSchema = new Schema(
   {
@@ -25,4 +26,4 @@ campaignRecipientSchema.index({ campaignId: 1, contactId: 1 }, { unique: true })
 campaignRecipientSchema.index({ userId: 1, status: 1, nextActionAt: 1 });
 
 export type CampaignRecipient = InferSchemaType<typeof campaignRecipientSchema>;
-export const CampaignRecipientModel = model("CampaignRecipient", campaignRecipientSchema);
+export const CampaignRecipientModel = tenantModel<InferSchemaType<typeof campaignRecipientSchema>>("CampaignRecipient", campaignRecipientSchema);

@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const attributeItemSchema = new Schema(
   {
@@ -16,4 +17,4 @@ const attributesSchema = new Schema(
 );
 
 export type AttributeDoc = InferSchemaType<typeof attributesSchema>;
-export const AttributeModel = model("Attribute", attributesSchema);
+export const AttributeModel = tenantModel<InferSchemaType<typeof attributesSchema>>("Attribute", attributesSchema);

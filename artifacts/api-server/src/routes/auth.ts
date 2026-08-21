@@ -4,6 +4,7 @@ import { UserModel } from "../models/User";
 import { signToken } from "../lib/jwt";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+import { ensureTenantDatabase } from "../lib/tenantDatabase";
 
 const router = Router();
 
@@ -56,6 +57,14 @@ router.post("/auth/signup", async (req, res) => {
       passwordHash,
       phone: phone?.trim(),
     });
+    try {
+      await ensureTenantDatabase(String(user._id));
+    } catch (tenantError) {
+      await UserModel.deleteOne({ _id: user._id });
+      logger.error({ err: tenantError, userId: String(user._id) }, "Tenant database initialization failed");
+      res.status(503).json({ error: "Unable to initialize the account workspace" });
+      return;
+    }
 
     const token = signToken({ userId: user._id.toString(), email: user.email, kind: "user" });
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, type JwtPayload } from "../lib/jwt";
 import { UserModel } from "../models/User";
+import { runWithTenant } from "../lib/tenantDatabase";
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
@@ -36,7 +37,9 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
           res.status(403).json({ error: "This account is inactive" });
           return;
         }
-        next();
+        void runWithTenant(req.user!.userId, () => next()).catch(() =>
+          res.status(500).json({ error: "Unable to initialize tenant database" }),
+        );
       })
       .catch(() => res.status(500).json({ error: "Unable to verify account status" }));
   } catch {

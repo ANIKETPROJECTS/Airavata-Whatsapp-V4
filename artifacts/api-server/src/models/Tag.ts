@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const tagSchema = new Schema(
   {
@@ -13,4 +14,4 @@ tagSchema.index({ userId: 1, name: 1 }, { unique: true });
 
 export type Tag = InferSchemaType<typeof tagSchema>;
 
-export const TagModel = model("Tag", tagSchema);
+export const TagModel = tenantModel<InferSchemaType<typeof tagSchema>>("Tag", tagSchema);

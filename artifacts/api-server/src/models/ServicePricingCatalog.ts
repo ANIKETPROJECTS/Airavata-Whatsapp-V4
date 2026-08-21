@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const pricingRowSchema = new Schema(
   {
@@ -23,4 +24,4 @@ const servicePricingCatalogSchema = new Schema(
 
 export type ServicePricingRow = InferSchemaType<typeof pricingRowSchema>;
 export type ServicePricingCatalog = InferSchemaType<typeof servicePricingCatalogSchema>;
-export const ServicePricingCatalogModel = model("ServicePricingCatalog", servicePricingCatalogSchema);
+export const ServicePricingCatalogModel = tenantModel<InferSchemaType<typeof servicePricingCatalogSchema>>("ServicePricingCatalog", servicePricingCatalogSchema);

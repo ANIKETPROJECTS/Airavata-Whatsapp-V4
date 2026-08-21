@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const componentSchema = new Schema(
   {
@@ -50,4 +51,4 @@ const flowSchema = new Schema(
 );
 
 export type Flow = InferSchemaType<typeof flowSchema>;
-export const FlowModel = model("Flow", flowSchema);
+export const FlowModel = tenantModel<InferSchemaType<typeof flowSchema>>("Flow", flowSchema);

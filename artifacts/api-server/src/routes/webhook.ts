@@ -13,6 +13,7 @@ import { CampaignModel } from "../models/Campaign";
 import { FlowModel } from "../models/Flow";
 import { TemplateModel } from "../models/Template";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
+import { runWithTenant } from "../lib/tenantDatabase";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger";
 import {
@@ -96,7 +97,7 @@ router.post("/webhook", async (req, res) => {
 
         // Handle status updates (delivered, read, failed)
         for (const status of value.statuses ?? []) {
-          await handleStatusUpdate(status).catch((err) =>
+          await handleStatusUpdate(status, value.metadata?.phone_number_id).catch((err: unknown) =>
             logger.error({ err, status }, "Error handling status update"),
           );
         }
@@ -113,7 +114,8 @@ async function handleIncomingMessage(
   msg: WebhookMessage,
   waContacts: WebhookContact[],
   phoneNumberId: string | undefined,
-) {
+  tenantUserId?: string,
+): Promise<void> {
   const fromRaw = msg.from; // digits only, no +, e.g. "919876543210"
   if (!fromRaw) {
     logger.warn({ msgId: msg.id, type: msg.type }, "Skipping message with no 'from' field");
@@ -122,7 +124,8 @@ async function handleIncomingMessage(
   const fromNorm = normalizePhone(fromRaw);
 
   // Resolve the tenant from the receiving WhatsApp phone number before
-  // reading or creating any contact.
+  // reading or creating any contact. Once resolved, recurse inside the
+  // tenant database context so every subsequent model operation is isolated.
   if (!phoneNumberId) {
     logger.error(
       { msgId: msg.id, from: fromRaw },
@@ -131,18 +134,23 @@ async function handleIncomingMessage(
     return;
   }
 
-  const owningUser = await UserModel.findOne({ metaPhoneNumberId: phoneNumberId })
-    .select("_id")
-    .lean();
-  if (!owningUser) {
-    logger.error(
-      { msgId: msg.id, from: fromRaw, phoneNumberId },
-      "No user matches incoming webhook phone_number_id; skipping",
+  if (!tenantUserId) {
+    const owningUser = await UserModel.findOne({ metaPhoneNumberId: phoneNumberId })
+      .select("_id")
+      .lean();
+    if (!owningUser) {
+      logger.error(
+        { msgId: msg.id, from: fromRaw, phoneNumberId },
+        "No user matches incoming webhook phone_number_id; skipping",
+      );
+      return;
+    }
+    return runWithTenant(String(owningUser._id), () =>
+      handleIncomingMessage(msg, waContacts, phoneNumberId, String(owningUser._id)),
     );
-    return;
   }
 
-  const userId = owningUser._id as mongoose.Types.ObjectId;
+  const userId = new mongoose.Types.ObjectId(tenantUserId);
 
   // Find a Contact for this tenant whose normalized phone matches.
   const tenantContacts = await ContactModel.find({ userId }).lean();
@@ -424,7 +432,20 @@ async function tryRunLinkedChatbot(
   }
 }
 
-async function handleStatusUpdate(status: WebhookStatus) {
+async function handleStatusUpdate(
+  status: WebhookStatus,
+  phoneNumberId?: string,
+  tenantUserId?: string,
+): Promise<void> {
+  if (!phoneNumberId) return;
+  if (!tenantUserId) {
+    const owner = await UserModel.findOne({ metaPhoneNumberId: phoneNumberId }).select("_id").lean();
+    if (!owner) return;
+    return runWithTenant(String(owner._id), () =>
+      handleStatusUpdate(status, phoneNumberId, String(owner._id)),
+    );
+  }
+
   const update: Record<string, unknown> = { status: status.status.toUpperCase() };
 
   if (status.status === "delivered") update.deliveredAt = new Date(Number(status.timestamp) * 1000);

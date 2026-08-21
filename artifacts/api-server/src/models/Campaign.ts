@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const campaignSchema = new Schema(
   {
@@ -43,4 +44,4 @@ const campaignSchema = new Schema(
 
 export type Campaign = InferSchemaType<typeof campaignSchema>;
 
-export const CampaignModel = model("Campaign", campaignSchema);
+export const CampaignModel = tenantModel<InferSchemaType<typeof campaignSchema>>("Campaign", campaignSchema);

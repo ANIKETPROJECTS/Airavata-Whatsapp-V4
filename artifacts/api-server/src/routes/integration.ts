@@ -13,6 +13,7 @@ import mongoose from "mongoose";
 import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
 import { UserModel } from "../models/User";
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
+import { runWithTenant } from "../lib/tenantDatabase";
 import { decryptToken, encryptToken } from "../lib/credentialCrypto";
 import { logger } from "../lib/logger";
 
@@ -313,15 +314,17 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
     }
 
     try {
-      await WhatsAppCredentialModel.findOneAndUpdate(
-        { userId: new mongoose.Types.ObjectId(ownerUserId) },
-        {
-          userId: new mongoose.Types.ObjectId(ownerUserId),
-          wabaId,
-          phoneNumberId,
-          accessTokenEncrypted,
-        },
-        { upsert: true, new: true },
+      await runWithTenant(ownerUserId, () =>
+        WhatsAppCredentialModel.findOneAndUpdate(
+          { userId: new mongoose.Types.ObjectId(ownerUserId) },
+          {
+            userId: new mongoose.Types.ObjectId(ownerUserId),
+            wabaId,
+            phoneNumberId,
+            accessTokenEncrypted,
+          },
+          { upsert: true, new: true },
+        ),
       );
 
       logger.info(
@@ -417,7 +420,9 @@ router.post(
   async (req: AuthRequest, res) => {
     try {
       const userId = new mongoose.Types.ObjectId(req.user!.userId);
-      await WhatsAppCredentialModel.deleteOne({ userId });
+      await runWithTenant(String(userId), () =>
+        WhatsAppCredentialModel.deleteOne({ userId }),
+      );
       await UserModel.updateOne(
         { _id: userId },
         {

@@ -1,4 +1,5 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+import { tenantModel } from "../lib/tenantDatabase";
 
 const daySchema = new Schema(
   {
@@ -29,4 +30,4 @@ const liveChatSettingsSchema = new Schema(
 );
 
 export type LiveChatSettings = InferSchemaType<typeof liveChatSettingsSchema>;
-export const LiveChatSettingsModel = model("LiveChatSettings", liveChatSettingsSchema);
+export const LiveChatSettingsModel = tenantModel<InferSchemaType<typeof liveChatSettingsSchema>>("LiveChatSettings", liveChatSettingsSchema);

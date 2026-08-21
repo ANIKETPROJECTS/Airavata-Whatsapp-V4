@@ -1,8 +1,9 @@
-import mongoose from "mongoose";
 import { CampaignModel } from "../models/Campaign";
 import { CampaignRecipientModel } from "../models/CampaignRecipient";
+import { UserModel } from "../models/User";
 import { executeCampaignSend } from "./campaignExecutor";
 import { logger } from "./logger";
+import { runWithTenant } from "./tenantDatabase";
 
 let running = false;
 
@@ -10,10 +11,7 @@ let running = false;
  * Claims one due recipient at a time. The atomic claim prevents multiple API
  * instances from processing the same contact concurrently.
  */
-export async function processDueCampaignRecipients() {
-  if (running) return;
-  running = true;
-  try {
+async function processDueCampaignRecipientsForTenant() {
     for (;;) {
       const recipient = await CampaignRecipientModel.findOneAndUpdate(
         {
@@ -76,6 +74,16 @@ export async function processDueCampaignRecipients() {
           { $set: { status: "SENDING" } },
         );
       }
+    }
+}
+
+export async function processDueCampaignRecipients() {
+  if (running) return;
+  running = true;
+  try {
+    const users = await UserModel.find({ active: { $ne: false } }).select("_id").lean();
+    for (const user of users) {
+      await runWithTenant(String(user._id), processDueCampaignRecipientsForTenant);
     }
   } finally {
     running = false;

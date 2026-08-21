@@ -1,0 +1,100 @@
+import mongoose, {
+  type Connection,
+  type Model,
+  type Schema,
+} from "mongoose";
+import { AsyncLocalStorage } from "node:async_hooks";
+
+type TenantContext = {
+  userId: string;
+  connection: Connection;
+};
+
+const tenantStorage = new AsyncLocalStorage<TenantContext>();
+const connectionCache = new Map<string, Connection>();
+const tenantSchemas = new Map<string, Schema>();
+
+function registerTenantModels(connection: Connection) {
+  for (const [name, schema] of tenantSchemas) {
+    if (!connection.models[name]) {
+      connection.model(name, schema);
+    }
+  }
+}
+
+function normalizeUserId(userId: string) {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new Error("Invalid tenant user ID");
+  }
+  return String(new mongoose.Types.ObjectId(userId));
+}
+
+export function tenantDatabaseName(userId: string) {
+  const normalized = normalizeUserId(userId);
+  const prefix = process.env["TENANT_DB_PREFIX"]?.trim() || "airavata_user_";
+  return `${prefix}${normalized}`;
+}
+
+export function getTenantContext() {
+  const context = tenantStorage.getStore();
+  if (!context) {
+    throw new Error("Tenant database context is required");
+  }
+  return context;
+}
+
+export function getTenantConnection() {
+  const connection = getTenantContext().connection;
+  registerTenantModels(connection);
+  return connection;
+}
+
+export async function runWithTenant<T>(
+  userId: string,
+  callback: () => Promise<T> | T,
+): Promise<T> {
+  const normalized = normalizeUserId(userId);
+  const databaseName = tenantDatabaseName(normalized);
+  let connection = connectionCache.get(databaseName);
+
+  if (!connection) {
+    connection = mongoose.connection.useDb(databaseName, { useCache: true });
+    connectionCache.set(databaseName, connection);
+  }
+
+  return tenantStorage.run(
+    { userId: normalized, connection },
+    async () => callback(),
+  );
+}
+
+export function tenantModel<T>(
+  name: string,
+  schema: Schema<T>,
+): Model<T> {
+  tenantSchemas.set(name, schema);
+  const proxy = new Proxy({} as Model<T>, {
+    get(_target, property, receiver) {
+      const connection = getTenantConnection();
+      const model = connection.models[name] ?? connection.model(name, schema);
+      const value = Reflect.get(model, property, receiver);
+      return typeof value === "function" ? value.bind(model) : value;
+    },
+  });
+
+  return proxy;
+}
+
+export async function ensureTenantDatabase(userId: string) {
+  return runWithTenant(userId, async () => {
+    const connection = getTenantConnection();
+    await connection.createCollection("__tenant_initialized").catch((error: unknown) => {
+      if ((error as { code?: number }).code !== 48) throw error;
+    });
+    return connection.name;
+  });
+}
+
+export function clearTenantConnectionCache() {
+  connectionCache.clear();
+}
