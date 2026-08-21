@@ -13,6 +13,9 @@ type TenantContext = {
 const tenantStorage = new AsyncLocalStorage<TenantContext>();
 const connectionCache = new Map<string, Connection>();
 const tenantSchemas = new Map<string, Schema>();
+// MongoDB rejects ":" in database namespaces, so use the safe equivalent
+// "User_<businessName>" while keeping the requested User + name convention.
+const TENANT_DATABASE_PREFIX = "User_";
 
 function registerTenantModels(connection: Connection) {
   for (const [name, schema] of tenantSchemas) {
@@ -54,20 +57,24 @@ export async function getTenantDatabaseName(userId: string) {
     { projection: { businessName: 1, tenantDatabaseName: 1 } },
   );
   if (!user?.businessName) throw new Error("Tenant user was not found");
-  if (typeof user.tenantDatabaseName === "string" && user.tenantDatabaseName) {
+  if (
+    typeof user.tenantDatabaseName === "string" &&
+    user.tenantDatabaseName.startsWith(TENANT_DATABASE_PREFIX)
+  ) {
     return user.tenantDatabaseName;
   }
 
   const base = businessNameDatabaseBase(user.businessName);
+  const businessDatabaseName = `${TENANT_DATABASE_PREFIX}${base}`;
   const duplicate = await users.findOne({
-    tenantDatabaseName: base,
+    tenantDatabaseName: businessDatabaseName,
     _id: { $ne: new mongoose.Types.ObjectId(normalized) },
   });
   const conflictsWithControlPlane =
-    base.toLowerCase() === mongoose.connection.name.toLowerCase();
+    businessDatabaseName.toLowerCase() === mongoose.connection.name.toLowerCase();
   const databaseName = duplicate || conflictsWithControlPlane
-    ? `${base}_${normalized.slice(-8)}`
-    : base;
+    ? `${businessDatabaseName}_${normalized.slice(-8)}`
+    : businessDatabaseName;
 
   await users.updateOne(
     { _id: new mongoose.Types.ObjectId(normalized) },
