@@ -9,6 +9,7 @@ import { ensureTenantDatabase, runWithTenant } from "../lib/tenantDatabase";
 import { deleteTenantDatabase, migrateAllExistingUsers } from "../lib/tenantMigration";
 import { signToken } from "../lib/jwt";
 import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
+import { logger } from "../lib/logger";
 
 const router = Router();
 const MASTER_EMAIL = process.env.MASTER_ADMIN_EMAIL?.toLowerCase().trim();
@@ -105,6 +106,10 @@ router.post("/master-admin/users", async (req, res) => {
     try {
       await ensureTenantDatabase(String(user._id));
     } catch (tenantError) {
+      logger.error(
+        { err: tenantError, userId: String(user._id), businessName: user.businessName },
+        "Unable to initialize Master Admin-created tenant database",
+      );
       await UserModel.deleteOne({ _id: user._id });
       res.status(503).json({ error: "Unable to initialize the user workspace" });
       return;

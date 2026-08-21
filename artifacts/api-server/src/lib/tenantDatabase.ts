@@ -63,7 +63,9 @@ export async function getTenantDatabaseName(userId: string) {
     tenantDatabaseName: base,
     _id: { $ne: new mongoose.Types.ObjectId(normalized) },
   });
-  const databaseName = duplicate
+  const conflictsWithControlPlane =
+    base.toLowerCase() === mongoose.connection.name.toLowerCase();
+  const databaseName = duplicate || conflictsWithControlPlane
     ? `${base}_${normalized.slice(-8)}`
     : base;
 
