@@ -6,9 +6,25 @@ id = "nLvcY6rMGHJDOdMdvwSGr"
 uri = "file://attached_assets/airavata-app-icon.png"
 type = "image"
 title = "Airavata App Icon (1024×1024)"
+logical_id = "21888c0b-191e-4a39-8428-8ef034b8e13a"
 
 [[outputs]]
 id = "FsYif1LU_t9v4kdHSlNx-"
 uri = "file://attached_assets/sample-chatbot-flow.json"
 type = "unspecified"
 title = "Customer Support Flow — Meta Test"
+logical_id = "f9dba8f6-c24e-4a23-8305-5cca917a7468"
+
+[[outputs]]
+id = "XRg2G8qeu82CwLZ1IyZMq"
+uri = "file://AIRAVATA_CLIENT_SOFTWARE_GUIDE.md"
+type = "text"
+title = "Airavata Client Software Guide"
+description = "Detailed client-facing guide covering Airavata features, workflows, administration, best practices, use cases, and a product demonstration script."
+logical_id = "b9ea37d0-69f1-4314-aeae-c3401e436989"
+content_hash = "sha256:685213db6d5d1849df80fa1cd667583f52ea7cdfe83415749226f5ea783cb15a"
+size = 23595
+mtime_ms = 1787494621663
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/b9ea37d0-69f1-4314-aeae-c3401e436989/6ab5bd4e-8c8a-4fe4-b49d-e95099177a99"
+storage_version_token = "1787494630657755"
+content_type = "text/markdown"
