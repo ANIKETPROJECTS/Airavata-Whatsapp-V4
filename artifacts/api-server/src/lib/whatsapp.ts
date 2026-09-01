@@ -11,8 +11,8 @@ import { logger } from "./logger";
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 
 /**
- * Like graphFetch but takes an explicit accessToken instead of calling creds().
- * Used by all per-user message-sending functions.
+ * Perform a Graph API request with an explicit access token.
+ * Used by all tenant-scoped WhatsApp operations.
  */
 async function graphFetchWithCreds<T>(
   path: string,
@@ -394,9 +394,11 @@ export async function uploadMedia(
   const form = new FormData();
   form.append("messaging_product", "whatsapp");
   form.append("type", mimeType);
+  const fileBytes = new Uint8Array(fileBuffer.byteLength);
+  fileBytes.set(fileBuffer);
   form.append(
     "file",
-    new Blob([fileBuffer], { type: mimeType }),
+    new Blob([fileBytes.buffer], { type: mimeType }),
     filename,
   );
 
@@ -620,12 +622,12 @@ export async function sendTemplateMessage(
   to: string,
   templateName: string,
   languageCode: string,
-  components?: Array<{
+  components: Array<{
     type: string;
     sub_type?: string;
     index?: string;
     parameters: Array<{ type: string; text?: string; action?: Record<string, unknown> }>;
-  }>,
+  }> | undefined,
   userId: string,
 ) {
   const { phoneNumberId, accessToken } = await getCredentials(userId, {
