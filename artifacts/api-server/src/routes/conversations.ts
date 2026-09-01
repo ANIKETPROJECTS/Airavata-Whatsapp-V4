@@ -317,7 +317,7 @@ router.post(
          userId,
          description: `Live Chat media message to ${contact.phone}`,
          send: async () => {
-           const mediaId = await uploadMedia(buffer, mimetype, originalname);
+           const mediaId = await uploadMedia(buffer, mimetype, originalname, userId.toString());
            const result = await sendMediaMessage(
              contact.phone,
              mediaId,

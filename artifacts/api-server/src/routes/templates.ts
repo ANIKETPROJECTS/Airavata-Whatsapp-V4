@@ -54,7 +54,7 @@ router.get("/templates", authenticate, async (req: AuthRequest, res) => {
   try {
     // Best-effort status sync from Meta
     try {
-      const metaList = await getMetaTemplates();
+      const metaList = await getMetaTemplates(req.user!.userId);
       const statusMap = new Map(metaList.map((t) => [t.name, t.status]));
       const dbTemplates = await TemplateModel.find({ userId: req.user!.userId }).lean();
 
@@ -135,7 +135,7 @@ router.post("/templates", authenticate, async (req: AuthRequest, res) => {
       flowButton: fb ? { flowId: fb.flowId, text: fb.text, navigateScreen: fb.navigateScreen } : undefined,
       quickReplies: qr,
       ctaButtons: cta,
-    });
+    }, req.user!.userId);
 
     // Build MongoDB buttons array from whichever mode is active
     let dbButtons: Array<{ type: string; text: string; value?: string; flowId?: string; flowName?: string; navigateScreen?: string }> = [];
@@ -181,7 +181,7 @@ router.delete("/templates/:id", authenticate, async (req: AuthRequest, res) => {
     if (!template) return res.status(404).json({ error: "Template not found" });
 
     try {
-      await deleteMetaTemplate(template.name);
+      await deleteMetaTemplate(template.name, req.user!.userId);
     } catch {
       // Non-fatal — the template may already be gone from Meta
     }

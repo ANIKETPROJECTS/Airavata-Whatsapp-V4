@@ -10,72 +10,6 @@ import { logger } from "./logger";
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 
-function creds() {
-  const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
-  const wabaId = process.env.META_WABA_ID;
-  const accessToken = process.env.META_ACCESS_TOKEN;
-  if (!phoneNumberId || !wabaId || !accessToken) {
-    throw new Error(
-      "WhatsApp credentials not configured. Set META_PHONE_NUMBER_ID, META_WABA_ID, and META_ACCESS_TOKEN in Secrets.",
-    );
-  }
-  return { phoneNumberId, wabaId, accessToken };
-}
-
-async function graphFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const { accessToken } = creds();
-  const url = `${GRAPH_BASE}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-  });
-
-  // Capture the raw text first so we can always log it verbatim
-  const rawText = await res.text();
-  let data: T & {
-    error?: {
-      message?: string;
-      type?: string;
-      code?: number;
-      error_subcode?: number;
-      error_user_msg?: string;
-      error_user_title?: string;
-      fbtrace_id?: string;
-    };
-  };
-  try {
-    data = JSON.parse(rawText) as typeof data;
-  } catch {
-    // Non-JSON body — surface it verbatim
-    throw new Error(`Meta API HTTP ${res.status} — non-JSON body: ${rawText}`);
-  }
-
-  if (!res.ok) {
-    const e = data.error ?? {};
-    // Log every field Meta returns so it appears verbatim in PM2 logs
-    console.error(
-      "[graphFetch] Meta error response\n" +
-      `  HTTP status   : ${res.status}\n` +
-      `  error.code    : ${e.code ?? "(none)"}\n` +
-      `  error.type    : ${e.type ?? "(none)"}\n` +
-      `  error.message : ${e.message ?? "(none)"}\n` +
-      `  error_subcode : ${e.error_subcode ?? "(none)"}\n` +
-      `  fbtrace_id    : ${e.fbtrace_id ?? "(none)"}\n` +
-      `  full body     : ${rawText}`,
-    );
-    // Throw with the complete detail — nothing is replaced or hidden
-    throw new Error(
-      `Meta API HTTP ${res.status} | code=${e.code ?? "-"} subcode=${e.error_subcode ?? "-"} ` +
-      `type=${e.type ?? "-"} fbtrace=${e.fbtrace_id ?? "-"} | ${e.message ?? rawText}`,
-    );
-  }
-  return data;
-}
-
 /**
  * Like graphFetch but takes an explicit accessToken instead of calling creds().
  * Used by all per-user message-sending functions.
@@ -243,13 +177,17 @@ export interface MetaTemplateRecord {
 // ── Template operations ────────────────────────────────────────────────────────
 
 /** Submit a new template to Meta for review. */
-export async function createMetaTemplate(params: CreateTemplateParams) {
-  const { wabaId } = creds();
+export async function createMetaTemplate(params: CreateTemplateParams, userId: string) {
+  const credentials = await getCredentials(userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) {
+    throw new Error("Stored WhatsApp credentials are missing a WABA ID");
+  }
+  const { wabaId, accessToken } = credentials;
 
   // ── Authentication templates use a completely different payload structure ──
   // The BODY component must NOT contain `text`; Meta fills the body automatically.
   if (params.category === "AUTHENTICATION") {
-    return buildAndSubmitAuthTemplate(params, wabaId);
+    return buildAndSubmitAuthTemplate(params, wabaId, accessToken);
   }
 
   // ── MARKETING / UTILITY ───────────────────────────────────────────────────
@@ -331,18 +269,17 @@ export async function createMetaTemplate(params: CreateTemplateParams) {
     components,
   };
 
-  const { accessToken } = creds();
   const endpoint = `${GRAPH_BASE}/${wabaId}/message_templates`;
   console.info(
     "[template] PRE-REQUEST\n" +
     `  URL   : ${endpoint}\n` +
     `  WABA  : ${wabaId}\n` +
-    `  Token : ${accessToken.slice(0, 20)}...\n` +
     `  Body  : ${JSON.stringify(payload)}`,
   );
 
-  const result = await graphFetch<{ id: string; status: string }>(
+  const result = await graphFetchWithCreds<{ id: string; status: string }>(
     `/${wabaId}/message_templates`,
+    accessToken,
     { method: "POST", body: JSON.stringify(payload) },
   );
 
@@ -354,6 +291,7 @@ export async function createMetaTemplate(params: CreateTemplateParams) {
 async function buildAndSubmitAuthTemplate(
   params: CreateTemplateParams,
   wabaId: string,
+  accessToken: string,
 ) {
   type AuthComponent =
     | { type: "BODY"; add_security_recommendation?: boolean }
@@ -393,18 +331,17 @@ async function buildAndSubmitAuthTemplate(
     components,
   };
 
-  const { accessToken } = creds();
   const endpoint = `${GRAPH_BASE}/${wabaId}/message_templates`;
   console.info(
     "[template/auth] PRE-REQUEST\n" +
     `  URL   : ${endpoint}\n` +
     `  WABA  : ${wabaId}\n` +
-    `  Token : ${accessToken.slice(0, 20)}...\n` +
     `  Body  : ${JSON.stringify(payload)}`,
   );
 
-  const result = await graphFetch<{ id: string; status: string }>(
+  const result = await graphFetchWithCreds<{ id: string; status: string }>(
     `/${wabaId}/message_templates`,
+    accessToken,
     { method: "POST", body: JSON.stringify(payload) },
   );
 
@@ -413,20 +350,29 @@ async function buildAndSubmitAuthTemplate(
 }
 
 /** Fetch all templates from Meta for this WABA. */
-export async function getMetaTemplates(): Promise<MetaTemplateRecord[]> {
-  const { wabaId } = creds();
-  const result = await graphFetch<{ data: MetaTemplateRecord[] }>(
-    `/${wabaId}/message_templates?fields=id,name,status,category,language`,
+export async function getMetaTemplates(userId: string): Promise<MetaTemplateRecord[]> {
+  const credentials = await getCredentials(userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) {
+    throw new Error("Stored WhatsApp credentials are missing a WABA ID");
+  }
+  const result = await graphFetchWithCreds<{ data: MetaTemplateRecord[] }>(
+    `/${credentials.wabaId}/message_templates?fields=id,name,status,category,language`,
+    credentials.accessToken,
   );
   return result.data ?? [];
 }
 
 /** Delete a template from Meta by name (affects all languages). */
-export async function deleteMetaTemplate(name: string): Promise<void> {
-  const { wabaId } = creds();
-  await graphFetch(`/${wabaId}/message_templates?name=${encodeURIComponent(name)}`, {
-    method: "DELETE",
-  });
+export async function deleteMetaTemplate(name: string, userId: string): Promise<void> {
+  const credentials = await getCredentials(userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) {
+    throw new Error("Stored WhatsApp credentials are missing a WABA ID");
+  }
+  await graphFetchWithCreds(
+    `/${credentials.wabaId}/message_templates?name=${encodeURIComponent(name)}`,
+    credentials.accessToken,
+    { method: "DELETE" },
+  );
 }
 
 // ── Messaging ─────────────────────────────────────────────────────────────────
@@ -439,8 +385,11 @@ export async function uploadMedia(
   fileBuffer: Buffer,
   mimeType: string,
   filename: string,
+  userId: string,
 ): Promise<string> {
-  const { phoneNumberId, accessToken } = creds();
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
 
   const form = new FormData();
   form.append("messaging_product", "whatsapp");
@@ -476,12 +425,12 @@ export async function sendMediaMessage(
   to: string,
   mediaId: string,
   type: "image" | "video" | "audio" | "document",
-  filename?: string,
-  userId?: string,
+  filename: string | undefined,
+  userId: string,
 ) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   const mediaPayload =
     type === "document"
       ? { id: mediaId, filename: filename ?? "file" }
@@ -504,10 +453,10 @@ export async function sendMediaMessage(
 }
 
 /** Send a free-text message within the 24-hour customer-service window. */
-export async function sendTextMessage(to: string, body: string, userId?: string) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+export async function sendTextMessage(to: string, body: string, userId: string) {
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     `/${phoneNumberId}/messages`,
     accessToken,
@@ -530,11 +479,11 @@ export async function sendInteractiveButtons(
   body: string,
   footer: string | undefined,
   buttons: Array<{ id: string; title: string }>,
-  userId?: string,
+  userId: string,
 ) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
@@ -564,11 +513,11 @@ export async function sendInteractiveList(
   footer: string | undefined,
   buttonText: string,
   sections: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>,
-  userId?: string,
+  userId: string,
 ) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
@@ -597,10 +546,10 @@ export async function sendInteractiveList(
 }
 
 /** Request the user's live location (interactive). */
-export async function sendLocationRequest(to: string, body: string, userId?: string) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+export async function sendLocationRequest(to: string, body: string, userId: string) {
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
@@ -621,12 +570,12 @@ export async function sendLocationMessage(
   to: string,
   latitude: string,
   longitude: string,
-  name?: string,
-  userId?: string,
+  name: string | undefined,
+  userId: string,
 ) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   return graphFetchWithCreds<{ messages: Array<{ id: string }> }>(`/${phoneNumberId}/messages`, accessToken, {
     method: "POST",
     body: JSON.stringify({
@@ -643,13 +592,13 @@ export async function sendMediaByUrl(
   to: string,
   type: "image" | "video" | "audio" | "document",
   url: string,
-  caption?: string,
-  filename?: string,
-  userId?: string,
+  caption: string | undefined,
+  filename: string | undefined,
+  userId: string,
 ) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   const mediaPayload =
     type === "document"
       ? { link: url, ...(caption ? { caption } : {}), ...(filename ? { filename } : {}) }
@@ -677,11 +626,11 @@ export async function sendTemplateMessage(
     index?: string;
     parameters: Array<{ type: string; text?: string; action?: Record<string, unknown> }>;
   }>,
-  userId?: string,
+  userId: string,
 ) {
-  const { phoneNumberId, accessToken } = userId
-    ? await getCredentials(userId, { allowEnvFallback: false })
-    : (() => { const c = creds(); return { phoneNumberId: c.phoneNumberId, accessToken: c.accessToken }; })();
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
   const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     `/${phoneNumberId}/messages`,
     accessToken,
