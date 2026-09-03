@@ -34,6 +34,8 @@ module.exports = {
           "https://newcrm.autogamma.in/api/integrations/airavata/whatsapp-inquiries",
         // Keep the shared secret in the VPS environment, not in this tracked file.
         AIRAVATA_INTEGRATION_SECRET: process.env.AIRAVATA_INTEGRATION_SECRET,
+        MASTER_ADMIN_EMAIL: "Airavata@gmail.com",
+        MASTER_ADMIN_PASSWORD: "Admin@123"
       },
     },
   ],
