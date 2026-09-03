@@ -5,6 +5,7 @@ import pinoHttp from "pino-http";
 import path from "path";
 import { fileURLToPath } from "url";
 import router from "./routes";
+import webhookRouter from "./routes/webhook";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -35,6 +36,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // API routes
 app.use("/api", router);
+// Accept the webhook at the root path as well as /api/webhook. Meta callback
+// URLs are commonly configured without the API prefix, and both paths are
+// safe because webhookRouter contains only Meta's verification/event handlers.
+app.use(webhookRouter);
 
 // Serve React frontend static files
 // __dirname = <root>/artifacts/api-server/dist

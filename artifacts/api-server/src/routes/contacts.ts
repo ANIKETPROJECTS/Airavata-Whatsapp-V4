@@ -8,6 +8,10 @@ import { logger } from "../lib/logger";
 const router = Router();
 router.use(authenticate);
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // ── Helper: build a populated contact response object ─────────────────────────
 async function populateContact(doc: InstanceType<typeof ContactModel>) {
   return {
@@ -33,9 +37,10 @@ router.get("/contacts", async (req: AuthRequest, res) => {
     const filter: Record<string, unknown> = { userId: req.user!.userId };
 
     if (search) {
+      const safeSearch = escapeRegex(search);
       filter["$or"] = [
-        { name: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
+        { name: { $regex: safeSearch, $options: "i" } },
+        { phone: { $regex: safeSearch, $options: "i" } },
       ];
     }
     if (groupId) filter["groupId"] = groupId;
