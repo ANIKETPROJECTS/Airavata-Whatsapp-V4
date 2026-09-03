@@ -14,3 +14,9 @@ For inbound and delivery webhooks, resolve the protected tenant by matching the 
 **Why:** The protected account can send with deployment credentials without a Facebook connection record, but Meta still sends events keyed only by the receiving phone number ID; user-level lookup alone silently drops those events.
 
 **How to apply:** Resolve ordinary users by their stored Meta phone ID first, then allow the ecosystem phone ID to resolve only the server-designated protected operator.
+
+The ecosystem WABA must also be subscribed to the app's WhatsApp webhook events; this subscription can be safely rechecked idempotently when the API starts.
+
+**Why:** A correct callback route and tenant resolver still receive nothing if Meta has not subscribed the WABA to the app.
+
+**How to apply:** Keep `/api/webhook` as the canonical callback, support `/webhook` for existing configurations, and verify the WABA subscription with deployment credentials without logging secrets.
