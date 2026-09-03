@@ -14,6 +14,10 @@ import {
 import { signToken } from "../lib/jwt";
 import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+import {
+  getEcosystemWhatsAppCredentialIds,
+  isProtectedMasterAdminUser,
+} from "../lib/protectedMasterAdmin";
 
 const router = Router();
 const MASTER_EMAIL = process.env.MASTER_ADMIN_EMAIL?.toLowerCase().trim();
@@ -31,6 +35,8 @@ function validId(id: string): mongoose.Types.ObjectId | null {
 }
 
 function publicUser(user: any, connection?: any) {
+  const protectedAccount = isProtectedMasterAdminUser(user);
+  const ecosystemIds = protectedAccount ? getEcosystemWhatsAppCredentialIds() : null;
   return {
     id: String(user._id),
     businessName: user.businessName,
@@ -40,10 +46,18 @@ function publicUser(user: any, connection?: any) {
     role: user.role ?? "client",
     active: user.active !== false,
     permissions: user.permissions ?? DEFAULT_PERMISSIONS,
+    protectedAccount,
     creditBalance: user.creditBalance ?? 0,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    connection: connection
+    connection: protectedAccount
+      ? {
+          connected: true,
+          source: "ecosystem",
+          wabaId: ecosystemIds?.wabaId,
+          phoneNumberId: ecosystemIds?.phoneNumberId,
+        }
+      : connection
       ? { connected: true, wabaId: connection.wabaId, phoneNumberId: connection.phoneNumberId, updatedAt: connection.updatedAt }
       : { connected: Boolean(user.metaWabaConnected), wabaId: user.metaWabaId ?? null, phoneNumberId: user.metaPhoneNumberId ?? null },
   };
@@ -120,6 +134,7 @@ router.post("/master-admin/users", async (req, res) => {
       role: role === "admin" ? "admin" : "client",
       permissions: Array.isArray(permissions) ? permissions : DEFAULT_PERMISSIONS,
       active: active !== false,
+      isProtectedMasterAdmin: normalizedEmail === "raneaniket23@gmail.com",
     });
     try {
       await ensureTenantDatabase(String(user._id));
@@ -177,8 +192,11 @@ router.put("/master-admin/users/:id", async (req, res) => {
       update.passwordHash = await bcrypt.hash(password, 12);
     }
     if (!Object.keys(update).length) { res.status(400).json({ error: "No valid changes provided" }); return; }
-    const existingUser = await UserModel.findById(id).select("businessName phone").lean();
+    const existingUser = await UserModel.findById(id).select("businessName phone email isProtectedMasterAdmin").lean();
     if (!existingUser) { res.status(404).json({ error: "User not found" }); return; }
+    if (isProtectedMasterAdminUser(existingUser)) {
+      update.isProtectedMasterAdmin = true;
+    }
     if (update.businessName && update.businessName !== existingUser.businessName) {
       await renameTenantDatabase(
         String(id),
@@ -202,6 +220,10 @@ router.delete("/master-admin/users/:id", async (req, res) => {
   if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
   const user = await UserModel.findById(id);
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (isProtectedMasterAdminUser(user)) {
+    res.status(403).json({ error: "This protected Master Admin account cannot be deleted" });
+    return;
+  }
   try {
     await deleteTenantDatabase(String(id));
   } catch {
@@ -332,11 +354,16 @@ router.get("/master-admin/users/:id/report", async (req, res) => {
     .select("type amount balanceAfter description createdAt")
     .lean();
   const user = await UserModel.findById(id)
-    .select("businessName email createdAt creditBalance active role metaWabaConnected")
+    .select("businessName email createdAt creditBalance active role metaWabaConnected isProtectedMasterAdmin")
     .lean();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  const protectedAccount = isProtectedMasterAdminUser(user);
   res.json({
-    user,
+    user: {
+      ...user,
+      metaWabaConnected: user.metaWabaConnected || protectedAccount,
+      isProtectedMasterAdmin: protectedAccount,
+    },
     usage: rows[0] ?? { totalTransactions: 0, totalPurchased: 0, totalUsed: 0, dayUsed: 0, weekUsed: 0, monthUsed: 0 },
     transactions: transactions.map((transaction) => ({
       id: String(transaction._id),
@@ -355,7 +382,13 @@ router.get("/master-admin/analytics", async (req, res) => {
   const [users, activeUsers, connectedUsers, credits, recentTransactions, dailyActivity, typeBreakdown, topUserUsage] = await Promise.all([
     UserModel.countDocuments(),
     UserModel.countDocuments({ active: { $ne: false } }),
-    UserModel.countDocuments({ metaWabaConnected: true }),
+    UserModel.countDocuments({
+      $or: [
+        { metaWabaConnected: true },
+        { isProtectedMasterAdmin: true },
+        { email: "raneaniket23@gmail.com" },
+      ],
+    }),
     CreditTransactionModel.aggregate([
       { $group: {
         _id: null,
@@ -452,6 +485,12 @@ router.put("/master-admin/credit-setting", async (req, res) => {
 router.post("/master-admin/users/:id/disconnect", async (req, res) => {
   const id = validId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
+  const user = await UserModel.findById(id).select("email isProtectedMasterAdmin").lean();
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (isProtectedMasterAdminUser(user)) {
+    res.status(409).json({ error: "This protected Master Admin account uses ecosystem WhatsApp credentials" });
+    return;
+  }
   await runWithTenant(String(id), () =>
     WhatsAppCredentialModel.deleteOne({ userId: id }),
   );

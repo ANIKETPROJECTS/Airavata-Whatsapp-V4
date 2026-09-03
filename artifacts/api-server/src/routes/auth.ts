@@ -5,6 +5,7 @@ import { signToken } from "../lib/jwt";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { ensureTenantDatabase } from "../lib/tenantDatabase";
+import { isProtectedMasterAdminUser } from "../lib/protectedMasterAdmin";
 
 const router = Router();
 
@@ -85,7 +86,8 @@ router.post("/auth/signup", async (req, res) => {
         timezone: user.timezone,
         role: user.role,
         creditBalance: user.creditBalance,
-        metaWabaConnected: user.metaWabaConnected,
+         metaWabaConnected: user.metaWabaConnected || isProtectedMasterAdminUser(user),
+         isProtectedMasterAdmin: isProtectedMasterAdminUser(user),
       },
     });
   } catch (err) {
@@ -162,7 +164,8 @@ router.post("/auth/login", async (req, res) => {
         timezone: user.timezone,
         role: user.role,
         creditBalance: user.creditBalance,
-        metaWabaConnected: user.metaWabaConnected,
+        metaWabaConnected: user.metaWabaConnected || isProtectedMasterAdminUser(user),
+        isProtectedMasterAdmin: isProtectedMasterAdminUser(user),
         active: user.active !== false,
         permissions: user.permissions ?? [],
       },
@@ -197,7 +200,8 @@ router.get("/auth/me", authenticate, async (req: AuthRequest, res) => {
         timezone: user.timezone,
         role: user.role,
         creditBalance: user.creditBalance,
-        metaWabaConnected: user.metaWabaConnected,
+        metaWabaConnected: user.metaWabaConnected || isProtectedMasterAdminUser(user),
+        isProtectedMasterAdmin: isProtectedMasterAdminUser(user),
         active: user.active !== false,
         permissions: user.permissions ?? [],
       },

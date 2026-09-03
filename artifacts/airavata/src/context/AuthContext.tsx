@@ -17,6 +17,7 @@ export interface AuthUser {
   role?: 'admin' | 'client';
   creditBalance?: number;
   metaWabaConnected?: boolean;
+  isProtectedMasterAdmin?: boolean;
   active?: boolean;
   permissions?: string[];
 }

@@ -5,8 +5,13 @@
  */
 
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
+import { UserModel } from "../models/User";
 import { decryptToken } from "./credentialCrypto";
 import { logger } from "./logger";
+import {
+  getEcosystemWhatsAppCredentials,
+  isProtectedMasterAdminUser,
+} from "./protectedMasterAdmin";
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 
@@ -76,6 +81,21 @@ export async function getCredentials(
   options: { allowEnvFallback?: boolean } = {},
 ): Promise<{ phoneNumberId: string; accessToken: string; wabaId?: string }> {
   const allowEnvFallback = options.allowEnvFallback ?? true;
+
+  // The protected operator account uses the deployment's ecosystem
+  // credentials directly and never depends on Embedded Signup.
+  const owner = await UserModel.findById(userId)
+    .select("email isProtectedMasterAdmin")
+    .lean();
+  if (isProtectedMasterAdminUser(owner)) {
+    const credentials = getEcosystemWhatsAppCredentials();
+    logger.info(
+      { userId, wabaId: credentials.wabaId, phoneNumberId: credentials.phoneNumberId },
+      "[getCredentials] Using ecosystem WhatsApp credentials for protected Master Admin account",
+    );
+    return credentials;
+  }
+
   try {
     const cred = await WhatsAppCredentialModel.findOne({ userId }).lean();
     if (cred) {

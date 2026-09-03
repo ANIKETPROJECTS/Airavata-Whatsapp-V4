@@ -17,6 +17,7 @@ const PERMISSIONS = [
 type ManagedUser = {
   id: string; businessName: string; email: string; phone?: string | null; timezone?: string;
   role: 'admin' | 'client'; active: boolean; permissions: string[]; creditBalance: number;
+  protectedAccount?: boolean;
   createdAt: string; connection: { connected: boolean; wabaId?: string | null; phoneNumberId?: string | null };
 };
 
@@ -160,10 +161,18 @@ export default function MasterAdmin() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [location, navigate] = useLocation();
-  const { launch: launchFacebookSignup, isConnecting: isConnectingFacebook } = useFacebookEmbeddedSignup(async () => {
+  const { launch: launchFacebookSignupRaw, isConnecting: isConnectingFacebook } = useFacebookEmbeddedSignup(async () => {
     toast.success('Facebook / WhatsApp connection saved');
     await load();
   });
+  const launchFacebookSignup = (targetUserId: string) => {
+    const target = users.find((user) => user.id === targetUserId);
+    if (target?.protectedAccount) {
+      toast.error('This protected Master Admin account uses ecosystem WhatsApp credentials');
+      return;
+    }
+    launchFacebookSignupRaw(targetUserId);
+  };
   const pathParts = location.split('/').filter(Boolean);
   const reportUserId = pathParts[1] === 'reports' && pathParts[2] ? pathParts[2] : null;
   const page = reportUserId ? 'reports' : (pathParts[1] ?? 'dashboard');
@@ -227,6 +236,10 @@ export default function MasterAdmin() {
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to save user'); }
   };
   const removeUser = async (user: ManagedUser) => {
+    if (user.protectedAccount) {
+      toast.error('The protected Master Admin account cannot be deleted');
+      return;
+    }
     if (!window.confirm(`Delete ${user.businessName}? This also removes their stored WhatsApp connection.`)) return;
     try { await masterApi.delete(`/master-admin/users/${user.id}`); toast.success('User deleted'); await load(); }
     catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to delete user'); }
@@ -348,7 +361,8 @@ export default function MasterAdmin() {
           <button onClick={signOut} className="md:hidden flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"><LogOut className="w-4 h-4" /> Sign out</button>
           <div className="hidden md:flex items-center gap-2 text-sm text-slate-500"><UserRound className="w-4 h-4" /> Full system access</div>
         </header>
-        <main className="p-5 sm:p-8 max-w-[1500px] space-y-6">
+         <main className="p-5 sm:p-8 max-w-[1500px] space-y-6">
+           {(activePage === 'users' || activePage === 'connections') && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><span className="font-semibold">Protected Master Admin account:</span> the operator account is editable but cannot be deleted or disconnected, and it uses the ecosystem WhatsApp credentials directly.</div>}
           {activePage === 'credit-transactions' && <CreditTransactionsPanel users={users} transactions={transactions} visibleTransactions={visibleTransactions} transactionSearch={transactionSearch} setTransactionSearch={setTransactionSearch} transactionFilter={transactionFilter} setTransactionFilter={setTransactionFilter} transactionSort={transactionSort} setTransactionSort={setTransactionSort} transactionView={transactionView} setTransactionView={setTransactionView} />}
           {['users', 'connections', 'reports', 'credits'].includes(activePage) && <Pagination page={userPage} total={allVisibleUsers.length} onPage={setUserPage} />}
           {activePage === 'dashboard' && <>

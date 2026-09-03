@@ -305,7 +305,12 @@ export default function Dashboard() {
             <p className="mt-1 text-sm text-gray-800">A clear view of your WhatsApp activity and automation health.</p>
           </div>
           <div className="flex items-center gap-3">
-            {user?.metaWabaConnected ? (
+            {user?.isProtectedMasterAdmin ? (
+              <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                Ecosystem WhatsApp connected
+              </div>
+            ) : user?.metaWabaConnected ? (
               <button
                 onClick={() => void handleReconnectFacebook()}
                 disabled={fbConnecting}

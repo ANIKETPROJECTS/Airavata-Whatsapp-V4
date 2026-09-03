@@ -11,6 +11,7 @@ const userSchema = new Schema(
       trim: true,
     },
     passwordHash: { type: String, required: true },
+    isProtectedMasterAdmin: { type: Boolean, default: false, index: true },
     phone: { type: String, trim: true },
     timezone: { type: String, default: "Asia/Kolkata" },
     role: { type: String, enum: ["admin", "client"], default: "client" },

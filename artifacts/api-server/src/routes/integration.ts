@@ -16,6 +16,10 @@ import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
 import { runWithTenant } from "../lib/tenantDatabase";
 import { decryptToken, encryptToken } from "../lib/credentialCrypto";
 import { logger } from "../lib/logger";
+import {
+  getEcosystemWhatsAppCredentialIds,
+  isProtectedMasterAdminUser,
+} from "../lib/protectedMasterAdmin";
 
 const router = Router();
 
@@ -41,8 +45,13 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       res.status(400).json({ error: "Master Admin connections require a target user" });
       return;
     }
-    if (!(await UserModel.exists({ _id: ownerUserId }))) {
+    const owner = await UserModel.findById(ownerUserId).select("email isProtectedMasterAdmin").lean();
+    if (!owner) {
       res.status(404).json({ error: "Target user not found" });
+      return;
+    }
+    if (isProtectedMasterAdminUser(owner)) {
+      res.status(409).json({ error: "This protected Master Admin account uses ecosystem WhatsApp credentials and does not require Facebook connection" });
       return;
     }
     const { code } = (req.body ?? {}) as {
@@ -420,6 +429,11 @@ router.post(
   async (req: AuthRequest, res) => {
     try {
       const userId = new mongoose.Types.ObjectId(req.user!.userId);
+      const user = await UserModel.findById(userId).select("email isProtectedMasterAdmin").lean();
+      if (isProtectedMasterAdminUser(user)) {
+        res.status(409).json({ error: "This protected Master Admin account uses ecosystem WhatsApp credentials" });
+        return;
+      }
       await runWithTenant(String(userId), () =>
         WhatsAppCredentialModel.deleteOne({ userId }),
       );
@@ -452,7 +466,7 @@ router.get(
   authenticate,
   async (req: AuthRequest, res) => {
     const user = await UserModel.findById(req.user!.userId).select(
-      "metaWabaConnected metaWabaId metaPhoneNumberId",
+      "email isProtectedMasterAdmin metaWabaConnected metaWabaId metaPhoneNumberId",
     );
     const credential = await WhatsAppCredentialModel.findOne({
       userId: req.user!.userId,
@@ -468,12 +482,16 @@ router.get(
       }
     }
 
+    const protectedAccount = isProtectedMasterAdminUser(user);
+    const ecosystemIds = protectedAccount ? getEcosystemWhatsAppCredentialIds() : null;
     res.json({
-      connected: user?.metaWabaConnected ?? false,
-      wabaId: user?.metaWabaId ?? null,
-      phoneNumberId: user?.metaPhoneNumberId ?? credential?.phoneNumberId ?? null,
-      credentialStored: Boolean(credential),
-      credentialReadable,
+      connected: protectedAccount || user?.metaWabaConnected === true,
+      source: protectedAccount ? "ecosystem" : "facebook",
+      wabaId: ecosystemIds?.wabaId ?? user?.metaWabaId ?? null,
+      phoneNumberId: ecosystemIds?.phoneNumberId ?? user?.metaPhoneNumberId ?? credential?.phoneNumberId ?? null,
+      credentialStored: protectedAccount || Boolean(credential),
+      credentialReadable: protectedAccount || credentialReadable,
+      isProtectedMasterAdmin: protectedAccount,
     });
   },
 );

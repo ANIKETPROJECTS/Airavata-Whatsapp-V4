@@ -12,3 +12,4 @@
 - [Master Admin report pages](master-admin-report-pages.md) — user reports live at dedicated per-user routes with detailed usage and transaction history.
 - [Master Admin delegated connections](master-admin-delegated-connections.md) — Master Admin can run Embedded Signup for a selected user while credentials remain encrypted and tenant-scoped.
 - [Per-user MongoDB isolation](per-user-mongodb-isolation.md) — use immutable user-ID database names, central control-plane records, and copy/verify migration for existing tenants.
+- [Protected operator account](protected-operator-account.md) — the designated operator stays editable, cannot be deleted or disconnected, and uses deployment-level WhatsApp credentials directly.
