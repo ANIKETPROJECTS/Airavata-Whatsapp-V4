@@ -15,6 +15,15 @@ import {
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 
+/** Meta Cloud API recipient format: digits only, including the country code. */
+export function normalizeWhatsAppPhone(phone: string): string {
+  const normalized = phone.replace(/\D/g, "");
+  if (!/^\d{7,15}$/.test(normalized)) {
+    throw new Error("Recipient phone number must contain 7 to 15 digits including country code");
+  }
+  return normalized;
+}
+
 /**
  * Perform a Graph API request with an explicit access token.
  * Used by all tenant-scoped WhatsApp operations.
@@ -465,7 +474,7 @@ export async function sendMediaMessage(
       method: "POST",
       body: JSON.stringify({
         messaging_product: "whatsapp",
-        to: to.replace(/\s+/g, ""),
+        to: normalizeWhatsAppPhone(to),
         type,
         [type]: mediaPayload,
       }),
@@ -486,7 +495,7 @@ export async function sendTextMessage(to: string, body: string, userId: string) 
       method: "POST",
       body: JSON.stringify({
         messaging_product: "whatsapp",
-        to: to.replace(/\s+/g, ""),
+        to: normalizeWhatsAppPhone(to),
         type: "text",
         text: { body },
       }),
@@ -510,7 +519,7 @@ export async function sendInteractiveButtons(
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
-      to: to.replace(/\s+/g, ""),
+      to: normalizeWhatsAppPhone(to),
       type: "interactive",
       interactive: {
         type: "button",
@@ -544,7 +553,7 @@ export async function sendInteractiveList(
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
-      to: to.replace(/\s+/g, ""),
+      to: normalizeWhatsAppPhone(to),
       type: "interactive",
       interactive: {
         type: "list",
@@ -576,7 +585,7 @@ export async function sendLocationRequest(to: string, body: string, userId: stri
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
-      to: to.replace(/\s+/g, ""),
+      to: normalizeWhatsAppPhone(to),
       type: "interactive",
       interactive: {
         type: "location_request_message",
@@ -602,7 +611,7 @@ export async function sendLocationMessage(
     method: "POST",
     body: JSON.stringify({
       messaging_product: "whatsapp",
-      to: to.replace(/\s+/g, ""),
+      to: normalizeWhatsAppPhone(to),
       type: "location",
       location: { latitude, longitude, ...(name ? { name } : {}) },
     }),
@@ -660,7 +669,7 @@ export async function sendTemplateMessage(
       method: "POST",
       body: JSON.stringify({
         messaging_product: "whatsapp",
-        to: to.replace(/\s+/g, ""),
+        to: normalizeWhatsAppPhone(to),
         type: "template",
         template: {
           name: templateName,

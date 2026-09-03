@@ -5,9 +5,11 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { FlowModel } from "../models/Flow";
+import { ContactModel } from "../models/Contact";
+import { MessageModel } from "../models/Message";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
-import { getCredentials } from "../lib/whatsapp";
+import { getCredentials, normalizeWhatsAppPhone } from "../lib/whatsapp";
 
 const router = Router();
 
@@ -475,7 +477,7 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
     if (!phone) return res.status(400).json({ error: "phone is required" });
 
     // Meta requires phone numbers without the leading '+' (digits only)
-    const normalizedPhone = phone.replace(/^\+/, "");
+    const normalizedPhone = normalizeWhatsAppPhone(phone);
 
     // The first screen ID must match the sanitized ID that was uploaded to Meta
     const firstScreenId = sanitizeScreenId(flow.screens?.[0]?.id ?? "SCREEN_A");
@@ -541,7 +543,42 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
       });
     }
 
-    res.json({ success: true, messageId: msgData.messages?.[0]?.id });
+    const messageId = msgData.messages?.[0]?.id;
+    if (!messageId) {
+      logger.error({ metaStatus: msgRes.status, msgData, to: normalizedPhone }, "Meta flow send returned no message ID");
+      return res.status(502).json({ error: "Meta accepted the Flow request but did not return a message ID" });
+    }
+
+    // Persist the accepted message so delivery/failure webhooks can update it
+    // and the Flow send is visible in Live Chat and reporting.
+    const contacts = await ContactModel.find({ userId }).lean();
+    let contact = contacts.find((candidate) => {
+      try {
+        return normalizeWhatsAppPhone(candidate.phone) === normalizedPhone;
+      } catch {
+        return false;
+      }
+    });
+    if (!contact) {
+      const created = await ContactModel.create({
+        userId,
+        name: normalizedPhone,
+        phone: `+${normalizedPhone}`,
+      });
+      contact = created.toObject();
+    }
+    await MessageModel.create({
+      userId,
+      contactId: contact._id,
+      direction: "OUTBOUND",
+      body: bodyText ?? `WhatsApp Flow: ${flow.name}`,
+      flowId: flow._id,
+      whatsappMessageId: messageId,
+      status: "SENT",
+      sentAt: new Date(),
+    });
+
+    res.json({ success: true, messageId });
   } catch (err: unknown) {
     logger.error({ err }, "Unexpected error in send-flow route");
     if (isWhatsAppDisconnectedError(err)) {

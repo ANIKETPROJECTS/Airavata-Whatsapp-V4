@@ -25,6 +25,7 @@ import {
   sendLocationMessage,
   sendTemplateMessage,
   getCredentials,
+  normalizeWhatsAppPhone,
 } from "./whatsapp";
 import { resolvePricingLookupForUser } from "./pricing";
 import { withCreditCharge, type MessageCategory } from "./creditDeduction";
@@ -659,7 +660,7 @@ async function executeNode(
         const bodyText = String(d["bodyText"] ?? "Please complete the form below.");
         const ctaLabel = String(d["ctaLabel"] ?? "Open Form");
         if (metaFlowId) {
-          await withCreditCharge({
+          const flowMessageId = await withCreditCharge({
             userId,
             description: `Chatbot Flow message to ${phone}`,
             send: () =>
@@ -672,7 +673,12 @@ async function executeNode(
                 ctaLabel,
               ),
           });
-          await storeOutbound(userId, contactId, bodyText);
+          await storeOutbound(userId, contactId, bodyText, {
+            ...(mongoose.Types.ObjectId.isValid(metaFlowId)
+              ? { flowId: new mongoose.Types.ObjectId(metaFlowId) }
+              : {}),
+            whatsappMessageId: flowMessageId,
+          });
           // Do not advance yet. The webhook resumes this node's outgoing edge
           // once the user submits the form.
           return { waitForInput: true };
@@ -834,7 +840,7 @@ async function sendWhatsAppFlowMessage(
   headerText: string | undefined,
   bodyText: string,
   ctaLabel: string,
-): Promise<void> {
+): Promise<string> {
   const { accessToken, phoneNumberId } = await getCredentials(userId.toString(), {
     allowEnvFallback: false,
   });
@@ -860,7 +866,7 @@ async function sendWhatsAppFlowMessage(
     ? `flow_${String(internalFlow._id)}_${Date.now()}`
     : "unused";
   const firstScreen = sanitizeFlowScreenId(internalFlow?.screens?.[0]?.id ?? "SCREEN_A");
-  const normalizedPhone = phone.replace(/^\+/, "");
+  const normalizedPhone = normalizeWhatsAppPhone(phone);
   logger.info({
     to: normalizedPhone,
     flowReference,
@@ -900,11 +906,18 @@ async function sendWhatsAppFlowMessage(
     }),
   });
 
+  const raw = await res.text();
+  let responseData: { messages?: Array<{ id?: string }>; error?: { message?: string; code?: number; error_subcode?: number; fbtrace_id?: string } } = {};
+  try {
+    responseData = JSON.parse(raw) as typeof responseData;
+  } catch {
+    // Keep the raw response in the thrown error below.
+  }
+
   if (!res.ok) {
-    const raw = await res.text();
     let err: { error?: { message?: string; code?: number; error_subcode?: number; fbtrace_id?: string } } = {};
     try {
-      err = JSON.parse(raw) as typeof err;
+      err = responseData;
     } catch {
       // Keep the raw response in the thrown error below.
     }
@@ -917,7 +930,13 @@ async function sendWhatsAppFlowMessage(
     }, "Meta rejected WhatsApp Flow message");
     throw new Error(`Meta flow message error: ${err.error?.message ?? raw ?? String(res.status)}`);
   }
-  logger.info({ to: normalizedPhone, metaFlowId: internalFlow.metaFlowId }, "Meta accepted WhatsApp Flow message");
+  const messageId = responseData.messages?.[0]?.id;
+  if (!messageId) {
+    logger.error({ status: res.status, raw, to: normalizedPhone, metaFlowId: internalFlow.metaFlowId }, "Meta flow send returned no message ID");
+    throw new Error("Meta accepted the Flow request but did not return a message ID");
+  }
+  logger.info({ to: normalizedPhone, metaFlowId: internalFlow.metaFlowId, messageId }, "Meta accepted WhatsApp Flow message");
+  return messageId;
 }
 
 const FLOW_DIGIT_WORDS = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"];

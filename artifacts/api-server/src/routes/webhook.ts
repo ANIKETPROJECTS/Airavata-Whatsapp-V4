@@ -22,12 +22,37 @@ import {
   resumeChatbotAfterFlowSubmission,
 } from "../lib/chatbotEngine";
 import { sendInquiryCreated } from "../lib/airavataIntegration";
+import {
+  getEcosystemWhatsAppCredentialIds,
+  PROTECTED_MASTER_ADMIN_EMAIL,
+} from "../lib/protectedMasterAdmin";
 
 const router = Router();
 
 /** Strip all non-digit characters for phone comparison */
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "");
+}
+
+async function resolveOwningUser(phoneNumberId: string) {
+  const connectedOwner = await UserModel.findOne({ metaPhoneNumberId: phoneNumberId })
+    .select("_id")
+    .lean();
+  if (connectedOwner) return connectedOwner;
+
+  // The protected operator account intentionally has no Embedded Signup
+  // record, so its receiving number is owned through ecosystem config.
+  const ecosystemIds = getEcosystemWhatsAppCredentialIds();
+  if (ecosystemIds.phoneNumberId !== phoneNumberId) return null;
+
+  return UserModel.findOne({
+    $or: [
+      { isProtectedMasterAdmin: true },
+      { email: PROTECTED_MASTER_ADMIN_EMAIL },
+    ],
+  })
+    .select("_id")
+    .lean();
 }
 
 // ── GET /api/webhook — Meta verification handshake ────────────────────────────
@@ -135,9 +160,7 @@ async function handleIncomingMessage(
   }
 
   if (!tenantUserId) {
-    const owningUser = await UserModel.findOne({ metaPhoneNumberId: phoneNumberId })
-      .select("_id")
-      .lean();
+    const owningUser = await resolveOwningUser(phoneNumberId);
     if (!owningUser) {
       logger.error(
         { msgId: msg.id, from: fromRaw, phoneNumberId },
@@ -439,7 +462,7 @@ async function handleStatusUpdate(
 ): Promise<void> {
   if (!phoneNumberId) return;
   if (!tenantUserId) {
-    const owner = await UserModel.findOne({ metaPhoneNumberId: phoneNumberId }).select("_id").lean();
+    const owner = await resolveOwningUser(phoneNumberId);
     if (!owner) return;
     return runWithTenant(String(owner._id), () =>
       handleStatusUpdate(status, phoneNumberId, String(owner._id)),

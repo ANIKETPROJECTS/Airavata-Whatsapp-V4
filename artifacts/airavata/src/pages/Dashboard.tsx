@@ -339,7 +339,7 @@ export default function Dashboard() {
               <span className="h-2.5 w-2.5 rounded-full bg-green-500 ring-4 ring-green-100" />
               <div>
                 <p className="text-xs text-gray-800">WhatsApp connection</p>
-                <p className="text-sm font-bold text-black">{phoneLoading ? 'Checking status…' : connectedPhone?.status || 'Connected'}</p>
+                <p className="text-sm font-bold text-black">{user?.isProtectedMasterAdmin ? 'Connected' : phoneLoading ? 'Checking status…' : connectedPhone?.status || 'Connected'}</p>
               </div>
             </div>
             <div className="flex gap-6 text-xs">
