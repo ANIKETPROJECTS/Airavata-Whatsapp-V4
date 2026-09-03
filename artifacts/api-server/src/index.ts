@@ -4,6 +4,7 @@ import { connectToDatabase } from "./lib/mongodb";
 import { CreditSettingModel } from "./models/CreditSetting";
 import { startCampaignWorker } from "./lib/campaignWorker";
 import { migrateAllExistingUsers } from "./lib/tenantMigration";
+import { ensureEcosystemWebhookSubscription } from "./lib/whatsapp";
 
 const rawPort = process.env["PORT"];
 
@@ -65,6 +66,11 @@ connectToDatabase()
 
       logger.info({ port }, "Server listening");
       startCampaignWorker();
+       void ensureEcosystemWebhookSubscription()
+         .then(() => logger.info("Ecosystem WhatsApp webhook subscription confirmed"))
+         .catch((err: unknown) =>
+           logger.warn({ err: err instanceof Error ? err.message : String(err) }, "Ecosystem WhatsApp webhook subscription could not be confirmed"),
+         );
     });
   })
   .catch((err) => {

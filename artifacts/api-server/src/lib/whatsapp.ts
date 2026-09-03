@@ -25,6 +25,34 @@ export function normalizeWhatsAppPhone(phone: string): string {
 }
 
 /**
+ * Ensure the ecosystem WABA is subscribed to this app's webhook events.
+ * The operation is idempotent and only applies to the protected operator's
+ * deployment-level WABA; ordinary tenant connections are never affected.
+ */
+export async function ensureEcosystemWebhookSubscription(): Promise<void> {
+  const { wabaId, accessToken } = getEcosystemWhatsAppCredentials();
+  const response = await fetch(`${GRAPH_BASE}/${wabaId}/subscribed_apps`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+  const raw = await response.text();
+  if (!response.ok) {
+    let message = raw;
+    try {
+      const parsed = JSON.parse(raw) as { error?: { message?: string } };
+      message = parsed.error?.message ?? raw;
+    } catch {
+      // Keep the raw response in the startup warning.
+    }
+    throw new Error(`Meta webhook subscription failed (${response.status}): ${message}`);
+  }
+}
+
+/**
  * Perform a Graph API request with an explicit access token.
  * Used by all tenant-scoped WhatsApp operations.
  */
