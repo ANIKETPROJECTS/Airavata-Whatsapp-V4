@@ -88,7 +88,34 @@ export default function CampaignsReport() {
     }
   };
 
-  const fmt = (n?: number) => (n ?? 0) > 0 ? (n!).toLocaleString() : '—';
+  const campaignDisplayStatus = (campaign: Campaign) => {
+    const normalized = campaign.status.toUpperCase();
+    const sent = campaign.stats.sent ?? 0;
+    const failed = campaign.stats.failed ?? 0;
+
+    // COMPLETED means the send loop finished, not that every recipient
+    // succeeded. Make a partial failure visible instead of hiding it.
+    if (failed > 0 && sent > 0 && ['COMPLETED', 'FAILED'].includes(normalized)) {
+      return {
+        label: 'Completed with failures',
+        className: 'bg-amber-100 text-amber-700',
+      };
+    }
+
+    if (failed > 0 && sent === 0) {
+      return {
+        label: 'Failed',
+        className: 'bg-red-100 text-red-700',
+      };
+    }
+
+    return {
+      label: campaign.status.charAt(0) + campaign.status.slice(1).toLowerCase(),
+      className: statusColor(campaign.status),
+    };
+  };
+
+  const fmt = (n?: number) => (n ?? 0).toLocaleString();
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -190,8 +217,8 @@ export default function CampaignsReport() {
                     <td className="px-5 py-4">{fmt(camp.stats.read)}</td>
                     <td className="px-5 py-4">{fmt(camp.stats.failed)}</td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColor(camp.status)}`}>
-                        {camp.status.charAt(0) + camp.status.slice(1).toLowerCase()}
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${campaignDisplayStatus(camp).className}`}>
+                        {campaignDisplayStatus(camp).label}
                       </span>
                     </td>
                     <td className="px-5 py-4">
@@ -265,7 +292,7 @@ export default function CampaignsReport() {
                   </div>
                   <div className="flex justify-between border-b pb-2">
                     <span>Status</span>
-                    <span className="font-medium text-gray-900">{selectedCampaign.status}</span>
+                    <span className="font-medium text-gray-900">{campaignDisplayStatus(selectedCampaign).label}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Credits Used</span>
