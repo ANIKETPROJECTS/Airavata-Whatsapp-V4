@@ -28,3 +28,31 @@ mtime_ms = 1787494621663
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/b9ea37d0-69f1-4314-aeae-c3401e436989/6ab5bd4e-8c8a-4fe4-b49d-e95099177a99"
 storage_version_token = "1787494630657755"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "gez8pWEM5ZKcF-VX6ssn4"
+uri = "file://deliverables/meta-whatsapp-onboarding-and-credits.md"
+type = "text"
+title = "Meta WhatsApp Onboarding and Credits — Markdown"
+description = "Clean Markdown version of the Meta onboarding, credential storage, client messaging, and Airavata credit-flow explanation."
+logical_id = "ff488601-cb4e-4faa-9b06-16d6a8bd3366"
+content_hash = "sha256:70cb5ae9d74d47ba7b1427d917a83ce3e64c961212ede2232e1ef4b25bbf5f10"
+size = 4751
+mtime_ms = 1788507899295
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/ff488601-cb4e-4faa-9b06-16d6a8bd3366/f2ba3a4e-15cc-44c4-bcb0-9bf143f941ba"
+storage_version_token = "1788507936991698"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "UE2jEImdg4GRjxWmpRBaf"
+uri = "file://deliverables/meta-whatsapp-onboarding-and-credits.pdf"
+type = "pdf"
+title = "Meta WhatsApp Onboarding and Credits — PDF"
+description = "Formatted three-page PDF version of the same explanation."
+logical_id = "d67df60a-e7d6-477e-a92f-4eecdb5d1703"
+content_hash = "sha256:5eb3890981d1f894c06a5f5af5d742afd995df0023040b098958ede15668c10a"
+size = 68124
+mtime_ms = 1788507920307
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/d67df60a-e7d6-477e-a92f-4eecdb5d1703/55bc5cbb-db13-4b99-b01d-1ebe994da2a6"
+storage_version_token = "1788507938328071"
+content_type = "application/pdf"
