@@ -260,7 +260,9 @@ export default function Dashboard() {
   const conversations = conversationsData?.conversations ?? [];
   const flows = flowsData?.flows ?? [];
   const creditTransactions = billingData?.transactions ?? [];
-  const connectedPhone = phoneData?.numbers?.[0];
+  const connectedPhone = phoneData?.numbers?.find(
+    (phone) => phone.status.trim().toUpperCase() === 'CONNECTED',
+  ) ?? phoneData?.numbers?.[0];
   const contactTotal = contactsData?.total ?? 0;
 
   const activeChats = conversations.filter(c => c.status.toLowerCase() === 'open').length;
