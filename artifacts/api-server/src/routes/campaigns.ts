@@ -676,4 +676,101 @@ router.get(
   },
 );
 
+/**
+ * Dashboard messaging totals.
+ *
+ * Unlike campaign reports, this includes every unique outbound WhatsApp
+ * message in the tenant: test templates, Live Chat replies, Flow messages,
+ * chatbot sends, and campaign messages. The latest persisted status for each
+ * WhatsApp message is the source of truth, so Meta's duplicate status
+ * webhooks cannot inflate the overview.
+ */
+router.get(
+  "/messages/stats/summary",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user!.userId);
+      const hasMessageId = {
+        $and: [
+          { $ne: ["$whatsappMessageId", null] },
+          { $ne: ["$whatsappMessageId", ""] },
+        ],
+      };
+
+      const [row] = await MessageModel.aggregate<{
+        totalSent: number;
+        totalDelivered: number;
+        totalRead: number;
+        totalFailed: number;
+      }>([
+        {
+          $match: {
+            userId,
+            direction: "OUTBOUND",
+          },
+        },
+        { $sort: { updatedAt: 1, _id: 1 } },
+        {
+          $group: {
+            _id: {
+              $cond: [hasMessageId, "$whatsappMessageId", { $toString: "$_id" }],
+            },
+            status: { $last: "$status" },
+            hasWhatsappMessageId: { $max: { $cond: [hasMessageId, 1, 0] } },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalSent: {
+              $sum: {
+                $cond: [
+                  {
+                    $or: [
+                      { $in: ["$status", ["SENT", "DELIVERED", "READ"]] },
+                      { $eq: ["$hasWhatsappMessageId", 1] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            totalDelivered: {
+              $sum: {
+                $cond: [{ $in: ["$status", ["DELIVERED", "READ"]] }, 1, 0],
+              },
+            },
+            totalRead: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "READ"] }, 1, 0],
+              },
+            },
+            totalFailed: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "FAILED"] }, 1, 0],
+              },
+            },
+          },
+        },
+      ]);
+
+      res.json({
+        stats: {
+          totalSent: row?.totalSent ?? 0,
+          totalDelivered: row?.totalDelivered ?? 0,
+          totalRead: row?.totalRead ?? 0,
+          totalFailed: row?.totalFailed ?? 0,
+        },
+      });
+    } catch (err: unknown) {
+      logger.error({ err }, "GET /messages/stats/summary failed");
+      res
+        .status(500)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+);
+
 export default router;

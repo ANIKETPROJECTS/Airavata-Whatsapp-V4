@@ -219,8 +219,8 @@ export default function Dashboard() {
     refetchInterval: 60_000,
   });
   const { data: statsData, isLoading: statsLoading } = useQuery<{ stats: CampaignStats }>({
-    queryKey: ['campaigns-stats'],
-    queryFn: () => api.get('/campaigns/stats/summary'),
+    queryKey: ['messages-stats'],
+    queryFn: () => api.get('/messages/stats/summary'),
     refetchInterval: 30_000,
   });
   const { data: campaignsData, isLoading: campaignsLoading } = useQuery<{ campaigns: Campaign[] }>({
@@ -355,7 +355,7 @@ export default function Dashboard() {
         <section>
           <SectionHeading eyebrow="Messaging performance" title="Delivery overview" href="/campaigns-report" />
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <MetricCard label="Sent" value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)} detail="Messages sent from campaigns" icon={Send} iconSrc={sentCardIcon} large tone="blue" />
+            <MetricCard label="Sent" value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)} detail="All outbound WhatsApp messages" icon={Send} iconSrc={sentCardIcon} large tone="blue" />
             <MetricCard label="Delivered" value={isLoading ? '—' : fmt(stats?.totalDelivered ?? 0)} detail={`${deliveryRate} delivery rate`} icon={CheckCircle2} iconSrc={messageCardIcon} large tone="green" />
             <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages`} icon={MessageCircle} iconSrc={viewCardIcon} large tone="violet" />
             <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate`} icon={XCircle} iconSrc={reportCardIcon} large tone="red" />
