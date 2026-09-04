@@ -8,6 +8,7 @@ import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
 import { UserModel } from "../models/User";
 import { decryptToken } from "./credentialCrypto";
 import { logger } from "./logger";
+import { runWithTenant } from "./tenantDatabase";
 import {
   getEcosystemWhatsAppCredentials,
   isProtectedMasterAdminUser,
@@ -25,13 +26,15 @@ export function normalizeWhatsAppPhone(phone: string): string {
 }
 
 /**
- * Ensure the ecosystem WABA is subscribed to this app's webhook events.
- * The operation is idempotent and only applies to the protected operator's
- * deployment-level WABA; ordinary tenant connections are never affected.
+ * Subscribe a WABA to this app's webhook events.
+ * Meta requires this per connected WABA, including tenant accounts created
+ * through Embedded Signup. The call is idempotent.
  */
-export async function ensureEcosystemWebhookSubscription(): Promise<void> {
-  const { wabaId, accessToken } = getEcosystemWhatsAppCredentials();
-  const response = await fetch(`${GRAPH_BASE}/${wabaId}/subscribed_apps`, {
+export async function ensureWhatsAppWebhookSubscription(
+  wabaId: string,
+  accessToken: string,
+): Promise<void> {
+  const response = await fetch(`${GRAPH_BASE}/${encodeURIComponent(wabaId)}/subscribed_apps`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -46,10 +49,78 @@ export async function ensureEcosystemWebhookSubscription(): Promise<void> {
       const parsed = JSON.parse(raw) as { error?: { message?: string } };
       message = parsed.error?.message ?? raw;
     } catch {
-      // Keep the raw response in the startup warning.
+      // Keep the raw response in the error for diagnostics.
     }
     throw new Error(`Meta webhook subscription failed (${response.status}): ${message}`);
   }
+}
+
+/**
+ * Repair webhook subscriptions for tenant accounts that were connected before
+ * per-WABA subscription was added to Embedded Signup. Each operation is
+ * isolated so one invalid or disconnected tenant does not block server start.
+ */
+export async function ensureTenantWebhookSubscriptions(): Promise<void> {
+  const users = await UserModel.find({
+    metaWabaConnected: true,
+    metaWabaId: { $exists: true, $ne: null },
+  })
+    .select("_id metaWabaId")
+    .lean();
+
+  const results = await Promise.allSettled(
+    users.map(async (user) => {
+      const userId = String(user._id);
+      const credential = await runWithTenant(userId, () =>
+        WhatsAppCredentialModel.findOne({ userId: user._id })
+          .select("wabaId accessTokenEncrypted")
+          .lean(),
+      );
+
+      if (!credential) {
+        throw new Error("Encrypted WhatsApp credential not found");
+      }
+
+      const accessToken = decryptToken(credential.accessTokenEncrypted);
+      await ensureWhatsAppWebhookSubscription(
+        String(credential.wabaId ?? user.metaWabaId),
+        accessToken,
+      );
+      return userId;
+    }),
+  );
+
+  const failed = results.filter(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (failed.length > 0) {
+    logger.warn(
+      {
+        tenantCount: users.length,
+        repairedCount: results.length - failed.length,
+        failedCount: failed.length,
+        errors: failed.slice(0, 5).map((result) =>
+          result.reason instanceof Error ? result.reason.message : String(result.reason),
+        ),
+      },
+      "Some tenant WhatsApp webhook subscriptions could not be repaired",
+    );
+  } else if (users.length > 0) {
+    logger.info(
+      { tenantCount: users.length },
+      "Tenant WhatsApp webhook subscriptions confirmed",
+    );
+  }
+}
+
+/**
+ * Ensure the ecosystem WABA is subscribed to this app's webhook events.
+ * The operation is idempotent and only applies to the protected operator's
+ * deployment-level WABA; ordinary tenant connections are never affected.
+ */
+export async function ensureEcosystemWebhookSubscription(): Promise<void> {
+  const { wabaId, accessToken } = getEcosystemWhatsAppCredentials();
+  await ensureWhatsAppWebhookSubscription(wabaId, accessToken);
 }
 
 /**

@@ -20,6 +20,7 @@ import {
   getEcosystemWhatsAppCredentialIds,
   isProtectedMasterAdminUser,
 } from "../lib/protectedMasterAdmin";
+import { ensureWhatsAppWebhookSubscription } from "../lib/whatsapp";
 
 const router = Router();
 
@@ -285,6 +286,34 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
           "Meta did not return a WhatsApp Business Account and phone number",
       });
 
+      return;
+    }
+
+    /**
+     * Subscribe this tenant WABA to the app webhook before marking the
+     * connection as active. Outbound sends can work without this subscription,
+     * but inbound customer replies would never reach Live Chat.
+     */
+    try {
+      await ensureWhatsAppWebhookSubscription(wabaId, accessToken);
+      logger.info(
+        { userId: ownerUserId, wabaId, phoneNumberId },
+        "WhatsApp WABA subscribed to application webhooks",
+      );
+    } catch (subscriptionError) {
+      logger.error(
+        {
+          err: subscriptionError,
+          userId: ownerUserId,
+          wabaId,
+          phoneNumberId,
+        },
+        "WhatsApp WABA webhook subscription failed",
+      );
+      res.status(502).json({
+        error:
+          "WhatsApp connected, but Meta webhook subscription failed. Please reconnect the Facebook account.",
+      });
       return;
     }
 
