@@ -21,6 +21,7 @@ const router = Router();
 
 function shapeCampaign(
   c: Record<string, unknown> & { _id: unknown; templateId?: unknown },
+  statsOverride?: unknown,
 ) {
   return {
     id: String(c._id),
@@ -34,11 +35,127 @@ function shapeCampaign(
     variableValues: c.variableValues,
     scheduledAt: c.scheduledAt,
     status: c.status,
-    stats: c.stats,
+    stats: statsOverride ?? c.stats,
     creditCost: c.creditCost,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
   };
+}
+
+interface ReconciledCampaignCounts {
+  sent: number;
+  delivered: number;
+  read: number;
+  failed: number;
+}
+
+/**
+ * Rebuild report counters from the latest state of each outbound message.
+ *
+ * Campaign.stats is maintained incrementally for fast writes, but webhook
+ * delivery notifications can be retried by Meta. The message state is the
+ * idempotent source of truth, so reports use these counts to repair both old
+ * inflated counters and any future duplicate notifications.
+ */
+async function getReconciledCampaignCounts(
+  campaignIds: mongoose.Types.ObjectId[],
+): Promise<Map<string, ReconciledCampaignCounts>> {
+  if (campaignIds.length === 0) return new Map();
+
+  const hasMessageId = {
+    $and: [
+      { $ne: ["$whatsappMessageId", null] },
+      { $ne: ["$whatsappMessageId", ""] },
+    ],
+  };
+
+  const rows = await MessageModel.aggregate<{
+    _id: mongoose.Types.ObjectId;
+    sent: number;
+    delivered: number;
+    read: number;
+    failed: number;
+  }>([
+    {
+      $match: {
+        campaignId: { $in: campaignIds },
+        direction: "OUTBOUND",
+      },
+    },
+    { $sort: { updatedAt: 1, _id: 1 } },
+    {
+      $group: {
+        _id: {
+          campaignId: "$campaignId",
+          messageKey: {
+            $cond: [hasMessageId, "$whatsappMessageId", { $toString: "$_id" }],
+          },
+        },
+        status: { $last: "$status" },
+        hasWhatsappMessageId: { $max: { $cond: [hasMessageId, 1, 0] } },
+      },
+    },
+    {
+      $group: {
+        _id: "$_id.campaignId",
+        sent: {
+          $sum: {
+            $cond: [
+              {
+                $or: [
+                  { $in: ["$status", ["SENT", "DELIVERED", "READ"]] },
+                  { $eq: ["$hasWhatsappMessageId", 1] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+        delivered: {
+          $sum: {
+            $cond: [{ $in: ["$status", ["DELIVERED", "READ"]] }, 1, 0],
+          },
+        },
+        read: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "READ"] }, 1, 0],
+          },
+        },
+        failed: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "FAILED"] }, 1, 0],
+          },
+        },
+      },
+    },
+  ]);
+
+  return new Map(
+    rows.map((row) => [
+      String(row._id),
+      {
+        sent: row.sent ?? 0,
+        delivered: row.delivered ?? 0,
+        read: row.read ?? 0,
+        failed: row.failed ?? 0,
+      },
+    ]),
+  );
+}
+
+function statsForCampaign(
+  campaign: Record<string, unknown> & { _id: unknown },
+  reconciledCounts: Map<string, ReconciledCampaignCounts>,
+): unknown {
+  const counts = reconciledCounts.get(String(campaign._id));
+  if (!counts) return campaign.stats;
+
+  const storedStats =
+    campaign.stats && typeof campaign.stats === "object"
+      ? (campaign.stats as Record<string, unknown>)
+      : {};
+  return { ...storedStats, ...counts };
 }
 
 /** Resolve all unique contacts for a campaign's audience (contactIds + groups) */
@@ -145,7 +262,14 @@ router.get("/campaigns", authenticate, async (req: AuthRequest, res) => {
       },
     ]);
 
-    res.json({ campaigns: campaigns.map(shapeCampaign) });
+    const reconciledCounts = await getReconciledCampaignCounts(
+      campaigns.map((campaign) => campaign._id as mongoose.Types.ObjectId),
+    );
+    res.json({
+      campaigns: campaigns.map((campaign) =>
+        shapeCampaign(campaign, statsForCampaign(campaign, reconciledCounts)),
+      ),
+    });
   } catch (err: unknown) {
     res
       .status(500)
@@ -178,6 +302,10 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
 
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
 
+    const reconciledCounts = await getReconciledCampaignCounts([
+      campaign._id as mongoose.Types.ObjectId,
+    ]);
+
     // Per-recipient breakdown (latest 200 messages)
     const messages = await MessageModel.find({
       campaignId: new mongoose.Types.ObjectId(req.params.id),
@@ -187,7 +315,10 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
       .limit(200)
       .lean();
 
-    res.json({ campaign: shapeCampaign(campaign), messages });
+    res.json({
+      campaign: shapeCampaign(campaign, statsForCampaign(campaign, reconciledCounts)),
+      messages,
+    });
   } catch (err: unknown) {
     res
       .status(500)
@@ -505,28 +636,37 @@ router.get(
     try {
       const userId = new mongoose.Types.ObjectId(req.user!.userId);
 
-      const [stats] = await CampaignModel.aggregate([
-        { $match: { userId } },
-        {
-          $group: {
-            _id: null,
-            totalSent: { $sum: "$stats.sent" },
-            totalDelivered: { $sum: "$stats.delivered" },
-            totalRead: { $sum: "$stats.read" },
-            totalFailed: { $sum: "$stats.failed" },
-            campaignCount: { $sum: 1 },
-          },
+      const campaigns = await CampaignModel.find({ userId })
+        .select("_id stats")
+        .lean();
+      const reconciledCounts = await getReconciledCampaignCounts(
+        campaigns.map((campaign) => campaign._id as mongoose.Types.ObjectId),
+      );
+      const stats = campaigns.reduce(
+        (totals, campaign) => {
+          const campaignStats = statsForCampaign(campaign, reconciledCounts) as {
+            sent?: number;
+            delivered?: number;
+            read?: number;
+            failed?: number;
+          };
+          totals.totalSent += campaignStats.sent ?? 0;
+          totals.totalDelivered += campaignStats.delivered ?? 0;
+          totals.totalRead += campaignStats.read ?? 0;
+          totals.totalFailed += campaignStats.failed ?? 0;
+          return totals;
         },
-      ]);
-
-      res.json({
-        stats: stats ?? {
+        {
           totalSent: 0,
           totalDelivered: 0,
           totalRead: 0,
           totalFailed: 0,
-          campaignCount: 0,
+          campaignCount: campaigns.length,
         },
+      );
+
+      res.json({
+        stats,
       });
     } catch (err: unknown) {
       res

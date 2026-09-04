@@ -478,13 +478,44 @@ async function handleStatusUpdate(
     update.failureReason = status.errors?.[0]?.title ?? "Unknown error";
   }
 
+  // Meta can retry the same webhook, and status notifications can arrive out
+  // of order. Only the first transition into a status may update the message
+  // and campaign counters. The status predicate makes this atomic, so two
+  // concurrent duplicate webhooks cannot both increment the same counter.
+  const statusFilter: Record<string, unknown> = {
+    whatsappMessageId: status.id,
+  };
+  if (status.status === "delivered") {
+    statusFilter.status = { $nin: ["DELIVERED", "READ", "FAILED"] };
+  } else if (status.status === "read") {
+    statusFilter.status = { $nin: ["READ", "FAILED"] };
+  } else if (status.status === "failed") {
+    statusFilter.status = { $nin: ["FAILED", "DELIVERED", "READ"] };
+  } else if (status.status === "sent") {
+    statusFilter.status = { $nin: ["SENT", "DELIVERED", "READ", "FAILED"] };
+  }
+
   const msg = await MessageModel.findOneAndUpdate(
-    { whatsappMessageId: status.id },
+    statusFilter,
     { $set: update },
     { new: true },
   );
 
-  if (!msg) return;
+  if (!msg) {
+    const knownMessage = await MessageModel.exists({ whatsappMessageId: status.id });
+    if (knownMessage) {
+      logger.info(
+        { id: status.id, status: status.status },
+        "Ignored duplicate or stale message status",
+      );
+    } else {
+      logger.warn(
+        { id: status.id, status: status.status },
+        "Ignored status for unknown message",
+      );
+    }
+    return;
+  }
 
   // Propagate stats to campaign if applicable
   if (msg.campaignId && (status.status === "delivered" || status.status === "read" || status.status === "failed")) {
