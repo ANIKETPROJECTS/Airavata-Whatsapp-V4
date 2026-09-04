@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ApiKeyRecord { id: string; label: string; keyPrefix: string; lastUsedAt: string | null; createdAt: string; }
@@ -33,6 +34,7 @@ interface PricingCatalogResponse {
 // ── API Keys Tab ──────────────────────────────────────────────────────────────
 function ApiKeysTab() {
   const qc = useQueryClient();
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [labelInput, setLabelInput] = useState('');
   const [generating, setGenerating] = useState(false);
   const [newKey, setNewKey] = useState<GeneratedKey | null>(null);
@@ -102,10 +104,11 @@ function ApiKeysTab() {
               </div>
               <p className="text-xs text-gray-400 mt-1.5">Created {new Date(key.createdAt).toLocaleDateString()}{key.lastUsedAt && ` · Last used ${new Date(key.lastUsedAt).toLocaleDateString()}`}</p>
             </div>
-            <button onClick={() => { if (confirm(`Revoke key "${key.label}"?`)) revokeMutation.mutate(key.id); }}
+            <button onClick={async () => { if (await confirm({ title: 'Revoke API key?', description: `The key "${key.label}" will stop working immediately.`, confirmLabel: 'Revoke key' })) revokeMutation.mutate(key.id); }}
               disabled={revokeMutation.isPending}
               className="shrink-0 text-sm font-medium text-red-600 hover:bg-red-50 px-3 py-1.5 rounded disabled:opacity-50">Revoke</button>
-          </div>
+      {confirmDialog}
+    </div>
         ))}</div>}
     </div>
   );
@@ -148,6 +151,7 @@ const ROLE_LABELS: Record<string, string> = { agent: 'Agent', supervisor: 'Super
 
 function AgentsTab() {
   const qc = useQueryClient();
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
@@ -282,7 +286,7 @@ function AgentsTab() {
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${a.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{a.status}</span>
                   <button onClick={() => { setEditAgent(a); setShowForm(false); setForm({ name: a.name, email: a.email, role: a.role, permissions: { liveChat: true, campaigns: false, contacts: true, templates: false, ...a.permissions } }); }}
                     className="p-1.5 text-gray-400 hover:text-gray-700"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => { if (confirm(`Remove agent "${a.name}"?`)) deleteMutation.mutate(a.id); }}
+                  <button onClick={async () => { if (await confirm({ title: 'Remove this agent?', description: `Agent "${a.name}" will no longer have access to this workspace.`, confirmLabel: 'Remove agent' })) deleteMutation.mutate(a.id); }}
                     disabled={deleteMutation.isPending}
                     className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                 </div>
@@ -290,6 +294,7 @@ function AgentsTab() {
             ))}
           </div>
         )}
+      {confirmDialog}
     </div>
   );
 }
@@ -297,6 +302,7 @@ function AgentsTab() {
 // ── Canned Messages Tab ───────────────────────────────────────────────────────
 function CannedMessagesTab() {
   const qc = useQueryClient();
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<CannedMsg | null>(null);
@@ -392,13 +398,14 @@ function CannedMessagesTab() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => { setEditItem(m); setShowForm(false); setForm({ name: m.name, message: m.message, type: m.type }); }}
                     className="p-1.5 text-gray-400 hover:text-gray-700"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => { if (confirm(`Delete "${m.name}"?`)) deleteMutation.mutate(m.id); }}
+                   <button onClick={async () => { if (await confirm({ title: 'Delete canned message?', description: `The canned message "${m.name}" will be permanently removed.`, confirmLabel: 'Delete message' })) deleteMutation.mutate(m.id); }}
                     className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
           </div>
         )}
+      {confirmDialog}
     </div>
   );
 }
@@ -520,6 +527,7 @@ function LiveChatSettingsTab() {
 // ── Attributes Tab ────────────────────────────────────────────────────────────
 function AttributesTab() {
   const qc = useQueryClient();
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [attrs, setAttrs] = useState<AttributeItem[] | null>(null);
 
@@ -585,7 +593,7 @@ function AttributesTab() {
                         placeholder="Attribute name" />
                     </td>
                     <td className="px-4 py-2">
-                      <button onClick={() => remove(a.id)} className="p-1.5 text-gray-400 hover:text-red-500">
+                       <button onClick={async () => { if (await confirm({ title: 'Remove attribute?', description: `Remove "${a.name || 'this attribute'}" from the list?`, confirmLabel: 'Remove attribute' })) remove(a.id); }} className="p-1.5 text-gray-400 hover:text-red-500">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
@@ -593,7 +601,8 @@ function AttributesTab() {
                 ))}
               </tbody>
             </table>
-          </div>
+      {confirmDialog}
+    </div>
         )}
     </div>
   );
@@ -607,6 +616,7 @@ const TAG_COLORS = [
 
 function TagsTab() {
   const qc = useQueryClient();
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(TAG_COLORS[0]!);
   const [showForm, setShowForm] = useState(false);
@@ -681,7 +691,7 @@ function TagsTab() {
               style={{ backgroundColor: tag.color + '18', borderColor: tag.color + '50' }}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
               <span className="font-medium" style={{ color: tag.color }}>{tag.name}</span>
-              <button onClick={() => { if (confirm(`Delete tag "${tag.name}"?`)) deleteMutation.mutate(tag.id); }}
+               <button onClick={async () => { if (await confirm({ title: 'Delete tag?', description: `The tag "${tag.name}" will be permanently removed.`, confirmLabel: 'Delete tag' })) deleteMutation.mutate(tag.id); }}
                 className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity ml-0.5">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -689,6 +699,7 @@ function TagsTab() {
           ))}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }
@@ -878,13 +889,13 @@ export default function Manage() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="w-full min-w-0 p-6 max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Manage Workspace</h1>
         <p className="text-sm text-gray-500">Configure your business settings and workspace resources</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex min-w-0 flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-56 shrink-0 space-y-1">
           {TABS.map(tab => (
@@ -909,7 +920,7 @@ export default function Manage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 bg-white rounded-xl border shadow-sm min-h-[400px] overflow-hidden">
+        <div className="min-w-0 flex-1 bg-white rounded-xl border shadow-sm min-h-[400px] overflow-hidden">
           {activeTab === 'api'        && <ApiKeysTab />}
           {activeTab === 'agents'     && <AgentsTab />}
           {activeTab === 'phone'      && <PhoneNumbersTab />}

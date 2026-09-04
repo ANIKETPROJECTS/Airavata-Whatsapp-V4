@@ -6,7 +6,7 @@ import {
   FileText, Settings, Workflow, Bot, Blocks, UsersRound, ShoppingBag, 
   CreditCard, ChevronRight, ChevronLeft,
   WalletCards,
-  PanelLeftClose, PanelLeftOpen, ShieldCheck,
+  PanelLeftClose, PanelLeftOpen, ShieldCheck, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import dashboardIcon from '@assets/dashboard_(2)_1787117667340.png';
@@ -271,20 +271,31 @@ export function Shell({ children }: { children: ReactNode }) {
             {notificationsOpen && (
               <div className="absolute top-[54px] right-[250px] z-50 w-[360px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
                 <div className="border-b border-gray-100 px-4 py-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-gray-900">Notifications</div>
                       <div className="mt-0.5 text-xs text-gray-500">
                         {notificationData?.unreadCount ?? 0} unread notification{notificationData?.unreadCount === 1 ? '' : 's'}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => { setNotificationsOpen(false); setLocation('/notifications'); }}
-                      className="text-xs font-semibold text-green-700 hover:text-green-800"
-                    >
-                      View all
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setNotificationsOpen(false); setLocation('/notifications'); }}
+                        className="text-xs font-semibold text-green-700 hover:text-green-800"
+                      >
+                        View all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNotificationsOpen(false)}
+                        aria-label="Close notifications"
+                        title="Close notifications"
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="max-h-[360px] divide-y divide-gray-100 overflow-y-auto">
@@ -326,7 +337,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </header>
 
           {/* Page content — pages manage their own overflow */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden">
+          <div className="airavata-page-content flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden">
             {children}
           </div>
         </main>

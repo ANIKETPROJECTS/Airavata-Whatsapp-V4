@@ -172,6 +172,10 @@
   display: none;
 }
 
+.airavata-page-content {
+  scrollbar-gutter: stable;
+}
+
 @layer base {
   * {
     @apply border-border;
