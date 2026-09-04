@@ -116,6 +116,64 @@ export default function CampaignsReport() {
   };
 
   const fmt = (n?: number) => (n ?? 0).toLocaleString();
+  const rate = (value: number, total: number) =>
+    total > 0 ? `${((value / total) * 100).toFixed(1)}%` : '0.0%';
+
+  const handleExport = () => {
+    if (campaigns.length === 0) {
+      toast.info('There are no campaigns to export yet.');
+      return;
+    }
+
+    const csvCell = (value: string | number) =>
+      `"${String(value).replace(/"/g, '""')}"`;
+    const headers = [
+      'Campaign Name',
+      'Template',
+      'Date',
+      'Sent',
+      'Delivered',
+      'Delivery Rate',
+      'Read',
+      'Read Rate',
+      'Failed',
+      'Status',
+    ];
+    const rows = campaigns.map(campaign => {
+      const sent = campaign.stats.sent ?? 0;
+      const delivered = campaign.stats.delivered ?? 0;
+      const read = campaign.stats.read ?? 0;
+      const failed = campaign.stats.failed ?? 0;
+
+      return [
+        campaign.name,
+        campaign.templateName ?? '',
+        new Date(campaign.createdAt).toISOString(),
+        sent,
+        delivered,
+        rate(delivered, sent),
+        read,
+        rate(read, sent),
+        failed,
+        campaignDisplayStatus(campaign).label,
+      ];
+    });
+
+    const csv = [
+      headers,
+      ...rows,
+    ].map(row => row.map(value => csvCell(value)).join(',')).join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `campaigns-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${campaigns.length} campaign${campaigns.length === 1 ? '' : 's'}.`);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -125,7 +183,7 @@ export default function CampaignsReport() {
           <p className="text-sm text-gray-500">Track the performance of your broadcast messages</p>
         </div>
         <button
-          onClick={() => toast.success('Export coming soon')}
+          onClick={handleExport}
           className="px-4 py-2 border bg-white rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
         >
           <Download className="w-4 h-4" /> Export
@@ -196,7 +254,7 @@ export default function CampaignsReport() {
                   <th className="px-5 py-3 font-medium">Delivered</th>
                   <th className="px-5 py-3 font-medium">Read</th>
                   <th className="px-5 py-3 font-medium">Failed</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">Status</th>
                   <th className="px-5 py-3 font-medium w-12"></th>
                 </tr>
               </thead>
@@ -216,8 +274,8 @@ export default function CampaignsReport() {
                     <td className="px-5 py-4">{fmt(camp.stats.delivered)}</td>
                     <td className="px-5 py-4">{fmt(camp.stats.read)}</td>
                     <td className="px-5 py-4">{fmt(camp.stats.failed)}</td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${campaignDisplayStatus(camp).className}`}>
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-medium ${campaignDisplayStatus(camp).className}`}>
                         {campaignDisplayStatus(camp).label}
                       </span>
                     </td>
