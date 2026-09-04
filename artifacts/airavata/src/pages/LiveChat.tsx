@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search, MessageSquare, MoreVertical,
+  Search, MessageSquare,
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
@@ -1442,9 +1442,11 @@ export default function LiveChat() {
               </button>
               <button
                 onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                aria-label={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
+                title={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
                 className={`p-2 rounded-lg transition-colors ${rightPanelOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-100'}`}
               >
-                <MoreVertical className="w-5 h-5" />
+                <UserRound className="w-5 h-5" />
               </button>
               <button
                 onClick={() => statusMutation.mutate({
