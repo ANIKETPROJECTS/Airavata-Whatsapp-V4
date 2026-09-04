@@ -337,7 +337,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </header>
 
           {/* Page content — pages manage their own overflow */}
-          <div className="airavata-page-content flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden">
+          <div className="airavata-page-content flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-auto">
             {children}
           </div>
         </main>

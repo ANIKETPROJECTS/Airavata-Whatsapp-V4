@@ -176,7 +176,7 @@ export default function CampaignsReport() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="w-full min-w-0 p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Campaigns Report</h1>
@@ -191,7 +191,7 @@ export default function CampaignsReport() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
             <BarChart3 className="w-6 h-6 text-blue-600" />
@@ -243,8 +243,8 @@ export default function CampaignsReport() {
             <p className="text-sm">Create and launch your first campaign to see results here.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="bg-gray-50 text-gray-600 border-b">
                 <tr>
                   <th className="px-5 py-3 font-medium">Campaign Name</th>

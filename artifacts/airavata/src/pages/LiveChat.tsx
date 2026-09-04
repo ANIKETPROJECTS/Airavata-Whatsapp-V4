@@ -464,12 +464,14 @@ function ContactProfilePanel({
   lastActiveAt,
   windowOpen,
   conversationStatus,
+  onClose,
 }: {
   contactId: string;
   contactPhone: string;
   lastActiveAt: string;
   windowOpen: boolean;
   conversationStatus: string;
+  onClose: () => void;
 }) {
   const qc = useQueryClient();
   const [draftName, setDraftName] = useState('');
@@ -572,16 +574,40 @@ function ContactProfilePanel({
 
   if (contactLoading) {
     return (
-      <aside className="w-80 border-l bg-white shrink-0 flex items-center justify-center text-gray-400">
-        <Loader2 className="w-5 h-5 animate-spin" />
+      <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
+        <div className="px-4 py-3 border-b flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close customer profile"
+            title="Close customer profile"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center text-gray-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
       </aside>
     );
   }
 
   if (!contact) {
     return (
-      <aside className="w-80 border-l bg-white shrink-0 p-5">
-        <p className="text-sm text-gray-500">Customer profile is not available for this conversation.</p>
+      <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
+        <div className="px-4 py-3 border-b flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close customer profile"
+            title="Close customer profile"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="p-5 text-sm text-gray-500">Customer profile is not available for this conversation.</p>
       </aside>
     );
   }
@@ -615,7 +641,18 @@ function ContactProfilePanel({
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Chat profile</p>
           <h3 className="text-base font-semibold text-gray-900 mt-0.5">Customer details</h3>
         </div>
-        <UserRound className="w-5 h-5 text-primary" />
+         <div className="flex items-center gap-1">
+           <UserRound className="w-5 h-5 text-primary" />
+           <button
+             type="button"
+             onClick={onClose}
+             aria-label="Close customer profile"
+             title="Close customer profile"
+             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+           >
+             <X className="w-5 h-5" />
+           </button>
+         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -1708,6 +1745,7 @@ export default function LiveChat() {
           lastActiveAt={activeConv.lastMessageAt}
           windowOpen={activeConv.windowOpen}
           conversationStatus={activeConv.status}
+          onClose={() => setRightPanelOpen(false)}
         />
       )}
     </div>
