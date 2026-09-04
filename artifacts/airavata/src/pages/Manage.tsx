@@ -107,9 +107,9 @@ function ApiKeysTab() {
             <button onClick={async () => { if (await confirm({ title: 'Revoke API key?', description: `The key "${key.label}" will stop working immediately.`, confirmLabel: 'Revoke key' })) revokeMutation.mutate(key.id); }}
               disabled={revokeMutation.isPending}
               className="shrink-0 text-sm font-medium text-red-600 hover:bg-red-50 px-3 py-1.5 rounded disabled:opacity-50">Revoke</button>
-      {confirmDialog}
-    </div>
+          </div>
         ))}</div>}
+      {confirmDialog}
     </div>
   );
 }
@@ -601,9 +601,9 @@ function AttributesTab() {
                 ))}
               </tbody>
             </table>
-      {confirmDialog}
-    </div>
+          </div>
         )}
+      {confirmDialog}
     </div>
   );
 }

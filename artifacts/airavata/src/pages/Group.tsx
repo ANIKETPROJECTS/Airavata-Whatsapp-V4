@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UsersRound, Plus, Users, Loader2, Trash2, X, Search, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 interface Group {
   id: string;
@@ -97,6 +98,7 @@ function ContactPicker({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Group() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
@@ -166,6 +168,7 @@ export default function Group() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {confirmDialog}
       {/* Header */}
       <div className="flex justify-between items-end">
         <div>
@@ -290,8 +293,12 @@ export default function Group() {
                   <UsersRound className="w-6 h-6" />
                 </div>
                 <button
-                  onClick={() => {
-                    if (confirm(`Delete group "${g.name}"? Contacts in this group will be unassigned.`)) {
+                  onClick={async () => {
+                    if (await confirm({
+                      title: 'Delete this group?',
+                      description: `Delete group "${g.name}"? Contacts in this group will be unassigned.`,
+                      confirmLabel: 'Delete group',
+                    })) {
                       deleteMutation.mutate(g.id);
                     }
                   }}

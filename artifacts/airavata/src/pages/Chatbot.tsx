@@ -15,6 +15,7 @@ import {
   Terminal, Search, CopyPlus, ChevronDown, GitBranch,
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 import NodeSidebar from '../components/chatbot/NodeSidebar';
 import ConfigPanel from '../components/chatbot/ConfigPanel';
 import { nodeTypes } from '../components/chatbot/ChatbotNode';
@@ -93,10 +94,13 @@ function FlowList({ flows, activeId, onSelect, onCreate, onDelete }: {
   onDelete: (id: string) => void;
 }) {
   const [search, setSearch] = useState('');
+  const { confirm, confirmDialog } = useConfirmDialog();
   const filtered = flows.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="w-52 h-full bg-gray-950 flex flex-col shrink-0 border-r border-gray-800">
+    <>
+      {confirmDialog}
+      <div className="w-52 h-full bg-gray-950 flex flex-col shrink-0 border-r border-gray-800">
       <div className="px-3 pt-3 pb-2.5 border-b border-gray-800 space-y-2">
         <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Chatbot Flows</p>
         <button
@@ -140,7 +144,14 @@ function FlowList({ flows, activeId, onSelect, onCreate, onDelete }: {
               )}
             </div>
             <button
-              onClick={e => { e.stopPropagation(); if (confirm('Delete this flow?')) onDelete(f.id); }}
+              onClick={async e => {
+                e.stopPropagation();
+                if (await confirm({
+                  title: 'Delete this flow?',
+                  description: 'This flow and its configuration will be permanently removed.',
+                  confirmLabel: 'Delete flow',
+                })) onDelete(f.id);
+              }}
               className="opacity-0 group-hover:opacity-100 text-gray-700 hover:text-red-500 transition-all mt-0.5 shrink-0"
             >
               <Trash2 className="w-3 h-3" />
@@ -148,7 +159,8 @@ function FlowList({ flows, activeId, onSelect, onCreate, onDelete }: {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -470,8 +482,11 @@ const TEMPLATES = [
 ];
 
 function TemplatesPanel({ onApply, onClose }: { onApply: (tpl: typeof TEMPLATES[0]) => void; onClose: () => void }) {
+  const { confirm, confirmDialog } = useConfirmDialog();
   return (
-    <div className="w-72 h-full bg-white border-l border-gray-200 flex flex-col shrink-0">
+    <>
+      {confirmDialog}
+      <div className="w-72 h-full bg-white border-l border-gray-200 flex flex-col shrink-0">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
         <span className="text-sm font-bold text-gray-800 flex items-center gap-2"><GitBranch className="w-4 h-4 text-primary" /> Templates</span>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200"><X className="w-4 h-4" /></button>
@@ -485,7 +500,16 @@ function TemplatesPanel({ onApply, onClose }: { onApply: (tpl: typeof TEMPLATES[
             <div className="flex items-center justify-between">
               <span className="text-[9px] text-gray-400">{tpl.nodes.length} nodes</span>
               <button
-                onClick={() => { if (confirm(`Apply "${tpl.name}" template? This replaces the current canvas.`)) { onApply(tpl); onClose(); } }}
+                onClick={async () => {
+                  if (await confirm({
+                    title: 'Replace the current canvas?',
+                    description: `Apply "${tpl.name}"? This replaces the current canvas.`,
+                    confirmLabel: 'Use template',
+                  })) {
+                    onApply(tpl);
+                    onClose();
+                  }
+                }}
                 className="text-[10px] text-primary font-semibold hover:underline group-hover:bg-primary/10 px-2 py-0.5 rounded transition-colors"
               >
                 Use Template →
@@ -494,7 +518,8 @@ function TemplatesPanel({ onApply, onClose }: { onApply: (tpl: typeof TEMPLATES[
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

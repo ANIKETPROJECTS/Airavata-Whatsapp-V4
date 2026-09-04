@@ -4,6 +4,7 @@ import { Search, Upload, Loader2, Users, X, ChevronDown, Download } from 'lucide
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { api } from '../lib/api';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface TagObj   { id: string; name: string; color: string }
@@ -191,6 +192,7 @@ function InteractionBadge({ count, label, color }: { count: number; label: strin
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function Contacts() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const qc = useQueryClient();
   const [, navigate] = useLocation();
   const [search, setSearch]       = useState('');
@@ -251,6 +253,7 @@ export default function Contacts() {
 
   return (
     <div className="h-full flex flex-col bg-white">
+      {confirmDialog}
       {editContact && (
         <EditModal contact={editContact} onClose={() => setEditContact(null)} onSaved={invalidate} />
       )}
@@ -324,8 +327,12 @@ export default function Contacts() {
         <div className="ml-auto flex items-center gap-3">
           {selected.size > 0 && (
             <button
-              onClick={() => {
-                if (!confirm(`Delete ${selected.size} contacts?`)) return;
+              onClick={async () => {
+                if (!await confirm({
+                  title: 'Delete selected contacts?',
+                  description: `Delete ${selected.size} selected contact${selected.size === 1 ? '' : 's'}? This cannot be undone.`,
+                  confirmLabel: 'Delete contacts',
+                })) return;
                 bulkDeleteMutation.mutate([...selected]);
               }}
               className="px-3 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
@@ -440,8 +447,12 @@ export default function Contacts() {
                         EDIT
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete ${contact.name}?`)) deleteMutation.mutate(contact.id);
+                        onClick={async () => {
+                          if (await confirm({
+                            title: 'Delete this contact?',
+                            description: `Delete ${contact.name}? This cannot be undone.`,
+                            confirmLabel: 'Delete contact',
+                          })) deleteMutation.mutate(contact.id);
                         }}
                         className="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                       >

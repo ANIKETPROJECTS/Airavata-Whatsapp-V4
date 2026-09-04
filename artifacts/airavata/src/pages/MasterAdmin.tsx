@@ -4,6 +4,7 @@ import { ArrowDownAZ, ArrowUpAZ, BarChart3, CreditCard, FileBarChart, Grid2X2, L
 import { toast } from 'sonner';
 import { masterApi, masterTokenStorage } from '../lib/api';
 import { useFacebookEmbeddedSignup } from '../hooks/use-facebook-embedded-signup';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 const PERMISSIONS = [
   ['dashboard', 'Dashboard'], ['live-chat', 'Live Chat'], ['contacts', 'Contacts'],
@@ -160,6 +161,7 @@ export default function MasterAdmin() {
   const [form, setForm] = useState<UserForm>(blankForm);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { confirm, confirmDialog } = useConfirmDialog();
   const [location, navigate] = useLocation();
   const { launch: launchFacebookSignupRaw, isConnecting: isConnectingFacebook } = useFacebookEmbeddedSignup(async () => {
     toast.success('Facebook / WhatsApp connection saved');
@@ -240,7 +242,11 @@ export default function MasterAdmin() {
       toast.error('The protected Master Admin account cannot be deleted');
       return;
     }
-    if (!window.confirm(`Delete ${user.businessName}? This also removes their stored WhatsApp connection.`)) return;
+    if (!await confirm({
+      title: 'Delete this user?',
+      description: `Delete ${user.businessName}? This also removes their stored WhatsApp connection.`,
+      confirmLabel: 'Delete user',
+    })) return;
     try { await masterApi.delete(`/master-admin/users/${user.id}`); toast.success('User deleted'); await load(); }
     catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to delete user'); }
   };
@@ -288,7 +294,11 @@ export default function MasterAdmin() {
     navigate(`/MasterAdmin/reports/${user.id}`);
   };
   const disconnect = async (user: ManagedUser) => {
-    if (!window.confirm('Disconnect this user’s Facebook/WhatsApp connection?')) return;
+    if (!await confirm({
+      title: 'Disconnect this connection?',
+      description: `Disconnect ${user.businessName}’s Facebook/WhatsApp connection?`,
+      confirmLabel: 'Disconnect',
+    })) return;
     try { await masterApi.post(`/master-admin/users/${user.id}/disconnect`); toast.success('Connection disconnected'); await load(); }
     catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to disconnect'); }
   };
@@ -341,6 +351,7 @@ export default function MasterAdmin() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex">
+      {confirmDialog}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-[76px]'} shrink-0 bg-slate-950 text-white min-h-screen hidden md:flex flex-col transition-[width] duration-200`}>
         <div className="h-20 px-5 flex items-center gap-3 border-b border-slate-800">
           <div className="rounded-xl bg-emerald-500/15 p-2.5 text-emerald-400"><ShieldCheck className="w-6 h-6" /></div>

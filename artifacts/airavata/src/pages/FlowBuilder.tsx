@@ -6,6 +6,7 @@ import {
   Pencil, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox, CalendarDays
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 import PhonePreview from '../components/flow/PhonePreview';
 import ComponentEditor from '../components/flow/ComponentEditor';
 import type { Flow, FlowScreen, FlowComponent, ComponentType } from '../types/flow';
@@ -720,6 +721,7 @@ function FlowEditorView({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function FlowBuilder() {
+  const { confirm, confirmDialog } = useConfirmDialog();
   const qc = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingMeta, setEditingMeta] = useState<Flow | null>(null);
@@ -786,6 +788,7 @@ export default function FlowBuilder() {
   // ── List view ──
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-gray-50 overflow-hidden">
+      {confirmDialog}
       {/* Toolbar */}
       <div className="h-14 bg-white border-b px-6 flex items-center justify-between shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-3">
@@ -812,8 +815,12 @@ export default function FlowBuilder() {
             flows={flows}
             onEdit={setEditingFlow}
             onEditMeta={setEditingMeta}
-            onDelete={(id) => {
-              if (confirm('Delete this flow? This cannot be undone.')) deleteMutation.mutate(id);
+            onDelete={async (id) => {
+              if (await confirm({
+                title: 'Delete this flow?',
+                description: 'This flow and its configuration will be permanently removed.',
+                confirmLabel: 'Delete flow',
+              })) deleteMutation.mutate(id);
             }}
             onPublish={(id) => publishMutation.mutate(id)}
             onSend={setSendingFlow}

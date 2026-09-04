@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -196,6 +197,7 @@ export default function ManageTemplates() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [testTarget, setTestTarget] = useState<TemplateRecord | null>(null);
+  const { confirm, confirmDialog } = useConfirmDialog();
 
   const { data, isLoading, refetch, isFetching } = useQuery<{ templates: TemplateRecord[] }>({
     queryKey: ['templates'],
@@ -237,6 +239,7 @@ export default function ManageTemplates() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 overflow-y-auto h-full">
+      {confirmDialog}
       {testTarget && (
         <SendTestDialog template={testTarget} onClose={() => setTestTarget(null)} />
       )}
@@ -340,8 +343,12 @@ export default function ManageTemplates() {
                       </button>
                     )}
                     <button
-                      onClick={() => {
-                        if (confirm(`Delete template "${t.name}"? This will also remove it from Meta.`)) {
+                      onClick={async () => {
+                        if (await confirm({
+                          title: 'Delete this template?',
+                          description: `Delete template "${t.name}"? This will also remove it from Meta.`,
+                          confirmLabel: 'Delete template',
+                        })) {
                           deleteMutation.mutate(t.id);
                         }
                       }}

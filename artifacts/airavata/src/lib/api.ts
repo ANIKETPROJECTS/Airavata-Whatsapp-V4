@@ -22,7 +22,7 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
   const headers: Record<string, string> = {
     ...(rest.headers as Record<string, string>),
   };
-  let body: BodyInit | undefined = rest.body;
+  let body: BodyInit | undefined = rest.body ?? undefined;
 
   if (json !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -84,6 +84,9 @@ export const api = {
 
   put: <T>(path: string, body?: unknown, opts?: RequestInit) =>
     request<T>(path, { ...opts, method: "PUT", json: body }),
+
+  patch: <T>(path: string, body?: unknown, opts?: RequestInit) =>
+    request<T>(path, { ...opts, method: "PATCH", json: body }),
 
   delete: <T>(path: string, opts?: RequestInit) =>
     request<T>(path, { ...opts, method: "DELETE" }),

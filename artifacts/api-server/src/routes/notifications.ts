@@ -13,6 +13,7 @@ function escapeRegex(value: string) {
 }
 
 async function syncActualNotifications(userId: string) {
+  const tenantUserId = new mongoose.Types.ObjectId(userId);
   const [templates, failedCampaigns, failedMessages, inboundMessages] = await Promise.all([
     TemplateModel.find({ userId, status: { $in: ["PENDING", "REJECTED"] } })
       .select("_id name status rejectionReason updatedAt")
@@ -38,7 +39,7 @@ async function syncActualNotifications(userId: string) {
 
   const records = [
     ...templates.map((template) => ({
-      userId,
+      userId: tenantUserId,
       type: "TEMPLATE" as const,
       severity: template.status === "REJECTED" ? "ERROR" as const : "INFO" as const,
       title: template.status === "REJECTED" ? "Template rejected" : "Template awaiting approval",
@@ -51,7 +52,7 @@ async function syncActualNotifications(userId: string) {
       createdAt: template.updatedAt,
     })),
     ...failedCampaigns.map((campaign) => ({
-      userId,
+      userId: tenantUserId,
       type: "CAMPAIGN" as const,
       severity: "ERROR" as const,
       title: "Campaign failed",
@@ -62,7 +63,7 @@ async function syncActualNotifications(userId: string) {
       createdAt: campaign.updatedAt,
     })),
     ...failedMessages.map((message) => ({
-      userId,
+      userId: tenantUserId,
       type: "DELIVERY" as const,
       severity: "ERROR" as const,
       title: "Message delivery failed",
@@ -73,7 +74,7 @@ async function syncActualNotifications(userId: string) {
       createdAt: message.createdAt,
     })),
     ...inboundMessages.map((message) => ({
-      userId,
+      userId: tenantUserId,
       type: "MESSAGE" as const,
       severity: "INFO" as const,
       title: "New customer message",
@@ -91,7 +92,7 @@ async function syncActualNotifications(userId: string) {
     await NotificationModel.bulkWrite(
       records.map((record) => ({
         updateOne: {
-          filter: { userId, dedupeKey: record.dedupeKey },
+          filter: { userId: tenantUserId, dedupeKey: record.dedupeKey },
           update: { $setOnInsert: record },
           upsert: true,
         },
@@ -169,8 +170,35 @@ router.patch("/notifications/:id/read", authenticate, async (req: AuthRequest, r
       return;
     }
     res.json({ notification: { ...notification, id: String(notification._id), read: true } });
-  } catch {
+  } catch (error) {
+    req.log?.error?.(error, "Unable to mark notification as read");
     res.status(500).json({ error: "Unable to update notification" });
+  }
+});
+
+router.post("/notifications/read-selected", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? [...new Set(req.body.ids.filter((id: unknown): id is string => typeof id === "string"))]
+      : [];
+
+    if (!ids.length || ids.some((id) => !mongoose.isValidObjectId(id))) {
+      res.status(400).json({ error: "Provide one or more valid notification IDs" });
+      return;
+    }
+
+    const result = await NotificationModel.updateMany(
+      {
+        userId: req.user!.userId,
+        _id: { $in: ids },
+        readAt: null,
+      },
+      { $set: { readAt: new Date() } },
+    );
+    res.json({ ok: true, updated: result.modifiedCount });
+  } catch (error) {
+    req.log?.error?.(error, "Unable to mark selected notifications as read");
+    res.status(500).json({ error: "Unable to mark selected notifications as read" });
   }
 });
 
@@ -181,7 +209,8 @@ router.post("/notifications/read-all", authenticate, async (req: AuthRequest, re
       { $set: { readAt: new Date() } },
     );
     res.json({ ok: true, updated: result.modifiedCount });
-  } catch {
+  } catch (error) {
+    req.log?.error?.(error, "Unable to mark notifications as read");
     res.status(500).json({ error: "Unable to mark notifications as read" });
   }
 });

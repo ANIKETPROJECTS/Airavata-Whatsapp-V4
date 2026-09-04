@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCheck, ChevronLeft, ChevronRight, Inbox, Search } from 'lucide-react';
+import { Bell, Check, CheckCheck, ChevronLeft, ChevronRight, Inbox, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
@@ -60,6 +60,7 @@ export default function Notifications() {
   const [read, setRead] = useState<ReadFilter>('ALL');
   const [sort, setSort] = useState<SortOrder>('NEWEST');
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const queryString = useMemo(() => new URLSearchParams({
@@ -80,22 +81,69 @@ export default function Notifications() {
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/notifications/${id}/read`),
-    onSuccess: () => {
+    onSuccess: (_result, id) => {
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-preview'] });
+      toast.success('Notification marked as read');
     },
-    onError: () => toast.error('Unable to mark notification as read'),
+    onError: (error: Error) => toast.error(error.message || 'Unable to mark notification as read'),
+  });
+
+  const markSelectedMutation = useMutation({
+    mutationFn: (ids: string[]) => api.post('/notifications/read-selected', { ids }),
+    onSuccess: (result: { updated?: number }) => {
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-preview'] });
+      toast.success(`${result.updated ?? 0} notification${result.updated === 1 ? '' : 's'} marked as read`);
+    },
+    onError: (error: Error) => toast.error(error.message || 'Unable to mark selected notifications as read'),
   });
 
   const markAllMutation = useMutation({
     mutationFn: () => api.post('/notifications/read-all'),
     onSuccess: () => {
+      setSelectedIds(new Set());
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-preview'] });
       toast.success('All notifications marked as read');
     },
-    onError: () => toast.error('Unable to update notifications'),
+    onError: (error: Error) => toast.error(error.message || 'Unable to update notifications'),
   });
+
+  const visibleIds = data?.notifications.map((notification) => notification.id) ?? [];
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const visible = new Set(visibleIds);
+      const next = new Set([...current].filter((id) => visible.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [data?.notifications]);
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllVisible = () => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
+      else visibleIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
 
   const clearFilters = () => {
     setSearch('');
@@ -119,14 +167,26 @@ export default function Notifications() {
             </div>
             <p className="mt-2 text-sm text-slate-500">Real updates from your WhatsApp workspace, templates, campaigns, and deliveries.</p>
           </div>
-          <button
-            type="button"
-            disabled={!data?.unreadCount || markAllMutation.isPending}
-            onClick={() => markAllMutation.mutate()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <CheckCheck className="h-4 w-4" /> Mark all as read
-          </button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {selectedIds.size > 0 && (
+              <button
+                type="button"
+                disabled={markSelectedMutation.isPending || markAllMutation.isPending}
+                onClick={() => markSelectedMutation.mutate([...selectedIds])}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Check className="h-4 w-4" /> Mark selected ({selectedIds.size})
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={!data?.unreadCount || markAllMutation.isPending || markSelectedMutation.isPending}
+              onClick={() => markAllMutation.mutate()}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CheckCheck className="h-4 w-4" /> Mark all as read
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -170,9 +230,29 @@ export default function Notifications() {
               <p className="mt-1 text-sm text-slate-400">New workspace activity will appear here.</p>
             </div>
           )}
+          <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3">
+            <input
+              type="checkbox"
+              aria-label="Select all notifications on this page"
+              checked={allVisibleSelected}
+              onChange={toggleAllVisible}
+              disabled={!visibleIds.length}
+              className="h-4 w-4 rounded border-slate-300 accent-emerald-600 disabled:opacity-40"
+            />
+            <span className="text-xs font-semibold text-slate-500">
+              {selectedIds.size ? `${selectedIds.size} selected` : 'Select notifications to mark them in bulk'}
+            </span>
+          </div>
           <div className="divide-y divide-slate-100">
             {data?.notifications.map((notification) => (
               <article key={notification.id} className={`flex gap-4 p-5 transition ${notification.read ? 'bg-white' : 'bg-emerald-50/40'}`}>
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${notification.title}`}
+                  checked={selectedIds.has(notification.id)}
+                  onChange={() => toggleSelected(notification.id)}
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 accent-emerald-600"
+                />
                 <div className={`mt-0.5 h-10 w-10 shrink-0 rounded-full text-center text-[10px] font-bold leading-10 ${severityClass(notification.severity)}`}>
                   {notification.type.slice(0, 3)}
                 </div>
@@ -188,7 +268,12 @@ export default function Notifications() {
                   <div className="mt-3 flex items-center gap-3">
                     <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${severityClass(notification.severity)}`}>{typeLabels[notification.type]}</span>
                     {!notification.read && (
-                      <button type="button" onClick={() => markReadMutation.mutate(notification.id)} className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+                       <button
+                         type="button"
+                         disabled={markReadMutation.isPending}
+                         onClick={() => markReadMutation.mutate(notification.id)}
+                         className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                       >
                         Mark as read
                       </button>
                     )}
