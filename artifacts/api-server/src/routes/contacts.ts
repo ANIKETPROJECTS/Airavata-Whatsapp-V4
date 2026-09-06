@@ -47,7 +47,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
     if (tagId) filter["tags"] = tagId;
 
     const pageNum = Math.max(1, Number(page));
-    const limitNum = Math.min(100, Math.max(1, Number(limit)));
+    const limitNum = Math.min(500, Math.max(1, Number(limit)));
     const skip = (pageNum - 1) * limitNum;
 
     const [contacts, total] = await Promise.all([

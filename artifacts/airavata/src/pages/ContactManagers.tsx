@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Loader2, Pencil, Plus, Search, Tag as TagIcon, Trash2, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Pencil, Plus, Search, Tag as TagIcon, Trash2, UsersRound, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -48,16 +48,28 @@ function formatDate(value: string) {
   return value ? new Date(value).toLocaleDateString() : '—';
 }
 
-function ExpandedContactDetails({
+function ContactDetailsPage({
   filterType,
   filterId,
+  title,
+  description,
+  contactCount,
+  createdAt,
+  color,
+  onBack,
 }: {
   filterType: 'group' | 'tag';
   filterId: string;
+  title: string;
+  description?: string | null;
+  contactCount: number;
+  createdAt: string;
+  color?: string;
+  onBack: () => void;
 }) {
   const endpoint = filterType === 'group'
-    ? `/contacts?groupId=${encodeURIComponent(filterId)}&limit=100`
-    : `/contacts?tagId=${encodeURIComponent(filterId)}&limit=100`;
+    ? `/contacts?groupId=${encodeURIComponent(filterId)}&limit=500`
+    : `/contacts?tagId=${encodeURIComponent(filterId)}&limit=500`;
   const { data, isLoading, isError } = useQuery<{ contacts: ManagerContact[] }>({
     queryKey: [`${filterType}-contacts`, filterId],
     queryFn: () => api.get(endpoint),
@@ -65,41 +77,64 @@ function ExpandedContactDetails({
   const contacts = data?.contacts ?? [];
 
   return (
-    <tr className="bg-gray-50">
-      <td colSpan={5} className="border-t px-5 py-4">
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="h-4 w-4 animate-spin" /> Loading contacts…</div>
-        ) : isError ? (
-          <p className="text-sm text-red-500">Unable to load contacts for this {filterType}.</p>
-        ) : contacts.length === 0 ? (
-          <p className="text-sm text-gray-500">No contacts are assigned to this {filterType}.</p>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Contacts in this {filterType} ({contacts.length})
-            </p>
-            <div className="divide-y rounded-lg border bg-white">
-              {contacts.map(contact => (
-                <div key={contact.id} className="flex flex-col gap-1 px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <span className="font-semibold text-gray-900">{displayContactName(contact)}</span>
-                    <span className="ml-2 font-mono text-xs text-gray-500">{contact.phone}</span>
-                    {contact.email && <span className="ml-2 text-xs text-gray-400">{contact.email}</span>}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                    {filterType === 'tag' && contact.group?.name && <span>Group: {contact.group.name}</span>}
-                    {contact.tags && contact.tags.length > 0 && (
-                      <span>Tags: {contact.tags.map(tag => tag.name).join(', ')}</span>
-                    )}
-                    {contact.createdAt && <span>Created: {formatDate(contact.createdAt)}</span>}
-                  </div>
-                </div>
-              ))}
+    <div className="space-y-5 p-6">
+      <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+        <ArrowLeft className="h-4 w-4" /> Back to {filterType === 'group' ? 'Groups' : 'Tags'}
+      </button>
+
+      <div className="rounded-xl border bg-white p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-12 w-12 items-center justify-center rounded-full"
+              style={{ backgroundColor: color ? `${color}22` : undefined, color: color ?? undefined }}
+            >
+              {filterType === 'group' ? <UsersRound className="h-5 w-5 text-primary" /> : <TagIcon className="h-5 w-5" />}
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{filterType} details</p>
+              <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+              <p className="mt-1 text-sm text-gray-500">{description || 'No description added.'}</p>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-6 text-sm">
+            <div><p className="text-xs text-gray-400">Contacts</p><p className="mt-1 font-bold text-gray-900">{contactCount.toLocaleString()}</p></div>
+            <div><p className="text-xs text-gray-400">Created</p><p className="mt-1 font-bold text-gray-900">{formatDate(createdAt)}</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-white">
+        <div className="border-b px-5 py-4">
+          <h3 className="font-semibold text-gray-900">Contacts in {title}</h3>
+          <p className="mt-1 text-sm text-gray-500">Contact information is displayed below in text format.</p>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center gap-2 px-5 py-12 text-sm text-gray-400"><Loader2 className="h-4 w-4 animate-spin" /> Loading contacts…</div>
+        ) : isError ? (
+          <p className="px-5 py-12 text-sm text-red-500">Unable to load contacts for this {filterType}.</p>
+        ) : contacts.length === 0 ? (
+          <p className="px-5 py-12 text-sm text-gray-500">No contacts are assigned to this {filterType}.</p>
+        ) : (
+          <div className="divide-y">
+            {contacts.map(contact => (
+              <div key={contact.id} className="flex flex-col gap-2 px-5 py-4 text-sm lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900">{displayContactName(contact)}</p>
+                  <p className="mt-1 font-mono text-xs text-gray-500">{contact.phone}</p>
+                </div>
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500">
+                  <span>{contact.email || 'No email'}</span>
+                  {filterType === 'tag' && <span>Group: {contact.group?.name || 'No group'}</span>}
+                  <span>Tags: {contact.tags && contact.tags.length > 0 ? contact.tags.map(tag => tag.name).join(', ') : 'No tags'}</span>
+                  <span>Created: {contact.createdAt ? formatDate(contact.createdAt) : '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -186,7 +221,7 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<ContactManagerGroup | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data, isLoading } = useQuery<{ groups: ContactManagerGroup[] }>({
@@ -267,6 +302,23 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  if (selectedGroup) {
+    return (
+      <div>
+        {confirmDialog}
+        <ContactDetailsPage
+          filterType="group"
+          filterId={selectedGroup.id}
+          title={selectedGroup.name}
+          description={selectedGroup.description}
+          contactCount={selectedGroup.memberCount}
+          createdAt={selectedGroup.createdAt}
+          onBack={() => setSelectedGroup(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 p-6">
       {confirmDialog}
@@ -340,14 +392,14 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
               {groups.map(group => (
                 <Fragment key={group.id}>
                   <tr
-                    onClick={() => setExpandedGroupId(current => current === group.id ? null : group.id)}
+                    onClick={() => setSelectedGroup(group)}
                     className="cursor-pointer hover:bg-gray-50"
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${expandedGroupId === group.id ? 'rotate-180' : ''}`} />
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary"><UsersRound className="h-4 w-4" /></span>
                         <span className="font-semibold text-gray-900">{group.name}</span>
+                        <ArrowRight className="ml-auto h-4 w-4 text-gray-400" />
                       </div>
                     </td>
                     <td className="max-w-[280px] px-4 py-4 text-gray-500">{group.description || '—'}</td>
@@ -368,7 +420,6 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
                       </div>
                     </td>
                   </tr>
-                  {expandedGroupId === group.id && <ExpandedContactDetails filterType="group" filterId={group.id} />}
                 </Fragment>
               ))}
             </tbody>
@@ -387,7 +438,7 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(TAG_COLORS[0]!);
-  const [expandedTagId, setExpandedTagId] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<ContactManagerTag | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data, isLoading } = useQuery<{ tags: ContactManagerTag[] }>({
@@ -458,6 +509,24 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  if (selectedTag) {
+    return (
+      <div>
+        {confirmDialog}
+        <ContactDetailsPage
+          filterType="tag"
+          filterId={selectedTag.id}
+          title={selectedTag.name}
+          description={selectedTag.description}
+          contactCount={selectedTag.contactCount}
+          createdAt={selectedTag.createdAt}
+          color={selectedTag.color}
+          onBack={() => setSelectedTag(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 p-6">
       {confirmDialog}
@@ -521,14 +590,14 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
               {tags.map(tag => (
                 <Fragment key={tag.id}>
                   <tr
-                    onClick={() => setExpandedTagId(current => current === tag.id ? null : tag.id)}
+                    onClick={() => setSelectedTag(tag)}
                     className="cursor-pointer hover:bg-gray-50"
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${expandedTagId === tag.id ? 'rotate-180' : ''}`} />
                         <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}><TagIcon className="h-4 w-4" /></span>
                         <span className="font-semibold" style={{ color: tag.color }}>{tag.name}</span>
+                        <ArrowRight className="ml-auto h-4 w-4 text-gray-400" />
                       </div>
                     </td>
                     <td className="max-w-[280px] px-4 py-4 text-gray-500">{tag.description || '—'}</td>
@@ -549,7 +618,6 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
                       </div>
                     </td>
                   </tr>
-                  {expandedTagId === tag.id && <ExpandedContactDetails filterType="tag" filterId={tag.id} />}
                 </Fragment>
               ))}
             </tbody>
