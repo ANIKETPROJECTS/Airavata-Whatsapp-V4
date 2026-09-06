@@ -9,7 +9,6 @@ import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 import { ContactGroupsManager, ContactTagsManager } from './ContactManagers';
 import contactViewIcon from '@assets/eye_1788722260035.png';
-import contactEditIcon from '@assets/pencil_1788722262751.png';
 import contactDeleteIcon from '@assets/bin_1788722265074.png';
 import importContactsIcon from '@assets/import_1788724282150.png';
 import exportContactsIcon from '@assets/export_1788724297530.png';
@@ -745,7 +744,6 @@ export default function Contacts() {
   const [selected, setSelected]   = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [viewContact, setViewContact] = useState<Contact | null>(null);
-  const [editContact, setEditContact] = useState<Contact | null>(null);
   const [showImport, setShowImport]   = useState(false);
 
   const params = new URLSearchParams({
@@ -846,18 +844,6 @@ export default function Contacts() {
           groups={groups}
           tags={tags}
           onClose={() => setViewContact(null)}
-          onSaved={() => {
-            invalidate();
-            qc.invalidateQueries({ queryKey: ['groups'] });
-          }}
-        />
-      )}
-      {editContact && (
-        <EditModal
-          contact={editContact}
-          groups={groups}
-          tags={tags}
-          onClose={() => setEditContact(null)}
           onSaved={() => {
             invalidate();
             qc.invalidateQueries({ queryKey: ['groups'] });
@@ -1141,14 +1127,6 @@ export default function Contacts() {
                         aria-label={`View ${contactDisplayName(contact)}`}
                       >
                         <img src={contactViewIcon} alt="" className="h-4 w-4 object-contain" />
-                      </button>
-                      <button
-                        onClick={() => setEditContact(contact)}
-                        className="rounded-lg border border-primary/30 p-2 hover:bg-primary/5"
-                        title="Edit contact"
-                        aria-label={`Edit ${contactDisplayName(contact)}`}
-                      >
-                        <img src={contactEditIcon} alt="" className="h-4 w-4 object-contain" />
                       </button>
                       <button
                         onClick={async () => {
