@@ -1,6 +1,9 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Upload, Loader2, Users, X, ChevronDown } from 'lucide-react';
+import {
+  Search, Upload, Loader2, Users, X, ChevronDown, UserRound, Phone, Mail,
+  Tag, UsersRound, Save, Plus, Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -25,6 +28,7 @@ interface Contact {
   name?: string | null;
   phone: string;
   email?: string | null;
+  attributes?: Record<string, unknown>;
   status: 'active' | 'blocked' | 'unsubscribed';
   chatState?: 'DOR' | 'REQ' | 'CLOSED' | 'ACTIVE';
   hasConversation?: boolean;
@@ -130,50 +134,346 @@ function chatStateStorageValue(state: string) {
   return 'DOR';
 }
 
-function ContactDetailsModal({ contact, onClose }: { contact: Contact; onClose: () => void }) {
+function ContactProfileSidebar({
+  contact,
+  groups,
+  tags,
+  onClose,
+  onSaved,
+}: {
+  contact: Contact;
+  groups: GroupObj[];
+  tags: TagObj[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [draftName, setDraftName] = useState('');
+  const [draftEmail, setDraftEmail] = useState('');
+  const [draftStatus, setDraftStatus] = useState<Contact['status']>('active');
+  const [draftChatState, setDraftChatState] = useState('DOR');
+  const [draftAttributes, setDraftAttributes] = useState<Array<{ key: string; value: string }>>([]);
+  const [draftTags, setDraftTags] = useState<string[]>([]);
+  const [draftGroupIds, setDraftGroupIds] = useState<string[]>([]);
+  const [showAttributes, setShowAttributes] = useState(true);
+  const [showCampaigns, setShowCampaigns] = useState(true);
+  const [showTags, setShowTags] = useState(true);
+  const [showGroups, setShowGroups] = useState(true);
+
+  useEffect(() => {
+    setDraftName(isPlaceholderName(contact.name, contact.phone) ? '' : contact.name ?? '');
+    setDraftEmail(contact.email ?? '');
+    setDraftStatus(contact.status);
+    setDraftChatState(chatStateFormValue(contact.chatState));
+    setDraftAttributes(Object.entries(contact.attributes ?? {}).map(([key, value]) => ({
+      key,
+      value: typeof value === 'string' ? value : JSON.stringify(value),
+    })));
+    setDraftTags(contact.tags.map(tag => tag.id));
+    setDraftGroupIds(contactGroups(contact).map(group => group.id));
+  }, [contact.id]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => api.put(`/contacts/${contact.id}`, {
+      name: draftName.trim(),
+      email: draftEmail.trim(),
+      status: draftStatus,
+      chatState: chatStateStorageValue(draftChatState),
+      attributes: Object.fromEntries(
+        draftAttributes
+          .map(attribute => ({ key: attribute.key.trim(), value: attribute.value.trim() }))
+          .filter(attribute => attribute.key),
+      ),
+      tags: draftTags,
+      groupIds: draftGroupIds,
+    }),
+    onSuccess: () => {
+      onSaved();
+      toast.success('Client profile updated');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const toggleTag = (tagId: string) => {
+    setDraftTags(current => current.includes(tagId)
+      ? current.filter(id => id !== tagId)
+      : [...current, tagId]);
+  };
+
+  const toggleGroup = (groupId: string) => {
+    setDraftGroupIds(current => current.includes(groupId)
+      ? current.filter(id => id !== groupId)
+      : [...current, groupId]);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b px-6 py-5">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/25">
+      <aside className="flex h-full w-full max-w-[390px] flex-col border-l bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b px-5 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Contact details</p>
-            <h2 className="mt-1 text-lg font-bold text-gray-900">{contactDisplayName(contact)}</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Client profile</p>
+            <h2 className="mt-0.5 text-base font-semibold text-gray-900">Customer details</h2>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700" aria-label="Close contact details">
-            <X className="h-5 w-5" />
+          <div className="flex items-center gap-1">
+            <UserRound className="h-5 w-5 text-primary" />
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close client profile"
+              title="Close client profile"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="border-b bg-gradient-to-b from-primary/5 to-white px-5 py-5 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-2xl font-bold text-primary">
+              {contactDisplayName(contact).charAt(0).toUpperCase()}
+            </div>
+            <h3 className="mt-3 truncate font-semibold text-gray-900">{contactDisplayName(contact)}</h3>
+            <p className="mt-1 flex items-center justify-center gap-1 text-xs text-gray-500">
+              <Phone className="h-3 w-3" /> {contact.phone}
+            </p>
+            <span className={`mt-3 inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+              draftStatus === 'blocked'
+                ? 'bg-red-100 text-red-700'
+                : draftStatus === 'unsubscribed'
+                  ? 'bg-orange-100 text-orange-700'
+                  : 'bg-green-100 text-green-700'
+            }`}>
+              {contactStatusLabel(draftStatus)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 border-b px-5 py-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400">Created</p>
+              <p className="mt-1 text-xs font-medium text-gray-700">{new Date(contact.createdAt).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400">Tags</p>
+              <p className="mt-1 text-xs font-medium text-gray-700">{draftTags.length}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400">Groups</p>
+              <p className="mt-1 text-xs font-medium text-gray-700">{draftGroupIds.length}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400">Chat status</p>
+              <div className="mt-1">
+                <ChatStateBadge state={contact.chatState} hasConversation={contact.hasConversation} unreadMessages={contact.unreadMessages} />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-b">
+            <button
+              onClick={() => setShowAttributes(value => !value)}
+              className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-gray-50"
+            >
+              <span className="text-sm font-semibold text-gray-800">Attributes</span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showAttributes ? 'rotate-180' : ''}`} />
+            </button>
+            {showAttributes && (
+              <div className="space-y-3 px-5 pb-4">
+                <label className="block">
+                  <span className="text-xs font-medium text-gray-500">Name</span>
+                  <input
+                    value={draftName}
+                    onChange={event => setDraftName(event.target.value)}
+                    placeholder="Add client name"
+                    className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+                <label className="block">
+                  <span className="flex items-center gap-1 text-xs font-medium text-gray-500">
+                    <Mail className="h-3 w-3" /> Email
+                  </span>
+                  <input
+                    type="email"
+                    value={draftEmail}
+                    onChange={event => setDraftEmail(event.target.value)}
+                    placeholder="Add an email address"
+                    className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="text-xs font-medium text-gray-500">Client status</span>
+                    <select
+                      value={draftStatus}
+                      onChange={event => setDraftStatus(event.target.value as Contact['status'])}
+                      className="mt-1 w-full rounded-lg border bg-white px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                    >
+                      <option value="active">Active</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="unsubscribed">Unsubscribed</option>
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-medium text-gray-500">Chat status</span>
+                    <select
+                      value={draftChatState}
+                      onChange={event => setDraftChatState(event.target.value)}
+                      className="mt-1 w-full rounded-lg border bg-white px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                    >
+                      {CHAT_STATES.map(state => <option key={state.value} value={state.value}>{state.label}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <div className="pt-1">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-500">Custom attributes</span>
+                    <button
+                      type="button"
+                      onClick={() => setDraftAttributes(current => [...current, { key: '', value: '' }])}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
+                    >
+                      <Plus className="h-3 w-3" /> Add attribute
+                    </button>
+                  </div>
+                  {draftAttributes.length === 0 ? (
+                    <p className="text-[11px] text-gray-400">Add details such as company, city, plan, or birthday.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {draftAttributes.map((attribute, index) => (
+                        <div key={`${index}-${attribute.key}`} className="flex items-center gap-1.5">
+                          <input
+                            value={attribute.key}
+                            onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                              itemIndex === index ? { ...item, key: event.target.value } : item,
+                            ))}
+                            placeholder="Attribute"
+                            className="w-[42%] min-w-0 rounded-lg border px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                          />
+                          <input
+                            value={attribute.value}
+                            onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                              itemIndex === index ? { ...item, value: event.target.value } : item,
+                            ))}
+                            placeholder="Value"
+                            className="min-w-0 flex-1 rounded-lg border px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setDraftAttributes(current => current.filter((_, itemIndex) => itemIndex !== index))}
+                            className="p-1.5 text-gray-400 hover:text-red-500"
+                            title="Remove attribute"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-b">
+            <button
+              onClick={() => setShowCampaigns(value => !value)}
+              className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-gray-50"
+            >
+              <span className="text-sm font-semibold text-gray-800">
+                Campaigns {contact.campaigns && contact.campaigns.length > 0 && (
+                  <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">{contact.campaigns.length}</span>
+                )}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showCampaigns ? 'rotate-180' : ''}`} />
+            </button>
+            {showCampaigns && (
+              <div className="space-y-2 px-5 pb-4">
+                {contact.campaigns && contact.campaigns.length > 0 ? contact.campaigns.map(campaign => (
+                  <div key={campaign.id} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                    <span className="min-w-0 truncate text-xs font-semibold text-gray-800">{campaign.name}</span>
+                    <span className="shrink-0 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] capitalize text-blue-700">
+                      {campaignRecipientLabel(campaign.recipientStatus)}
+                    </span>
+                  </div>
+                )) : <p className="text-xs text-gray-400">No active campaigns for this client.</p>}
+              </div>
+            )}
+          </div>
+
+          <div className="border-b">
+            <button
+              onClick={() => setShowTags(value => !value)}
+              className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-gray-50"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-gray-800"><Tag className="h-4 w-4 text-gray-400" /> Tags</span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showTags ? 'rotate-180' : ''}`} />
+            </button>
+            {showTags && (
+              <div className="px-5 pb-4">
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {draftTags.length === 0 ? <span className="text-xs text-gray-400">No tags added</span> : draftTags.map(tagId => {
+                    const tag = tags.find(item => item.id === tagId);
+                    return tag ? (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTag(tag.id)}
+                        className="rounded-full px-2 py-1 text-[11px] font-medium"
+                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                        title="Remove tag"
+                      >
+                        {tag.name} ×
+                      </button>
+                    ) : null;
+                  })}
+                </div>
+                {tags.length > 0 ? (
+                  <div className="max-h-28 space-y-1 overflow-y-auto">
+                    {tags.map(tag => (
+                      <label key={tag.id} className="flex cursor-pointer items-center gap-2 text-xs text-gray-600">
+                        <input type="checkbox" checked={draftTags.includes(tag.id)} onChange={() => toggleTag(tag.id)} className="accent-primary" />
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                        {tag.name}
+                      </label>
+                    ))}
+                  </div>
+                ) : <p className="text-xs text-gray-400">Create tags from Contacts to organize clients.</p>}
+              </div>
+            )}
+          </div>
+
+          <div className="border-b">
+            <button
+              onClick={() => setShowGroups(value => !value)}
+              className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-gray-50"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-gray-800"><UsersRound className="h-4 w-4 text-gray-400" /> Groups</span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showGroups ? 'rotate-180' : ''}`} />
+            </button>
+            {showGroups && (
+              <div className="px-5 pb-4">
+                {groups.length > 0 ? (
+                  <div className="max-h-36 space-y-1.5 overflow-y-auto">
+                    {groups.map(group => (
+                      <label key={group.id} className="flex cursor-pointer items-center gap-2 text-xs text-gray-600">
+                        <input type="checkbox" checked={draftGroupIds.includes(group.id)} onChange={() => toggleGroup(group.id)} className="accent-primary" />
+                        <span className="flex-1">{group.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : <p className="text-xs text-gray-400">Create groups from Contacts to organize clients.</p>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t bg-gray-50 p-4">
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60"
+          >
+            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save profile
           </button>
         </div>
-        <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Phone number</p><p className="mt-1 font-mono text-sm text-gray-800">{contact.phone}</p></div>
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Email</p><p className="mt-1 text-sm text-gray-800">{contact.email || 'No email'}</p></div>
-           <div>
-             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Groups</p>
-             {contactGroups(contact).length > 0 ? (
-               <div className="mt-1 space-y-1 text-sm text-gray-800">
-                 {contactGroups(contact).map(group => <p key={group.id}>{group.name}</p>)}
-               </div>
-             ) : <p className="mt-1 text-sm text-gray-800">No group</p>}
-           </div>
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Chat state</p><p className="mt-1"><ChatStateBadge state={contact.chatState} hasConversation={contact.hasConversation} unreadMessages={contact.unreadMessages} /></p></div>
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Status</p><p className="mt-1 text-sm capitalize text-gray-800">{contact.status}</p></div>
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Created</p><p className="mt-1 text-sm text-gray-800">{new Date(contact.createdAt).toLocaleDateString()}</p></div>
-          <div className="sm:col-span-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tags</p>
-             {contact.tags.length > 0 ? (
-               <div className="mt-2 space-y-1">
-                {contact.tags.map(tag => (
-                   <div key={tag.id}>
-                     <span className="inline-block rounded-full px-2.5 py-1 text-xs font-medium" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}>{tag.name}</span>
-                   </div>
-                ))}
-              </div>
-            ) : <p className="mt-1 text-sm text-gray-500">No tags</p>}
-          </div>
-        </div>
-        <div className="flex justify-end border-t px-6 py-4">
-          <button onClick={onClose} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90">Close</button>
-        </div>
-      </div>
+      </aside>
     </div>
   );
 }
@@ -541,7 +841,16 @@ export default function Contacts() {
     <div className="h-full flex flex-col bg-white">
       {confirmDialog}
       {viewContact && (
-        <ContactDetailsModal contact={viewContact} onClose={() => setViewContact(null)} />
+        <ContactProfileSidebar
+          contact={viewContact}
+          groups={groups}
+          tags={tags}
+          onClose={() => setViewContact(null)}
+          onSaved={() => {
+            invalidate();
+            qc.invalidateQueries({ queryKey: ['groups'] });
+          }}
+        />
       )}
       {editContact && (
         <EditModal
