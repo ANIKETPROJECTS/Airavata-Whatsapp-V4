@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown, Plus, Trash2, Phone, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 interface Flow {
   id: string;
@@ -11,6 +12,12 @@ interface Flow {
   status: string;
   metaFlowId?: string;
   screens?: Array<{ id: string }>;
+}
+
+interface BusinessProfile {
+  businessName?: string | null;
+  logoUrl?: string | null;
+  phoneNumber?: string | null;
 }
 
 /** Returns sorted unique variable numbers found in a string */
@@ -27,6 +34,7 @@ function applySamples(text: string, samples: Record<number, string>): string {
 export default function AddTemplate() {
   const [, navigate] = useLocation();
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   // ── Shared fields ──────────────────────────────────────────────────────────
   const [name, setName] = useState('');
@@ -46,6 +54,8 @@ export default function AddTemplate() {
   const [quickReplies, setQuickReplies] = useState(['', '', '']);
   const [ctaUrl, setCtaUrl] = useState({ enabled: false, text: 'Visit Website', url: '' });
   const [ctaPhone, setCtaPhone] = useState({ enabled: false, text: 'Call Us', phone: '' });
+  const [previewDevice, setPreviewDevice] = useState<'android' | 'ios'>('android');
+  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
 
   // ── Flow button fields ─────────────────────────────────────────────────────
   const [flowButtonEnabled, setFlowButtonEnabled] = useState(false);
@@ -69,6 +79,16 @@ export default function AddTemplate() {
     queryFn: () => api.get('/chatbot/flows'),
   });
   const publishedChatbotFlows = (chatbotData?.flows ?? []).filter(f => f.status === 'PUBLISHED');
+
+  const { data: businessProfile } = useQuery<BusinessProfile>({
+    queryKey: ['whatsapp-business-profile'],
+    queryFn: () => api.get('/whatsapp/business-profile'),
+    enabled: Boolean(user?.metaWabaConnected),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  const previewBusinessName = businessProfile?.businessName?.trim() || user?.businessName || 'Your Business';
+  const previewLogoUrl = businessProfile?.logoUrl ?? null;
 
   // ── AUTHENTICATION fields ──────────────────────────────────────────────────
   const [addSecurityRec, setAddSecurityRec] = useState(true);
@@ -202,9 +222,10 @@ export default function AddTemplate() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 overflow-y-auto h-full">
+    <div className="h-full min-h-0 overflow-y-auto lg:overflow-hidden">
+      <div className="p-6 max-w-6xl mx-auto flex min-h-full flex-col lg:h-full lg:flex-row gap-8">
       {/* ── Form ─────────────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-3 lg:pb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Add Template</h1>
         <p className="text-sm text-gray-500 mb-6">Create a message template for Meta's approval.</p>
 
@@ -758,20 +779,54 @@ export default function AddTemplate() {
       </div>
 
       {/* ── Preview ───────────────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-80 shrink-0">
-        <div className="sticky top-6 space-y-4">
-          <h3 className="font-semibold text-gray-900">Preview</h3>
-
-          <div className="bg-[#efeae2] rounded-3xl p-4 h-[520px] border-8 border-gray-900 shadow-xl overflow-hidden relative">
-            <div className="absolute top-0 inset-x-0 h-14 bg-[#075e54] flex items-center px-4 shadow-sm z-10">
-              <div className="w-8 h-8 rounded-full bg-white/20 mr-3" />
-              <div className="text-white">
-                <div className="font-medium text-sm">Your Business</div>
-                <div className="text-[10px] opacity-80">Official Business Account</div>
-              </div>
+      <div className="w-full shrink-0 lg:w-[360px] lg:min-h-0 lg:overflow-hidden">
+        <div className="space-y-4 lg:h-full lg:overflow-hidden">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-semibold text-gray-900">Preview</h3>
+            <div className="flex rounded-lg border bg-white p-0.5 shadow-sm" aria-label="Preview device">
+              {(['android', 'ios'] as const).map(device => (
+                <button
+                  key={device}
+                  type="button"
+                  onClick={() => setPreviewDevice(device)}
+                  className={`rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition-colors ${
+                    previewDevice === device ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {device === 'ios' ? 'iOS' : 'Android'}
+                </button>
+              ))}
             </div>
+          </div>
 
-            <div className="pt-16 pb-4 h-full overflow-y-auto flex flex-col">
+          <div className={`mx-auto h-[580px] w-[270px] overflow-hidden border-[7px] border-gray-950 bg-[#efeae2] shadow-xl ${
+            previewDevice === 'ios' ? 'rounded-[2.6rem]' : 'rounded-[2rem]'
+          }`}>
+            <div className="flex h-full flex-col">
+              <div className="flex h-7 shrink-0 items-center justify-between bg-[#f7f7f7] px-3 text-[10px] font-medium text-gray-800">
+                <span>9:41</span>
+                {previewDevice === 'ios' ? <span>● ● ▰</span> : <span>▮▮▮ 100%</span>}
+              </div>
+              <div className="flex h-14 shrink-0 items-center bg-[#075e54] px-3 shadow-sm">
+                {previewLogoUrl && !logoLoadFailed ? (
+                  <img
+                    src={previewLogoUrl}
+                    alt=""
+                    onError={() => setLogoLoadFailed(true)}
+                    className="mr-2 h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="mr-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-xs font-semibold text-white">
+                    {previewBusinessName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 text-white">
+                  <div className="truncate text-sm font-medium">{previewBusinessName}</div>
+                  <div className="truncate text-[10px] opacity-80">WhatsApp Business</div>
+                </div>
+              </div>
+
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
               <div className="self-start max-w-[90%]">
                 {/* Message bubble */}
                 <div className={`bg-white p-3 shadow-sm text-sm text-gray-800 ${
@@ -862,6 +917,7 @@ export default function AddTemplate() {
               </div>
             </div>
           </div>
+          </div>
 
           <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-start gap-2 text-xs text-amber-800">
             <MessageSquare className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
@@ -869,6 +925,7 @@ export default function AddTemplate() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
