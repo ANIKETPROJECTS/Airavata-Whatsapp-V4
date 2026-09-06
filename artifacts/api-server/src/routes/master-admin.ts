@@ -29,6 +29,13 @@ const DEFAULT_PERMISSIONS = [
 ];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\d{10}$/;
+const SERVICE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidServiceStartDate(value: unknown): value is string {
+  if (typeof value !== "string" || !SERVICE_DATE_PATTERN.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
 
 function validId(id: string): mongoose.Types.ObjectId | null {
   return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null;
@@ -42,6 +49,7 @@ function publicUser(user: any, connection?: any) {
     businessName: user.businessName,
     email: user.email,
     phone: user.phone ?? null,
+    serviceStartDate: user.serviceStartDate ?? null,
     timezone: user.timezone ?? "Asia/Kolkata",
     role: user.role ?? "client",
     active: user.active !== false,
@@ -104,7 +112,7 @@ router.get("/master-admin/users", async (_req, res) => {
 
 router.post("/master-admin/users", async (req, res) => {
   try {
-    const { businessName, email, password, phone, role, permissions, active } = req.body as Record<string, any>;
+    const { businessName, email, password, phone, serviceStartDate, role, permissions, active } = req.body as Record<string, any>;
     if (
       typeof businessName !== "string" ||
       businessName.trim().length < 2 ||
@@ -114,11 +122,12 @@ router.post("/master-admin/users", async (req, res) => {
       !EMAIL_PATTERN.test(email.trim()) ||
       typeof phone !== "string" ||
       !PHONE_PATTERN.test(phone) ||
+      !isValidServiceStartDate(serviceStartDate) ||
       typeof password !== "string" ||
       password.length < 8 ||
       password.length > 128
     ) {
-      res.status(400).json({ error: "Enter a business name (2–100 characters), valid email, 10-digit phone number, and password (8–128 characters)" });
+      res.status(400).json({ error: "Enter a business name (2–100 characters), valid email, 10-digit phone number, service start date, and password (8–128 characters)" });
       return;
     }
     const normalizedEmail = email.toLowerCase().trim();
@@ -131,6 +140,7 @@ router.post("/master-admin/users", async (req, res) => {
       email: normalizedEmail,
       passwordHash: await bcrypt.hash(password, 12),
       phone: phone?.trim(),
+      serviceStartDate,
       role: role === "admin" ? "admin" : "client",
       permissions: Array.isArray(permissions) ? permissions : DEFAULT_PERMISSIONS,
       active: active !== false,
@@ -157,7 +167,7 @@ router.put("/master-admin/users/:id", async (req, res) => {
   try {
     const id = validId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
-    const { businessName, email, phone, timezone, role, permissions, active, password } = req.body as Record<string, any>;
+    const { businessName, email, phone, serviceStartDate, timezone, role, permissions, active, password } = req.body as Record<string, any>;
     const update: Record<string, any> = {};
     if (typeof businessName === "string" && businessName.trim()) {
       if (businessName.trim().length < 2 || businessName.trim().length > 100) {
@@ -179,6 +189,15 @@ router.put("/master-admin/users/:id", async (req, res) => {
         return;
       }
       update.phone = phone.trim();
+    }
+    if (serviceStartDate === null || serviceStartDate === "") {
+      update.serviceStartDate = null;
+    } else if (serviceStartDate !== undefined) {
+      if (!isValidServiceStartDate(serviceStartDate)) {
+        res.status(400).json({ error: "Service start date must be a valid date" });
+        return;
+      }
+      update.serviceStartDate = serviceStartDate;
     }
     if (typeof timezone === "string" && timezone.trim()) update.timezone = timezone.trim();
     if (role === "admin" || role === "client") update.role = role;
@@ -354,7 +373,7 @@ router.get("/master-admin/users/:id/report", async (req, res) => {
     .select("type amount balanceAfter description createdAt")
     .lean();
   const user = await UserModel.findById(id)
-    .select("businessName email createdAt creditBalance active role metaWabaConnected isProtectedMasterAdmin")
+    .select("businessName email createdAt serviceStartDate creditBalance active role metaWabaConnected isProtectedMasterAdmin")
     .lean();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   const protectedAccount = isProtectedMasterAdminUser(user);

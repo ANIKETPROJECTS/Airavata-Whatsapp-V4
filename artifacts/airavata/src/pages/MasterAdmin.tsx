@@ -17,13 +17,14 @@ const PERMISSIONS = [
 
 type ManagedUser = {
   id: string; businessName: string; email: string; phone?: string | null; timezone?: string;
+  serviceStartDate?: string | null;
   role: 'admin' | 'client'; active: boolean; permissions: string[]; creditBalance: number;
   protectedAccount?: boolean;
   createdAt: string; connection: { connected: boolean; wabaId?: string | null; phoneNumberId?: string | null };
 };
 
 type UserForm = {
-  businessName: string; email: string; phone: string; password: string;
+  businessName: string; email: string; phone: string; serviceStartDate: string; password: string;
   role: 'client' | 'admin'; active: boolean; permissions: string[];
 };
 
@@ -35,6 +36,9 @@ type CreditTransaction = {
 type ViewMode = 'list' | 'grid';
 
 const normalizePhoneInput = (value: string) => value.replace(/\D/g, '').slice(0, 10);
+const formatDateOnly = (value?: string | null) => value
+  ? new Date(`${value}T00:00:00`).toLocaleDateString()
+  : 'Not set';
 
 function AdminToolbar({
   search,
@@ -74,7 +78,7 @@ function Pagination({ page, total, onPage }: { page: number; total: number; onPa
 }
 
 const blankForm: UserForm = {
-  businessName: '', email: '', phone: '', password: '', role: 'client', active: true,
+  businessName: '', email: '', phone: '', serviceStartDate: '', password: '', role: 'client', active: true,
   permissions: PERMISSIONS.map(([value]) => value),
 };
 
@@ -208,7 +212,7 @@ export default function MasterAdmin() {
   const openCreate = () => { setSelected(null); setForm(blankForm); setShowForm(true); };
   const openEdit = (user: ManagedUser) => {
     setSelected(user);
-    setForm({ businessName: user.businessName, email: user.email, phone: normalizePhoneInput(user.phone ?? '').slice(-10), password: '', role: user.role, active: user.active, permissions: user.permissions });
+    setForm({ businessName: user.businessName, email: user.email, phone: normalizePhoneInput(user.phone ?? '').slice(-10), serviceStartDate: user.serviceStartDate ?? '', password: '', role: user.role, active: user.active, permissions: user.permissions });
     setShowForm(true);
   };
   const saveUser = async (event: FormEvent) => {
