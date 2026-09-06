@@ -92,6 +92,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
       search = "",
       groupId = "",
       tagId = "",
+      country = "",
       status = "",
       chatState = "",
       page = "1",
@@ -108,6 +109,26 @@ router.get("/contacts", async (req: AuthRequest, res) => {
     }
     if (groupId) filter["groupId"] = groupId;
     if (tagId) filter["tags"] = tagId;
+    if (country) {
+      const countryCode = country.replace(/\D/g, "");
+      if (country === "UNKNOWN") {
+        filter["$expr"] = {
+          $not: {
+            $regexMatch: {
+              input: { $regexReplace: { input: { $ifNull: ["$phone", ""] }, regex: "[^0-9]", replacement: "" } },
+              regex: "^[0-9]{1,4}",
+            },
+          },
+        };
+      } else if (countryCode) {
+        filter["$expr"] = {
+          $regexMatch: {
+            input: { $regexReplace: { input: { $ifNull: ["$phone", ""] }, regex: "[^0-9]", replacement: "" } },
+            regex: `^${escapeRegex(countryCode)}`,
+          },
+        };
+      }
+    }
     if (status) filter["status"] = status;
     if (chatState) {
       const liveStateIds = await getLiveChatStateContactIds(req.user!.userId, chatState);

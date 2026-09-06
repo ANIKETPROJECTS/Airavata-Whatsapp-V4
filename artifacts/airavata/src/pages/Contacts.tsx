@@ -36,6 +36,39 @@ const CHAT_STATES = [
   { value: 'CLOSED', label: 'Closed' },
 ] as const;
 
+const COUNTRIES = [
+  { code: '1', label: 'United States / Canada (+1)' },
+  { code: '7', label: 'Russia / Kazakhstan (+7)' },
+  { code: '20', label: 'Egypt (+20)' },
+  { code: '27', label: 'South Africa (+27)' },
+  { code: '31', label: 'Netherlands (+31)' },
+  { code: '33', label: 'France (+33)' },
+  { code: '34', label: 'Spain (+34)' },
+  { code: '39', label: 'Italy (+39)' },
+  { code: '41', label: 'Switzerland (+41)' },
+  { code: '44', label: 'United Kingdom (+44)' },
+  { code: '49', label: 'Germany (+49)' },
+  { code: '52', label: 'Mexico (+52)' },
+  { code: '55', label: 'Brazil (+55)' },
+  { code: '60', label: 'Malaysia (+60)' },
+  { code: '61', label: 'Australia (+61)' },
+  { code: '64', label: 'New Zealand (+64)' },
+  { code: '65', label: 'Singapore (+65)' },
+  { code: '81', label: 'Japan (+81)' },
+  { code: 'ೂರ', label: 'South Korea (+82)' },
+  { code: '86', label: 'China (+86)' },
+  { code: '90', label: 'Turkey (+90)' },
+  { code: '91', label: 'India (+91)' },
+  { code: '92', label: 'Pakistan (+92)' },
+  { code: '94', label: 'Sri Lanka (+94)' },
+  { code: 'ою', label: 'Bangladesh (+880)' },
+  { code: '977', label: 'Nepal (+977)' },
+  { code: '966', label: 'Saudi Arabia (+966)' },
+  { code: '971', label: 'United Arab Emirates (+971)' },
+  { code: '974', label: 'Qatar (+974)' },
+  { code: 'UNKNOWN', label: 'Other / Unknown' },
+] as const;
+
 function isPlaceholderName(name: string | null | undefined, phone: string) {
   const normalizedName = name?.trim();
   return !normalizedName || normalizedName === phone.trim() ||
@@ -366,11 +399,13 @@ export default function Contacts() {
   const [search, setSearch]       = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [tagFilter, setTagFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [chatStateFilter, setChatStateFilter] = useState('');
   const [page, setPage]           = useState(1);
   const perPage = 30;
   const [selected, setSelected]   = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
   const [viewContact, setViewContact] = useState<Contact | null>(null);
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [showImport, setShowImport]   = useState(false);
@@ -379,12 +414,13 @@ export default function Contacts() {
     search, page: String(page), limit: String(perPage),
     ...(groupFilter ? { groupId: groupFilter } : {}),
     ...(tagFilter ? { tagId: tagFilter } : {}),
+    ...(countryFilter ? { country: countryFilter } : {}),
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(chatStateFilter ? { chatState: chatStateFilter } : {}),
   });
 
   const { data, isLoading } = useQuery<{ contacts: Contact[]; total: number; pages: number }>({
-    queryKey: ['contacts', search, groupFilter, tagFilter, statusFilter, chatStateFilter, page, perPage],
+    queryKey: ['contacts', search, groupFilter, tagFilter, countryFilter, statusFilter, chatStateFilter, page, perPage],
     queryFn: () => api.get(`/contacts?${params}`),
     placeholderData: prev => prev,
     refetchInterval: 10000,
@@ -410,6 +446,7 @@ export default function Contacts() {
     onSuccess: (res: { deleted: number }) => {
       toast.success(`${res.deleted} contacts deleted`);
       setSelected(new Set());
+      setSelectionMode(false);
       qc.invalidateQueries({ queryKey: ['contacts'] });
     },
     onError: (err: Error) => toast.error(err.message),
@@ -428,6 +465,16 @@ export default function Contacts() {
       ? new Set()
       : new Set(contacts.map(c => c.id)),
   );
+
+  const enterSelectionMode = () => {
+    setSelectionMode(true);
+    setSelected(new Set(contacts.map(c => c.id)));
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelected(new Set());
+  };
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['contacts'] });
   const refreshContactManagement = () => {
@@ -522,6 +569,16 @@ export default function Contacts() {
         </select>
 
         <select
+          value={countryFilter}
+          onChange={e => { setCountryFilter(e.target.value); setPage(1); setSelected(new Set()); }}
+          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          aria-label="Filter by country"
+        >
+          <option value="">All Countries</option>
+          {COUNTRIES.map(country => <option key={country.code} value={country.code}>{country.label}</option>)}
+        </select>
+
+        <select
           value={statusFilter}
           onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
           className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
@@ -557,6 +614,30 @@ export default function Contacts() {
               className="px-3 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
             >
               Delete {selected.size}
+            </button>
+          )}
+
+          {selectionMode ? (
+            <>
+              <button
+                onClick={toggleAll}
+                className="rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {selected.size === contacts.length && contacts.length > 0 ? 'Clear all' : 'Select all'}
+              </button>
+              <button
+                onClick={exitSelectionMode}
+                className="rounded-lg border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Done
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={enterSelectionMode}
+              className="rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Select all
             </button>
           )}
 
@@ -597,11 +678,13 @@ export default function Contacts() {
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b">
               <tr>
-                <th className="px-4 py-3 w-10">
-                  <input type="checkbox" className="rounded border-gray-300 accent-primary"
-                    checked={selected.size === contacts.length && contacts.length > 0}
-                    onChange={toggleAll} />
-                </th>
+                {selectionMode && (
+                  <th className="px-4 py-3 w-10">
+                    <input type="checkbox" className="rounded border-gray-300 accent-primary"
+                      checked={selected.size === contacts.length && contacts.length > 0}
+                      onChange={toggleAll} />
+                  </th>
+                )}
                 <th className="px-4 py-3 font-semibold">Phone Number</th>
                 <th className="px-4 py-3 font-semibold">Name ↑</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
@@ -618,10 +701,12 @@ export default function Contacts() {
                   key={contact.id}
                   className={`hover:bg-gray-50 transition-colors ${selected.has(contact.id) ? 'bg-primary/5' : ''}`}
                 >
-                  <td className="px-4 py-3">
-                    <input type="checkbox" className="rounded border-gray-300 accent-primary"
-                      checked={selected.has(contact.id)} onChange={() => toggleSelect(contact.id)} />
-                  </td>
+                  {selectionMode && (
+                    <td className="px-4 py-3">
+                      <input type="checkbox" className="rounded border-gray-300 accent-primary"
+                        checked={selected.has(contact.id)} onChange={() => toggleSelect(contact.id)} />
+                    </td>
+                  )}
                   <td className="px-4 py-3 font-mono text-gray-700">{contact.phone}</td>
                   <td className="px-4 py-3 font-medium">{contactDisplayName(contact)}</td>
                   <td className="px-4 py-3">
