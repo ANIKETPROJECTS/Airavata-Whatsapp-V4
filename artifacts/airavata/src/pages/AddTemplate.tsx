@@ -58,9 +58,18 @@ function extractVars(text: string): number[] {
   return [...new Set(matches.map(m => parseInt(m[1]!, 10)))].sort((a, b) => a - b);
 }
 
-/** Replace {{N}} with sample value for the live preview */
+const DEFAULT_SAMPLE_VALUES: Record<number, string> = {
+  1: 'Rahul',
+  2: 'ORDER123',
+  3: '3 Jan 2025',
+};
+
+/** Replace {{N}} with the entered sample, or an illustrative value for the live preview. */
 function applySamples(text: string, samples: Record<number, string>): string {
-  return text.replace(/\{\{(\d+)\}\}/g, (_, n) => samples[parseInt(n, 10)] || `[Var ${n}]`);
+  return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
+    const index = parseInt(n, 10);
+    return samples[index]?.trim() || DEFAULT_SAMPLE_VALUES[index] || `Example value ${index}`;
+  });
 }
 
 function DevicePreviewFrame({
@@ -227,12 +236,6 @@ export default function AddTemplate() {
 
   const isAuth = category === 'AUTHENTICATION';
 
-  const insertVariable = () => {
-    const match = bodyText.match(/\{\{(\d+)\}\}/g);
-    const nextNum = match ? match.length + 1 : 1;
-    setBodyText(prev => prev + ` {{${nextNum}}}`);
-  };
-
   useEffect(() => {
     const closePicker = (event: MouseEvent) => {
       if (bodyEmojiPickerRef.current && !bodyEmojiPickerRef.current.contains(event.target as Node)) {
@@ -290,6 +293,13 @@ export default function AddTemplate() {
         );
       }
     });
+  };
+
+  const insertVariable = () => {
+    const usedNumbers = extractVars(bodyText);
+    let nextNum = 1;
+    while (usedNumbers.includes(nextNum)) nextNum += 1;
+    insertBodyText(`{{${nextNum}}}`);
   };
 
   const bodyVars = useMemo(() => extractVars(bodyText), [bodyText]);
@@ -1221,9 +1231,9 @@ export default function AddTemplate() {
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
-              <div className="self-start max-w-[90%]">
+              <div className="self-start min-w-0 max-w-[90%]">
                 {/* Message bubble */}
-                <div className={`bg-white p-3 shadow-sm text-sm text-gray-800 ${
+                <div className={`min-w-0 max-w-full bg-white p-3 text-sm text-gray-800 shadow-sm ${
                   !isAuth && buttonMode === 'CTA' && (ctaUrl.enabled || ctaPhone.enabled)
                     ? 'rounded-lg rounded-tl-none rounded-b-none'
                     : 'rounded-lg rounded-tl-none'
@@ -1266,13 +1276,13 @@ export default function AddTemplate() {
                             </>
                           )}
                           {headerType === 'TEXT' && (
-                            <span className="font-bold text-gray-800 p-2 text-center">
+                          <span className="break-words p-2 text-center font-bold text-gray-800 [overflow-wrap:anywhere]">
                               {applySamples(headerContent || 'HEADER TEXT', samples)}
                             </span>
                           )}
                         </div>
                       )}
-                      <div className="whitespace-pre-wrap leading-relaxed">
+                      <div className="whitespace-pre-wrap leading-relaxed break-words [overflow-wrap:anywhere]">
                         {applySamples(bodyText, samples)}
                       </div>
                       {footerText && (
