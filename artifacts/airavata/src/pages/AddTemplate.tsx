@@ -92,7 +92,7 @@ export default function AddTemplate() {
   const [quickReplies, setQuickReplies] = useState(['', '', '']);
   const [ctaUrl, setCtaUrl] = useState({ enabled: false, text: 'Visit Website', url: '' });
   const [ctaPhone, setCtaPhone] = useState({ enabled: false, text: 'Call Us', phone: '' });
-  const [previewDevice, setPreviewDevice] = useState<'android' | 'ios'>('android');
+  const [previewDevice, setPreviewDevice] = useState<'android' | 'ios'>('ios');
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
 
   // ── Flow button fields ─────────────────────────────────────────────────────
@@ -260,7 +260,7 @@ export default function AddTemplate() {
   };
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto lg:overflow-hidden">
+    <div className="h-full min-h-0 overflow-y-auto bg-white lg:overflow-hidden">
       <div className="p-6 max-w-6xl mx-auto flex min-h-full flex-col lg:h-full lg:flex-row gap-8">
       {/* ── Form ─────────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-3 lg:pb-8">
