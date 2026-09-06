@@ -6,6 +6,7 @@ const tagSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     name: { type: String, required: true, trim: true },
     color: { type: String, default: "#22c55e" },
+    description: { type: String, trim: true },
   },
   { timestamps: true },
 );

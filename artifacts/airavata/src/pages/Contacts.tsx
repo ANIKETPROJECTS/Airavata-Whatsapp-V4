@@ -2,9 +2,9 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Upload, Loader2, Users, X, ChevronDown, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { useLocation } from 'wouter';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
+import { ContactGroupsManager, ContactTagsManager } from './ContactManagers';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface TagObj   { id: string; name: string; color: string }
@@ -251,7 +251,7 @@ function InteractionBadge({ count, label, color }: { count: number; label: strin
 export default function Contacts() {
   const { confirm, confirmDialog } = useConfirmDialog();
   const qc = useQueryClient();
-  const [, navigate] = useLocation();
+  const [activeSection, setActiveSection] = useState<'contacts' | 'groups' | 'tags'>('contacts');
   const [search, setSearch]       = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [page, setPage]           = useState(1);
@@ -312,6 +312,11 @@ export default function Contacts() {
   );
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['contacts'] });
+  const refreshContactManagement = () => {
+    qc.invalidateQueries({ queryKey: ['contacts'] });
+    qc.invalidateQueries({ queryKey: ['groups'] });
+    qc.invalidateQueries({ queryKey: ['tags'] });
+  };
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -336,15 +341,15 @@ export default function Contacts() {
       <div className="bg-primary flex items-center justify-between px-0 shrink-0">
         <div className="flex">
           {[
-            { label: 'Contacts',      action: () => {} },
-            { label: 'Manage Groups', action: () => navigate('/group') },
-            { label: 'Manage Tags',   action: () => navigate('/manage?tab=tags') },
+            { label: 'Contacts', section: 'contacts' as const },
+            { label: 'Manage Groups', section: 'groups' as const },
+            { label: 'Manage Tags', section: 'tags' as const },
           ].map((tab, i) => (
             <button
               key={tab.label}
-              onClick={tab.action}
+              onClick={() => setActiveSection(tab.section)}
               className={`px-6 py-3.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
-                i === 0
+                activeSection === tab.section
                   ? 'bg-white text-primary'
                   : 'text-white hover:bg-white/10'
               }`}
@@ -356,9 +361,15 @@ export default function Contacts() {
         </div>
       </div>
 
+      {activeSection === 'groups' ? (
+        <ContactGroupsManager onChanged={refreshContactManagement} />
+      ) : activeSection === 'tags' ? (
+        <ContactTagsManager onChanged={refreshContactManagement} />
+      ) : (
+      <>
       {/* Description */}
       <div className="px-6 py-3 bg-gray-50 border-b text-xs text-gray-500 leading-relaxed">
-        The Contacts section displays a detailed list of individual contacts managed through the platform. Each row shows the contact's phone number, name, chat state (e.g., REQ for request or DOR for dormant), and their current interaction status (active or closed). The campaigns column shows how many campaigns each contact is associated with, allowing you to track engagement levels. The tags column helps you categorize contacts for better segmentation. Finally, the Actions column allows you to either edit or delete contact information.
+        Manage your contacts, groups, and tags from this section. Each contact row shows its phone number, name, group, tags, chat state, and available actions.
       </div>
 
       {/* Toolbar */}
@@ -465,6 +476,7 @@ export default function Contacts() {
                 <th className="px-4 py-3 font-semibold">Chat State</th>
                 <th className="px-4 py-3 font-semibold">Interactions</th>
                 <th className="px-4 py-3 font-semibold">Campaigns</th>
+                <th className="px-4 py-3 font-semibold">Group</th>
                 <th className="px-4 py-3 font-semibold">Tags</th>
                 <th className="px-4 py-3 font-semibold text-center">Actions</th>
               </tr>
@@ -491,6 +503,13 @@ export default function Contacts() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">No campaigns</td>
+                  <td className="px-4 py-3">
+                    {contact.group?.name ? (
+                      <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">{contact.group.name}</span>
+                    ) : (
+                      <span className="text-xs text-gray-400">No group</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {contact.tags.length > 0 ? (
                       <div className="flex gap-1 flex-wrap">
@@ -546,6 +565,8 @@ export default function Contacts() {
               className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50">Next</button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
