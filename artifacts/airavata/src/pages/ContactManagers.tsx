@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, Loader2, Pencil, Plus, Search, Tag as TagIcon, Trash2, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, Eye, Loader2, Pencil, Plus, Search, Tag as TagIcon, Trash2, UsersRound, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -399,7 +399,6 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
                       <div className="flex items-center gap-3">
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary"><UsersRound className="h-4 w-4" /></span>
                         <span className="font-semibold text-gray-900">{group.name}</span>
-                        <ArrowRight className="ml-auto h-4 w-4 text-gray-400" />
                       </div>
                     </td>
                     <td className="max-w-[280px] px-4 py-4 text-gray-500">{group.description || '—'}</td>
@@ -407,15 +406,32 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
                     <td className="px-4 py-4 text-gray-500">{formatDate(group.createdAt)}</td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">
-                        <button onClick={event => { event.stopPropagation(); openEdit(group); }} className="inline-flex items-center gap-1 rounded border border-primary px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"><Pencil className="h-3.5 w-3.5" /> Edit</button>
+                        <button
+                          onClick={event => { event.stopPropagation(); setSelectedGroup(group); }}
+                          className="rounded-lg border border-gray-200 p-2 text-gray-600 hover:border-primary hover:bg-primary/5 hover:text-primary"
+                          title="View contacts"
+                          aria-label={`View contacts in ${group.name}`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={event => { event.stopPropagation(); openEdit(group); }}
+                          className="rounded-lg border border-primary/30 p-2 text-primary hover:bg-primary/5"
+                          title="Edit group"
+                          aria-label={`Edit ${group.name}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={async event => {
                             event.stopPropagation();
                             if (await confirm({ title: 'Delete group?', description: `Contacts will be unassigned from "${group.name}".`, confirmLabel: 'Delete group' })) deleteMutation.mutate(group.id);
                           }}
-                          className="inline-flex items-center gap-1 rounded bg-red-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
+                          className="rounded-lg border border-red-200 p-2 text-red-500 hover:bg-red-50"
+                          title="Delete group"
+                          aria-label={`Delete ${group.name}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
@@ -597,7 +613,6 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
                       <div className="flex items-center gap-3">
                         <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}><TagIcon className="h-4 w-4" /></span>
                         <span className="font-semibold" style={{ color: tag.color }}>{tag.name}</span>
-                        <ArrowRight className="ml-auto h-4 w-4 text-gray-400" />
                       </div>
                     </td>
                     <td className="max-w-[280px] px-4 py-4 text-gray-500">{tag.description || '—'}</td>
@@ -605,15 +620,32 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
                     <td className="px-4 py-4 text-gray-500">{formatDate(tag.createdAt)}</td>
                     <td className="px-4 py-4">
                       <div className="flex justify-end gap-2">
-                        <button onClick={event => { event.stopPropagation(); openEdit(tag); }} className="inline-flex items-center gap-1 rounded border border-primary px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"><Pencil className="h-3.5 w-3.5" /> Edit</button>
+                        <button
+                          onClick={event => { event.stopPropagation(); setSelectedTag(tag); }}
+                          className="rounded-lg border border-gray-200 p-2 text-gray-600 hover:border-primary hover:bg-primary/5 hover:text-primary"
+                          title="View contacts"
+                          aria-label={`View contacts with ${tag.name}`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={event => { event.stopPropagation(); openEdit(tag); }}
+                          className="rounded-lg border border-primary/30 p-2 text-primary hover:bg-primary/5"
+                          title="Edit tag"
+                          aria-label={`Edit ${tag.name}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={async event => {
                             event.stopPropagation();
                             if (await confirm({ title: 'Delete tag?', description: `The tag "${tag.name}" will be removed from contacts.`, confirmLabel: 'Delete tag' })) deleteMutation.mutate(tag.id);
                           }}
-                          className="inline-flex items-center gap-1 rounded bg-red-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
+                          className="rounded-lg border border-red-200 p-2 text-red-500 hover:bg-red-50"
+                          title="Delete tag"
+                          aria-label={`Delete ${tag.name}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
