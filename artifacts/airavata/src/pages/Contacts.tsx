@@ -47,6 +47,66 @@ const CHAT_STATES = [
   { value: 'CLOSED', label: 'Closed' },
 ] as const;
 
+type AttributeField = {
+  key: string;
+  label: string;
+  placeholder?: string;
+  kind?: 'text' | 'date' | 'select';
+  options?: { value: string; label: string }[];
+};
+
+const DEFAULT_ATTRIBUTE_FIELDS: AttributeField[] = [
+  { key: 'instagram_username', label: 'Instagram username', placeholder: '@username' },
+  { key: 'facebook_profile', label: 'Facebook profile / page', placeholder: 'Profile or page link' },
+  { key: 'linkedin_profile', label: 'LinkedIn profile', placeholder: 'Profile link' },
+  { key: 'website', label: 'Website', placeholder: 'https://example.com' },
+  { key: 'address_line_1', label: 'Address', placeholder: 'House / street address' },
+  { key: 'address_line_2', label: 'Address line 2', placeholder: 'Apartment, landmark, etc.' },
+  { key: 'city', label: 'City', placeholder: 'City' },
+  { key: 'state', label: 'State / province', placeholder: 'State or province' },
+  { key: 'postal_code', label: 'PIN / postal code', placeholder: 'PIN or postal code' },
+  { key: 'country', label: 'Country', placeholder: 'Country' },
+  { key: 'lead_source', label: 'Lead source', placeholder: 'Instagram, referral, website, etc.' },
+  {
+    key: 'lead_stage',
+    label: 'Lead stage',
+    kind: 'select',
+    options: [
+      { value: 'new_lead', label: 'New lead' },
+      { value: 'contacted', label: 'Contacted' },
+      { value: 'qualified', label: 'Qualified' },
+      { value: 'customer', label: 'Customer' },
+      { value: 'inactive', label: 'Inactive' },
+    ],
+  },
+  { key: 'preferred_language', label: 'Preferred language', placeholder: 'English, Hindi, etc.' },
+  {
+    key: 'preferred_contact_channel',
+    label: 'Preferred contact channel',
+    kind: 'select',
+    options: [
+      { value: 'whatsapp', label: 'WhatsApp' },
+      { value: 'email', label: 'Email' },
+      { value: 'phone', label: 'Phone call' },
+      { value: 'instagram', label: 'Instagram' },
+    ],
+  },
+  {
+    key: 'marketing_opt_in',
+    label: 'Marketing opt-in',
+    kind: 'select',
+    options: [
+      { value: 'opted_in', label: 'Opted in' },
+      { value: 'opted_out', label: 'Opted out' },
+      { value: 'not_set', label: 'Not set' },
+    ],
+  },
+  { key: 'date_of_birth', label: 'Date of birth', kind: 'date' },
+  { key: 'preferred_contact_time', label: 'Preferred contact time', placeholder: 'Morning, afternoon, etc.' },
+];
+
+const DEFAULT_ATTRIBUTE_KEYS = new Set(DEFAULT_ATTRIBUTE_FIELDS.map(field => field.key));
+
 const COUNTRIES = [
   { code: '1', label: 'United States / Canada (+1)' },
   { code: '7', label: 'Russia / Kazakhstan (+7)' },
