@@ -1,7 +1,9 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import { ContactModel } from "../models/Contact";
 import { GroupModel } from "../models/Group";
 import { TagModel } from "../models/Tag";
+import { MessageModel } from "../models/Message";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 
@@ -70,6 +72,49 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         .limit(limitNum),
       ContactModel.countDocuments(filter),
     ]);
+    const contactIds = contacts.map((contact) => contact._id);
+    const [latestRows, unreadRows] = await Promise.all([
+      MessageModel.aggregate([
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(req.user!.userId),
+            contactId: { $in: contactIds },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $group: { _id: "$contactId", lastMessageAt: { $first: "$createdAt" } } },
+      ]),
+      MessageModel.aggregate([
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(req.user!.userId),
+            contactId: { $in: contactIds },
+            direction: "INBOUND",
+          },
+        },
+        {
+          $lookup: {
+            from: "contacts",
+            localField: "contactId",
+            foreignField: "_id",
+            as: "contact",
+          },
+        },
+        { $unwind: "$contact" },
+        {
+          $match: {
+            $expr: {
+              $gt: ["$createdAt", { $ifNull: ["$contact.lastReadAt", new Date(0)] }],
+            },
+          },
+        },
+        { $group: { _id: "$contactId", unread: { $sum: 1 } } },
+      ]),
+    ]);
+    const latestByContact = new Set(latestRows.map(row => String(row._id)));
+    const unreadByContact = new Map(
+      unreadRows.map(row => [String(row._id), Number(row.unread ?? 0)]),
+    );
 
     res.json({
       contacts: contacts.map((c) => ({
@@ -80,6 +125,8 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         attributes: (c as unknown as { attributes?: Record<string, unknown> }).attributes ?? {},
         status: c.status,
         chatState: (c as Record<string, unknown>).chatState ?? "DOR",
+        hasConversation: latestByContact.has(String(c._id)),
+        unreadMessages: unreadByContact.get(String(c._id)) ?? 0,
         lastContactedAt: c.lastContactedAt ?? null,
         createdAt: c.createdAt,
         tags: c.tags,

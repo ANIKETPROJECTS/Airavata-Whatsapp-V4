@@ -19,13 +19,20 @@ interface Contact {
   email?: string | null;
   status: 'active' | 'blocked' | 'unsubscribed';
   chatState?: 'DOR' | 'REQ' | 'CLOSED' | 'ACTIVE';
+  hasConversation?: boolean;
+  unreadMessages?: number;
   tags: TagObj[];
   group: GroupObj | null;
   lastContactedAt?: string | null;
   createdAt: string;
 }
 
-const CHAT_STATES = ['DOR', 'REQ', 'CLOSED', 'ACTIVE'] as const;
+const CHAT_STATES = [
+  { value: 'DOR', label: 'No conversation' },
+  { value: 'REQ', label: 'Needs reply' },
+  { value: 'ACTIVE', label: 'Open' },
+  { value: 'CLOSED', label: 'Closed' },
+] as const;
 
 function isPlaceholderName(name: string | null | undefined, phone: string) {
   const normalizedName = name?.trim();
@@ -54,7 +61,7 @@ function ContactDetailsModal({ contact, onClose }: { contact: Contact; onClose: 
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Phone number</p><p className="mt-1 font-mono text-sm text-gray-800">{contact.phone}</p></div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Email</p><p className="mt-1 text-sm text-gray-800">{contact.email || 'No email'}</p></div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Group</p><p className="mt-1 text-sm text-gray-800">{contact.group?.name || 'No group'}</p></div>
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Chat state</p><p className="mt-1"><ChatStateBadge state={contact.chatState} /></p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Chat state</p><p className="mt-1"><ChatStateBadge state={contact.chatState} hasConversation={contact.hasConversation} unreadMessages={contact.unreadMessages} /></p></div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Status</p><p className="mt-1 text-sm capitalize text-gray-800">{contact.status}</p></div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Created</p><p className="mt-1 text-sm text-gray-800">{new Date(contact.createdAt).toLocaleDateString()}</p></div>
           <div className="sm:col-span-2">
@@ -141,7 +148,7 @@ function EditModal({
                   onChange={e => setChatState(e.target.value)}
                   className="appearance-none border rounded-lg px-3 py-2 pr-8 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 >
-                  {CHAT_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  {CHAT_STATES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
@@ -278,17 +285,6 @@ function ChatStateBadge({ state }: { state?: string }) {
 }
 
 // ── Interaction circles ────────────────────────────────────────────────────────
-function InteractionBadge({ count, label, color }: { count: number; label: string; color: string }) {
-  return (
-    <div className="flex flex-col items-center gap-0.5">
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${color}`}>
-        {count}
-      </div>
-      <span className="text-[9px] text-gray-400 font-medium tracking-wide">{label}</span>
-    </div>
-  );
-}
-
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function Contacts() {
   const { confirm, confirmDialog } = useConfirmDialog();
