@@ -221,6 +221,7 @@ function ContactProfileSidebar({
   const [draftStatus, setDraftStatus] = useState<Contact['status']>('active');
   const [draftChatState, setDraftChatState] = useState('DOR');
   const [draftAttributes, setDraftAttributes] = useState<Array<{ key: string; value: string }>>([]);
+  const [draftCustomAttributes, setDraftCustomAttributes] = useState<Array<{ key: string; value: string }>>([]);
   const [draftTags, setDraftTags] = useState<string[]>([]);
   const [draftGroupIds, setDraftGroupIds] = useState<string[]>([]);
   const [showAttributes, setShowAttributes] = useState(true);
@@ -242,7 +243,8 @@ function ContactProfileSidebar({
     const customEntries = storedEntries
       .filter(([key]) => !DEFAULT_ATTRIBUTE_KEYS.has(key))
       .map(([key, value]) => ({ key, value: attributeValueToString(value) }));
-    setDraftAttributes([...defaultEntries, ...customEntries]);
+    setDraftAttributes(defaultEntries);
+    setDraftCustomAttributes(customEntries);
     setDraftTags(contact.tags.map(tag => tag.id));
     setDraftGroupIds(contactGroups(contact).map(group => group.id));
   }, [contact.id]);
@@ -254,7 +256,7 @@ function ContactProfileSidebar({
       status: draftStatus,
       chatState: chatStateStorageValue(draftChatState),
       attributes: Object.fromEntries(
-        draftAttributes
+        [...draftAttributes, ...draftCustomAttributes]
           .map(attribute => ({ key: attribute.key.trim(), value: attribute.value.trim() }))
           .filter(attribute => attribute.key && attribute.value),
       ),
@@ -444,21 +446,19 @@ function ContactProfileSidebar({
                     </div>
                     <button
                       type="button"
-                      onClick={() => setDraftAttributes(current => [...current, { key: '', value: '' }])}
+                      onClick={() => setDraftCustomAttributes(current => [...current, { key: '', value: '' }])}
                       className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
                     >
                       <Plus className="h-3 w-3" /> Add field
                     </button>
                   </div>
-                  {draftAttributes.length > DEFAULT_ATTRIBUTE_FIELDS.length ? (
+                  {draftCustomAttributes.length > 0 ? (
                     <div className="space-y-2">
-                      {draftAttributes.slice(DEFAULT_ATTRIBUTE_FIELDS.length).map((attribute, customIndex) => {
-                        const index = DEFAULT_ATTRIBUTE_FIELDS.length + customIndex;
-                        return (
-                          <div key={`${index}-${attribute.key}`} className="flex items-center gap-1.5">
+                      {draftCustomAttributes.map((attribute, index) => (
+                        <div key={`${index}-${attribute.key}`} className="flex items-center gap-1.5">
                             <input
                               value={attribute.key}
-                              onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                              onChange={event => setDraftCustomAttributes(current => current.map((item, itemIndex) =>
                                 itemIndex === index ? { ...item, key: event.target.value } : item,
                               ))}
                               placeholder="Field name"
@@ -466,7 +466,7 @@ function ContactProfileSidebar({
                             />
                             <input
                               value={attribute.value}
-                              onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                              onChange={event => setDraftCustomAttributes(current => current.map((item, itemIndex) =>
                                 itemIndex === index ? { ...item, value: event.target.value } : item,
                               ))}
                               placeholder="Value"
@@ -474,15 +474,14 @@ function ContactProfileSidebar({
                             />
                             <button
                               type="button"
-                              onClick={() => setDraftAttributes(current => current.filter((_, itemIndex) => itemIndex !== index))}
+                              onClick={() => setDraftCustomAttributes(current => current.filter((_, itemIndex) => itemIndex !== index))}
                               className="p-1.5 text-gray-400 hover:text-red-500"
                               title="Remove attribute"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
-                        );
-                      })}
+                      ))}
                     </div>
                   ) : (
                     <p className="text-[11px] text-gray-400">No custom attributes yet. Use “Add field” for anything else.</p>

@@ -400,6 +400,7 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
     if (email !== undefined) contact.email = email?.trim();
     if (attributes !== undefined) {
       contact.set("attributes", attributes);
+      contact.markModified("attributes");
     }
     if (tags !== undefined) {
       const tagIds = [...new Set(tags)];
