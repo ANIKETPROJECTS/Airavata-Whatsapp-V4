@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Pencil, Plus, Search, Tag as TagIcon, Trash2, UsersRound, X } from 'lucide-react';
+import { ChevronDown, Loader2, Pencil, Plus, Search, Tag as TagIcon, Trash2, UsersRound, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -26,6 +26,10 @@ interface ManagerContact {
   id: string;
   name?: string | null;
   phone: string;
+  email?: string | null;
+  createdAt?: string;
+  tags?: Array<{ name: string; color: string }>;
+  group?: { name: string } | null;
 }
 
 const TAG_COLORS = [
@@ -42,6 +46,61 @@ function displayContactName(contact: ManagerContact) {
 
 function formatDate(value: string) {
   return value ? new Date(value).toLocaleDateString() : '—';
+}
+
+function ExpandedContactDetails({
+  filterType,
+  filterId,
+}: {
+  filterType: 'group' | 'tag';
+  filterId: string;
+}) {
+  const endpoint = filterType === 'group'
+    ? `/contacts?groupId=${encodeURIComponent(filterId)}&limit=100`
+    : `/contacts?tagId=${encodeURIComponent(filterId)}&limit=100`;
+  const { data, isLoading, isError } = useQuery<{ contacts: ManagerContact[] }>({
+    queryKey: [`${filterType}-contacts`, filterId],
+    queryFn: () => api.get(endpoint),
+  });
+  const contacts = data?.contacts ?? [];
+
+  return (
+    <tr className="bg-gray-50">
+      <td colSpan={5} className="border-t px-5 py-4">
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="h-4 w-4 animate-spin" /> Loading contacts…</div>
+        ) : isError ? (
+          <p className="text-sm text-red-500">Unable to load contacts for this {filterType}.</p>
+        ) : contacts.length === 0 ? (
+          <p className="text-sm text-gray-500">No contacts are assigned to this {filterType}.</p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Contacts in this {filterType} ({contacts.length})
+            </p>
+            <div className="divide-y rounded-lg border bg-white">
+              {contacts.map(contact => (
+                <div key={contact.id} className="flex flex-col gap-1 px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <span className="font-semibold text-gray-900">{displayContactName(contact)}</span>
+                    <span className="ml-2 font-mono text-xs text-gray-500">{contact.phone}</span>
+                    {contact.email && <span className="ml-2 text-xs text-gray-400">{contact.email}</span>}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    {filterType === 'tag' && contact.group?.name && <span>Group: {contact.group.name}</span>}
+                    {contact.tags && contact.tags.length > 0 && (
+                      <span>Tags: {contact.tags.map(tag => tag.name).join(', ')}</span>
+                    )}
+                    {contact.createdAt && <span>Created: {formatDate(contact.createdAt)}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </td>
+    </tr>
+  );
 }
 
 function ContactPicker({
