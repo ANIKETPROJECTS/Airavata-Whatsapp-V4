@@ -5,6 +5,9 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 import { ContactGroupsManager, ContactTagsManager } from './ContactManagers';
+import contactViewIcon from '@assets/eye_1788722260035.png';
+import contactEditIcon from '@assets/pencil_1788722262751.png';
+import contactDeleteIcon from '@assets/bin_1788722265074.png';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface TagObj   { id: string; name: string; color: string }
@@ -32,6 +35,45 @@ function isPlaceholderName(name: string | null | undefined, phone: string) {
 
 function contactDisplayName(contact: Pick<Contact, 'name' | 'phone'>) {
   return isPlaceholderName(contact.name, contact.phone) ? 'NA' : contact.name!.trim();
+}
+
+function ContactDetailsModal({ contact, onClose }: { contact: Contact; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b px-6 py-5">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Contact details</p>
+            <h2 className="mt-1 text-lg font-bold text-gray-900">{contactDisplayName(contact)}</h2>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700" aria-label="Close contact details">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Phone number</p><p className="mt-1 font-mono text-sm text-gray-800">{contact.phone}</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Email</p><p className="mt-1 text-sm text-gray-800">{contact.email || 'No email'}</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Group</p><p className="mt-1 text-sm text-gray-800">{contact.group?.name || 'No group'}</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Chat state</p><p className="mt-1"><ChatStateBadge state={contact.chatState} /></p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Status</p><p className="mt-1 text-sm capitalize text-gray-800">{contact.status}</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Created</p><p className="mt-1 text-sm text-gray-800">{new Date(contact.createdAt).toLocaleDateString()}</p></div>
+          <div className="sm:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tags</p>
+            {contact.tags.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {contact.tags.map(tag => (
+                  <span key={tag.id} className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}>{tag.name}</span>
+                ))}
+              </div>
+            ) : <p className="mt-1 text-sm text-gray-500">No tags</p>}
+          </div>
+        </div>
+        <div className="flex justify-end border-t px-6 py-4">
+          <button onClick={onClose} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90">Close</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Edit Modal ─────────────────────────────────────────────────────────────────
@@ -257,6 +299,7 @@ export default function Contacts() {
   const [page, setPage]           = useState(1);
   const [perPage, setPerPage]     = useState(25);
   const [selected, setSelected]   = useState<Set<string>>(new Set());
+  const [viewContact, setViewContact] = useState<Contact | null>(null);
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [showImport, setShowImport]   = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -321,6 +364,9 @@ export default function Contacts() {
   return (
     <div className="h-full flex flex-col bg-white">
       {confirmDialog}
+      {viewContact && (
+        <ContactDetailsModal contact={viewContact} onClose={() => setViewContact(null)} />
+      )}
       {editContact && (
         <EditModal
           contact={editContact}
@@ -528,10 +574,20 @@ export default function Contacts() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
                       <button
-                        onClick={() => setEditContact(contact)}
-                        className="px-3 py-1 text-xs font-bold border border-primary text-primary rounded hover:bg-primary/5 transition-colors"
+                        onClick={() => setViewContact(contact)}
+                        className="rounded-lg border border-gray-200 p-2 hover:border-primary hover:bg-primary/5"
+                        title="View contact"
+                        aria-label={`View ${contactDisplayName(contact)}`}
                       >
-                        EDIT
+                        <img src={contactViewIcon} alt="" className="h-4 w-4 object-contain" />
+                      </button>
+                      <button
+                        onClick={() => setEditContact(contact)}
+                        className="rounded-lg border border-primary/30 p-2 hover:bg-primary/5"
+                        title="Edit contact"
+                        aria-label={`Edit ${contactDisplayName(contact)}`}
+                      >
+                        <img src={contactEditIcon} alt="" className="h-4 w-4 object-contain" />
                       </button>
                       <button
                         onClick={async () => {
@@ -541,9 +597,11 @@ export default function Contacts() {
                             confirmLabel: 'Delete contact',
                           })) deleteMutation.mutate(contact.id);
                         }}
-                        className="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                        className="rounded-lg border border-red-200 p-2 hover:bg-red-50"
+                        title="Delete contact"
+                        aria-label={`Delete ${contactDisplayName(contact)}`}
                       >
-                        DELETE
+                        <img src={contactDeleteIcon} alt="" className="h-4 w-4 object-contain" />
                       </button>
                     </div>
                   </td>
