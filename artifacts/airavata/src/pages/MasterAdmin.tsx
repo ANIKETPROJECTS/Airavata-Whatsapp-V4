@@ -57,6 +57,7 @@ function AdminToolbar({
   sortOptions,
   viewMode,
   onViewMode,
+  showViewToggle = true,
 }: {
   search: string;
   onSearch: (value: string) => void;
@@ -69,10 +70,11 @@ function AdminToolbar({
   sortOptions: Array<[string, string]>;
   viewMode: ViewMode;
   onViewMode: (value: ViewMode) => void;
+  showViewToggle?: boolean;
 }) {
   return <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 rounded-xl bg-slate-50 border p-3">
     <div className="relative flex-1 min-w-0"><Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" /><input value={search} onChange={e => onSearch(e.target.value)} placeholder={searchPlaceholder} className="w-full rounded-lg border bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-emerald-500" /></div>
-    <div className="flex flex-wrap items-center gap-2"><select value={filter} onChange={e => onFilter(e.target.value)} className="rounded-lg border bg-white px-3 py-2 text-sm">{filterOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={sort} onChange={e => onSort(e.target.value)} className="rounded-lg border bg-white px-3 py-2 text-sm">{sortOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><div className="flex rounded-lg border bg-white p-0.5"><button type="button" onClick={() => onViewMode('list')} title="List view" className={`rounded-md p-1.5 ${viewMode === 'list' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400'}`}><List className="w-4 h-4" /></button><button type="button" onClick={() => onViewMode('grid')} title="Grid view" className={`rounded-md p-1.5 ${viewMode === 'grid' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400'}`}><Grid2X2 className="w-4 h-4" /></button></div></div>
+    <div className="flex flex-wrap items-center gap-2"><select value={filter} onChange={e => onFilter(e.target.value)} className="rounded-lg border bg-white px-3 py-2 text-sm">{filterOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={sort} onChange={e => onSort(e.target.value)} className="rounded-lg border bg-white px-3 py-2 text-sm">{sortOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{showViewToggle && <div className="flex rounded-lg border bg-white p-0.5"><button type="button" onClick={() => onViewMode('list')} title="List view" className={`rounded-md p-1.5 ${viewMode === 'list' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400'}`}><List className="w-4 h-4" /></button><button type="button" onClick={() => onViewMode('grid')} title="Grid view" className={`rounded-md p-1.5 ${viewMode === 'grid' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-400'}`}><Grid2X2 className="w-4 h-4" /></button></div>}</div>
   </div>;
 }
 
@@ -147,18 +149,48 @@ function CreditTransactionsPanel({ users, transactions, visibleTransactions, tra
 }
 
 function MasterNotificationsPanel({ notifications, users, loading, onRefresh, onEdit }: { notifications: MasterNotification[]; users: ManagedUser[]; loading: boolean; onRefresh: () => void; onEdit: (user: ManagedUser) => void }) {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [sort, setSort] = useState('priority');
+  const [page, setPage] = useState(1);
+  const filteredNotifications = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return [...notifications]
+      .filter(notification => {
+        const matchesSearch = !query || `${notification.businessName} ${notification.email} ${notification.title} ${notification.message}`.toLowerCase().includes(query);
+        const matchesFilter = filter === 'all'
+          || (filter === 'missing' && !notification.paidThroughDate)
+          || (filter === 'expired' && notification.severity === 'ERROR')
+          || (filter === 'active' && notification.active)
+          || (filter === 'inactive' && !notification.active);
+        return matchesSearch && matchesFilter;
+      })
+      .sort((a, b) => {
+        if (sort === 'name') return a.businessName.localeCompare(b.businessName);
+        if (sort === 'email') return a.email.localeCompare(b.email);
+        if (sort === 'severity') return a.severity === b.severity ? a.businessName.localeCompare(b.businessName) : a.severity === 'ERROR' ? -1 : 1;
+        return a.severity === b.severity ? a.businessName.localeCompare(b.businessName) : a.severity === 'ERROR' ? -1 : 1;
+      });
+  }, [notifications, search, filter, sort]);
+  const pageRows = filteredNotifications.slice((page - 1) * 10, page * 10);
+  useEffect(() => { setPage(1); }, [search, filter, sort, notifications.length]);
+
   return <section className="rounded-xl bg-white border overflow-hidden">
     <div className="p-6 border-b flex items-start justify-between gap-4">
       <div className="flex items-start gap-3"><Bell className="w-6 h-6 text-amber-600 mt-0.5" /><div><h2 className="text-xl font-bold">Master Admin notifications</h2><p className="text-sm text-slate-500 mt-1">Payment reminders for accounts whose paid-through date is missing or has expired.</p></div></div>
       <button onClick={onRefresh} className="shrink-0 rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-50">Refresh</button>
     </div>
-    {loading ? <div className="p-10 text-center text-slate-500">Checking payment dates…</div> : notifications.length ? <div className="divide-y">{notifications.map(notification => {
-      const user = users.find(item => item.id === notification.userId);
-      return <div key={notification.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3"><div className={`mt-0.5 rounded-full p-2 ${notification.severity === 'ERROR' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}><Bell className="w-4 h-4" /></div><div><p className="font-semibold">{notification.title}</p><p className="text-sm text-slate-600 mt-1">{notification.message}</p><p className="text-xs text-slate-400 mt-1">{notification.email}{notification.active ? '' : ' · Inactive account'}</p></div></div>
-        {user && <button onClick={() => onEdit(user)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Update user</button>}
-      </div>;
-    })}</div> : <div className="p-10 text-center"><p className="font-semibold text-emerald-700">All payment dates are up to date</p><p className="text-sm text-slate-500 mt-1">No missing or expired paid-through dates were found.</p></div>}
+    {loading ? <div className="p-10 text-center text-slate-500">Checking payment dates…</div> : notifications.length ? <>
+      <div className="p-5 border-b"><AdminToolbar search={search} onSearch={setSearch} searchPlaceholder="Search by user, email or notification…" filter={filter} onFilter={setFilter} filterOptions={[['all', 'All alerts'], ['missing', 'Paid date missing'], ['expired', 'Payment expired'], ['active', 'Active accounts'], ['inactive', 'Inactive accounts']]} sort={sort} onSort={setSort} sortOptions={[['priority', 'Priority first'], ['name', 'User name A–Z'], ['email', 'Email A–Z'], ['severity', 'Severity']]} viewMode="list" onViewMode={() => undefined} showViewToggle={false} /></div>
+      {pageRows.length ? <div className="divide-y">{pageRows.map(notification => {
+        const user = users.find(item => item.id === notification.userId);
+        return <div key={notification.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3"><div className={`mt-0.5 rounded-full p-2 ${notification.severity === 'ERROR' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}><Bell className="w-4 h-4" /></div><div><p className="font-semibold">{notification.title}</p><p className="text-sm text-slate-600 mt-1">{notification.message}</p><p className="text-xs text-slate-400 mt-1">{notification.email}{notification.active ? '' : ' · Inactive account'}</p></div></div>
+          {user && <button onClick={() => onEdit(user)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Update user</button>}
+        </div>;
+      })}</div> : <div className="p-10 text-center"><p className="font-semibold text-slate-700">No notifications match these filters</p><p className="text-sm text-slate-500 mt-1">Try a different search or filter.</p></div>}
+      <Pagination page={page} total={filteredNotifications.length} onPage={setPage} />
+    </> : <div className="p-10 text-center"><p className="font-semibold text-emerald-700">All payment dates are up to date</p><p className="text-sm text-slate-500 mt-1">No missing or expired paid-through dates were found.</p></div>}
   </section>;
 }
 
