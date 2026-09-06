@@ -362,21 +362,76 @@ export default function AddTemplate() {
       {/* ── Form ─────────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-3 lg:pb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-1">Add Template</h1>
-        <p className="text-base text-gray-500 mb-6">Create a message template for Meta's approval.</p>
-
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Name */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Template name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
-              placeholder="e.g. order_confirmation"
-              required
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-primary focus:border-primary outline-none"
-            />
-            <p className="text-xs text-gray-400">Lowercase and underscores only</p>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Template name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                placeholder="e.g. order_confirmation"
+                required
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-primary focus:border-primary outline-none"
+              />
+              <p className="text-xs text-gray-400">Lowercase and underscores only</p>
+            </div>
+
+            {/* Language */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Language</label>
+              <div className="relative w-full">
+                <button
+                  type="button"
+                  onClick={() => setLanguageOpen(open => !open)}
+                  className="flex w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm outline-none transition-colors hover:border-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  aria-haspopup="listbox"
+                  aria-expanded={languageOpen}
+                >
+                  <span>{selectedLanguage[1]} <span className="text-gray-400">({selectedLanguage[0]})</span></span>
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${languageOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {languageOpen && (
+                  <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+                    <div className="border-b border-gray-100 p-2">
+                      <input
+                        autoFocus
+                        type="search"
+                        value={languageSearch}
+                        onChange={e => setLanguageSearch(e.target.value)}
+                        placeholder="Search languages or codes..."
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-1" role="listbox">
+                      {filteredLanguages.length > 0 ? filteredLanguages.map(([code, label]) => (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => {
+                            setLanguage(code);
+                            setLanguageOpen(false);
+                            setLanguageSearch('');
+                          }}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                            language === code ? 'bg-primary/10 font-medium text-primary' : 'text-gray-700'
+                          }`}
+                          role="option"
+                          aria-selected={language === code}
+                        >
+                          <span>{label}</span>
+                          <span className="text-xs text-gray-400">{code}</span>
+                        </button>
+                      )) : (
+                        <p className="px-3 py-4 text-center text-sm text-gray-500">No matching Meta languages</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-400">Choose from Meta's supported template locales.</p>
+            </div>
           </div>
 
           {/* Category */}
@@ -411,61 +466,6 @@ export default function AddTemplate() {
                 </label>
               ))}
             </div>
-          </div>
-
-          {/* Language */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Language</label>
-            <div className="relative w-full md:w-1/2">
-              <button
-                type="button"
-                onClick={() => setLanguageOpen(open => !open)}
-                className="flex w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm outline-none transition-colors hover:border-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                aria-haspopup="listbox"
-                aria-expanded={languageOpen}
-              >
-                <span>{selectedLanguage[1]} <span className="text-gray-400">({selectedLanguage[0]})</span></span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${languageOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {languageOpen && (
-                <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
-                  <div className="border-b border-gray-100 p-2">
-                    <input
-                      autoFocus
-                      type="search"
-                      value={languageSearch}
-                      onChange={e => setLanguageSearch(e.target.value)}
-                      placeholder="Search languages or codes..."
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    />
-                  </div>
-                  <div className="max-h-64 overflow-y-auto p-1" role="listbox">
-                    {filteredLanguages.length > 0 ? filteredLanguages.map(([code, label]) => (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => {
-                          setLanguage(code);
-                          setLanguageOpen(false);
-                          setLanguageSearch('');
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 ${
-                          language === code ? 'bg-primary/10 font-medium text-primary' : 'text-gray-700'
-                        }`}
-                        role="option"
-                        aria-selected={language === code}
-                      >
-                        <span>{label}</span>
-                        <span className="text-xs text-gray-400">{code}</span>
-                      </button>
-                    )) : (
-                      <p className="px-3 py-4 text-center text-sm text-gray-500">No matching Meta languages</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-gray-400">Choose from Meta's supported template locales.</p>
           </div>
 
           <div className="border-t pt-6 space-y-6">
