@@ -78,6 +78,7 @@
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@xyflow/react": "^12.11.2",
-    "emoji-mart": "^5.6.0"
+    "emoji-mart": "^5.6.0",
+    "react-device-mockup": "1.0.0"
   }
 }

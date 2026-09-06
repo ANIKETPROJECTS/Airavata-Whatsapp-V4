@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown, Plus, Trash2, Phone, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { AndroidMockup, IPhoneMockup } from 'react-device-mockup';
 
 interface Flow {
   id: string;
@@ -29,6 +30,41 @@ function extractVars(text: string): number[] {
 /** Replace {{N}} with sample value for the live preview */
 function applySamples(text: string, samples: Record<number, string>): string {
   return text.replace(/\{\{(\d+)\}\}/g, (_, n) => samples[parseInt(n, 10)] || `[Var ${n}]`);
+}
+
+function DevicePreviewFrame({
+  device,
+  children,
+}: {
+  device: 'android' | 'ios';
+  children: ReactNode;
+}) {
+  if (device === 'ios') {
+    return (
+      <IPhoneMockup
+        screenWidth={220}
+        screenType="island"
+        frameColor="#151922"
+        statusbarColor="#f8fafc"
+        hideNavBar={false}
+      >
+        {children}
+      </IPhoneMockup>
+    );
+  }
+
+  return (
+    <AndroidMockup
+      screenWidth={220}
+      frameColor="#151922"
+      statusbarColor="#f8fafc"
+      navBarColor="#f8fafc"
+      navBar="swipe"
+      hideNavBar={false}
+    >
+      {children}
+    </AndroidMockup>
+  );
 }
 
 export default function AddTemplate() {
@@ -799,14 +835,9 @@ export default function AddTemplate() {
             </div>
           </div>
 
-          <div className={`mx-auto h-[580px] w-[270px] overflow-hidden border-[7px] border-gray-950 bg-[#efeae2] shadow-xl ${
-            previewDevice === 'ios' ? 'rounded-[2.6rem]' : 'rounded-[2rem]'
-          }`}>
-            <div className="flex h-full flex-col">
-              <div className="flex h-7 shrink-0 items-center justify-between bg-[#f7f7f7] px-3 text-[10px] font-medium text-gray-800">
-                <span>9:41</span>
-                {previewDevice === 'ios' ? <span>● ● ▰</span> : <span>▮▮▮ 100%</span>}
-              </div>
+          <div className="mx-auto flex justify-center">
+            <DevicePreviewFrame device={previewDevice}>
+              <div className="flex h-full min-h-0 w-full flex-col bg-[#efeae2]">
               <div className="flex h-14 shrink-0 items-center bg-[#075e54] px-3 shadow-sm">
                 {previewLogoUrl && !logoLoadFailed ? (
                   <img
@@ -916,7 +947,8 @@ export default function AddTemplate() {
                 )}
               </div>
             </div>
-          </div>
+            </div>
+            </DevicePreviewFrame>
           </div>
 
           <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-start gap-2 text-xs text-amber-800">

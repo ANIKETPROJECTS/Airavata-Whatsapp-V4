@@ -17,3 +17,4 @@
 - [Meta dashboard analytics](meta-dashboard-analytics.md) — sent/delivered use Meta WABA analytics within a one-year window; read/failed remain webhook-derived.
 - [Meta messaging limit field](meta-messaging-limit-field.md) — prefer Meta's Business Manager limit field because the legacy phone tier can be stale.
 - [Service start date](service-start-date.md) — keep each user’s editable service date as a timezone-safe calendar value.
+- [Workspace package installs](workspace-package-installs.md) — add frontend dependencies with the package filter in this pnpm monorepo, not at the workspace root.

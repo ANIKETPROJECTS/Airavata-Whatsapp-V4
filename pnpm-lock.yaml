@@ -182,6 +182,9 @@ importers:
       emoji-mart:
         specifier: ^5.6.0
         version: 5.6.0
+      react-device-mockup:
+        specifier: 1.0.0
+        version: 1.0.0(react@19.1.0)
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
@@ -2915,6 +2918,11 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=16.8.0'
+
+  react-device-mockup@1.0.0:
+    resolution: {integrity: sha512-rtLHqMdzs7FsnvYO7yCLbqvJYw8BmHEk6XsMHDQe4sBRU/SXPB3nofpjjXT3Me+MR2ZE3qsa1bVtASLRZwQO9g==}
+    peerDependencies:
+      react: '*'
 
   react-dom@19.1.0:
     resolution: {integrity: sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g==}
@@ -5709,6 +5717,10 @@ snapshots:
       '@tabby_ai/hijri-converter': 1.0.5
       date-fns: 4.4.0
       date-fns-jalali: 4.1.0-0
+      react: 19.1.0
+
+  react-device-mockup@1.0.0(react@19.1.0):
+    dependencies:
       react: 19.1.0
 
   react-dom@19.1.0(react@19.1.0):
