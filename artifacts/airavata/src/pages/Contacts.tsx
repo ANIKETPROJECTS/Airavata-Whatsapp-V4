@@ -44,6 +44,25 @@ function contactDisplayName(contact: Pick<Contact, 'name' | 'phone'>) {
   return isPlaceholderName(contact.name, contact.phone) ? 'NA' : contact.name!.trim();
 }
 
+function contactStatusLabel(status: Contact['status']) {
+  if (status === 'blocked') return 'Blocked';
+  if (status === 'unsubscribed') return 'Unsubscribed';
+  return 'Active';
+}
+
+function ContactStatusBadge({ status }: { status: Contact['status'] }) {
+  const colors = {
+    active: 'text-green-700 bg-green-50 border-green-200',
+    blocked: 'text-red-700 bg-red-50 border-red-200',
+    unsubscribed: 'text-orange-700 bg-orange-50 border-orange-200',
+  };
+  return (
+    <span className={`inline-block rounded border px-2 py-0.5 text-xs font-semibold ${colors[status]}`}>
+      {contactStatusLabel(status)}
+    </span>
+  );
+}
+
 function chatStateFormValue(state?: Contact['chatState']) {
   if (state === 'CLOSED') return 'CLOSED';
   if (state === 'ACTIVE') return 'OPEN';
@@ -108,6 +127,7 @@ function EditModal({
   onSaved: () => void;
 }) {
   const [name, setName]           = useState(isPlaceholderName(contact.name, contact.phone) ? '' : contact.name ?? '');
+  const [status, setStatus]       = useState<Contact['status']>(contact.status);
   const [chatState, setChatState] = useState<string>(chatStateFormValue(contact.chatState));
   const [groupId, setGroupId]     = useState(contact.group?.id ?? '');
   const [tagIds, setTagIds]       = useState<string[]>(contact.tags.map(tag => tag.id));
@@ -119,6 +139,7 @@ function EditModal({
     try {
       await api.put(`/contacts/${contact.id}`, {
         name: name.trim(),
+        status,
         chatState: chatStateStorageValue(chatState),
         groupId: groupId || null,
         tags: tagIds,
@@ -151,6 +172,23 @@ function EditModal({
                 onChange={e => setName(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
+            </div>
+
+            {/* Contact Status */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-600">Contact Status:</label>
+              <div className="relative">
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value as Contact['status'])}
+                  className="appearance-none border rounded-lg px-3 py-2 pr-8 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="active">Active</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="unsubscribed">Unsubscribed</option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
             {/* Chat State */}
@@ -573,6 +611,7 @@ export default function Contacts() {
                 </th>
                 <th className="px-4 py-3 font-semibold">Phone Number</th>
                 <th className="px-4 py-3 font-semibold">Name ↑</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Chat Status</th>
                 <th className="px-4 py-3 font-semibold">Campaigns</th>
                 <th className="px-4 py-3 font-semibold">Group</th>
@@ -592,6 +631,9 @@ export default function Contacts() {
                   </td>
                   <td className="px-4 py-3 font-mono text-gray-700">{contact.phone}</td>
                   <td className="px-4 py-3 font-medium">{contactDisplayName(contact)}</td>
+                  <td className="px-4 py-3">
+                    <ContactStatusBadge status={contact.status} />
+                  </td>
                   <td className="px-4 py-3">
                     <ChatStateBadge
                       state={contact.chatState}

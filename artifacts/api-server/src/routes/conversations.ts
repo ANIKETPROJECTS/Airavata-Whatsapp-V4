@@ -227,6 +227,11 @@ router.post("/conversations/:contactId/messages", authenticate, async (req: Auth
 
     const contact = await ContactModel.findOne({ _id: contactId, userId }).lean();
     if (!contact) return res.status(404).json({ error: "Contact not found" });
+    if (contact.status !== "active") {
+      return res.status(400).json({
+        error: `This contact is ${contact.status}. Change the contact status to Active before sending a message.`,
+      });
+    }
 
     // Verify 24-hour window
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
