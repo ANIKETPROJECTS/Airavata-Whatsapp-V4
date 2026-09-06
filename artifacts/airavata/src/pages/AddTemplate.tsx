@@ -357,10 +357,10 @@ export default function AddTemplate() {
   };
 
   return (
-    <div className="add-template-page h-full min-h-0 overflow-y-auto bg-white lg:overflow-hidden">
+    <div className="add-template-page add-template-scroll h-full min-h-0 overflow-y-auto bg-white lg:overflow-hidden">
       <div className="w-full p-6 flex min-h-full flex-col lg:h-full lg:flex-row gap-8">
       {/* ── Form ─────────────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-3 lg:pb-8">
+      <div className="add-template-scroll flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-3 lg:pb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-1">Add Template</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
