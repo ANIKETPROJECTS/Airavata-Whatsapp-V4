@@ -193,6 +193,16 @@ function chatStateStorageValue(state: string) {
   return 'DOR';
 }
 
+function attributeValueToString(value: unknown) {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  try {
+    return JSON.stringify(value) ?? '';
+  } catch {
+    return String(value);
+  }
+}
+
 function ContactProfileSidebar({
   contact,
   groups,
@@ -223,10 +233,16 @@ function ContactProfileSidebar({
     setDraftEmail(contact.email ?? '');
     setDraftStatus(contact.status);
     setDraftChatState(chatStateFormValue(contact.chatState));
-    setDraftAttributes(Object.entries(contact.attributes ?? {}).map(([key, value]) => ({
-      key,
-      value: typeof value === 'string' ? value : JSON.stringify(value),
-    })));
+    const storedEntries = Object.entries(contact.attributes ?? {});
+    const storedValues = new Map(storedEntries);
+    const defaultEntries = DEFAULT_ATTRIBUTE_FIELDS.map(field => ({
+      key: field.key,
+      value: attributeValueToString(storedValues.get(field.key)),
+    }));
+    const customEntries = storedEntries
+      .filter(([key]) => !DEFAULT_ATTRIBUTE_KEYS.has(key))
+      .map(([key, value]) => ({ key, value: attributeValueToString(value) }));
+    setDraftAttributes([...defaultEntries, ...customEntries]);
     setDraftTags(contact.tags.map(tag => tag.id));
     setDraftGroupIds(contactGroups(contact).map(group => group.id));
   }, [contact.id]);
@@ -240,7 +256,7 @@ function ContactProfileSidebar({
       attributes: Object.fromEntries(
         draftAttributes
           .map(attribute => ({ key: attribute.key.trim(), value: attribute.value.trim() }))
-          .filter(attribute => attribute.key),
+          .filter(attribute => attribute.key && attribute.value),
       ),
       tags: draftTags,
       groupIds: draftGroupIds,
@@ -381,49 +397,95 @@ function ContactProfileSidebar({
                   </label>
                 </div>
                 <div className="pt-1">
+                  <div className="mb-2">
+                    <span className="text-xs font-semibold text-gray-700">Marketing & customer details</span>
+                    <p className="mt-0.5 text-[11px] text-gray-400">
+                      Add social profiles, location, lead information, and contact preferences for personalized outreach.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DEFAULT_ATTRIBUTE_FIELDS.map((field, index) => {
+                      const attribute = draftAttributes[index] ?? { key: field.key, value: '' };
+                      return (
+                        <label key={field.key} className={`block ${field.key === 'address_line_1' || field.key === 'address_line_2' ? 'col-span-2' : ''}`}>
+                          <span className="text-[11px] font-medium text-gray-500">{field.label}</span>
+                          {field.kind === 'select' ? (
+                            <select
+                              value={attribute.value}
+                              onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, value: event.target.value } : item,
+                              ))}
+                              className="mt-1 w-full rounded-lg border bg-white px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                            >
+                              <option value="">Select</option>
+                              {field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          ) : (
+                            <input
+                              type={field.kind === 'date' ? 'date' : 'text'}
+                              value={attribute.value}
+                              onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, value: event.target.value } : item,
+                              ))}
+                              placeholder={field.placeholder}
+                              className="mt-1 w-full rounded-lg border px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                            />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-5 border-t pt-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-500">Custom attributes</span>
+                    <div>
+                      <span className="text-xs font-semibold text-gray-700">Additional custom attributes</span>
+                      <p className="mt-0.5 text-[11px] text-gray-400">Add unlimited fields for your own customer data.</p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setDraftAttributes(current => [...current, { key: '', value: '' }])}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
+                      className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
                     >
-                      <Plus className="h-3 w-3" /> Add attribute
+                      <Plus className="h-3 w-3" /> Add field
                     </button>
                   </div>
-                  {draftAttributes.length === 0 ? (
-                    <p className="text-[11px] text-gray-400">Add details such as company, city, plan, or birthday.</p>
-                  ) : (
+                  {draftAttributes.length > DEFAULT_ATTRIBUTE_FIELDS.length ? (
                     <div className="space-y-2">
-                      {draftAttributes.map((attribute, index) => (
-                        <div key={`${index}-${attribute.key}`} className="flex items-center gap-1.5">
-                          <input
-                            value={attribute.key}
-                            onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
-                              itemIndex === index ? { ...item, key: event.target.value } : item,
-                            ))}
-                            placeholder="Attribute"
-                            className="w-[42%] min-w-0 rounded-lg border px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
-                          />
-                          <input
-                            value={attribute.value}
-                            onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
-                              itemIndex === index ? { ...item, value: event.target.value } : item,
-                            ))}
-                            placeholder="Value"
-                            className="min-w-0 flex-1 rounded-lg border px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setDraftAttributes(current => current.filter((_, itemIndex) => itemIndex !== index))}
-                            className="p-1.5 text-gray-400 hover:text-red-500"
-                            title="Remove attribute"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                      {draftAttributes.slice(DEFAULT_ATTRIBUTE_FIELDS.length).map((attribute, customIndex) => {
+                        const index = DEFAULT_ATTRIBUTE_FIELDS.length + customIndex;
+                        return (
+                          <div key={`${index}-${attribute.key}`} className="flex items-center gap-1.5">
+                            <input
+                              value={attribute.key}
+                              onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, key: event.target.value } : item,
+                              ))}
+                              placeholder="Field name"
+                              className="w-[42%] min-w-0 rounded-lg border px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                            />
+                            <input
+                              value={attribute.value}
+                              onChange={event => setDraftAttributes(current => current.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, value: event.target.value } : item,
+                              ))}
+                              placeholder="Value"
+                              className="min-w-0 flex-1 rounded-lg border px-2.5 py-2 text-xs focus:border-primary focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setDraftAttributes(current => current.filter((_, itemIndex) => itemIndex !== index))}
+                              className="p-1.5 text-gray-400 hover:text-red-500"
+                              title="Remove attribute"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
+                  ) : (
+                    <p className="text-[11px] text-gray-400">No custom attributes yet. Use “Add field” for anything else.</p>
                   )}
                 </div>
               </div>
