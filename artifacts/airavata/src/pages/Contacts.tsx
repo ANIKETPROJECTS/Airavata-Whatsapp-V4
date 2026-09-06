@@ -55,13 +55,13 @@ const COUNTRIES = [
   { code: '64', label: 'New Zealand (+64)' },
   { code: '65', label: 'Singapore (+65)' },
   { code: '81', label: 'Japan (+81)' },
-  { code: 'ೂರ', label: 'South Korea (+82)' },
+  { code: '82', label: 'South Korea (+82)' },
   { code: '86', label: 'China (+86)' },
   { code: '90', label: 'Turkey (+90)' },
   { code: '91', label: 'India (+91)' },
   { code: '92', label: 'Pakistan (+92)' },
   { code: '94', label: 'Sri Lanka (+94)' },
-  { code: 'ою', label: 'Bangladesh (+880)' },
+  { code: '880', label: 'Bangladesh (+880)' },
   { code: '977', label: 'Nepal (+977)' },
   { code: '966', label: 'Saudi Arabia (+966)' },
   { code: '971', label: 'United Arab Emirates (+971)' },
@@ -443,7 +443,11 @@ export default function Contacts() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/contacts/${id}`),
-    onSuccess: () => { toast.success('Contact deleted'); qc.invalidateQueries({ queryKey: ['contacts'] }); },
+    onSuccess: () => {
+      toast.success('Contact deleted');
+      qc.invalidateQueries({ queryKey: ['contacts'] });
+      qc.invalidateQueries({ queryKey: ['contact-countries'] });
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -454,6 +458,7 @@ export default function Contacts() {
       setSelected(new Set());
       setSelectionMode(false);
       qc.invalidateQueries({ queryKey: ['contacts'] });
+      qc.invalidateQueries({ queryKey: ['contact-countries'] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -484,7 +489,10 @@ export default function Contacts() {
     setSelected(new Set());
   };
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['contacts'] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['contacts'] });
+    qc.invalidateQueries({ queryKey: ['contact-countries'] });
+  };
   const refreshContactManagement = () => {
       qc.invalidateQueries({ queryKey: ['contacts'] });
       qc.invalidateQueries({ queryKey: ['contact-countries'] });

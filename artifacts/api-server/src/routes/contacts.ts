@@ -10,6 +10,18 @@ import { logger } from "../lib/logger";
 const router = Router();
 router.use(authenticate);
 
+const KNOWN_COUNTRY_CODES = [
+  "1", "7", "20", "27", "31", "33", "34", "39", "41", "44", "49",
+  "52", "55", "60", "61", "64", "65", "81", "82", "86", "90", "91",
+  "92", "94", "234", "254", "880", "966", "971", "974", "977",
+];
+const SORTED_COUNTRY_CODES = [...KNOWN_COUNTRY_CODES].sort((a, b) => b.length - a.length);
+
+function countryCodeFromPhone(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return SORTED_COUNTRY_CODES.find(code => digits.startsWith(code)) ?? "UNKNOWN";
+}
+
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -116,7 +128,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
           $not: {
             $regexMatch: {
               input: { $regexReplace: { input: { $ifNull: ["$phone", ""] }, regex: "[^0-9]", replacement: "" } },
-              regex: "^[0-9]{1,4}",
+              regex: `^(?:${KNOWN_COUNTRY_CODES.join("|")})`,
             },
           },
         };
@@ -216,6 +228,24 @@ router.get("/contacts", async (req: AuthRequest, res) => {
     });
   } catch (error) {
     logger.error({ err: error }, "Contact list failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/contacts/countries — only country codes represented in this workspace
+router.get("/contacts/countries", async (req: AuthRequest, res) => {
+  try {
+    const contacts = await ContactModel.find({ userId: req.user!.userId }).select("phone").lean();
+    const counts = new Map<string, number>();
+    for (const contact of contacts) {
+      const code = countryCodeFromPhone(contact.phone);
+      counts.set(code, (counts.get(code) ?? 0) + 1);
+    }
+    res.json({
+      countries: [...counts.entries()].map(([code, count]) => ({ code, count })),
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Country filter options failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
