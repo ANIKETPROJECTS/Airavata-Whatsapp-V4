@@ -186,6 +186,7 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data, isLoading } = useQuery<{ groups: ContactManagerGroup[] }>({
@@ -337,30 +338,38 @@ export function ContactGroupsManager({ onChanged }: { onChanged: () => void }) {
             </thead>
             <tbody className="divide-y">
               {groups.map(group => (
-                <tr key={group.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary"><UsersRound className="h-4 w-4" /></span>
-                      <span className="font-semibold text-gray-900">{group.name}</span>
-                    </div>
-                  </td>
-                  <td className="max-w-[280px] px-4 py-4 text-gray-500">{group.description || '—'}</td>
-                  <td className="px-4 py-4 font-semibold text-gray-800">{group.memberCount.toLocaleString()}</td>
-                  <td className="px-4 py-4 text-gray-500">{formatDate(group.createdAt)}</td>
-                  <td className="px-4 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => openEdit(group)} className="inline-flex items-center gap-1 rounded border border-primary px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"><Pencil className="h-3.5 w-3.5" /> Edit</button>
-                      <button
-                        onClick={async () => {
-                          if (await confirm({ title: 'Delete group?', description: `Contacts will be unassigned from "${group.name}".`, confirmLabel: 'Delete group' })) deleteMutation.mutate(group.id);
-                        }}
-                        className="inline-flex items-center gap-1 rounded bg-red-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <Fragment key={group.id}>
+                  <tr
+                    onClick={() => setExpandedGroupId(current => current === group.id ? null : group.id)}
+                    className="cursor-pointer hover:bg-gray-50"
+                  >
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${expandedGroupId === group.id ? 'rotate-180' : ''}`} />
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary"><UsersRound className="h-4 w-4" /></span>
+                        <span className="font-semibold text-gray-900">{group.name}</span>
+                      </div>
+                    </td>
+                    <td className="max-w-[280px] px-4 py-4 text-gray-500">{group.description || '—'}</td>
+                    <td className="px-4 py-4 font-semibold text-gray-800">{group.memberCount.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-gray-500">{formatDate(group.createdAt)}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={event => { event.stopPropagation(); openEdit(group); }} className="inline-flex items-center gap-1 rounded border border-primary px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"><Pencil className="h-3.5 w-3.5" /> Edit</button>
+                        <button
+                          onClick={async event => {
+                            event.stopPropagation();
+                            if (await confirm({ title: 'Delete group?', description: `Contacts will be unassigned from "${group.name}".`, confirmLabel: 'Delete group' })) deleteMutation.mutate(group.id);
+                          }}
+                          className="inline-flex items-center gap-1 rounded bg-red-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedGroupId === group.id && <ExpandedContactDetails filterType="group" filterId={group.id} />}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -378,6 +387,7 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(TAG_COLORS[0]!);
+  const [expandedTagId, setExpandedTagId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data, isLoading } = useQuery<{ tags: ContactManagerTag[] }>({
@@ -509,30 +519,38 @@ export function ContactTagsManager({ onChanged }: { onChanged: () => void }) {
             </thead>
             <tbody className="divide-y">
               {tags.map(tag => (
-                <tr key={tag.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}><TagIcon className="h-4 w-4" /></span>
-                      <span className="font-semibold" style={{ color: tag.color }}>{tag.name}</span>
-                    </div>
-                  </td>
-                  <td className="max-w-[280px] px-4 py-4 text-gray-500">{tag.description || '—'}</td>
-                  <td className="px-4 py-4 font-semibold text-gray-800">{tag.contactCount.toLocaleString()}</td>
-                  <td className="px-4 py-4 text-gray-500">{formatDate(tag.createdAt)}</td>
-                  <td className="px-4 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => openEdit(tag)} className="inline-flex items-center gap-1 rounded border border-primary px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"><Pencil className="h-3.5 w-3.5" /> Edit</button>
-                      <button
-                        onClick={async () => {
-                          if (await confirm({ title: 'Delete tag?', description: `The tag "${tag.name}" will be removed from contacts.`, confirmLabel: 'Delete tag' })) deleteMutation.mutate(tag.id);
-                        }}
-                        className="inline-flex items-center gap-1 rounded bg-red-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <Fragment key={tag.id}>
+                  <tr
+                    onClick={() => setExpandedTagId(current => current === tag.id ? null : tag.id)}
+                    className="cursor-pointer hover:bg-gray-50"
+                  >
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${expandedTagId === tag.id ? 'rotate-180' : ''}`} />
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}><TagIcon className="h-4 w-4" /></span>
+                        <span className="font-semibold" style={{ color: tag.color }}>{tag.name}</span>
+                      </div>
+                    </td>
+                    <td className="max-w-[280px] px-4 py-4 text-gray-500">{tag.description || '—'}</td>
+                    <td className="px-4 py-4 font-semibold text-gray-800">{tag.contactCount.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-gray-500">{formatDate(tag.createdAt)}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={event => { event.stopPropagation(); openEdit(tag); }} className="inline-flex items-center gap-1 rounded border border-primary px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"><Pencil className="h-3.5 w-3.5" /> Edit</button>
+                        <button
+                          onClick={async event => {
+                            event.stopPropagation();
+                            if (await confirm({ title: 'Delete tag?', description: `The tag "${tag.name}" will be removed from contacts.`, confirmLabel: 'Delete tag' })) deleteMutation.mutate(tag.id);
+                          }}
+                          className="inline-flex items-center gap-1 rounded bg-red-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedTagId === tag.id && <ExpandedContactDetails filterType="tag" filterId={tag.id} />}
+                </Fragment>
               ))}
             </tbody>
           </table>
