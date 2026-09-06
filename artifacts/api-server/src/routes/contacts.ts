@@ -33,7 +33,15 @@ async function populateContact(doc: InstanceType<typeof ContactModel>) {
 // GET /api/contacts
 router.get("/contacts", async (req: AuthRequest, res) => {
   try {
-    const { search = "", groupId = "", tagId = "", page = "1", limit = "50" } = req.query as Record<string, string>;
+    const {
+      search = "",
+      groupId = "",
+      tagId = "",
+      status = "",
+      chatState = "",
+      page = "1",
+      limit = "50",
+    } = req.query as Record<string, string>;
     const filter: Record<string, unknown> = { userId: req.user!.userId };
 
     if (search) {
@@ -45,6 +53,8 @@ router.get("/contacts", async (req: AuthRequest, res) => {
     }
     if (groupId) filter["groupId"] = groupId;
     if (tagId) filter["tags"] = tagId;
+    if (status) filter["status"] = status;
+    if (chatState) filter["chatState"] = chatState;
 
     const pageNum = Math.max(1, Number(page));
     const limitNum = Math.min(500, Math.max(1, Number(limit)));

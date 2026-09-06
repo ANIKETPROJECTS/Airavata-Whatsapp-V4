@@ -296,21 +296,26 @@ export default function Contacts() {
   const [activeSection, setActiveSection] = useState<'contacts' | 'groups' | 'tags'>('contacts');
   const [search, setSearch]       = useState('');
   const [groupFilter, setGroupFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [chatStateFilter, setChatStateFilter] = useState('');
   const [page, setPage]           = useState(1);
   const [perPage, setPerPage]     = useState(25);
   const [selected, setSelected]   = useState<Set<string>>(new Set());
   const [viewContact, setViewContact] = useState<Contact | null>(null);
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [showImport, setShowImport]   = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
 
   const params = new URLSearchParams({
     search, page: String(page), limit: String(perPage),
     ...(groupFilter ? { groupId: groupFilter } : {}),
+    ...(tagFilter ? { tagId: tagFilter } : {}),
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(chatStateFilter ? { chatState: chatStateFilter } : {}),
   });
 
   const { data, isLoading } = useQuery<{ contacts: Contact[]; total: number; pages: number }>({
-    queryKey: ['contacts', search, groupFilter, page, perPage],
+    queryKey: ['contacts', search, groupFilter, tagFilter, statusFilter, chatStateFilter, page, perPage],
     queryFn: () => api.get(`/contacts?${params}`),
     placeholderData: prev => prev,
   });
@@ -413,11 +418,6 @@ export default function Contacts() {
         <ContactTagsManager onChanged={refreshContactManagement} />
       ) : (
       <>
-      {/* Description */}
-      <div className="px-6 py-3 bg-gray-50 border-b text-xs text-gray-500 leading-relaxed">
-        Manage your contacts, groups, and tags from this section. Each contact row shows its phone number, name, group, tags, chat state, and available actions.
-      </div>
-
       {/* Toolbar */}
       <div className="px-6 py-3 border-b flex flex-wrap items-center gap-3">
         <div className="relative">
@@ -431,23 +431,47 @@ export default function Contacts() {
           />
         </div>
 
-        <button
-          onClick={() => setShowFilters(f => !f)}
-          className="px-3 py-2 text-sm border rounded-lg text-primary border-primary hover:bg-primary/5 font-medium transition-colors"
+        <select
+          value={groupFilter}
+          onChange={e => { setGroupFilter(e.target.value); setPage(1); }}
+          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          aria-label="Filter by group"
         >
-          {showFilters ? 'Hide Filters' : 'Show Filters'}
-        </button>
+          <option value="">All Groups</option>
+          {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+        </select>
 
-        {showFilters && (
-          <select
-            value={groupFilter}
-            onChange={e => { setGroupFilter(e.target.value); setPage(1); }}
-            className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="">All Groups</option>
-            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-        )}
+        <select
+          value={tagFilter}
+          onChange={e => { setTagFilter(e.target.value); setPage(1); }}
+          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          aria-label="Filter by tag"
+        >
+          <option value="">All Tags</option>
+          {tags.map(tag => <option key={tag.id} value={tag.id}>{tag.name}</option>)}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          aria-label="Filter by status"
+        >
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="blocked">Blocked</option>
+          <option value="unsubscribed">Unsubscribed</option>
+        </select>
+
+        <select
+          value={chatStateFilter}
+          onChange={e => { setChatStateFilter(e.target.value); setPage(1); }}
+          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          aria-label="Filter by chat state"
+        >
+          <option value="">All Chat States</option>
+          {CHAT_STATES.map(state => <option key={state} value={state}>{state}</option>)}
+        </select>
 
         <div className="ml-auto flex items-center gap-3">
           {selected.size > 0 && (
