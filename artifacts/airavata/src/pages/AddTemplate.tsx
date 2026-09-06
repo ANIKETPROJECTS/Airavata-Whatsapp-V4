@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { AndroidMockup, IPhoneMockup } from 'react-device-mockup';
+import androidIcon from '@assets/android_1788728822650.png';
+import appleIcon from '@assets/apple-logo_(1)_1788728825558.png';
 
 interface Flow {
   id: string;
@@ -42,7 +44,7 @@ function DevicePreviewFrame({
   if (device === 'ios') {
     return (
       <IPhoneMockup
-        screenWidth={220}
+        screenWidth={260}
         screenType="island"
         frameColor="#151922"
         statusbarColor="#f8fafc"
@@ -55,7 +57,7 @@ function DevicePreviewFrame({
 
   return (
     <AndroidMockup
-      screenWidth={220}
+      screenWidth={260}
       frameColor="#151922"
       statusbarColor="#f8fafc"
       navBarColor="#f8fafc"
@@ -815,7 +817,7 @@ export default function AddTemplate() {
       </div>
 
       {/* ── Preview ───────────────────────────────────────────────────────────── */}
-      <div className="w-full shrink-0 lg:w-[360px] lg:min-h-0 lg:overflow-hidden">
+      <div className="w-full shrink-0 lg:w-[420px] lg:min-h-0 lg:overflow-hidden">
         <div className="space-y-4 lg:h-full lg:overflow-hidden">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-semibold text-gray-900">Preview</h3>
@@ -825,11 +827,18 @@ export default function AddTemplate() {
                   key={device}
                   type="button"
                   onClick={() => setPreviewDevice(device)}
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition-colors ${
+                  title={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
+                  aria-label={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
+                  className={`flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition-colors ${
                     previewDevice === device ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
-                  {device === 'ios' ? 'iOS' : 'Android'}
+                  <img
+                    src={device === 'ios' ? appleIcon : androidIcon}
+                    alt=""
+                    className={`h-5 w-5 object-contain ${device === 'ios' ? '' : 'mix-blend-multiply'}`}
+                  />
+                  <span>{device === 'ios' ? 'iOS' : 'Android'}</span>
                 </button>
               ))}
             </div>
