@@ -28,9 +28,9 @@ interface Contact {
 }
 
 const CHAT_STATES = [
-  { value: 'DOR', label: 'No conversation' },
-  { value: 'REQ', label: 'Needs reply' },
-  { value: 'ACTIVE', label: 'Open' },
+  { value: 'NO_CHAT', label: 'No conversation' },
+  { value: 'NEEDS_REPLY', label: 'Needs reply' },
+  { value: 'OPEN', label: 'Open' },
   { value: 'CLOSED', label: 'Closed' },
 ] as const;
 
@@ -42,6 +42,20 @@ function isPlaceholderName(name: string | null | undefined, phone: string) {
 
 function contactDisplayName(contact: Pick<Contact, 'name' | 'phone'>) {
   return isPlaceholderName(contact.name, contact.phone) ? 'NA' : contact.name!.trim();
+}
+
+function chatStateFormValue(state?: Contact['chatState']) {
+  if (state === 'CLOSED') return 'CLOSED';
+  if (state === 'ACTIVE') return 'OPEN';
+  if (state === 'REQ') return 'NEEDS_REPLY';
+  return 'NO_CHAT';
+}
+
+function chatStateStorageValue(state: string) {
+  if (state === 'CLOSED') return 'CLOSED';
+  if (state === 'OPEN') return 'ACTIVE';
+  if (state === 'NEEDS_REPLY') return 'REQ';
+  return 'DOR';
 }
 
 function ContactDetailsModal({ contact, onClose }: { contact: Contact; onClose: () => void }) {
@@ -94,7 +108,7 @@ function EditModal({
   onSaved: () => void;
 }) {
   const [name, setName]           = useState(isPlaceholderName(contact.name, contact.phone) ? '' : contact.name ?? '');
-  const [chatState, setChatState] = useState<string>(contact.chatState ?? 'DOR');
+  const [chatState, setChatState] = useState<string>(chatStateFormValue(contact.chatState));
   const [groupId, setGroupId]     = useState(contact.group?.id ?? '');
   const [tagIds, setTagIds]       = useState<string[]>(contact.tags.map(tag => tag.id));
   const [saving, setSaving]       = useState(false);
@@ -105,7 +119,7 @@ function EditModal({
     try {
       await api.put(`/contacts/${contact.id}`, {
         name: name.trim(),
-        chatState,
+        chatState: chatStateStorageValue(chatState),
         groupId: groupId || null,
         tags: tagIds,
       });
@@ -269,22 +283,41 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
 }
 
 // ── Chat state badge ───────────────────────────────────────────────────────────
-function ChatStateBadge({ state }: { state?: string }) {
-  const s = state ?? 'DOR';
+function ChatStateBadge({
+  state,
+  hasConversation = false,
+  unreadMessages = 0,
+}: {
+  state?: string;
+  hasConversation?: boolean;
+  unreadMessages?: number;
+}) {
+  const s = unreadMessages > 0 || state === 'REQ'
+    ? 'NEEDS_REPLY'
+    : state === 'CLOSED'
+      ? 'CLOSED'
+      : hasConversation || state === 'ACTIVE'
+        ? 'OPEN'
+        : 'NO_CHAT';
   const colors: Record<string, string> = {
-    DOR:    'text-orange-600 bg-orange-50 border-orange-200',
-    REQ:    'text-blue-600 bg-blue-50 border-blue-200',
+    NO_CHAT: 'text-gray-600 bg-gray-50 border-gray-200',
+    NEEDS_REPLY: 'text-blue-600 bg-blue-50 border-blue-200',
+    OPEN:    'text-green-600 bg-green-50 border-green-200',
     CLOSED: 'text-gray-600 bg-gray-50 border-gray-200',
-    ACTIVE: 'text-green-600 bg-green-50 border-green-200',
+  };
+  const labels: Record<string, string> = {
+    NO_CHAT: 'No conversation',
+    NEEDS_REPLY: 'Needs reply',
+    OPEN: 'Open',
+    CLOSED: 'Closed',
   };
   return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${colors[s] ?? colors['DOR']}`}>
-      {s}
+    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${colors[s] ?? colors.NO_CHAT}`}>
+      {labels[s] ?? labels.NO_CHAT}
     </span>
   );
 }
 
-// ── Interaction circles ────────────────────────────────────────────────────────
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function Contacts() {
   const { confirm, confirmDialog } = useConfirmDialog();
@@ -314,6 +347,7 @@ export default function Contacts() {
     queryKey: ['contacts', search, groupFilter, tagFilter, statusFilter, chatStateFilter, page, perPage],
     queryFn: () => api.get(`/contacts?${params}`),
     placeholderData: prev => prev,
+    refetchInterval: 10000,
   });
 
   const { data: groupsData } = useQuery<{ groups: GroupObj[] }>({
@@ -466,7 +500,7 @@ export default function Contacts() {
           aria-label="Filter by chat state"
         >
           <option value="">All Chat States</option>
-          {CHAT_STATES.map(state => <option key={state} value={state}>{state}</option>)}
+          {CHAT_STATES.map(state => <option key={state.value} value={state.value}>{state.label}</option>)}
         </select>
 
         <div className="ml-auto flex items-center gap-3">
@@ -539,8 +573,7 @@ export default function Contacts() {
                 </th>
                 <th className="px-4 py-3 font-semibold">Phone Number</th>
                 <th className="px-4 py-3 font-semibold">Name ↑</th>
-                <th className="px-4 py-3 font-semibold">Chat State</th>
-                <th className="px-4 py-3 font-semibold">Interactions</th>
+                <th className="px-4 py-3 font-semibold">Chat Status</th>
                 <th className="px-4 py-3 font-semibold">Campaigns</th>
                 <th className="px-4 py-3 font-semibold">Group</th>
                 <th className="px-4 py-3 font-semibold">Tags</th>
@@ -560,13 +593,11 @@ export default function Contacts() {
                   <td className="px-4 py-3 font-mono text-gray-700">{contact.phone}</td>
                   <td className="px-4 py-3 font-medium">{contactDisplayName(contact)}</td>
                   <td className="px-4 py-3">
-                    <ChatStateBadge state={contact.chatState} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-end gap-2">
-                      <InteractionBadge count={0} label="ACTIVE" color="bg-green-500" />
-                      <InteractionBadge count={0} label="CLOSED" color="bg-gray-400" />
-                    </div>
+                    <ChatStateBadge
+                      state={contact.chatState}
+                      hasConversation={contact.hasConversation}
+                      unreadMessages={contact.unreadMessages}
+                    />
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">No campaigns</td>
                   <td className="px-4 py-3">

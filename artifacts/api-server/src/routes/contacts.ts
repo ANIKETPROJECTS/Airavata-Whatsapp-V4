@@ -14,6 +14,59 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+async function getLiveChatStateContactIds(userId: string, chatState: string) {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+  const [contactStates, latestRows, unreadRows] = await Promise.all([
+    ContactModel.find({ userId }).select("_id chatState").lean(),
+    MessageModel.aggregate([
+      { $match: { userId: userObjectId } },
+      { $group: { _id: "$contactId" } },
+    ]),
+    MessageModel.aggregate([
+      { $match: { userId: userObjectId, direction: "INBOUND" } },
+      {
+        $lookup: {
+          from: "contacts",
+          localField: "contactId",
+          foreignField: "_id",
+          as: "contact",
+        },
+      },
+      { $unwind: "$contact" },
+      {
+        $match: {
+          $expr: {
+            $gt: ["$createdAt", { $ifNull: ["$contact.lastReadAt", new Date(0)] }],
+          },
+        },
+      },
+      { $group: { _id: "$contactId" } },
+    ]),
+  ]);
+
+  const latestIds = new Set(latestRows.map(row => String(row._id)));
+  const unreadIds = new Set(unreadRows.map(row => String(row._id)));
+  const closedIds = new Set(
+    contactStates
+      .filter(contact => contact.chatState === "CLOSED")
+      .map(contact => String(contact._id)),
+  );
+
+  return contactStates
+    .map(contact => String(contact._id))
+    .filter(id => {
+      if (chatState === "NEEDS_REPLY" || chatState === "REQ") return unreadIds.has(id);
+      if (chatState === "CLOSED") return closedIds.has(id);
+      if (chatState === "OPEN" || chatState === "ACTIVE") {
+        return latestIds.has(id) && !unreadIds.has(id) && !closedIds.has(id);
+      }
+      if (chatState === "NO_CHAT" || chatState === "DOR") {
+        return !latestIds.has(id) && !closedIds.has(id);
+      }
+      return true;
+    });
+}
+
 // ── Helper: build a populated contact response object ─────────────────────────
 async function populateContact(doc: InstanceType<typeof ContactModel>) {
   return {
@@ -56,7 +109,10 @@ router.get("/contacts", async (req: AuthRequest, res) => {
     if (groupId) filter["groupId"] = groupId;
     if (tagId) filter["tags"] = tagId;
     if (status) filter["status"] = status;
-    if (chatState) filter["chatState"] = chatState;
+    if (chatState) {
+      const liveStateIds = await getLiveChatStateContactIds(req.user!.userId, chatState);
+      filter["_id"] = { $in: liveStateIds };
+    }
 
     const pageNum = Math.max(1, Number(page));
     const limitNum = Math.min(500, Math.max(1, Number(limit)));
