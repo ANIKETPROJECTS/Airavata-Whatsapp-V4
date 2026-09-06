@@ -92,8 +92,8 @@ router.post("/contacts", async (req: AuthRequest, res) => {
       name?: string; phone?: string; email?: string; tags?: string[]; groupId?: string;
     };
 
-    if (!name?.trim() || !phone?.trim()) {
-      res.status(400).json({ error: "name and phone are required" });
+    if (!phone?.trim()) {
+      res.status(400).json({ error: "phone is required" });
       return;
     }
 
@@ -102,13 +102,24 @@ router.post("/contacts", async (req: AuthRequest, res) => {
       const group = await GroupModel.findOne({ _id: groupId, userId: req.user!.userId });
       if (!group) { res.status(400).json({ error: "Invalid group" }); return; }
     }
+    const tagIds = [...new Set(tags ?? [])];
+    if (tagIds.length > 0) {
+      const validTags = await TagModel.find({
+        _id: { $in: tagIds },
+        userId: req.user!.userId,
+      }).select("_id").lean();
+      if (validTags.length !== tagIds.length) {
+        res.status(400).json({ error: "Invalid tag selection" });
+        return;
+      }
+    }
 
     const contact = await ContactModel.create({
       userId: req.user!.userId,
-      name: name.trim(),
+      name: name?.trim() || "NA",
       phone: phone.trim(),
       email: email?.trim(),
-      tags: tags ?? [],
+      tags: tagIds,
       groupId: groupId || undefined,
       groupIds: groupId ? [groupId] : [],
     });
@@ -150,13 +161,24 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
     const contact = await ContactModel.findOne({ _id: req.params["id"], userId: req.user!.userId });
     if (!contact) { res.status(404).json({ error: "Contact not found" }); return; }
 
-    if (name?.trim()) contact.name = name.trim();
+    if (name !== undefined) contact.name = name.trim() || "NA";
     if (phone?.trim()) contact.phone = phone.trim();
     if (email !== undefined) contact.email = email?.trim();
     if (attributes !== undefined) {
       contact.set("attributes", attributes);
     }
-    if (tags !== undefined) contact.tags = tags as unknown as typeof contact.tags;
+    if (tags !== undefined) {
+      const tagIds = [...new Set(tags)];
+      const validTags = await TagModel.find({
+        _id: { $in: tagIds },
+        userId: req.user!.userId,
+      }).select("_id").lean();
+      if (validTags.length !== tagIds.length) {
+        res.status(400).json({ error: "Invalid tag selection" });
+        return;
+      }
+      contact.tags = tagIds as unknown as typeof contact.tags;
+    }
     if (groupIds !== undefined) {
       const validGroups = await GroupModel.find({
         _id: { $in: groupIds },
@@ -168,6 +190,13 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
       (contact as unknown as { groupIds: unknown[] }).groupIds = groupIds as unknown[];
       contact.groupId = (groupIds[0] || undefined) as unknown as typeof contact.groupId;
     } else if (groupId !== undefined) {
+      if (groupId) {
+        const validGroup = await GroupModel.findOne({ _id: groupId, userId: req.user!.userId }).select("_id").lean();
+        if (!validGroup) {
+          res.status(400).json({ error: "Invalid group selection" });
+          return;
+        }
+      }
       contact.groupId = (groupId || undefined) as unknown as typeof contact.groupId;
       (contact as unknown as { groupIds: unknown[] }).groupIds = groupId ? [groupId] : [];
     }
@@ -266,8 +295,8 @@ router.post("/contacts/import", async (req: AuthRequest, res) => {
     const phoneIdx = headers.indexOf("phone");
     const emailIdx = headers.indexOf("email");
 
-    if (nameIdx === -1 || phoneIdx === -1) {
-      res.status(400).json({ error: "CSV must have 'name' and 'phone' columns" });
+    if (phoneIdx === -1) {
+      res.status(400).json({ error: "CSV must have a 'phone' column" });
       return;
     }
 
@@ -275,11 +304,11 @@ router.post("/contacts/import", async (req: AuthRequest, res) => {
       const cols = line.split(",").map(c => c.trim().replace(/"/g, ""));
       return {
         userId: req.user!.userId,
-        name: cols[nameIdx] ?? "",
+        name: nameIdx !== -1 ? cols[nameIdx] || "NA" : "NA",
         phone: cols[phoneIdx] ?? "",
         email: emailIdx !== -1 ? cols[emailIdx] : undefined,
       };
-    }).filter(d => d.name && d.phone);
+    }).filter(d => d.phone);
 
     const result = await ContactModel.insertMany(docs, { ordered: false }).catch((err) => err);
     const inserted = result.insertedCount ?? result.length ?? docs.length;

@@ -320,6 +320,7 @@ export default function Dashboard() {
   const deliveryRate = pct(stats?.totalDelivered ?? 0, stats?.totalSent ?? 0);
   const readRate = pct(stats?.totalRead ?? 0, stats?.totalDelivered ?? 0);
   const failureRate = pct(stats?.totalFailed ?? 0, stats?.totalSent ?? 0);
+  const metaLookbackLabel = `last ${statsData?.metaWindow?.lookbackDays ?? 365} days`;
 
   const isLoading = statsLoading || campaignsLoading;
 
@@ -384,7 +385,7 @@ export default function Dashboard() {
             <MetricCard
               label="Sent"
               value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)}
-              detail={statsData?.source?.sent === 'META' ? 'Meta total · last 12 months' : 'MongoDB message records'}
+              detail={statsData?.source?.sent === 'META' ? `Meta total · ${metaLookbackLabel}` : 'MongoDB message records'}
               icon={Send}
               iconSrc={sentCardIcon}
               large
@@ -402,7 +403,7 @@ export default function Dashboard() {
             <MetricCard
               label="Received"
               value={isLoading ? '—' : fmt(stats?.totalReceived ?? 0)}
-              detail={statsData?.source?.received === 'META' ? 'Meta total · last 12 months' : 'MongoDB inbound records'}
+               detail={statsData?.source?.received === 'META' ? `Meta total · ${metaLookbackLabel}` : 'MongoDB inbound records'}
               icon={MessageSquareReply}
               large
               tone="teal"

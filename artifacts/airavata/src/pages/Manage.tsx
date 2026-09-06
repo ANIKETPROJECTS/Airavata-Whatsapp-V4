@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useConfirmDialog } from '../components/ConfirmDialog';
+import { useLocation } from 'wouter';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ApiKeyRecord { id: string; label: string; keyPrefix: string; lastUsedAt: string | null; createdAt: string; }
@@ -884,9 +885,18 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 export default function Manage() {
-  const [activeTab, setActiveTab] = useState<TabId>('api');
+  const [location] = useLocation();
+  const requestedTab = new URLSearchParams(location.split('?')[1] ?? '').get('tab');
+  const initialTab: TabId = TABS.some(tab => tab.id === requestedTab)
+    ? requestedTab as TabId
+    : 'api';
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [loggingOut, setLoggingOut] = useState(false);
   const { logout } = useAuth();
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const handleLogout = async () => {
     setLoggingOut(true);

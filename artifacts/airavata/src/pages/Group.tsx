@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UsersRound, Plus, Users, Loader2, Trash2, X, Search, UserCheck } from 'lucide-react';
+import { UsersRound, Plus, Users, Loader2, Trash2, X, Search, UserCheck, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -15,8 +15,15 @@ interface Group {
 
 interface Contact {
   id: string;
-  name: string;
+  name?: string | null;
   phone: string;
+}
+
+function contactPickerName(contact: Contact) {
+  const name = contact.name?.trim();
+  return !name || name === contact.phone || name.replace(/\D/g, '') === contact.phone.replace(/\D/g, '')
+    ? 'NA'
+    : name;
 }
 
 // ── Contact multi-picker ──────────────────────────────────────────────────────
@@ -77,7 +84,7 @@ function ContactPicker({
                 className="accent-primary w-4 h-4 shrink-0"
               />
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{c.name}</p>
+                 <p className="text-sm font-medium text-gray-800 truncate">{contactPickerName(c)}</p>
                 <p className="text-xs text-gray-400 font-mono">{c.phone}</p>
               </div>
             </label>
@@ -101,6 +108,7 @@ export default function Group() {
   const { confirm, confirmDialog } = useConfirmDialog();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
@@ -140,7 +148,24 @@ export default function Group() {
     setNewName('');
     setNewDesc('');
     setSelectedContactIds(new Set());
+    setEditingGroup(null);
     setShowCreate(false);
+  }
+
+  function openCreate() {
+    setEditingGroup(null);
+    setNewName('');
+    setNewDesc('');
+    setSelectedContactIds(new Set());
+    setShowCreate(true);
+  }
+
+  function openEdit(group: Group) {
+    setEditingGroup(group);
+    setNewName(group.name);
+    setNewDesc(group.description ?? '');
+    setSelectedContactIds(new Set());
+    setShowCreate(true);
   }
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -148,12 +173,20 @@ export default function Group() {
     if (!newName.trim()) { toast.error('Group name is required'); return; }
     setCreating(true);
     try {
-      await api.post('/groups', {
-        name: newName.trim(),
-        description: newDesc.trim() || undefined,
-        contactIds: [...selectedContactIds],
-      });
-      toast.success('Group created!');
+      if (editingGroup) {
+        await api.put(`/groups/${editingGroup.id}`, {
+          name: newName.trim(),
+          description: newDesc.trim(),
+        });
+        toast.success('Group updated');
+      } else {
+        await api.post('/groups', {
+          name: newName.trim(),
+          description: newDesc.trim() || undefined,
+          contactIds: [...selectedContactIds],
+        });
+        toast.success('Group created!');
+      }
       qc.invalidateQueries({ queryKey: ['groups'] });
       qc.invalidateQueries({ queryKey: ['contacts'] });
       resetForm();
@@ -176,7 +209,7 @@ export default function Group() {
           <p className="text-sm text-gray-500">Organize your audience for targeted campaigns</p>
         </div>
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={openCreate}
           className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm text-sm"
         >
           <Plus className="w-4 h-4" /> Create Group
@@ -189,7 +222,7 @@ export default function Group() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg animate-in fade-in zoom-in-95 duration-200">
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Create New Group</h2>
+               <h2 className="text-lg font-semibold text-gray-900">{editingGroup ? 'Edit Group' : 'Create New Group'}</h2>
               <button onClick={resetForm} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                 <X className="w-4 h-4 text-gray-500" />
               </button>
@@ -223,27 +256,29 @@ export default function Group() {
                 />
               </div>
 
-              {/* Contact picker */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                  <UserCheck className="w-4 h-4 text-gray-400" />
-                  Add Contacts
-                  {contacts.length === 0 && (
-                    <span className="text-xs font-normal text-gray-400 ml-1">(loading…)</span>
+              {!editingGroup && (
+                /* Contact picker */
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-gray-400" />
+                    Add Contacts
+                    {contacts.length === 0 && (
+                      <span className="text-xs font-normal text-gray-400 ml-1">(loading…)</span>
+                    )}
+                  </label>
+                  {contacts.length > 0 ? (
+                    <ContactPicker
+                      contacts={contacts}
+                      selected={selectedContactIds}
+                      onToggle={toggleContact}
+                    />
+                  ) : (
+                    <div className="border rounded-lg px-3 py-4 flex items-center justify-center text-gray-400 text-sm gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Loading contacts…
+                    </div>
                   )}
-                </label>
-                {contacts.length > 0 ? (
-                  <ContactPicker
-                    contacts={contacts}
-                    selected={selectedContactIds}
-                    onToggle={toggleContact}
-                  />
-                ) : (
-                  <div className="border rounded-lg px-3 py-4 flex items-center justify-center text-gray-400 text-sm gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Loading contacts…
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-1">
@@ -260,7 +295,7 @@ export default function Group() {
                   className="px-5 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-60 transition-colors flex items-center gap-2"
                 >
                   {creating && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Create Group
+                  {editingGroup ? 'Save Changes' : 'Create Group'}
                 </button>
               </div>
             </form>
@@ -278,7 +313,7 @@ export default function Group() {
           <UsersRound className="w-12 h-12 opacity-30" />
           <p className="text-sm font-medium">No groups yet</p>
           <button
-            onClick={() => setShowCreate(true)}
+             onClick={openCreate}
             className="mt-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90"
           >
             Create your first group
@@ -292,8 +327,16 @@ export default function Group() {
                 <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                   <UsersRound className="w-6 h-6" />
                 </div>
-                <button
-                  onClick={async () => {
+                <div className="flex items-center gap-1">
+                 <button
+                   onClick={() => openEdit(g)}
+                   className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                   title="Edit group"
+                 >
+                   <Pencil className="w-4 h-4" />
+                 </button>
+                 <button
+                   onClick={async () => {
                     if (await confirm({
                       title: 'Delete this group?',
                       description: `Delete group "${g.name}"? Contacts in this group will be unassigned.`,
@@ -302,10 +345,11 @@ export default function Group() {
                       deleteMutation.mutate(g.id);
                     }
                   }}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                   className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                 >
+                   <Trash2 className="w-4 h-4" />
+                 </button>
+                </div>
               </div>
 
               <h3 className="font-bold text-gray-900 text-lg mb-1">{g.name}</h3>

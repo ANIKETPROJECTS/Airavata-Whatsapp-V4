@@ -17,6 +17,7 @@ import {
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 const ANALYTICS_GRAPH_BASE = "https://graph.facebook.com/v23.0";
 const META_ANALYTICS_LOOKBACK_DAYS = 365;
+const META_ANALYTICS_SAFE_LOOKBACK_DAYS = 270;
 
 /** Meta Cloud API recipient format: digits only, including the country code. */
 export function normalizeWhatsAppPhone(phone: string): string {
@@ -268,52 +269,72 @@ export async function getMetaMessagingAnalytics(
   }
 
   const end = Math.floor(now / 1000);
-  const start = Math.floor(
-    (now - META_ANALYTICS_LOOKBACK_DAYS * 24 * 60 * 60 * 1000) / 1000,
-  );
   const fetchAnalytics = async (productType?: number) => {
-    const fields = [
-      `analytics.start(${start})`,
-      `.end(${end})`,
-      ".granularity(DAY)",
-      ...(productType === undefined ? [] : [`.product_types(${productType})`]),
-    ].join("");
-    const params = new URLSearchParams({ fields });
-    const result = await graphFetchWithCreds<{
-      analytics?: {
-        data_points?: Array<{
-          sent?: number;
-          delivered?: number;
-          received?: number;
-        }>;
-      };
-    }>(
-      `/${encodeURIComponent(credentials.wabaId)}?${params.toString()}`,
-      credentials.accessToken,
-      {},
-      ANALYTICS_GRAPH_BASE,
-    );
+    const lookbackOptions = [META_ANALYTICS_LOOKBACK_DAYS, META_ANALYTICS_SAFE_LOOKBACK_DAYS];
+    let lastError: unknown;
 
-    const dataPoints = result.analytics?.data_points;
-    if (!Array.isArray(dataPoints)) {
-      throw new Error("Meta returned no messaging analytics data points");
+    for (const lookbackDays of lookbackOptions) {
+      const start = Math.floor(
+        (now - lookbackDays * 24 * 60 * 60 * 1000) / 1000,
+      );
+      const fields = [
+        `analytics.start(${start})`,
+        `.end(${end})`,
+        ".granularity(DAY)",
+        ...(productType === undefined ? [] : [`.product_types(${productType})`]),
+      ].join("");
+      const params = new URLSearchParams({ fields });
+
+      try {
+        const result = await graphFetchWithCreds<{
+          analytics?: {
+            data_points?: Array<{
+              sent?: number;
+              delivered?: number;
+              received?: number;
+            }>;
+          };
+        }>(
+          `/${encodeURIComponent(credentials.wabaId)}?${params.toString()}`,
+          credentials.accessToken,
+          {},
+          ANALYTICS_GRAPH_BASE,
+        );
+
+        const dataPoints = result.analytics?.data_points;
+        if (!Array.isArray(dataPoints)) {
+          throw new Error("Meta returned no messaging analytics data points");
+        }
+        return { dataPoints, start, lookbackDays };
+      } catch (error) {
+        lastError = error;
+        if (!(error instanceof Error) || !error.message.includes("subcode=2388336")) {
+          throw error;
+        }
+      }
     }
-    return dataPoints;
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error("Meta messaging analytics request failed");
   };
 
-  const [outboundDataPoints, inboundDataPoints] = await Promise.all([
+  const [outboundAnalytics, inboundAnalytics] = await Promise.all([
     fetchAnalytics(),
     // Meta product type 100 represents incoming messages from WhatsApp users.
     fetchAnalytics(100),
   ]);
+  const outboundDataPoints = outboundAnalytics.dataPoints;
+  const inboundDataPoints = inboundAnalytics.dataPoints;
+  const lookbackDays = Math.min(outboundAnalytics.lookbackDays, inboundAnalytics.lookbackDays);
 
   return {
     sent: outboundDataPoints.reduce((total, point) => total + (point.sent ?? 0), 0),
     delivered: outboundDataPoints.reduce((total, point) => total + (point.delivered ?? 0), 0),
     received: inboundDataPoints.reduce((total, point) => total + (point.received ?? 0), 0),
-    start,
+    start: Math.min(outboundAnalytics.start, inboundAnalytics.start),
     end,
-    lookbackDays: META_ANALYTICS_LOOKBACK_DAYS,
+    lookbackDays,
   };
 }
 

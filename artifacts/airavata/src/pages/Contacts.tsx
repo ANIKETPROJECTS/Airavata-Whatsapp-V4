@@ -11,7 +11,7 @@ interface TagObj   { id: string; name: string; color: string }
 interface GroupObj { id: string; name: string }
 interface Contact {
   id: string;
-  name: string;
+  name?: string | null;
   phone: string;
   email?: string | null;
   status: 'active' | 'blocked' | 'unsubscribed';
@@ -24,20 +24,42 @@ interface Contact {
 
 const CHAT_STATES = ['DOR', 'REQ', 'CLOSED', 'ACTIVE'] as const;
 
+function isPlaceholderName(name: string | null | undefined, phone: string) {
+  const normalizedName = name?.trim();
+  return !normalizedName || normalizedName === phone.trim() ||
+    normalizedName.replace(/\D/g, '') === phone.replace(/\D/g, '');
+}
+
+function contactDisplayName(contact: Pick<Contact, 'name' | 'phone'>) {
+  return isPlaceholderName(contact.name, contact.phone) ? 'NA' : contact.name!.trim();
+}
+
 // ── Edit Modal ─────────────────────────────────────────────────────────────────
 function EditModal({
-  contact, onClose, onSaved,
-}: { contact: Contact; onClose: () => void; onSaved: () => void }) {
-  const [name, setName]           = useState(contact.name);
+  contact, groups, tags, onClose, onSaved,
+}: {
+  contact: Contact;
+  groups: GroupObj[];
+  tags: TagObj[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName]           = useState(isPlaceholderName(contact.name, contact.phone) ? '' : contact.name ?? '');
   const [chatState, setChatState] = useState<string>(contact.chatState ?? 'DOR');
+  const [groupId, setGroupId]     = useState(contact.group?.id ?? '');
+  const [tagIds, setTagIds]       = useState<string[]>(contact.tags.map(tag => tag.id));
   const [saving, setSaving]       = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
     try {
-      await api.put(`/contacts/${contact.id}`, { name: name.trim(), chatState });
+      await api.put(`/contacts/${contact.id}`, {
+        name: name.trim(),
+        chatState,
+        groupId: groupId || null,
+        tags: tagIds,
+      });
       toast.success('Contact updated');
       onSaved();
       onClose();
@@ -95,6 +117,41 @@ function EditModal({
             </div>
           </div>
 
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-600">Group:</label>
+              <select
+                value={groupId}
+                onChange={e => setGroupId(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="">No group</option>
+                {groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-600">Tags:</label>
+              <div className="max-h-28 overflow-y-auto rounded-lg border p-2 space-y-1">
+                {tags.length === 0 ? (
+                  <p className="text-xs text-gray-400">Create tags from Manage Tags first.</p>
+                ) : tags.map(tag => (
+                  <label key={tag.id} className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={tagIds.includes(tag.id)}
+                      onChange={() => setTagIds(current => current.includes(tag.id)
+                        ? current.filter(id => id !== tag.id)
+                        : [...current, tag.id])}
+                      className="accent-primary"
+                    />
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                    {tag.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
             <button type="button" onClick={onClose}
@@ -143,7 +200,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-600">Upload a CSV with <code className="bg-gray-100 px-1 rounded">name</code>, <code className="bg-gray-100 px-1 rounded">phone</code>, optional <code className="bg-gray-100 px-1 rounded">email</code>.</p>
+          <p className="text-sm text-gray-600">Upload a CSV with <code className="bg-gray-100 px-1 rounded">phone</code>, optional <code className="bg-gray-100 px-1 rounded">name</code> and <code className="bg-gray-100 px-1 rounded">email</code>. Missing names display as <strong>NA</strong>.</p>
           <label className={`block w-full border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors ${importing ? 'opacity-50 pointer-events-none' : ''}`}>
             {importing ? (
               <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -219,6 +276,10 @@ export default function Contacts() {
     queryKey: ['groups'],
     queryFn: () => api.get('/groups'),
   });
+  const { data: tagsData } = useQuery<{ tags: TagObj[] }>({
+    queryKey: ['tags'],
+    queryFn: () => api.get('/tags'),
+  });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/contacts/${id}`),
@@ -238,6 +299,7 @@ export default function Contacts() {
 
   const contacts = data?.contacts ?? [];
   const groups   = groupsData?.groups ?? [];
+  const tags     = tagsData?.tags ?? [];
 
   const toggleSelect = (id: string) => setSelected(prev => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
@@ -255,7 +317,16 @@ export default function Contacts() {
     <div className="h-full flex flex-col bg-white">
       {confirmDialog}
       {editContact && (
-        <EditModal contact={editContact} onClose={() => setEditContact(null)} onSaved={invalidate} />
+        <EditModal
+          contact={editContact}
+          groups={groups}
+          tags={tags}
+          onClose={() => setEditContact(null)}
+          onSaved={() => {
+            invalidate();
+            qc.invalidateQueries({ queryKey: ['groups'] });
+          }}
+        />
       )}
       {showImport && (
         <ImportModal onClose={() => setShowImport(false)} onImported={invalidate} />
@@ -267,7 +338,7 @@ export default function Contacts() {
           {[
             { label: 'Contacts',      action: () => {} },
             { label: 'Manage Groups', action: () => navigate('/group') },
-            { label: 'Manage Tags',   action: () => navigate('/manage') },
+            { label: 'Manage Tags',   action: () => navigate('/manage?tab=tags') },
           ].map((tab, i) => (
             <button
               key={tab.label}
@@ -282,9 +353,6 @@ export default function Contacts() {
               {tab.label}
             </button>
           ))}
-        </div>
-        <div className="px-6 text-white text-sm font-semibold">
-          Tier 1 (1K/24 Hours)
         </div>
       </div>
 
@@ -412,7 +480,7 @@ export default function Contacts() {
                       checked={selected.has(contact.id)} onChange={() => toggleSelect(contact.id)} />
                   </td>
                   <td className="px-4 py-3 font-mono text-gray-700">{contact.phone}</td>
-                  <td className="px-4 py-3 font-medium">{contact.name}</td>
+                  <td className="px-4 py-3 font-medium">{contactDisplayName(contact)}</td>
                   <td className="px-4 py-3">
                     <ChatStateBadge state={contact.chatState} />
                   </td>
@@ -450,7 +518,7 @@ export default function Contacts() {
                         onClick={async () => {
                           if (await confirm({
                             title: 'Delete this contact?',
-                            description: `Delete ${contact.name}? This cannot be undone.`,
+                            description: `Delete ${contactDisplayName(contact)}? This cannot be undone.`,
                             confirmLabel: 'Delete contact',
                           })) deleteMutation.mutate(contact.id);
                         }}
