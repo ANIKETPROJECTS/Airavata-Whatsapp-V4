@@ -72,6 +72,45 @@ function applySamples(text: string, samples: Record<number, string>): string {
   });
 }
 
+/** Render the WhatsApp/Meta formatting syntax inside the phone preview. */
+function renderMetaPreview(text: string, samples: Record<number, string>): ReactNode[] {
+  const resolvedText = applySamples(text, samples);
+  const formattedToken = /(```[\s\S]*?```|\*[^*\n]+\*|_[^_\n]+_|~[^~\n]+~)/g;
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = formattedToken.exec(resolvedText)) !== null) {
+    if (match.index > cursor) {
+      nodes.push(<span key={`text-${key++}`}>{resolvedText.slice(cursor, match.index)}</span>);
+    }
+
+    const token = match[0];
+    if (token.startsWith('```')) {
+      nodes.push(
+        <code key={`code-${key++}`} className="rounded bg-gray-100 px-1 font-mono text-[0.95em]">
+          {token.slice(3, -3)}
+        </code>,
+      );
+    } else if (token.startsWith('*')) {
+      nodes.push(<strong key={`bold-${key++}`}>{token.slice(1, -1)}</strong>);
+    } else if (token.startsWith('_')) {
+      nodes.push(<em key={`italic-${key++}`}>{token.slice(1, -1)}</em>);
+    } else {
+      nodes.push(<del key={`strike-${key++}`}>{token.slice(1, -1)}</del>);
+    }
+
+    cursor = match.index + token.length;
+  }
+
+  if (cursor < resolvedText.length) {
+    nodes.push(<span key={`text-${key++}`}>{resolvedText.slice(cursor)}</span>);
+  }
+
+  return nodes;
+}
+
 function DevicePreviewFrame({
   device,
   children,
@@ -1283,7 +1322,7 @@ export default function AddTemplate() {
                         </div>
                       )}
                       <div className="whitespace-pre-wrap leading-relaxed break-words [overflow-wrap:anywhere]">
-                        {applySamples(bodyText, samples)}
+                        {renderMetaPreview(bodyText, samples)}
                       </div>
                       {footerText && (
                         <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500">
