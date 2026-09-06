@@ -68,6 +68,7 @@ const COUNTRIES = [
   { code: '974', label: 'Qatar (+974)' },
   { code: 'UNKNOWN', label: 'Other / Unknown' },
 ] as const;
+type CountryCount = { code: string; count: number };
 
 function isPlaceholderName(name: string | null | undefined, phone: string) {
   const normalizedName = name?.trim();
@@ -434,6 +435,11 @@ export default function Contacts() {
     queryKey: ['tags'],
     queryFn: () => api.get('/tags'),
   });
+  const { data: countriesData } = useQuery<{ countries: CountryCount[] }>({
+    queryKey: ['contact-countries'],
+    queryFn: () => api.get('/contacts/countries'),
+    staleTime: 300000,
+  });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/contacts/${id}`),
@@ -455,6 +461,8 @@ export default function Contacts() {
   const contacts = data?.contacts ?? [];
   const groups   = groupsData?.groups ?? [];
   const tags     = tagsData?.tags ?? [];
+  const countryCounts = new Map((countriesData?.countries ?? []).map(country => [country.code, country.count]));
+  const availableCountries = COUNTRIES.filter(country => (countryCounts.get(country.code) ?? 0) > 0);
 
   const toggleSelect = (id: string) => setSelected(prev => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
@@ -478,7 +486,8 @@ export default function Contacts() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['contacts'] });
   const refreshContactManagement = () => {
-    qc.invalidateQueries({ queryKey: ['contacts'] });
+      qc.invalidateQueries({ queryKey: ['contacts'] });
+      qc.invalidateQueries({ queryKey: ['contact-countries'] });
     qc.invalidateQueries({ queryKey: ['groups'] });
     qc.invalidateQueries({ queryKey: ['tags'] });
   };
@@ -536,22 +545,23 @@ export default function Contacts() {
       ) : (
       <>
       {/* Toolbar */}
-      <div className="px-6 py-3 border-b flex flex-wrap items-center gap-3">
-        <div className="relative">
+      <div className="overflow-x-auto border-b">
+        <div className="flex min-w-max items-center gap-2 px-6 py-3">
+        <div className="relative shrink-0">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search contacts..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className="pl-9 pr-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-56"
+           className="pl-9 pr-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none w-48"
           />
         </div>
 
         <select
           value={groupFilter}
           onChange={e => { setGroupFilter(e.target.value); setPage(1); }}
-          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          className="shrink-0 border rounded-lg px-2.5 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
           aria-label="Filter by group"
         >
           <option value="">All Groups</option>
@@ -561,7 +571,7 @@ export default function Contacts() {
         <select
           value={tagFilter}
           onChange={e => { setTagFilter(e.target.value); setPage(1); }}
-          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          className="shrink-0 border rounded-lg px-2.5 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
           aria-label="Filter by tag"
         >
           <option value="">All Tags</option>
@@ -571,17 +581,21 @@ export default function Contacts() {
         <select
           value={countryFilter}
           onChange={e => { setCountryFilter(e.target.value); setPage(1); setSelected(new Set()); }}
-          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          className="shrink-0 border rounded-lg px-2.5 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
           aria-label="Filter by country"
         >
           <option value="">All Countries</option>
-          {COUNTRIES.map(country => <option key={country.code} value={country.code}>{country.label}</option>)}
+          {availableCountries.map(country => (
+            <option key={country.code} value={country.code}>
+              {country.label} · {countryCounts.get(country.code)}
+            </option>
+          ))}
         </select>
 
         <select
           value={statusFilter}
           onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          className="shrink-0 border rounded-lg px-2.5 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
           aria-label="Filter by status"
         >
           <option value="">All Statuses</option>
@@ -593,14 +607,14 @@ export default function Contacts() {
         <select
           value={chatStateFilter}
           onChange={e => { setChatStateFilter(e.target.value); setPage(1); }}
-          className="border rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
+          className="shrink-0 border rounded-lg px-2.5 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20"
           aria-label="Filter by chat state"
         >
           <option value="">All Chat States</option>
           {CHAT_STATES.map(state => <option key={state.value} value={state.value}>{state.label}</option>)}
         </select>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {selected.size > 0 && (
             <button
               onClick={async () => {
@@ -660,6 +674,7 @@ export default function Contacts() {
               <img src={exportContactsIcon} alt="" className="h-5 w-5 object-contain" />
             </button>
           </div>
+        </div>
         </div>
       </div>
 
