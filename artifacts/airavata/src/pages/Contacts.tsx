@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Upload, Loader2, Users, X, ChevronDown, Download } from 'lucide-react';
+import { Search, Upload, Loader2, Users, X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -8,6 +8,8 @@ import { ContactGroupsManager, ContactTagsManager } from './ContactManagers';
 import contactViewIcon from '@assets/eye_1788722260035.png';
 import contactEditIcon from '@assets/pencil_1788722262751.png';
 import contactDeleteIcon from '@assets/bin_1788722265074.png';
+import importContactsIcon from '@assets/import_1788724282150.png';
+import exportContactsIcon from '@assets/export_1788724297530.png';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface TagObj   { id: string; name: string; color: string }
@@ -367,7 +369,7 @@ export default function Contacts() {
   const [statusFilter, setStatusFilter] = useState('');
   const [chatStateFilter, setChatStateFilter] = useState('');
   const [page, setPage]           = useState(1);
-  const [perPage, setPerPage]     = useState(25);
+  const perPage = 30;
   const [selected, setSelected]   = useState<Set<string>>(new Set());
   const [viewContact, setViewContact] = useState<Contact | null>(null);
   const [editContact, setEditContact] = useState<Contact | null>(null);
@@ -560,31 +562,22 @@ export default function Contacts() {
 
           <button
             onClick={() => setShowImport(true)}
-            className="px-3 py-2 text-sm border rounded-lg text-gray-600 hover:bg-gray-50 flex items-center gap-1.5"
+            className="rounded-lg border p-2 text-gray-600 hover:bg-gray-50"
+            title="Import contacts"
+            aria-label="Import contacts"
           >
-            <Upload className="w-4 h-4" /> Import
+            <img src={importContactsIcon} alt="" className="h-5 w-5 object-contain" />
           </button>
 
           <div className="relative">
             <button
               onClick={() => window.open('/api/contacts/export', '_blank')}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+              className="rounded-lg border border-primary/30 p-2 text-primary hover:bg-primary/5"
+              title="Export contacts"
+              aria-label="Export contacts"
             >
-              <Download className="w-4 h-4" /> Export
+              <img src={exportContactsIcon} alt="" className="h-5 w-5 object-contain" />
             </button>
-          </div>
-
-          <div className="flex items-center gap-1.5 border rounded-lg px-3 py-2">
-            <select
-              value={perPage}
-              onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
-              className="text-sm bg-transparent outline-none appearance-none"
-            >
-              {[10, 25, 50, 100].map(n => (
-                <option key={n} value={n}>{n} per page</option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
           </div>
         </div>
       </div>
