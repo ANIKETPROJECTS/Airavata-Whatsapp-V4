@@ -240,6 +240,14 @@ router.get("/contacts", async (req: AuthRequest, res) => {
             },
           },
           { $unwind: "$campaign" },
+          {
+            $match: {
+              $or: [
+                { "campaign.status": "SENDING" },
+                { status: { $in: ["ACTIVE", "WAITING"] } },
+              ],
+            },
+          },
           { $sort: { enrolledAt: -1, _id: -1 } },
         ])
       : [];
