@@ -44,7 +44,7 @@ function DevicePreviewFrame({
   if (device === 'ios') {
     return (
       <IPhoneMockup
-        screenWidth={260}
+        screenWidth={300}
         screenType="island"
         frameColor="#151922"
         statusbarColor="#f8fafc"
@@ -57,7 +57,7 @@ function DevicePreviewFrame({
 
   return (
     <AndroidMockup
-      screenWidth={260}
+      screenWidth={300}
       frameColor="#151922"
       statusbarColor="#f8fafc"
       navBarColor="#f8fafc"
@@ -830,7 +830,9 @@ export default function AddTemplate() {
                   title={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
                   aria-label={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
                   className={`flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition-colors ${
-                    previewDevice === device ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-50'
+                    previewDevice === device
+                      ? 'bg-slate-900 text-white shadow-md ring-1 ring-slate-900/10'
+                      : 'text-gray-600 hover:bg-slate-50'
                   }`}
                 >
                   <img
@@ -960,10 +962,6 @@ export default function AddTemplate() {
             </DevicePreviewFrame>
           </div>
 
-          <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-start gap-2 text-xs text-amber-800">
-            <MessageSquare className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
-            <span>Preview is approximate. Final rendering depends on the recipient's WhatsApp version.</span>
-          </div>
         </div>
       </div>
     </div>
