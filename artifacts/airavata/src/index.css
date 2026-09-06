@@ -176,6 +176,21 @@
   scrollbar-gutter: stable;
 }
 
+.add-template-page {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+}
+
+.add-template-page .text-sm {
+  font-size: 0.9375rem;
+  line-height: 1.45rem;
+}
+
+.add-template-page .text-xs {
+  font-size: 0.8125rem;
+  line-height: 1.2rem;
+}
+
 @layer base {
   * {
     @apply border-border;

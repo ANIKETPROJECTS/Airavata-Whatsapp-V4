@@ -421,11 +421,16 @@ export async function createMetaTemplate(params: CreateTemplateParams, userId: s
   // ── MARKETING / UTILITY ───────────────────────────────────────────────────
   if (!params.body) throw new Error("body is required for MARKETING and UTILITY templates");
 
-  type Component = { type: string; format?: string; text?: string };
+  type Component = {
+    type: string;
+    format?: string;
+    text?: string;
+    example?: { header_text?: string[]; header_handle?: string[] };
+  };
   const components: Component[] = [];
 
   if (params.headerType !== "NONE") {
-    const headerComp: Component & { example?: { header_text: string[] } } = {
+    const headerComp: Component = {
       type: "HEADER",
       format: params.headerType,
       ...(params.headerType === "TEXT" && params.headerContent ? { text: params.headerContent } : {}),
@@ -436,6 +441,9 @@ export async function createMetaTemplate(params: CreateTemplateParams, userId: s
         : false;
     if (headerHasVars && params.headerSample) {
       headerComp.example = { header_text: [params.headerSample] };
+    }
+    if (params.headerType !== "TEXT" && params.headerContent) {
+      headerComp.example = { header_handle: [params.headerContent] };
     }
     components.push(headerComp);
   }
@@ -640,6 +648,58 @@ export async function uploadMedia(
     throw new Error(`Media upload failed: ${data.error?.message ?? JSON.stringify(data)}`);
   }
   return data.id;
+}
+
+/**
+ * Upload a media sample for a message template and return Meta's header handle.
+ * Template examples use the resumable upload handle, which is different from
+ * the media ID returned by the regular message-media endpoint.
+ */
+export async function uploadTemplateHeaderMedia(
+  fileBuffer: Buffer,
+  mimeType: string,
+  userId: string,
+): Promise<string> {
+  const { accessToken } = await getCredentials(userId, { allowEnvFallback: false });
+  const appId = process.env.META_APP_ID?.trim();
+  if (!appId) {
+    throw new Error("Meta app ID is not configured for template media uploads");
+  }
+
+  const startResponse = await fetch(
+    `${GRAPH_BASE}/${encodeURIComponent(appId)}/uploads?file_length=${fileBuffer.byteLength}&file_type=${encodeURIComponent(mimeType)}`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+  const startData = (await startResponse.json()) as {
+    id?: string;
+    error?: { message?: string };
+  };
+  if (!startResponse.ok || !startData.id) {
+    throw new Error(`Template media session failed: ${startData.error?.message ?? JSON.stringify(startData)}`);
+  }
+
+  const bytes = new Uint8Array(fileBuffer.byteLength);
+  bytes.set(fileBuffer);
+  const uploadResponse = await fetch(`${GRAPH_BASE}/${startData.id}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "file_offset": "0",
+      "Content-Type": mimeType,
+    },
+    body: bytes,
+  });
+  const uploadData = (await uploadResponse.json()) as {
+    h?: string;
+    error?: { message?: string };
+  };
+  if (!uploadResponse.ok || !uploadData.h) {
+    throw new Error(`Template media upload failed: ${uploadData.error?.message ?? JSON.stringify(uploadData)}`);
+  }
+  return uploadData.h;
 }
 
 /** Derive the WhatsApp message type from a MIME type. */

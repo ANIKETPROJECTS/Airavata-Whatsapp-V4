@@ -1,4 +1,4 @@
-import { useState, useMemo, type ReactNode } from 'react';
+import { useState, useMemo, useRef, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown, Plus, Trash2, Phone, Link } from 'lucide-react';
@@ -22,6 +22,33 @@ interface BusinessProfile {
   logoUrl?: string | null;
   phoneNumber?: string | null;
 }
+
+const META_TEMPLATE_LANGUAGES = [
+  ['af', 'Afrikaans'], ['sq', 'Albanian'], ['ar', 'Arabic'], ['az', 'Azerbaijani'],
+  ['bn', 'Bengali'], ['bg', 'Bulgarian'], ['ca', 'Catalan'], ['zh_CN', 'Chinese (China)'],
+  ['zh_HK', 'Chinese (Hong Kong)'], ['zh_TW', 'Chinese (Taiwan)'], ['hr', 'Croatian'],
+  ['cs', 'Czech'], ['da', 'Danish'], ['nl', 'Dutch'], ['en_AU', 'English (Australia)'],
+  ['en_GB', 'English (UK)'], ['en_IN', 'English (India)'], ['en_US', 'English (US)'],
+  ['et', 'Estonian'], ['fi', 'Finnish'], ['fr', 'French'], ['de', 'German'],
+  ['el', 'Greek'], ['gu', 'Gujarati'], ['he', 'Hebrew'], ['hi', 'Hindi'],
+  ['hu', 'Hungarian'], ['id', 'Indonesian'], ['ga', 'Irish'], ['it', 'Italian'],
+  ['ja', 'Japanese'], ['kn', 'Kannada'], ['kk', 'Kazakh'], ['km', 'Khmer'],
+  ['ko', 'Korean'], ['lo', 'Lao'], ['lv', 'Latvian'], ['lt', 'Lithuanian'],
+  ['mk', 'Macedonian'], ['ms', 'Malay'], ['ml', 'Malayalam'], ['mr', 'Marathi'],
+  ['nb', 'Norwegian'], ['fa', 'Persian'], ['pl', 'Polish'], ['pt_BR', 'Portuguese (Brazil)'],
+  ['pt_PT', 'Portuguese (Portugal)'], ['pa', 'Punjabi'], ['ro', 'Romanian'],
+  ['ru', 'Russian'], ['sr', 'Serbian'], ['sk', 'Slovak'], ['sl', 'Slovenian'],
+  ['es_AR', 'Spanish (Argentina)'], ['es_ES', 'Spanish (Spain)'], ['es_MX', 'Spanish (Mexico)'],
+  ['sw', 'Swahili'], ['sv', 'Swedish'], ['ta', 'Tamil'], ['te', 'Telugu'],
+  ['th', 'Thai'], ['tr', 'Turkish'], ['uk', 'Ukrainian'], ['ur', 'Urdu'],
+  ['uz', 'Uzbek'], ['vi', 'Vietnamese'], ['zu', 'Zulu'],
+] as const;
+
+const HEADER_FILE_RULES = {
+  IMAGE: { accept: 'image/*', maxBytes: 5 * 1024 * 1024, label: 'PNG, JPG or WEBP up to 5 MB' },
+  VIDEO: { accept: 'video/*', maxBytes: 16 * 1024 * 1024, label: 'MP4 or 3GP up to 16 MB' },
+  DOCUMENT: { accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt', maxBytes: 100 * 1024 * 1024, label: 'PDF, Word, Excel or PowerPoint up to 100 MB' },
+} as const;
 
 /** Returns sorted unique variable numbers found in a string */
 function extractVars(text: string): number[] {
@@ -78,10 +105,16 @@ export default function AddTemplate() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('MARKETING');
   const [language, setLanguage] = useState('en_US');
+  const [languageSearch, setLanguageSearch] = useState('');
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   // ── MARKETING / UTILITY fields ─────────────────────────────────────────────
   const [headerType, setHeaderType] = useState('NONE');
   const [headerContent, setHeaderContent] = useState('');
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
+  const [headerPreviewUrl, setHeaderPreviewUrl] = useState<string | null>(null);
+  const [headerDragActive, setHeaderDragActive] = useState(false);
+  const headerFileInputRef = useRef<HTMLInputElement>(null);
   const [bodyText, setBodyText] = useState('Hi {{1}}, welcome to our service!');
   const [footerText, setFooterText] = useState('');
   const [samples, setSamples] = useState<Record<number, string>>({});
@@ -127,6 +160,58 @@ export default function AddTemplate() {
   });
   const previewBusinessName = businessProfile?.businessName?.trim() || user?.businessName || 'Your Business';
   const previewLogoUrl = businessProfile?.logoUrl ?? null;
+
+  const headerUploadMutation = useMutation<{ mediaId: string }, Error, File>({
+    mutationFn: async file => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('headerType', headerType);
+      return api.upload('/templates/header-media', formData);
+    },
+    onSuccess: result => {
+      setHeaderContent(result.mediaId);
+      toast.success('Header media uploaded');
+    },
+    onError: error => {
+      setHeaderContent('');
+      toast.error(error.message);
+    },
+  });
+
+  const clearHeaderFile = () => {
+    if (headerPreviewUrl) URL.revokeObjectURL(headerPreviewUrl);
+    setHeaderFile(null);
+    setHeaderPreviewUrl(null);
+    setHeaderContent('');
+    if (headerFileInputRef.current) headerFileInputRef.current.value = '';
+  };
+
+  const selectHeaderFile = (file: File) => {
+    if (headerType === 'NONE' || headerType === 'TEXT') return;
+    const rules = HEADER_FILE_RULES[headerType as keyof typeof HEADER_FILE_RULES];
+    const validMime = headerType === 'DOCUMENT'
+      ? !file.type.startsWith('image/') && !file.type.startsWith('video/') && !file.type.startsWith('audio/')
+      : file.type.startsWith(headerType === 'IMAGE' ? 'image/' : 'video/');
+    if (!validMime || file.size > rules.maxBytes) {
+      toast.error(`Choose a valid ${headerType.toLowerCase()} file. ${rules.label}.`);
+      return;
+    }
+    if (headerPreviewUrl) URL.revokeObjectURL(headerPreviewUrl);
+    setHeaderFile(file);
+    setHeaderPreviewUrl(URL.createObjectURL(file));
+    setHeaderContent('');
+    headerUploadMutation.mutate(file);
+  };
+
+  const selectHeaderType = (value: string) => {
+    if (value !== headerType) clearHeaderFile();
+    setHeaderType(value);
+  };
+
+  const selectedLanguage = META_TEMPLATE_LANGUAGES.find(([code]) => code === language) ?? META_TEMPLATE_LANGUAGES[0];
+  const filteredLanguages = META_TEMPLATE_LANGUAGES.filter(([code, label]) =>
+    `${label} ${code}`.toLowerCase().includes(languageSearch.toLowerCase().trim()),
+  );
 
   // ── AUTHENTICATION fields ──────────────────────────────────────────────────
   const [addSecurityRec, setAddSecurityRec] = useState(true);
@@ -200,7 +285,7 @@ export default function AddTemplate() {
         category,
         language,
         headerType,
-        headerContent: headerType === 'TEXT' ? headerContent : undefined,
+        headerContent: headerType !== 'NONE' ? headerContent : undefined,
         body: bodyText,
         footer: footerText || undefined,
         bodySamples: bodySamples.length > 0 ? bodySamples : undefined,
@@ -224,6 +309,18 @@ export default function AddTemplate() {
     if (!name.trim()) { toast.error('Template name is required'); return; }
     if (!isAuth) {
       if (!bodyText.trim()) { toast.error('Body is required'); return; }
+      if (headerType !== 'NONE' && headerType !== 'TEXT' && !headerFile) {
+        toast.error(`Add a ${headerType.toLowerCase()} header file before submitting`);
+        return;
+      }
+      if (headerType !== 'NONE' && headerType !== 'TEXT' && headerUploadMutation.isPending) {
+        toast.error('Wait for the header media upload to finish');
+        return;
+      }
+      if (headerType !== 'NONE' && headerType !== 'TEXT' && !headerContent) {
+        toast.error('The header media is still uploading');
+        return;
+      }
       for (const idx of allVars) {
         if (!samples[idx]?.trim()) {
           toast.error(`Please provide a sample value for {{${idx}}}`);
@@ -260,12 +357,12 @@ export default function AddTemplate() {
   };
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto bg-white lg:overflow-hidden">
+    <div className="add-template-page h-full min-h-0 overflow-y-auto bg-white lg:overflow-hidden">
       <div className="p-6 max-w-6xl mx-auto flex min-h-full flex-col lg:h-full lg:flex-row gap-8">
       {/* ── Form ─────────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-3 lg:pb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Add Template</h1>
-        <p className="text-sm text-gray-500 mb-6">Create a message template for Meta's approval.</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-1">Add Template</h1>
+        <p className="text-base text-gray-500 mb-6">Create a message template for Meta's approval.</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name */}
@@ -319,16 +416,56 @@ export default function AddTemplate() {
           {/* Language */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">Language</label>
-            <select
-              value={language}
-              onChange={e => setLanguage(e.target.value)}
-              className="w-full md:w-1/2 px-3 py-2 border rounded-lg text-sm bg-white outline-none"
-            >
-              <option value="en_US">English (US)</option>
-              <option value="en_GB">English (UK)</option>
-              <option value="hi_IN">Hindi</option>
-              <option value="es_ES">Spanish</option>
-            </select>
+            <div className="relative w-full md:w-1/2">
+              <button
+                type="button"
+                onClick={() => setLanguageOpen(open => !open)}
+                className="flex w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm outline-none transition-colors hover:border-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                aria-haspopup="listbox"
+                aria-expanded={languageOpen}
+              >
+                <span>{selectedLanguage[1]} <span className="text-gray-400">({selectedLanguage[0]})</span></span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${languageOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {languageOpen && (
+                <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+                  <div className="border-b border-gray-100 p-2">
+                    <input
+                      autoFocus
+                      type="search"
+                      value={languageSearch}
+                      onChange={e => setLanguageSearch(e.target.value)}
+                      placeholder="Search languages or codes..."
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="max-h-64 overflow-y-auto p-1" role="listbox">
+                    {filteredLanguages.length > 0 ? filteredLanguages.map(([code, label]) => (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => {
+                          setLanguage(code);
+                          setLanguageOpen(false);
+                          setLanguageSearch('');
+                        }}
+                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                          language === code ? 'bg-primary/10 font-medium text-primary' : 'text-gray-700'
+                        }`}
+                        role="option"
+                        aria-selected={language === code}
+                      >
+                        <span>{label}</span>
+                        <span className="text-xs text-gray-400">{code}</span>
+                      </button>
+                    )) : (
+                      <p className="px-3 py-4 text-center text-sm text-gray-500">No matching Meta languages</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-400">Choose from Meta's supported template locales.</p>
           </div>
 
           <div className="border-t pt-6 space-y-6">
@@ -441,7 +578,7 @@ export default function AddTemplate() {
                         <input
                           type="radio" name="headerType" value={opt.value}
                           checked={headerType === opt.value}
-                          onChange={() => setHeaderType(opt.value)}
+                           onChange={() => selectHeaderType(opt.value)}
                           className="hidden"
                         />
                         {opt.label}
@@ -459,9 +596,78 @@ export default function AddTemplate() {
                     />
                   )}
                   {headerType !== 'NONE' && headerType !== 'TEXT' && (
-                    <p className="text-xs text-gray-500">
-                      Media URL will be provided when sending the campaign.
-                    </p>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => headerFileInputRef.current?.click()}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') headerFileInputRef.current?.click();
+                      }}
+                      onDragEnter={event => {
+                        event.preventDefault();
+                        setHeaderDragActive(true);
+                      }}
+                      onDragOver={event => event.preventDefault()}
+                      onDragLeave={() => setHeaderDragActive(false)}
+                      onDrop={event => {
+                        event.preventDefault();
+                        setHeaderDragActive(false);
+                        const file = event.dataTransfer.files[0];
+                        if (file) selectHeaderFile(file);
+                      }}
+                      className={`relative flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-5 py-6 text-center transition-colors ${
+                        headerDragActive
+                          ? 'border-primary bg-primary/5'
+                          : 'border-gray-300 bg-gray-50/60 hover:border-primary/60 hover:bg-primary/[0.03]'
+                      }`}
+                    >
+                      <input
+                        ref={headerFileInputRef}
+                        type="file"
+                        accept={HEADER_FILE_RULES[headerType as keyof typeof HEADER_FILE_RULES].accept}
+                        className="hidden"
+                        onChange={event => {
+                          const file = event.target.files?.[0];
+                          if (file) selectHeaderFile(file);
+                        }}
+                      />
+                      {headerFile ? (
+                        <div className="flex w-full items-center gap-3 text-left">
+                          {headerPreviewUrl && headerType === 'IMAGE' ? (
+                            <img src={headerPreviewUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                          ) : (
+                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white text-primary shadow-sm">
+                              {headerType === 'VIDEO' ? <Video className="h-7 w-7" /> : <FileText className="h-7 w-7" />}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-gray-800">{headerFile.name}</p>
+                            <p className="text-xs text-gray-500">{(headerFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                            <p className={`mt-1 text-xs ${headerUploadMutation.isPending ? 'text-amber-600' : headerContent ? 'text-emerald-600' : 'text-red-600'}`}>
+                              {headerUploadMutation.isPending ? 'Uploading to Meta…' : headerContent ? 'Ready to use' : 'Upload failed — choose the file again'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={event => {
+                              event.stopPropagation();
+                              clearHeaderFile();
+                            }}
+                            className="rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-white hover:text-gray-800"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mb-2 rounded-full bg-white p-3 text-primary shadow-sm">
+                            {headerType === 'IMAGE' ? <ImageIcon className="h-6 w-6" /> : headerType === 'VIDEO' ? <Video className="h-6 w-6" /> : <FileText className="h-6 w-6" />}
+                          </div>
+                          <p className="text-sm font-medium text-gray-700">Drop your {headerType.toLowerCase()} here or click to browse</p>
+                          <p className="mt-1 text-xs text-gray-500">{HEADER_FILE_RULES[headerType as keyof typeof HEADER_FILE_RULES].label}</p>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -897,9 +1103,22 @@ export default function AddTemplate() {
                     <>
                       {headerType !== 'NONE' && (
                         <div className="mb-2 w-full aspect-video bg-gray-200 rounded flex items-center justify-center text-gray-400">
-                          {headerType === 'IMAGE' && <ImageIcon className="w-6 h-6" />}
-                          {headerType === 'VIDEO' && <Video className="w-6 h-6" />}
-                          {headerType === 'DOCUMENT' && <FileText className="w-6 h-6" />}
+                          {headerType === 'IMAGE' && headerPreviewUrl ? (
+                            <img src={headerPreviewUrl} alt="Template header preview" className="h-full w-full rounded object-cover" />
+                          ) : headerType === 'VIDEO' && headerPreviewUrl ? (
+                            <video src={headerPreviewUrl} muted className="h-full w-full rounded object-cover" />
+                          ) : headerType === 'DOCUMENT' && headerFile ? (
+                            <div className="flex flex-col items-center gap-2 px-4 text-center text-gray-500">
+                              <FileText className="h-8 w-8 text-primary" />
+                              <span className="line-clamp-2 text-xs font-medium">{headerFile.name}</span>
+                            </div>
+                          ) : (
+                            <>
+                              {headerType === 'IMAGE' && <ImageIcon className="w-6 h-6" />}
+                              {headerType === 'VIDEO' && <Video className="w-6 h-6" />}
+                              {headerType === 'DOCUMENT' && <FileText className="w-6 h-6" />}
+                            </>
+                          )}
                           {headerType === 'TEXT' && (
                             <span className="font-bold text-gray-800 p-2 text-center">
                               {applySamples(headerContent || 'HEADER TEXT', samples)}

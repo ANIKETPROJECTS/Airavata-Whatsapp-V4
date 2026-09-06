@@ -82,6 +82,9 @@ export const api = {
   post: <T>(path: string, body?: unknown, opts?: RequestInit) =>
     request<T>(path, { ...opts, method: "POST", json: body }),
 
+  upload: <T>(path: string, body: FormData, opts?: RequestInit) =>
+    request<T>(path, { ...opts, method: "POST", body }),
+
   put: <T>(path: string, body?: unknown, opts?: RequestInit) =>
     request<T>(path, { ...opts, method: "PUT", json: body }),
 

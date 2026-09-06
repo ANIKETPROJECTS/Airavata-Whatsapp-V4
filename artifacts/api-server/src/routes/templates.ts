@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import mongoose from "mongoose";
 import { TemplateModel } from "../models/Template";
 import { ContactModel } from "../models/Contact";
@@ -10,6 +11,7 @@ import {
   deleteMetaTemplate,
   getMetaTemplates,
   sendTemplateMessage,
+  uploadTemplateHeaderMedia,
   type TemplateCategory,
   type HeaderType,
   type CtaButtonParam,
@@ -17,6 +19,10 @@ import {
 import { withCreditCharge } from "../lib/creditDeduction";
 
 const router = Router();
+const headerMediaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +51,42 @@ function shape(t: Record<string, unknown> & { _id: unknown; createdAt?: unknown;
 }
 
 // ── Routes ─────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/templates/header-media
+ * Uploads a template header file to Meta's resumable template-media endpoint.
+ */
+router.post("/templates/header-media", authenticate, headerMediaUpload.single("file"), async (req: AuthRequest, res) => {
+  try {
+    const file = req.file;
+    const headerType = String(req.body?.headerType ?? "").toUpperCase();
+    const allowedTypes = new Set(["IMAGE", "VIDEO", "DOCUMENT"]);
+    if (!file || !allowedTypes.has(headerType)) {
+      return res.status(400).json({ error: "A valid image, video, or document header file is required" });
+    }
+
+    const validMime = headerType === "IMAGE"
+      ? file.mimetype.startsWith("image/")
+      : headerType === "VIDEO"
+        ? file.mimetype.startsWith("video/")
+        : !file.mimetype.startsWith("image/") &&
+          !file.mimetype.startsWith("video/") &&
+          !file.mimetype.startsWith("audio/");
+    if (!validMime) {
+      return res.status(400).json({ error: `The selected file does not match the ${headerType.toLowerCase()} header type` });
+    }
+
+    const mediaId = await uploadTemplateHeaderMedia(file.buffer, file.mimetype, req.user!.userId);
+    res.json({
+      mediaId,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+    });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Header media upload failed" });
+  }
+});
 
 /**
  * GET /api/templates
