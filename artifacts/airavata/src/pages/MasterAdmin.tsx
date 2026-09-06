@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
-import { ArrowDownAZ, ArrowUpAZ, BarChart3, CreditCard, FileBarChart, Grid2X2, LayoutDashboard, Link2Off, List, LogOut, PanelLeftClose, PanelLeftOpen, Plus, ReceiptText, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
+import { ArrowDownAZ, ArrowUpAZ, BarChart3, Bell, CreditCard, FileBarChart, Grid2X2, LayoutDashboard, Link2Off, List, LogOut, PanelLeftClose, PanelLeftOpen, Plus, ReceiptText, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { masterApi, masterTokenStorage } from '../lib/api';
 import { useFacebookEmbeddedSignup } from '../hooks/use-facebook-embedded-signup';
@@ -17,15 +17,20 @@ const PERMISSIONS = [
 
 type ManagedUser = {
   id: string; businessName: string; email: string; phone?: string | null; timezone?: string;
-  serviceStartDate?: string | null;
+  serviceStartDate?: string | null; servicePaidThroughDate?: string | null;
   role: 'admin' | 'client'; active: boolean; permissions: string[]; creditBalance: number;
   protectedAccount?: boolean;
   createdAt: string; connection: { connected: boolean; wabaId?: string | null; phoneNumberId?: string | null };
 };
 
 type UserForm = {
-  businessName: string; email: string; phone: string; serviceStartDate: string; password: string;
+  businessName: string; email: string; phone: string; serviceStartDate: string; servicePaidThroughDate: string; password: string;
   role: 'client' | 'admin'; active: boolean; permissions: string[];
+};
+
+type MasterNotification = {
+  id: string; userId: string; businessName: string; email: string; severity: 'WARNING' | 'ERROR';
+  title: string; message: string; paidThroughDate: string | null; active: boolean;
 };
 
 type CreditTransaction = {
@@ -78,7 +83,7 @@ function Pagination({ page, total, onPage }: { page: number; total: number; onPa
 }
 
 const blankForm: UserForm = {
-  businessName: '', email: '', phone: '', serviceStartDate: '', password: '', role: 'client', active: true,
+  businessName: '', email: '', phone: '', serviceStartDate: '', servicePaidThroughDate: '', password: '', role: 'client', active: true,
   permissions: PERMISSIONS.map(([value]) => value),
 };
 
@@ -141,10 +146,27 @@ function CreditTransactionsPanel({ users, transactions, visibleTransactions, tra
   </section>;
 }
 
+function MasterNotificationsPanel({ notifications, users, loading, onRefresh, onEdit }: { notifications: MasterNotification[]; users: ManagedUser[]; loading: boolean; onRefresh: () => void; onEdit: (user: ManagedUser) => void }) {
+  return <section className="rounded-xl bg-white border overflow-hidden">
+    <div className="p-6 border-b flex items-start justify-between gap-4">
+      <div className="flex items-start gap-3"><Bell className="w-6 h-6 text-amber-600 mt-0.5" /><div><h2 className="text-xl font-bold">Master Admin notifications</h2><p className="text-sm text-slate-500 mt-1">Payment reminders for accounts whose paid-through date is missing or has expired.</p></div></div>
+      <button onClick={onRefresh} className="shrink-0 rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-50">Refresh</button>
+    </div>
+    {loading ? <div className="p-10 text-center text-slate-500">Checking payment dates…</div> : notifications.length ? <div className="divide-y">{notifications.map(notification => {
+      const user = users.find(item => item.id === notification.userId);
+      return <div key={notification.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3"><div className={`mt-0.5 rounded-full p-2 ${notification.severity === 'ERROR' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}><Bell className="w-4 h-4" /></div><div><p className="font-semibold">{notification.title}</p><p className="text-sm text-slate-600 mt-1">{notification.message}</p><p className="text-xs text-slate-400 mt-1">{notification.email}{notification.active ? '' : ' · Inactive account'}</p></div></div>
+        {user && <button onClick={() => onEdit(user)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Update user</button>}
+      </div>;
+    })}</div> : <div className="p-10 text-center"><p className="font-semibold text-emerald-700">All payment dates are up to date</p><p className="text-sm text-slate-500 mt-1">No missing or expired paid-through dates were found.</p></div>}
+  </section>;
+}
+
 export default function MasterAdmin() {
   const [authenticated, setAuthenticated] = useState(Boolean(masterTokenStorage.get()));
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [masterNotifications, setMasterNotifications] = useState<MasterNotification[]>([]);
   const [analyticsRange, setAnalyticsRange] = useState(30);
   const [selected, setSelected] = useState<ManagedUser | null>(null);
   const [report, setReport] = useState<any>(null);
@@ -182,16 +204,17 @@ export default function MasterAdmin() {
   const pathParts = location.split('/').filter(Boolean);
   const reportUserId = pathParts[1] === 'reports' && pathParts[2] ? pathParts[2] : null;
   const page = reportUserId ? 'reports' : (pathParts[1] ?? 'dashboard');
-  const activePage = ['dashboard', 'users', 'credits', 'credit-transactions', 'connections', 'reports', 'analytics'].includes(page) ? page : 'dashboard';
+  const activePage = ['dashboard', 'users', 'notifications', 'credits', 'credit-transactions', 'connections', 'reports', 'analytics'].includes(page) ? page : 'dashboard';
 
   const load = async () => {
     setLoading(true);
     try {
-      const [userResult, analyticsResult] = await Promise.all([
+      const [userResult, analyticsResult, notificationResult] = await Promise.all([
         masterApi.get<{ users: ManagedUser[] }>('/master-admin/users'),
         masterApi.get(`/master-admin/analytics?range=${analyticsRange}`),
+        masterApi.get<{ notifications: MasterNotification[] }>('/master-admin/notifications'),
       ]);
-      setUsers(userResult.users); setAnalytics(analyticsResult);
+      setUsers(userResult.users); setAnalytics(analyticsResult); setMasterNotifications(notificationResult.notifications);
       const rateResult = await masterApi.get<typeof rates>('/master-admin/credit-setting');
       setRates({ authenticationRate: rateResult.authenticationRate, utilityRate: rateResult.utilityRate, marketingRate: rateResult.marketingRate });
     } catch { masterTokenStorage.clear(); setAuthenticated(false); }
@@ -212,7 +235,7 @@ export default function MasterAdmin() {
   const openCreate = () => { setSelected(null); setForm(blankForm); setShowForm(true); };
   const openEdit = (user: ManagedUser) => {
     setSelected(user);
-    setForm({ businessName: user.businessName, email: user.email, phone: normalizePhoneInput(user.phone ?? '').slice(-10), serviceStartDate: user.serviceStartDate ?? '', password: '', role: user.role, active: user.active, permissions: user.permissions });
+    setForm({ businessName: user.businessName, email: user.email, phone: normalizePhoneInput(user.phone ?? '').slice(-10), serviceStartDate: user.serviceStartDate ?? '', servicePaidThroughDate: user.servicePaidThroughDate ?? '', password: '', role: user.role, active: user.active, permissions: user.permissions });
     setShowForm(true);
   };
   const saveUser = async (event: FormEvent) => {
@@ -317,6 +340,7 @@ export default function MasterAdmin() {
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'users', label: 'User Management', icon: Users },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'credits', label: 'Credits & Rates', icon: CreditCard },
     { id: 'credit-transactions', label: 'Credit Transactions', icon: ReceiptText },
     { id: 'connections', label: 'Connections', icon: Link2Off },
@@ -365,7 +389,7 @@ export default function MasterAdmin() {
            {sidebarOpen && <p className="px-3 pt-3 pb-2 text-[11px] uppercase tracking-wider text-slate-500">Control center</p>}
           {navItems.map(item => {
             const Icon = item.icon;
-             return <button title={sidebarOpen ? undefined : item.label} key={item.id} onClick={() => goTo(item.id)} className={`w-full flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'} rounded-lg px-3 py-2.5 text-sm text-left transition ${activePage === item.id ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}><Icon className="w-4 h-4 shrink-0" />{sidebarOpen && item.label}</button>;
+              return <button title={sidebarOpen ? undefined : item.label} key={item.id} onClick={() => goTo(item.id)} className={`w-full flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'} rounded-lg px-3 py-2.5 text-sm text-left transition ${activePage === item.id ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}><Icon className="w-4 h-4 shrink-0" />{sidebarOpen && <><span className="flex-1">{item.label}</span>{item.id === 'notifications' && masterNotifications.length > 0 && <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-slate-950">{masterNotifications.length}</span>}</>}</button>;
           })}
         </nav>
          <div className="p-3 border-t border-slate-800 space-y-1"><button title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'} onClick={() => setSidebarOpen(value => !value)} className={`w-full flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'} rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white`}>{sidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}{sidebarOpen && 'Collapse sidebar'}</button><button onClick={signOut} className={`w-full flex items-center ${sidebarOpen ? 'gap-3' : 'justify-center'} rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white`}><LogOut className="w-4 h-4" />{sidebarOpen && 'Sign out'}</button></div>
@@ -378,6 +402,7 @@ export default function MasterAdmin() {
         </header>
          <main className="p-5 sm:p-8 max-w-[1500px] space-y-6">
            {(activePage === 'users' || activePage === 'connections') && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><span className="font-semibold">Protected Master Admin account:</span> the operator account is editable but cannot be deleted or disconnected, and it uses the ecosystem WhatsApp credentials directly.</div>}
+           {activePage === 'notifications' && <MasterNotificationsPanel notifications={masterNotifications} users={users} loading={loading} onRefresh={() => void load()} onEdit={openEdit} />}
           {activePage === 'credit-transactions' && <CreditTransactionsPanel users={users} transactions={transactions} visibleTransactions={visibleTransactions} transactionSearch={transactionSearch} setTransactionSearch={setTransactionSearch} transactionFilter={transactionFilter} setTransactionFilter={setTransactionFilter} transactionSort={transactionSort} setTransactionSort={setTransactionSort} transactionView={transactionView} setTransactionView={setTransactionView} />}
           {['users', 'connections', 'reports', 'credits'].includes(activePage) && <Pagination page={userPage} total={allVisibleUsers.length} onPage={setUserPage} />}
           {activePage === 'dashboard' && <>
@@ -395,9 +420,9 @@ export default function MasterAdmin() {
               </div>
               <div className="p-5 border-b"><AdminToolbar search={directorySearch} onSearch={setDirectorySearch} searchPlaceholder="Search users by name, email or phone…" filter={directoryFilter} onFilter={setDirectoryFilter} filterOptions={[['all', 'All users'], ['active', 'Active'], ['inactive', 'Inactive'], ['connected', 'Connected'], ['unconnected', 'Not connected']]} sort={directorySort} onSort={setDirectorySort} sortOptions={[['newest', 'Newest first'], ['name', 'Name A–Z'], ['credits', 'Highest balance']]} viewMode={directoryView} onViewMode={setDirectoryView} /></div>
               {loading ? <div className="p-10 text-center text-slate-500">Loading users…</div> : directoryView === 'list' ? (
-                <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-slate-500"><tr>{['User', 'Service start', 'Status', 'Access', 'Balance', 'Actions'].map(x => <th key={x} className="px-4 py-3 font-medium">{x}</th>)}</tr></thead><tbody className="divide-y">{visibleUsers.map(user => <tr key={user.id} className="hover:bg-slate-50"><td className="px-4 py-4"><div className="font-semibold">{user.businessName}</div><div className="text-xs text-slate-500">{user.email}</div></td><td className="px-4 py-4 whitespace-nowrap text-slate-600">{formatDateOnly(user.serviceStartDate)}</td><td className="px-4 py-4"><button onClick={() => toggleActive(user)} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${user.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{user.active ? 'Active' : 'Inactive'}</button></td><td className="px-4 py-4"><span className="text-xs text-slate-600">{user.permissions.length} sections</span></td><td className="px-4 py-4 font-semibold">{user.creditBalance.toLocaleString()}</td><td className="px-4 py-4"><div className="flex flex-wrap gap-1.5"><button onClick={() => openEdit(user)} className="rounded border px-2 py-1 hover:bg-slate-100">Edit</button><button onClick={() => removeUser(user)} className="rounded border px-2 py-1 text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button></div></td></tr>)}</tbody></table>{!visibleUsers.length && <div className="p-8 text-center text-sm text-slate-500">No users match these filters.</div>}</div>
+                <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-slate-500"><tr>{['User', 'Service start', 'Paid through', 'Status', 'Access', 'Balance', 'Actions'].map(x => <th key={x} className="px-4 py-3 font-medium">{x}</th>)}</tr></thead><tbody className="divide-y">{visibleUsers.map(user => <tr key={user.id} className="hover:bg-slate-50"><td className="px-4 py-4"><div className="font-semibold">{user.businessName}</div><div className="text-xs text-slate-500">{user.email}</div></td><td className="px-4 py-4 whitespace-nowrap text-slate-600">{formatDateOnly(user.serviceStartDate)}</td><td className={`px-4 py-4 whitespace-nowrap ${!user.servicePaidThroughDate ? 'text-amber-700' : 'text-slate-600'}`}>{formatDateOnly(user.servicePaidThroughDate)}</td><td className="px-4 py-4"><button onClick={() => toggleActive(user)} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${user.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{user.active ? 'Active' : 'Inactive'}</button></td><td className="px-4 py-4"><span className="text-xs text-slate-600">{user.permissions.length} sections</span></td><td className="px-4 py-4 font-semibold">{user.creditBalance.toLocaleString()}</td><td className="px-4 py-4"><div className="flex flex-wrap gap-1.5"><button onClick={() => openEdit(user)} className="rounded border px-2 py-1 hover:bg-slate-100">Edit</button><button onClick={() => removeUser(user)} className="rounded border px-2 py-1 text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></button></div></td></tr>)}</tbody></table>{!visibleUsers.length && <div className="p-8 text-center text-sm text-slate-500">No users match these filters.</div>}</div>
               ) : (
-                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 p-5">{visibleUsers.map(user => <div key={user.id} className="rounded-xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{user.businessName}</p><p className="text-xs text-slate-500 mt-1">{user.email}</p></div><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${user.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{user.active ? 'Active' : 'Inactive'}</span></div><div className="mt-5 grid grid-cols-3 gap-3 text-sm"><div><p className="text-xs text-slate-500">Service start</p><p className="font-semibold">{formatDateOnly(user.serviceStartDate)}</p></div><div><p className="text-xs text-slate-500">Access</p><p className="font-semibold">{user.permissions.length} sections</p></div><div><p className="text-xs text-slate-500">Balance</p><p className="font-semibold">{user.creditBalance.toLocaleString()}</p></div></div><div className="mt-4 flex gap-2"><button onClick={() => openEdit(user)} className="flex-1 rounded-lg border px-2 py-1.5 text-sm">Edit</button><button onClick={() => toggleActive(user)} className="flex-1 rounded-lg border px-2 py-1.5 text-sm">{user.active ? 'Deactivate' : 'Activate'}</button></div></div>)}{!visibleUsers.length && <div className="col-span-full p-8 text-center text-sm text-slate-500">No users match these filters.</div>}</div>
+                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 p-5">{visibleUsers.map(user => <div key={user.id} className="rounded-xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{user.businessName}</p><p className="text-xs text-slate-500 mt-1">{user.email}</p></div><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${user.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{user.active ? 'Active' : 'Inactive'}</span></div><div className="mt-5 grid grid-cols-3 gap-3 text-sm"><div><p className="text-xs text-slate-500">Service start</p><p className="font-semibold">{formatDateOnly(user.serviceStartDate)}</p></div><div><p className="text-xs text-slate-500">Paid through</p><p className={`font-semibold ${!user.servicePaidThroughDate ? 'text-amber-700' : ''}`}>{formatDateOnly(user.servicePaidThroughDate)}</p></div><div><p className="text-xs text-slate-500">Balance</p><p className="font-semibold">{user.creditBalance.toLocaleString()}</p></div></div><div className="mt-4 flex gap-2"><button onClick={() => openEdit(user)} className="flex-1 rounded-lg border px-2 py-1.5 text-sm">Edit</button><button onClick={() => toggleActive(user)} className="flex-1 rounded-lg border px-2 py-1.5 text-sm">{user.active ? 'Deactivate' : 'Activate'}</button></div></div>)}{!visibleUsers.length && <div className="col-span-full p-8 text-center text-sm text-slate-500">No users match these filters.</div>}</div>
               )}
             </section>
           )}
@@ -408,7 +433,7 @@ export default function MasterAdmin() {
         </main>
       </div>
       {creditUser && <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"><form onSubmit={submitCreditAdjustment} className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl"><div className="flex items-start justify-between mb-5"><div><h2 className="text-xl font-bold">Adjust credits</h2><p className="text-sm text-slate-500 mt-1">{creditUser.businessName} · {creditUser.creditBalance.toLocaleString()} current credits</p></div><button type="button" onClick={() => setCreditUser(null)}><X /></button></div><div className="grid grid-cols-2 gap-3 mb-4"><button type="button" onClick={() => setCreditForm({...creditForm, direction: 'add'})} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${creditForm.direction === 'add' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : ''}`}>Add credits</button><button type="button" onClick={() => setCreditForm({...creditForm, direction: 'deduct'})} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${creditForm.direction === 'deduct' ? 'border-amber-500 bg-amber-50 text-amber-700' : ''}`}>Deduct credits</button></div><label className="block text-sm font-medium">Amount<input required min="1" max="100000" step="1" inputMode="numeric" type="number" value={creditForm.amount} onChange={e => setCreditForm({...creditForm, amount: e.target.value.replace(/\D/g, '').slice(0, 6)})} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="e.g. 100" /></label><label className="block text-sm font-medium mt-4">Reason<input required maxLength={500} value={creditForm.description} onChange={e => setCreditForm({...creditForm, description: e.target.value})} className="mt-1 w-full rounded-lg border px-3 py-2" placeholder="e.g. Monthly plan allocation" /></label><p className="mt-3 text-xs text-slate-500">This adjustment will be recorded in the credit transaction history.</p><button className={`mt-5 w-full rounded-lg py-2.5 font-semibold text-white ${creditForm.direction === 'add' ? 'bg-emerald-600' : 'bg-amber-600'}`}>{creditForm.direction === 'add' ? 'Add credits' : 'Deduct credits'}</button></form></div>}
-          {showForm && <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"><form onSubmit={saveUser} className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6"><div className="flex justify-between items-center mb-5"><h2 className="text-xl font-bold">{selected ? 'Edit user' : 'Add user'}</h2><button type="button" onClick={() => setShowForm(false)}><X /></button></div><div className="grid sm:grid-cols-2 gap-4"><label className="text-sm font-medium">Business name<input required minLength={2} maxLength={100} value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value.slice(0, 100)})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">Email<input required type="email" maxLength={254} value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">Phone number<input required={!selected} pattern="[0-9]{10}" minLength={10} maxLength={10} inputMode="numeric" type="tel" value={form.phone} onChange={e => setForm({...form, phone: normalizePhoneInput(e.target.value)})} className="mt-1 w-full border rounded-lg px-3 py-2" placeholder="9876543210" /></label><label className="text-sm font-medium">Service start date<input required={!selected} type="date" value={form.serviceStartDate} onChange={e => setForm({...form, serviceStartDate: e.target.value})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">{selected ? 'New password (optional)' : 'Password'}<input required={!selected} minLength={8} maxLength={128} type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">Role<select value={form.role} onChange={e => setForm({...form, role: e.target.value as UserForm['role']})} className="mt-1 w-full border rounded-lg px-3 py-2"><option value="client">Client</option><option value="admin">Admin</option></select></label><label className="flex items-center gap-2 text-sm mt-6"><input type="checkbox" checked={form.active} onChange={e => setForm({...form, active: e.target.checked})} /> Account active</label></div><div className="mt-5"><h3 className="font-semibold mb-2">Section access</h3><div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{PERMISSIONS.map(([value, label]) => <label key={value} className="flex gap-2 items-center text-sm"><input type="checkbox" checked={form.permissions.includes(value)} onChange={e => setForm({...form, permissions: e.target.checked ? [...form.permissions, value] : form.permissions.filter(item => item !== value)})} />{label}</label>)}</div></div><button className="mt-6 w-full rounded-lg bg-emerald-600 text-white py-2.5 font-semibold">Save user</button></form></div>}
+          {showForm && <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"><form onSubmit={saveUser} className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6"><div className="flex justify-between items-center mb-5"><h2 className="text-xl font-bold">{selected ? 'Edit user' : 'Add user'}</h2><button type="button" onClick={() => setShowForm(false)}><X /></button></div><div className="grid sm:grid-cols-2 gap-4"><label className="text-sm font-medium">Business name<input required minLength={2} maxLength={100} value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value.slice(0, 100)})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">Email<input required type="email" maxLength={254} value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">Phone number<input required={!selected} pattern="[0-9]{10}" minLength={10} maxLength={10} inputMode="numeric" type="tel" value={form.phone} onChange={e => setForm({...form, phone: normalizePhoneInput(e.target.value)})} className="mt-1 w-full border rounded-lg px-3 py-2" placeholder="9876543210" /></label><label className="text-sm font-medium">Service start date<input required={!selected} type="date" value={form.serviceStartDate} onChange={e => setForm({...form, serviceStartDate: e.target.value})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">Paid through date <span className="font-normal text-slate-500">(optional)</span><input type="date" value={form.servicePaidThroughDate} onChange={e => setForm({...form, servicePaidThroughDate: e.target.value})} className="mt-1 w-full border rounded-lg px-3 py-2" /><span className="mt-1 block text-xs font-normal text-slate-500">Leave blank until payment is recorded.</span></label><label className="text-sm font-medium">{selected ? 'New password (optional)' : 'Password'}<input required={!selected} minLength={8} maxLength={128} type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="mt-1 w-full border rounded-lg px-3 py-2" /></label><label className="text-sm font-medium">Role<select value={form.role} onChange={e => setForm({...form, role: e.target.value as UserForm['role']})} className="mt-1 w-full border rounded-lg px-3 py-2"><option value="client">Client</option><option value="admin">Admin</option></select></label><label className="flex items-center gap-2 text-sm mt-6"><input type="checkbox" checked={form.active} onChange={e => setForm({...form, active: e.target.checked})} /> Account active</label></div><div className="mt-5"><h3 className="font-semibold mb-2">Section access</h3><div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{PERMISSIONS.map(([value, label]) => <label key={value} className="flex gap-2 items-center text-sm"><input type="checkbox" checked={form.permissions.includes(value)} onChange={e => setForm({...form, permissions: e.target.checked ? [...form.permissions, value] : form.permissions.filter(item => item !== value)})} />{label}</label>)}</div></div><button className="mt-6 w-full rounded-lg bg-emerald-600 text-white py-2.5 font-semibold">Save user</button></form></div>}
     </div>
   );
 }

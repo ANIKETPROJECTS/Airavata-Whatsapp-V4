@@ -37,6 +37,17 @@ function isValidServiceStartDate(value: unknown): value is string {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+function todayInIndia(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 function validId(id: string): mongoose.Types.ObjectId | null {
   return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null;
 }
@@ -50,6 +61,7 @@ function publicUser(user: any, connection?: any) {
     email: user.email,
     phone: user.phone ?? null,
     serviceStartDate: user.serviceStartDate ?? null,
+    servicePaidThroughDate: user.servicePaidThroughDate ?? null,
     timezone: user.timezone ?? "Asia/Kolkata",
     role: user.role ?? "client",
     active: user.active !== false,
@@ -112,7 +124,7 @@ router.get("/master-admin/users", async (_req, res) => {
 
 router.post("/master-admin/users", async (req, res) => {
   try {
-    const { businessName, email, password, phone, serviceStartDate, role, permissions, active } = req.body as Record<string, any>;
+    const { businessName, email, password, phone, serviceStartDate, servicePaidThroughDate, role, permissions, active } = req.body as Record<string, any>;
     if (
       typeof businessName !== "string" ||
       businessName.trim().length < 2 ||
@@ -123,6 +135,7 @@ router.post("/master-admin/users", async (req, res) => {
       typeof phone !== "string" ||
       !PHONE_PATTERN.test(phone) ||
       !isValidServiceStartDate(serviceStartDate) ||
+      (servicePaidThroughDate !== undefined && servicePaidThroughDate !== "" && !isValidServiceStartDate(servicePaidThroughDate)) ||
       typeof password !== "string" ||
       password.length < 8 ||
       password.length > 128
@@ -141,6 +154,7 @@ router.post("/master-admin/users", async (req, res) => {
       passwordHash: await bcrypt.hash(password, 12),
       phone: phone?.trim(),
       serviceStartDate,
+      servicePaidThroughDate: servicePaidThroughDate || null,
       role: role === "admin" ? "admin" : "client",
       permissions: Array.isArray(permissions) ? permissions : DEFAULT_PERMISSIONS,
       active: active !== false,
@@ -167,7 +181,7 @@ router.put("/master-admin/users/:id", async (req, res) => {
   try {
     const id = validId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
-    const { businessName, email, phone, serviceStartDate, timezone, role, permissions, active, password } = req.body as Record<string, any>;
+    const { businessName, email, phone, serviceStartDate, servicePaidThroughDate, timezone, role, permissions, active, password } = req.body as Record<string, any>;
     const update: Record<string, any> = {};
     if (typeof businessName === "string" && businessName.trim()) {
       if (businessName.trim().length < 2 || businessName.trim().length > 100) {
@@ -198,6 +212,15 @@ router.put("/master-admin/users/:id", async (req, res) => {
         return;
       }
       update.serviceStartDate = serviceStartDate;
+    }
+    if (servicePaidThroughDate === null || servicePaidThroughDate === "") {
+      update.servicePaidThroughDate = null;
+    } else if (servicePaidThroughDate !== undefined) {
+      if (!isValidServiceStartDate(servicePaidThroughDate)) {
+        res.status(400).json({ error: "Paid-through date must be a valid date" });
+        return;
+      }
+      update.servicePaidThroughDate = servicePaidThroughDate;
     }
     if (typeof timezone === "string" && timezone.trim()) update.timezone = timezone.trim();
     if (role === "admin" || role === "client") update.role = role;
@@ -231,6 +254,40 @@ router.put("/master-admin/users/:id", async (req, res) => {
     res.json({ user: publicUser(user, connection) });
   } catch (err: any) {
     res.status(err?.code === 11000 ? 409 : 500).json({ error: err?.code === 11000 ? "Email already exists" : "Unable to update user" });
+  }
+});
+
+router.get("/master-admin/notifications", async (_req, res) => {
+  try {
+    const today = todayInIndia();
+    const users = await UserModel.find({ isProtectedMasterAdmin: { $ne: true } })
+      .select("_id businessName email servicePaidThroughDate active")
+      .sort({ servicePaidThroughDate: 1, businessName: 1 })
+      .lean();
+
+    const notifications = users.flatMap((user) => {
+      const paidThrough = user.servicePaidThroughDate;
+      if (paidThrough && paidThrough >= today) return [];
+      const missing = !paidThrough;
+      return [{
+        id: `service-payment:${String(user._id)}:${paidThrough ?? "missing"}`,
+        userId: String(user._id),
+        businessName: user.businessName,
+        email: user.email,
+        severity: missing ? "WARNING" : "ERROR",
+        title: missing ? "Payment date not recorded" : "Service payment expired",
+        message: missing
+          ? `${user.businessName} does not have a paid-through date recorded.`
+          : `${user.businessName} was paid only through ${paidThrough}. Update the account after payment is received.`,
+        paidThroughDate: paidThrough ?? null,
+        active: user.active !== false,
+      }];
+    });
+
+    res.json({ notifications, unreadCount: notifications.length, today });
+  } catch (error) {
+    req.log?.error?.(error, "Unable to load Master Admin notifications");
+    res.status(500).json({ error: "Unable to load Master Admin notifications" });
   }
 });
 
@@ -373,7 +430,7 @@ router.get("/master-admin/users/:id/report", async (req, res) => {
     .select("type amount balanceAfter description createdAt")
     .lean();
   const user = await UserModel.findById(id)
-    .select("businessName email createdAt serviceStartDate creditBalance active role metaWabaConnected isProtectedMasterAdmin")
+    .select("businessName email createdAt serviceStartDate servicePaidThroughDate creditBalance active role metaWabaConnected isProtectedMasterAdmin")
     .lean();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   const protectedAccount = isProtectedMasterAdminUser(user);

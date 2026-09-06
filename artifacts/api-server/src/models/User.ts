@@ -15,6 +15,7 @@ const userSchema = new Schema(
     phone: { type: String, trim: true },
     // Date-only business field; keep it as YYYY-MM-DD to avoid timezone shifts.
     serviceStartDate: { type: String, trim: true, match: /^\d{4}-\d{2}-\d{2}$/ },
+    servicePaidThroughDate: { type: String, trim: true, match: /^\d{4}-\d{2}-\d{2}$/ },
     timezone: { type: String, default: "Asia/Kolkata" },
     role: { type: String, enum: ["admin", "client"], default: "client" },
     active: { type: Boolean, default: true, index: true },
