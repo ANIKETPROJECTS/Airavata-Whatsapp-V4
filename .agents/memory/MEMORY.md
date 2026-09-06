@@ -14,4 +14,5 @@
 - [Per-user MongoDB isolation](per-user-mongodb-isolation.md) — use immutable user-ID database names, central control-plane records, and copy/verify migration for existing tenants.
 - [Protected operator account](protected-operator-account.md) — the designated operator stays editable, cannot be deleted or disconnected, and uses deployment-level WhatsApp credentials directly.
 - [Dashboard message reporting](dashboard-message-reporting.md) — delivery health counts unique outbound messages across the workspace; campaign reports stay campaign-only.
+- [Meta dashboard analytics](meta-dashboard-analytics.md) — sent/delivered use Meta WABA analytics within a one-year window; read/failed remain webhook-derived.
 - [Service start date](service-start-date.md) — keep each user’s editable service date as a timezone-safe calendar value.

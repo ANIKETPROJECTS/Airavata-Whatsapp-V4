@@ -15,6 +15,7 @@ import {
 } from "./protectedMasterAdmin";
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
+const META_ANALYTICS_LOOKBACK_DAYS = 365;
 
 /** Meta Cloud API recipient format: digits only, including the country code. */
 export function normalizeWhatsAppPhone(phone: string): string {
@@ -236,6 +237,59 @@ export async function getCredentials(
     "This sends under Airavata's own WhatsApp number and bills the wrong account.",
   );
   return { phoneNumberId, accessToken };
+}
+
+export interface MetaMessagingAnalytics {
+  sent: number;
+  delivered: number;
+  start: number;
+  end: number;
+  lookbackDays: number;
+}
+
+/**
+ * Fetch Meta's authoritative messaging totals for the connected user's WABA.
+ *
+ * Meta's messaging analytics currently exposes sent and delivered totals. Read
+ * and failed message totals are not part of this endpoint, so those remain
+ * derived from the per-message status webhooks stored in the tenant database.
+ */
+export async function getMetaMessagingAnalytics(
+  userId: string,
+  now = Date.now(),
+): Promise<MetaMessagingAnalytics> {
+  const credentials = await getCredentials(userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) {
+    throw new Error("Stored WhatsApp credentials are missing a WABA ID");
+  }
+
+  const end = Math.floor(now / 1000);
+  const start = Math.floor(
+    (now - META_ANALYTICS_LOOKBACK_DAYS * 24 * 60 * 60 * 1000) / 1000,
+  );
+  const fields = `analytics.start(${start}).end(${end}).granularity(DAY)`;
+  const params = new URLSearchParams({ fields });
+  const result = await graphFetchWithCreds<{
+    analytics?: {
+      data_points?: Array<{
+        sent?: number;
+        delivered?: number;
+      }>;
+    };
+  }>(`/${encodeURIComponent(credentials.wabaId)}?${params.toString()}`, credentials.accessToken);
+
+  const dataPoints = result.analytics?.data_points;
+  if (!Array.isArray(dataPoints)) {
+    throw new Error("Meta returned no messaging analytics data points");
+  }
+
+  return {
+    sent: dataPoints.reduce((total, point) => total + (point.sent ?? 0), 0),
+    delivered: dataPoints.reduce((total, point) => total + (point.delivered ?? 0), 0),
+    start,
+    end,
+    lookbackDays: META_ANALYTICS_LOOKBACK_DAYS,
+  };
 }
 
 /** Extract variable indices from a template body string, e.g. "Hi {{1}}, your OTP is {{2}}" → [1, 2] */

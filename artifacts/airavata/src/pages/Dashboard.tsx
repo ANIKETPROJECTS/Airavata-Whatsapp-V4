@@ -23,6 +23,21 @@ interface CampaignStats {
   campaignCount: number;
 }
 
+interface MessageStatsResponse {
+  stats: Omit<CampaignStats, 'campaignCount'>;
+  source?: {
+    sent: 'META' | 'MONGODB';
+    delivered: 'META' | 'MONGODB';
+    read: 'MONGODB';
+    failed: 'MONGODB';
+  };
+  metaWindow?: {
+    start: number;
+    end: number;
+    lookbackDays: number;
+  } | null;
+}
+
 interface Campaign {
   id: string;
   name: string;
@@ -218,7 +233,7 @@ export default function Dashboard() {
     enabled: Boolean(user?.metaWabaConnected),
     refetchInterval: 60_000,
   });
-  const { data: statsData, isLoading: statsLoading } = useQuery<{ stats: CampaignStats }>({
+  const { data: statsData, isLoading: statsLoading } = useQuery<MessageStatsResponse>({
     queryKey: ['messages-stats'],
     queryFn: () => api.get('/messages/stats/summary'),
     refetchInterval: 30_000,
@@ -355,10 +370,26 @@ export default function Dashboard() {
         <section>
           <SectionHeading eyebrow="Messaging performance" title="Delivery overview" href="/campaigns-report" />
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <MetricCard label="Sent" value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)} detail="All outbound WhatsApp messages" icon={Send} iconSrc={sentCardIcon} large tone="blue" />
-            <MetricCard label="Delivered" value={isLoading ? '—' : fmt(stats?.totalDelivered ?? 0)} detail={`${deliveryRate} delivery rate`} icon={CheckCircle2} iconSrc={messageCardIcon} large tone="green" />
-            <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages`} icon={MessageCircle} iconSrc={viewCardIcon} large tone="violet" />
-            <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate`} icon={XCircle} iconSrc={reportCardIcon} large tone="red" />
+            <MetricCard
+              label="Sent"
+              value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)}
+              detail={statsData?.source?.sent === 'META' ? 'Meta total · last 12 months' : 'MongoDB message records'}
+              icon={Send}
+              iconSrc={sentCardIcon}
+              large
+              tone="blue"
+            />
+            <MetricCard
+              label="Delivered"
+              value={isLoading ? '—' : fmt(stats?.totalDelivered ?? 0)}
+              detail={`${deliveryRate} delivery rate · ${statsData?.source?.delivered === 'META' ? 'Meta total' : 'MongoDB status'}`}
+              icon={CheckCircle2}
+              iconSrc={messageCardIcon}
+              large
+              tone="green"
+            />
+            <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages · webhook status`} icon={MessageCircle} iconSrc={viewCardIcon} large tone="violet" />
+            <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate · webhook status`} icon={XCircle} iconSrc={reportCardIcon} large tone="red" />
           </div>
         </section>
 

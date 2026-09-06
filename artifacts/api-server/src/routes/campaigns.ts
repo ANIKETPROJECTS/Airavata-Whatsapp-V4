@@ -14,6 +14,7 @@ import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { executeCampaignSend } from "../lib/campaignExecutor";
 import { resolveAudience } from "../lib/audienceResolver";
+import { getMetaMessagingAnalytics } from "../lib/whatsapp";
 
 const router = Router();
 
@@ -756,13 +757,65 @@ router.get(
         },
       ]);
 
+      const mongoStats = {
+        totalSent: row?.totalSent ?? 0,
+        totalDelivered: row?.totalDelivered ?? 0,
+        totalRead: row?.totalRead ?? 0,
+        totalFailed: row?.totalFailed ?? 0,
+      };
+
+      let stats = mongoStats;
+      let source: {
+        sent: "META" | "MONGODB";
+        delivered: "META" | "MONGODB";
+        read: "MONGODB";
+        failed: "MONGODB";
+      } = {
+        sent: "MONGODB",
+        delivered: "MONGODB",
+        read: "MONGODB",
+        failed: "MONGODB",
+      };
+      let metaWindow: { start: number; end: number; lookbackDays: number } | null = null;
+
+      try {
+        const metaStats = await getMetaMessagingAnalytics(String(req.user!.userId));
+        stats = {
+          ...mongoStats,
+          totalSent: metaStats.sent,
+          totalDelivered: metaStats.delivered,
+        };
+        source = {
+          ...source,
+          sent: "META",
+          delivered: "META",
+        };
+        metaWindow = {
+          start: metaStats.start,
+          end: metaStats.end,
+          lookbackDays: metaStats.lookbackDays,
+        };
+      } catch (err: unknown) {
+        // Accounts that have not connected WhatsApp yet still get the local
+        // overview. A connected account's Meta API errors are surfaced below
+        // instead of silently presenting stale local totals.
+        if (
+          !(err instanceof Error) ||
+          ![
+            "WhatsApp is not connected for this account",
+            "Stored WhatsApp credentials are missing a WABA ID",
+          ].includes(err.message)
+        ) {
+          throw err;
+        }
+      }
+
       res.json({
         stats: {
-          totalSent: row?.totalSent ?? 0,
-          totalDelivered: row?.totalDelivered ?? 0,
-          totalRead: row?.totalRead ?? 0,
-          totalFailed: row?.totalFailed ?? 0,
+          ...stats,
         },
+        source,
+        metaWindow,
       });
     } catch (err: unknown) {
       logger.error({ err }, "GET /messages/stats/summary failed");
