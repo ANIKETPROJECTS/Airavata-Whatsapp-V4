@@ -1,8 +1,10 @@
-import { useState, useMemo, useRef, type ReactNode } from 'react';
+import { useState, useMemo, useRef, useEffect, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown, Plus, Trash2, Phone, Link } from 'lucide-react';
+import { MessageSquare, Image as ImageIcon, FileText, Video, AlertCircle, Loader2, Shield, Clock, Zap, ChevronDown, Plus, Trash2, Phone, Link, Smile, Bold, Italic, Strikethrough, Code2, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import Picker from '@emoji-mart/react';
+import emojiData from '@emoji-mart/data';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { AndroidMockup, IPhoneMockup } from 'react-device-mockup';
@@ -116,8 +118,12 @@ export default function AddTemplate() {
   const [headerDragActive, setHeaderDragActive] = useState(false);
   const headerFileInputRef = useRef<HTMLInputElement>(null);
   const [bodyText, setBodyText] = useState('Hi {{1}}, welcome to our service!');
+  const [showBodyEmojiPicker, setShowBodyEmojiPicker] = useState(false);
   const [footerText, setFooterText] = useState('');
   const [samples, setSamples] = useState<Record<number, string>>({});
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const bodyEmojiPickerRef = useRef<HTMLDivElement>(null);
+  const bodySelectionRef = useRef({ start: 0, end: 0 });
 
   // ── Buttons ────────────────────────────────────────────────────────────────
   type ButtonMode = 'NONE' | 'QUICK_REPLY' | 'CTA';
@@ -225,6 +231,65 @@ export default function AddTemplate() {
     const match = bodyText.match(/\{\{(\d+)\}\}/g);
     const nextNum = match ? match.length + 1 : 1;
     setBodyText(prev => prev + ` {{${nextNum}}}`);
+  };
+
+  useEffect(() => {
+    const closePicker = (event: MouseEvent) => {
+      if (bodyEmojiPickerRef.current && !bodyEmojiPickerRef.current.contains(event.target as Node)) {
+        setShowBodyEmojiPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', closePicker);
+    return () => document.removeEventListener('mousedown', closePicker);
+  }, []);
+
+  const rememberBodySelection = () => {
+    const textarea = bodyTextareaRef.current;
+    if (textarea) {
+      bodySelectionRef.current = {
+        start: textarea.selectionStart,
+        end: textarea.selectionEnd,
+      };
+    }
+  };
+
+  const insertBodyText = (value: string) => {
+    const textarea = bodyTextareaRef.current;
+    const start = textarea ? textarea.selectionStart : bodySelectionRef.current.start;
+    const end = textarea ? textarea.selectionEnd : bodySelectionRef.current.end;
+    const nextText = bodyText.slice(0, start) + value + bodyText.slice(end);
+    const nextCursor = start + value.length;
+    setBodyText(nextText);
+    bodySelectionRef.current = { start: nextCursor, end: nextCursor };
+    requestAnimationFrame(() => {
+      const nextTextarea = bodyTextareaRef.current;
+      if (nextTextarea) {
+        nextTextarea.focus();
+        nextTextarea.setSelectionRange(nextCursor, nextCursor);
+      }
+    });
+  };
+
+  const wrapBodySelection = (prefix: string, suffix = prefix) => {
+    const textarea = bodyTextareaRef.current;
+    const start = textarea ? textarea.selectionStart : bodySelectionRef.current.start;
+    const end = textarea ? textarea.selectionEnd : bodySelectionRef.current.end;
+    const selectedText = bodyText.slice(start, end);
+    const replacement = `${prefix}${selectedText || 'text'}${suffix}`;
+    const nextText = bodyText.slice(0, start) + replacement + bodyText.slice(end);
+    const cursor = selectedText ? start + replacement.length : start + prefix.length;
+    setBodyText(nextText);
+    bodySelectionRef.current = { start: cursor, end: selectedText ? cursor : start + prefix.length };
+    requestAnimationFrame(() => {
+      const nextTextarea = bodyTextareaRef.current;
+      if (nextTextarea) {
+        nextTextarea.focus();
+        nextTextarea.setSelectionRange(
+          selectedText ? cursor : start + prefix.length,
+          selectedText ? cursor : start + prefix.length + 4,
+        );
+      }
+    });
   };
 
   const bodyVars = useMemo(() => extractVars(bodyText), [bodyText]);
@@ -674,25 +739,107 @@ export default function AddTemplate() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-gray-700">Body</label>
-                    <button
-                      type="button"
-                      onClick={insertVariable}
-                      className="text-xs font-medium text-primary hover:bg-primary/5 px-2 py-1 rounded"
-                    >
-                      + Add Variable
-                    </button>
                   </div>
-                  <textarea
-                    value={bodyText}
-                    onChange={e => setBodyText(e.target.value)}
-                    rows={5}
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-primary focus:border-primary outline-none resize-y"
-                    placeholder="Type your message here..."
-                    required
-                  />
+                  <div className="relative overflow-visible rounded-lg border border-gray-300 bg-white transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                    <textarea
+                      ref={bodyTextareaRef}
+                      value={bodyText}
+                      onChange={e => setBodyText(e.target.value)}
+                      onSelect={rememberBodySelection}
+                      onClick={rememberBodySelection}
+                      onKeyUp={rememberBodySelection}
+                      rows={5}
+                      className="block w-full resize-y rounded-t-lg border-0 px-3 py-2 text-sm outline-none focus:ring-0"
+                      placeholder="Type your message here..."
+                      required
+                    />
+                    <div className="flex items-center justify-between border-t border-gray-100 px-2 py-1.5">
+                      <div className="flex items-center gap-0.5">
+                        <div className="relative" ref={bodyEmojiPickerRef}>
+                          <button
+                            type="button"
+                            title="Add emoji"
+                            aria-label="Add emoji"
+                            onMouseDown={event => event.preventDefault()}
+                            onClick={() => setShowBodyEmojiPicker(open => !open)}
+                            className={`rounded-md p-1.5 transition-colors ${showBodyEmojiPicker ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'}`}
+                          >
+                            <Smile className="h-4 w-4" />
+                          </button>
+                          {showBodyEmojiPicker && (
+                            <div className="absolute bottom-10 left-0 z-50 overflow-hidden rounded-xl shadow-xl">
+                              <Picker
+                                data={emojiData}
+                                onEmojiSelect={(emoji: { native: string }) => insertBodyText(emoji.native)}
+                                theme="light"
+                                previewPosition="none"
+                                skinTonePosition="none"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          title="Bold"
+                          aria-label="Bold"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => wrapBodySelection('*')}
+                          className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                        >
+                          <Bold className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Italic"
+                          aria-label="Italic"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => wrapBodySelection('_')}
+                          className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                        >
+                          <Italic className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Strikethrough"
+                          aria-label="Strikethrough"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => wrapBodySelection('~')}
+                          className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                        >
+                          <Strikethrough className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Monospace"
+                          aria-label="Monospace"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => wrapBodySelection('```', '```')}
+                          className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                        >
+                          <Code2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={insertVariable}
+                          className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-primary/5 hover:text-primary"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Add variable
+                        </button>
+                        <span
+                          title="Meta formatting: *bold*, _italic_, ~strikethrough~, and ```monospace```"
+                          className="inline-flex cursor-help p-1.5 text-gray-400"
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                   <p className="text-xs text-gray-400">
-                    Use <code className="bg-gray-100 px-1 rounded">{'{{1}}'}</code>,{' '}
-                    <code className="bg-gray-100 px-1 rounded">{'{{2}}'}</code> for personalisation variables.
+                    Use <code className="rounded bg-gray-100 px-1">{'{{1}}'}</code>,{' '}
+                    <code className="rounded bg-gray-100 px-1">{'{{2}}'}</code> for variables. Formatting is sent using Meta's official template syntax.
                   </p>
                 </div>
 
