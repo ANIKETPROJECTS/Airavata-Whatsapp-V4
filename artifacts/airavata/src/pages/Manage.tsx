@@ -31,6 +31,16 @@ interface PricingCatalogResponse {
   };
 }
 
+const formatMessagingTier = (tier: string) => {
+  const normalized = tier.trim().toUpperCase();
+  if (!normalized || normalized === '—') return '—';
+  if (normalized === 'TIER_UNLIMITED') return 'Unlimited';
+  const value = normalized.replace(/^TIER_/, '');
+  if (/^\d+K$/.test(value)) return (Number(value.slice(0, -1)) * 1000).toLocaleString();
+  if (/^\d+$/.test(value)) return Number(value).toLocaleString();
+  return tier;
+};
+
 // ── API Keys Tab ──────────────────────────────────────────────────────────────
 function ApiKeysTab() {
   const qc = useQueryClient();
@@ -135,7 +145,7 @@ function PhoneNumbersTab() {
               {pn.verifiedName && <p className="text-sm text-gray-700 font-medium mb-1">{pn.verifiedName}</p>}
               <div className="flex gap-3 text-sm text-gray-500">
                 <span>Quality: <span className={`font-medium ${qualityColor(pn.quality)}`}>{pn.quality}</span></span>
-                {pn.messagingTier && pn.messagingTier !== '—' && <><span>•</span><span>{pn.messagingTier}</span></>}
+                {pn.messagingTier && pn.messagingTier !== '—' && <><span>•</span><span>{formatMessagingTier(pn.messagingTier)} conversations</span></>}
               </div>
             </div>
             <span className="px-3 py-1 bg-green-50 text-green-700 text-sm font-medium rounded-full border border-green-100">{pn.status}</span>

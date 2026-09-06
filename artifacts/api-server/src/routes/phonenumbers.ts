@@ -1,6 +1,8 @@
 /**
  * GET /api/phonenumbers
  * Fetches the phone number details registered to this WABA from Meta's Graph API.
+ * Meta deprecated messaging_limit_tier; use the Business Manager messaging
+ * limit field for the current limit shown in WhatsApp Manager.
  */
 import { Router } from "express";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
@@ -20,7 +22,7 @@ router.get("/phonenumbers", authenticate, async (req: AuthRequest, res) => {
     }
 
     const resp = await fetch(
-      `${GRAPH_BASE}/${wabaId}/phone_numbers?fields=display_phone_number,verified_name,quality_rating,messaging_limit_tier,status`,
+      `${GRAPH_BASE}/${wabaId}/phone_numbers?fields=display_phone_number,verified_name,quality_rating,messaging_limit_tier,whatsapp_business_manager_messaging_limit,status`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
     const data = (await resp.json()) as {
@@ -29,7 +31,8 @@ router.get("/phonenumbers", authenticate, async (req: AuthRequest, res) => {
         display_phone_number: string;
         verified_name: string;
         quality_rating: string;
-        messaging_limit_tier: string;
+        messaging_limit_tier?: string;
+        whatsapp_business_manager_messaging_limit?: string;
         status: string;
       }>;
       error?: { message: string };
@@ -44,7 +47,10 @@ router.get("/phonenumbers", authenticate, async (req: AuthRequest, res) => {
       number: pn.display_phone_number,
       verifiedName: pn.verified_name,
       quality: pn.quality_rating ?? "UNKNOWN",
-      messagingTier: pn.messaging_limit_tier ?? "—",
+      messagingTier:
+        pn.whatsapp_business_manager_messaging_limit ??
+        pn.messaging_limit_tier ??
+        "—",
       status: pn.status ?? "CONNECTED",
       verified: true,
     }));

@@ -106,6 +106,15 @@ const fmt = (value: number) => value.toLocaleString();
 const fmtCompact = (value: number) => value >= 1000
   ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`
   : String(value);
+const formatMessagingTier = (tier: string) => {
+  const normalized = tier.trim().toUpperCase();
+  if (!normalized || normalized === '—') return '—';
+  if (normalized === 'TIER_UNLIMITED') return 'Unlimited';
+  const value = normalized.replace(/^TIER_/, '');
+  if (/^\d+K$/.test(value)) return (Number(value.slice(0, -1)) * 1000).toLocaleString();
+  if (/^\d+$/.test(value)) return Number(value).toLocaleString();
+  return tier;
+};
 const pct = (value: number, total: number) => total > 0 ? `${Math.round((value / total) * 100)}%` : '—';
 const formatConversationTime = (value: string) => value
   ? new Date(value).toLocaleString([], { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -363,7 +372,7 @@ export default function Dashboard() {
             </div>
             <div className="flex gap-6 text-xs">
               <div><p className="text-gray-800">Quality</p><p className="mt-1 font-semibold text-black">{connectedPhone?.quality || '—'}</p></div>
-              <div><p className="text-gray-800">Messaging tier</p><p className="mt-1 font-semibold text-black">{connectedPhone?.messagingTier || '—'}</p></div>
+              <div><p className="text-gray-800">Messaging tier</p><p className="mt-1 font-semibold text-black">{formatMessagingTier(connectedPhone?.messagingTier || '—')}</p></div>
               <div><p className="text-gray-800">Number</p><p className="mt-1 font-semibold text-black">{connectedPhone?.number || '—'}</p></div>
             </div>
           </div>
