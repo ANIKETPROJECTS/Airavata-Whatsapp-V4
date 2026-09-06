@@ -15,6 +15,7 @@ import {
 } from "./protectedMasterAdmin";
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
+const ANALYTICS_GRAPH_BASE = "https://graph.facebook.com/v23.0";
 const META_ANALYTICS_LOOKBACK_DAYS = 365;
 
 /** Meta Cloud API recipient format: digits only, including the country code. */
@@ -132,8 +133,9 @@ async function graphFetchWithCreds<T>(
   path: string,
   accessToken: string,
   options: RequestInit = {},
+  graphBase = GRAPH_BASE,
 ): Promise<T> {
-  const url = `${GRAPH_BASE}${path}`;
+  const url = `${graphBase}${path}`;
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -242,6 +244,7 @@ export async function getCredentials(
 export interface MetaMessagingAnalytics {
   sent: number;
   delivered: number;
+  received: number;
   start: number;
   end: number;
   lookbackDays: number;
@@ -250,9 +253,10 @@ export interface MetaMessagingAnalytics {
 /**
  * Fetch Meta's authoritative messaging totals for the connected user's WABA.
  *
- * Meta's messaging analytics currently exposes sent and delivered totals. Read
- * and failed message totals are not part of this endpoint, so those remain
- * derived from the per-message status webhooks stored in the tenant database.
+ * Meta's messaging analytics exposes sent, delivered, and received totals.
+ * Read and failed message totals are not part of this endpoint, so those
+ * remain derived from the per-message status webhooks stored in the tenant
+ * database.
  */
 export async function getMetaMessagingAnalytics(
   userId: string,
@@ -267,25 +271,46 @@ export async function getMetaMessagingAnalytics(
   const start = Math.floor(
     (now - META_ANALYTICS_LOOKBACK_DAYS * 24 * 60 * 60 * 1000) / 1000,
   );
-  const fields = `analytics.start(${start}).end(${end}).granularity(DAY)`;
-  const params = new URLSearchParams({ fields });
-  const result = await graphFetchWithCreds<{
-    analytics?: {
-      data_points?: Array<{
-        sent?: number;
-        delivered?: number;
-      }>;
-    };
-  }>(`/${encodeURIComponent(credentials.wabaId)}?${params.toString()}`, credentials.accessToken);
+  const fetchAnalytics = async (productType?: number) => {
+    const fields = [
+      `analytics.start(${start})`,
+      `.end(${end})`,
+      ".granularity(DAY)",
+      ...(productType === undefined ? [] : [`.product_types(${productType})`]),
+    ].join("");
+    const params = new URLSearchParams({ fields });
+    const result = await graphFetchWithCreds<{
+      analytics?: {
+        data_points?: Array<{
+          sent?: number;
+          delivered?: number;
+          received?: number;
+        }>;
+      };
+    }>(
+      `/${encodeURIComponent(credentials.wabaId)}?${params.toString()}`,
+      credentials.accessToken,
+      {},
+      ANALYTICS_GRAPH_BASE,
+    );
 
-  const dataPoints = result.analytics?.data_points;
-  if (!Array.isArray(dataPoints)) {
-    throw new Error("Meta returned no messaging analytics data points");
-  }
+    const dataPoints = result.analytics?.data_points;
+    if (!Array.isArray(dataPoints)) {
+      throw new Error("Meta returned no messaging analytics data points");
+    }
+    return dataPoints;
+  };
+
+  const [outboundDataPoints, inboundDataPoints] = await Promise.all([
+    fetchAnalytics(),
+    // Meta product type 100 represents incoming messages from WhatsApp users.
+    fetchAnalytics(100),
+  ]);
 
   return {
-    sent: dataPoints.reduce((total, point) => total + (point.sent ?? 0), 0),
-    delivered: dataPoints.reduce((total, point) => total + (point.delivered ?? 0), 0),
+    sent: outboundDataPoints.reduce((total, point) => total + (point.sent ?? 0), 0),
+    delivered: outboundDataPoints.reduce((total, point) => total + (point.delivered ?? 0), 0),
+    received: inboundDataPoints.reduce((total, point) => total + (point.received ?? 0), 0),
     start,
     end,
     lookbackDays: META_ANALYTICS_LOOKBACK_DAYS,

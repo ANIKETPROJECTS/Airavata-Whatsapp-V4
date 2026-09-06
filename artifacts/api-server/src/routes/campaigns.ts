@@ -756,12 +756,17 @@ router.get(
           },
         },
       ]);
+      const totalReceived = await MessageModel.countDocuments({
+        userId,
+        direction: "INBOUND",
+      });
 
       const mongoStats = {
         totalSent: row?.totalSent ?? 0,
         totalDelivered: row?.totalDelivered ?? 0,
         totalRead: row?.totalRead ?? 0,
         totalFailed: row?.totalFailed ?? 0,
+        totalReceived,
       };
 
       let stats = mongoStats;
@@ -775,6 +780,7 @@ router.get(
         delivered: "MONGODB",
         read: "MONGODB",
         failed: "MONGODB",
+        received: "MONGODB",
       };
       let metaWindow: { start: number; end: number; lookbackDays: number } | null = null;
 
@@ -784,11 +790,13 @@ router.get(
           ...mongoStats,
           totalSent: metaStats.sent,
           totalDelivered: metaStats.delivered,
+          totalReceived: metaStats.received,
         };
         source = {
           ...source,
           sent: "META",
           delivered: "META",
+          received: "META",
         };
         metaWindow = {
           start: metaStats.start,

@@ -20,6 +20,7 @@ interface CampaignStats {
   totalDelivered: number;
   totalRead: number;
   totalFailed: number;
+  totalReceived: number;
   campaignCount: number;
 }
 
@@ -30,6 +31,7 @@ interface MessageStatsResponse {
     delivered: 'META' | 'MONGODB';
     read: 'MONGODB';
     failed: 'MONGODB';
+    received: 'META' | 'MONGODB';
   };
   metaWindow?: {
     start: number;
@@ -369,7 +371,7 @@ export default function Dashboard() {
 
         <section>
           <SectionHeading eyebrow="Messaging performance" title="Delivery overview" href="/campaigns-report" />
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
             <MetricCard
               label="Sent"
               value={isLoading ? '—' : fmt(stats?.totalSent ?? 0)}
@@ -387,6 +389,14 @@ export default function Dashboard() {
               iconSrc={messageCardIcon}
               large
               tone="green"
+            />
+            <MetricCard
+              label="Received"
+              value={isLoading ? '—' : fmt(stats?.totalReceived ?? 0)}
+              detail={statsData?.source?.received === 'META' ? 'Meta total · last 12 months' : 'MongoDB inbound records'}
+              icon={MessageSquareReply}
+              large
+              tone="teal"
             />
             <MetricCard label="Read" value={isLoading ? '—' : fmt(stats?.totalRead ?? 0)} detail={`${readRate} of delivered messages · webhook status`} icon={MessageCircle} iconSrc={viewCardIcon} large tone="violet" />
             <MetricCard label="Failed" value={isLoading ? '—' : fmt(stats?.totalFailed ?? 0)} detail={`${failureRate} failure rate · webhook status`} icon={XCircle} iconSrc={reportCardIcon} large tone="red" />
