@@ -14,8 +14,21 @@ router.get("/groups", async (req: AuthRequest, res) => {
 
     // Get member counts in one aggregation (must cast userId string → ObjectId for pipelines)
     const counts = await ContactModel.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(req.user!.userId), groupId: { $exists: true, $ne: null } } },
-      { $group: { _id: "$groupId", count: { $sum: 1 } } },
+      { $match: { userId: new mongoose.Types.ObjectId(req.user!.userId) } },
+      {
+        $project: {
+          groupIds: {
+            $cond: [
+              { $gt: [{ $size: { $ifNull: ["$groupIds", []] } }, 0] },
+              "$groupIds",
+              ["$groupId"],
+            ],
+          },
+        },
+      },
+      { $unwind: "$groupIds" },
+      { $match: { groupIds: { $ne: null } } },
+      { $group: { _id: "$groupIds", count: { $sum: 1 } } },
     ]);
     const countMap = Object.fromEntries(counts.map(c => [String(c._id), c.count]));
 

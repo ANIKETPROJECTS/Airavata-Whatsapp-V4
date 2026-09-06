@@ -14,6 +14,12 @@ import exportContactsIcon from '@assets/export_1788724297530.png';
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface TagObj   { id: string; name: string; color: string }
 interface GroupObj { id: string; name: string }
+interface CampaignObj {
+  id: string;
+  name: string;
+  status: string;
+  recipientStatus: string;
+}
 interface Contact {
   id: string;
   name?: string | null;
@@ -25,6 +31,8 @@ interface Contact {
   unreadMessages?: number;
   tags: TagObj[];
   group: GroupObj | null;
+  groups?: GroupObj[];
+  campaigns?: CampaignObj[];
   lastContactedAt?: string | null;
   createdAt: string;
 }
@@ -80,6 +88,15 @@ function contactDisplayName(contact: Pick<Contact, 'name' | 'phone'>) {
   return isPlaceholderName(contact.name, contact.phone) ? 'NA' : contact.name!.trim();
 }
 
+function contactGroups(contact: Pick<Contact, 'group' | 'groups'>) {
+  const groups = contact.groups?.length ? contact.groups : contact.group ? [contact.group] : [];
+  return groups.filter((group, index, all) => all.findIndex(item => item.id === group.id) === index);
+}
+
+function campaignRecipientLabel(status: string) {
+  return status.toLowerCase().replace(/_/g, ' ');
+}
+
 function contactStatusLabel(status: Contact['status']) {
   if (status === 'blocked') return 'Blocked';
   if (status === 'unsubscribed') return 'Unsubscribed';
@@ -129,16 +146,25 @@ function ContactDetailsModal({ contact, onClose }: { contact: Contact; onClose: 
         <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Phone number</p><p className="mt-1 font-mono text-sm text-gray-800">{contact.phone}</p></div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Email</p><p className="mt-1 text-sm text-gray-800">{contact.email || 'No email'}</p></div>
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Group</p><p className="mt-1 text-sm text-gray-800">{contact.group?.name || 'No group'}</p></div>
+           <div>
+             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Groups</p>
+             {contactGroups(contact).length > 0 ? (
+               <div className="mt-1 space-y-1 text-sm text-gray-800">
+                 {contactGroups(contact).map(group => <p key={group.id}>{group.name}</p>)}
+               </div>
+             ) : <p className="mt-1 text-sm text-gray-800">No group</p>}
+           </div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Chat state</p><p className="mt-1"><ChatStateBadge state={contact.chatState} hasConversation={contact.hasConversation} unreadMessages={contact.unreadMessages} /></p></div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Status</p><p className="mt-1 text-sm capitalize text-gray-800">{contact.status}</p></div>
           <div><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Created</p><p className="mt-1 text-sm text-gray-800">{new Date(contact.createdAt).toLocaleDateString()}</p></div>
           <div className="sm:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tags</p>
-            {contact.tags.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-2">
+             {contact.tags.length > 0 ? (
+               <div className="mt-2 space-y-1">
                 {contact.tags.map(tag => (
-                  <span key={tag.id} className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}>{tag.name}</span>
+                   <div key={tag.id}>
+                     <span className="inline-block rounded-full px-2.5 py-1 text-xs font-medium" style={{ backgroundColor: `${tag.color}22`, color: tag.color }}>{tag.name}</span>
+                   </div>
                 ))}
               </div>
             ) : <p className="mt-1 text-sm text-gray-500">No tags</p>}
@@ -165,7 +191,9 @@ function EditModal({
   const [name, setName]           = useState(isPlaceholderName(contact.name, contact.phone) ? '' : contact.name ?? '');
   const [status, setStatus]       = useState<Contact['status']>(contact.status);
   const [chatState, setChatState] = useState<string>(chatStateFormValue(contact.chatState));
-  const [groupId, setGroupId]     = useState(contact.group?.id ?? '');
+  const [groupIds, setGroupIds]   = useState<string[]>(
+    contact.groups?.map(group => group.id) ?? (contact.group ? [contact.group.id] : []),
+  );
   const [tagIds, setTagIds]       = useState<string[]>(contact.tags.map(tag => tag.id));
   const [saving, setSaving]       = useState(false);
 
@@ -177,7 +205,7 @@ function EditModal({
         name: name.trim(),
         status,
         chatState: chatStateStorageValue(chatState),
-        groupId: groupId || null,
+         groupIds,
         tags: tagIds,
       });
       toast.success('Contact updated');
@@ -255,16 +283,25 @@ function EditModal({
           </div>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-600">Group:</label>
-              <select
-                value={groupId}
-                onChange={e => setGroupId(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              >
-                <option value="">No group</option>
-                {groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
-              </select>
+             <div className="space-y-1">
+               <label className="text-sm font-medium text-gray-600">Groups:</label>
+               <div className="max-h-28 overflow-y-auto rounded-lg border p-2 space-y-1">
+                 {groups.length === 0 ? (
+                   <p className="text-xs text-gray-400">Create groups from Manage Groups first.</p>
+                 ) : groups.map(group => (
+                   <label key={group.id} className="flex items-center gap-2 text-sm text-gray-700">
+                     <input
+                       type="checkbox"
+                       checked={groupIds.includes(group.id)}
+                       onChange={() => setGroupIds(current => current.includes(group.id)
+                         ? current.filter(id => id !== group.id)
+                         : [...current, group.id])}
+                       className="accent-primary"
+                     />
+                     {group.name}
+                   </label>
+                 ))}
+               </div>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-600">Tags:</label>
@@ -712,8 +749,8 @@ export default function Contacts() {
                 <th className="px-4 py-3 font-semibold">Name ↑</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Chat Status</th>
-                <th className="px-4 py-3 font-semibold">Campaigns</th>
-                <th className="px-4 py-3 font-semibold">Group</th>
+                 <th className="px-4 py-3 font-semibold">Campaigns</th>
+                 <th className="px-4 py-3 font-semibold">Groups</th>
                 <th className="px-4 py-3 font-semibold">Tags</th>
                 <th className="px-4 py-3 font-semibold text-center">Actions</th>
               </tr>
@@ -742,27 +779,48 @@ export default function Contacts() {
                       unreadMessages={contact.unreadMessages}
                     />
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">No campaigns</td>
                   <td className="px-4 py-3">
-                    {contact.group?.name ? (
-                      <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">{contact.group.name}</span>
+                     {contact.campaigns && contact.campaigns.length > 0 ? (
+                       <div className="space-y-1">
+                         {contact.campaigns.map(campaign => (
+                           <div key={campaign.id} className="flex items-center gap-2 whitespace-nowrap">
+                             <span className="font-medium text-gray-700">{campaign.name}</span>
+                             <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] capitalize text-gray-500">
+                               {campaignRecipientLabel(campaign.recipientStatus)}
+                             </span>
+                           </div>
+                         ))}
+                       </div>
                     ) : (
-                      <span className="text-xs text-gray-400">No group</span>
+                       <span className="text-xs text-gray-400">No campaigns</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {contact.tags.length > 0 ? (
-                      <div className="flex gap-1 flex-wrap">
-                        {contact.tags.map(t => (
-                          <span key={t.id}
-                            className="px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={{ backgroundColor: t.color + '22', color: t.color }}>
-                            {t.name}
-                          </span>
-                        ))}
+                     {contactGroups(contact).length > 0 ? (
+                       <div className="space-y-1">
+                         {contactGroups(contact).map(group => (
+                           <div key={group.id} className="whitespace-nowrap rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                             {group.name}
+                           </div>
+                         ))}
                       </div>
                     ) : (
-                      <span className="text-gray-400 text-xs">No tags</span>
+                       <span className="text-xs text-gray-400">No groups</span>
+                     )}
+                   </td>
+                   <td className="px-4 py-3">
+                     {contact.tags.length > 0 ? (
+                       <div className="space-y-1">
+                         {contact.tags.map(t => (
+                           <div key={t.id}
+                             className="w-fit rounded-full px-2 py-0.5 text-xs font-medium"
+                             style={{ backgroundColor: t.color + '22', color: t.color }}>
+                             {t.name}
+                           </div>
+                         ))}
+                       </div>
+                     ) : (
+                       <span className="text-gray-400 text-xs">No tags</span>
                     )}
                   </td>
                   <td className="px-4 py-3">

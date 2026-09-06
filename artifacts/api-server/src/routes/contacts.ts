@@ -4,6 +4,7 @@ import { ContactModel } from "../models/Contact";
 import { GroupModel } from "../models/Group";
 import { TagModel } from "../models/Tag";
 import { MessageModel } from "../models/Message";
+import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 
@@ -111,15 +112,18 @@ router.get("/contacts", async (req: AuthRequest, res) => {
       limit = "50",
     } = req.query as Record<string, string>;
     const filter: Record<string, unknown> = { userId: req.user!.userId };
+    const andFilters: Record<string, unknown>[] = [];
 
     if (search) {
       const safeSearch = escapeRegex(search);
-      filter["$or"] = [
+      andFilters.push({ $or: [
         { name: { $regex: safeSearch, $options: "i" } },
         { phone: { $regex: safeSearch, $options: "i" } },
-      ];
+      ] });
     }
-    if (groupId) filter["groupId"] = groupId;
+    if (groupId) {
+      andFilters.push({ $or: [{ groupId }, { groupIds: groupId }] });
+    }
     if (tagId) filter["tags"] = tagId;
     if (country) {
       const countryCode = country.replace(/\D/g, "");
@@ -141,6 +145,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         };
       }
     }
+    if (andFilters.length > 0) filter["$and"] = andFilters;
     if (status) filter["status"] = status;
     if (chatState) {
       const liveStateIds = await getLiveChatStateContactIds(req.user!.userId, chatState);
@@ -200,10 +205,65 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         { $group: { _id: "$contactId", unread: { $sum: 1 } } },
       ]),
     ]);
+    const campaignRows = contactIds.length > 0
+      ? await CampaignRecipientModel.aggregate<{
+          _id: mongoose.Types.ObjectId;
+          contactId: mongoose.Types.ObjectId;
+          status: string;
+          enrolledAt?: Date;
+          campaign: { _id: mongoose.Types.ObjectId; name: string; status: string };
+        }>([
+          {
+            $match: {
+              userId: new mongoose.Types.ObjectId(req.user!.userId),
+              contactId: { $in: contactIds },
+            },
+          },
+          {
+            $lookup: {
+              from: "campaigns",
+              let: { campaignId: "$campaignId", ownerId: "$userId" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$_id", "$$campaignId"] },
+                        { $eq: ["$userId", "$$ownerId"] },
+                      ],
+                    },
+                  },
+                },
+                { $project: { _id: 1, name: 1, status: 1 } },
+              ],
+              as: "campaign",
+            },
+          },
+          { $unwind: "$campaign" },
+          { $sort: { enrolledAt: -1, _id: -1 } },
+        ])
+      : [];
     const latestByContact = new Set(latestRows.map(row => String(row._id)));
     const unreadByContact = new Map(
       unreadRows.map(row => [String(row._id), Number(row.unread ?? 0)]),
     );
+    const campaignsByContact = new Map<string, Array<{
+      id: string;
+      name: string;
+      status: string;
+      recipientStatus: string;
+    }>>();
+    for (const row of campaignRows) {
+      const key = String(row.contactId);
+      const campaigns = campaignsByContact.get(key) ?? [];
+      campaigns.push({
+        id: String(row.campaign._id),
+        name: row.campaign.name,
+        status: row.campaign.status,
+        recipientStatus: row.status,
+      });
+      campaignsByContact.set(key, campaigns);
+    }
 
     res.json({
       contacts: contacts.map((c) => ({
@@ -221,6 +281,7 @@ router.get("/contacts", async (req: AuthRequest, res) => {
         tags: c.tags,
         group: c.groupId,
         groups: ((c as unknown as { groupIds?: unknown[] }).groupIds ?? (c.groupId ? [c.groupId] : [])),
+        campaigns: campaignsByContact.get(String(c._id)) ?? [],
       })),
       total,
       page: pageNum,
