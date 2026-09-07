@@ -1242,11 +1242,13 @@ export default function AddTemplate() {
                       : 'text-gray-600 hover:bg-slate-50'
                   }`}
                 >
-                  <img
-                    src={device === 'ios' ? appleIcon : androidIcon}
-                    alt=""
-                    className={`h-5 w-5 object-contain ${device === 'ios' ? '' : 'mix-blend-multiply'}`}
-                  />
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white">
+                    <img
+                      src={device === 'ios' ? appleIcon : androidIcon}
+                      alt=""
+                      className="h-4 w-4 object-contain"
+                    />
+                  </span>
                   <span>{device === 'ios' ? 'iOS' : 'Android'}</span>
                 </button>
               ))}
