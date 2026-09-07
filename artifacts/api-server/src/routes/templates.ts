@@ -18,6 +18,7 @@ import {
 } from "../lib/whatsapp";
 import { withCreditCharge } from "../lib/creditDeduction";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
+import { emitContactCreatedEvent } from "../lib/clientWebhooks";
 
 const router = Router();
 const headerMediaUpload = multer({
@@ -368,6 +369,7 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
         name: phone, // placeholder name; user can rename in Contacts
       });
       await enrollNewContactsInTriggerCampaigns(userId, [contact._id]);
+      void emitContactCreatedEvent(userId, contact._id);
     }
 
     // Build the rendered body text for live chat display — match what WhatsApp shows.

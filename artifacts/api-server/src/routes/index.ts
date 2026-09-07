@@ -26,6 +26,7 @@ import adminRouter from "./admin";
 import audienceSegmentsRouter from "./audience-segments";
 import masterAdminRouter from "./master-admin";
 import notificationsRouter from "./notifications";
+import clientWebhooksRouter from "./client-webhooks";
 
 const router: IRouter = Router();
 
@@ -37,6 +38,7 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(masterAdminRouter);
 router.use(notificationsRouter);
+router.use(clientWebhooksRouter);
 router.use(apiKeysRouter);
 router.use(contactsRouter);
 router.use(groupsRouter);

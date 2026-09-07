@@ -21,6 +21,7 @@ import {
   enrollContactsInTriggerCampaign,
   enrollNewContactsInTriggerCampaigns,
 } from "../lib/triggerEnrollment";
+import { emitContactCreatedEvents } from "../lib/clientWebhooks";
 
 const router = Router();
 const TRIGGER_EVENTS = new Set(["inbound_message", "contact_created", "tag_added"]);
@@ -191,7 +192,11 @@ async function resolveCsvContacts(
   userId: mongoose.Types.ObjectId,
   rows: CsvCampaignContactInput[],
   session: mongoose.ClientSession,
-): Promise<{ contacts: ResolvedCsvContact[]; invalid: string[] }> {
+): Promise<{
+  contacts: ResolvedCsvContact[];
+  created: ResolvedCsvContact[];
+  invalid: string[];
+}> {
   const uniqueRows = new Map<string, {
     phone: string;
     name?: string;
@@ -230,7 +235,7 @@ async function resolveCsvContacts(
   }
 
   const entries = [...uniqueRows.values()];
-  if (!entries.length) return { contacts: [], invalid };
+  if (!entries.length) return { contacts: [], created: [], invalid };
 
   // Include common formatted variants when matching legacy/imported contacts.
   const phoneVariants = [
@@ -297,6 +302,7 @@ async function resolveCsvContacts(
         .filter((contact): contact is ResolvedCsvContact => Boolean(contact)),
       ...created,
     ],
+    created,
     invalid,
   };
 }
@@ -656,6 +662,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
 
     // Resolve contacts by raw phone numbers (Quick / Tags / Flow campaigns)
     let phoneContactIds: string[] = [];
+    let createdContactIdsForWebhook: mongoose.Types.ObjectId[] = [];
     if (isCsvCampaign) {
       const csvRows = Array.isArray(csvContacts) && csvContacts.length
         ? csvContacts
@@ -668,6 +675,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           error: `CSV contains invalid phone numbers: ${csvResolution.invalid.slice(0, 5).join(", ")}`,
         });
       }
+      createdContactIdsForWebhook = csvResolution.created.map((contact) => contact._id);
       phoneContactIds = csvResolution.contacts
         .filter(contact => contact.status === "active")
         .map(contact => String(contact._id));
@@ -769,6 +777,9 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
 
     await session.commitTransaction();
     session.endSession();
+    if (createdContactIdsForWebhook.length > 0) {
+      void emitContactCreatedEvents(userId, createdContactIdsForWebhook);
+    }
 
     // Respond immediately so the UI isn't blocked
     res.status(201).json({

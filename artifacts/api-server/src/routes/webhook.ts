@@ -25,6 +25,7 @@ import {
 } from "../lib/chatbotEngine";
 import { sendInquiryCreated } from "../lib/airavataIntegration";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
+import { emitClientWebhookEvent, emitContactCreatedEvent } from "../lib/clientWebhooks";
 import {
   getEcosystemWhatsAppCredentialIds,
   PROTECTED_MASTER_ADMIN_EMAIL,
@@ -218,6 +219,7 @@ async function handleIncomingMessage(
       phone: `+${fromRaw}`,
     });
     await enrollNewContactsInTriggerCampaigns(userId, [created._id]);
+      void emitContactCreatedEvent(userId, created._id);
     contactId = created._id as mongoose.Types.ObjectId;
     logger.info({ phone: fromRaw, name: displayName }, "Auto-created contact from webhook");
   }
@@ -375,7 +377,7 @@ async function handleIncomingMessage(
     }),
   );
 
-  await MessageModel.create({
+  const createdMessage = await MessageModel.create({
     userId,
     contactId,
     direction: "INBOUND",
@@ -385,6 +387,21 @@ async function handleIncomingMessage(
     ...(flowData ? { flowData } : {}),
     ...(flowId ? { flowId } : {}),
     ...(campaignId ? { campaignId } : {}),
+  });
+  void emitClientWebhookEvent(userId, "message_received", {
+    message: {
+      id: String(createdMessage._id),
+      whatsappMessageId: msg.id,
+      contactId: String(contactId),
+      body: body ?? null,
+      type: msg.type,
+      receivedAt: createdMessage.createdAt,
+    },
+    contact: {
+      id: String(contactId),
+      name: contact?.name ?? fromRaw,
+      phone: `+${fromRaw}`,
+    },
   });
 
   // New customer activity belongs in Open and remains unread until an agent

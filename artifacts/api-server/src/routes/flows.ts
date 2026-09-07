@@ -13,6 +13,7 @@ import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { getCredentials, normalizeWhatsAppPhone } from "../lib/whatsapp";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
+import { emitContactCreatedEvent } from "../lib/clientWebhooks";
 
 const router = Router();
 
@@ -491,6 +492,7 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
         phone: `+${normalizedPhone}`,
       });
       await enrollNewContactsInTriggerCampaigns(userId, [created._id]);
+      void emitContactCreatedEvent(userId, created._id);
       contact = created.toObject();
     }
 
