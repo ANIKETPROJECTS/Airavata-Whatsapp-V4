@@ -1,0 +1,56 @@
+DRIP scheduling
+The DRIP logic schedules each recipient independently.
+
+Initial scheduling
+When a DRIP campaign is created:
+
+The campaign is marked deferred/scheduled.
+Each recipient is inserted as QUEUED.
+Each recipient gets its own nextActionAt.
+The first step is due immediately unless a future scheduledAt was provided.
+Moving to the next step
+After a recipient successfully completes a step, campaignWorker.ts:
+
+Finds the recipient’s current step using currentStepId.
+Finds the next step in campaign.steps.
+Reads that step’s delayMinutes.
+Updates only that recipient:
+status: "QUEUED"
+currentStepId: nextStepId
+nextActionAt: new Date(Date.now() + delayMinutes * 60_000)
+
+The worker then continues processing other due recipients. It does not sleep for the delay, so one recipient waiting 60 minutes does not block another recipient whose next step is already due.
+
+The worker query is also scoped by:
+
+userId
+status: "QUEUED"
+nextActionAt: { $lte: new Date() }
+
+So each recipient has its own independent schedule.
+
+Important throughput caveat
+The delay itself is independent, but the worker still processes sends sequentially within one worker process. A slow Meta API request or a very large due queue can temporarily delay other tenants or recipients. That is separate from the DRIP delayMinutes scheduling logic.
+
+What happens when a recipient replies?
+A normal inbound reply:
+
+Creates an inbound Message.
+Sets the contact’s chatState to ACTIVE.
+Does not change the contact’s campaign eligibility.
+Does not pause or cancel the DRIP recipient.
+Therefore, a reply by itself does not stop the remaining DRIP steps. The next step will continue when its nextActionAt is reached, provided the contact remains active.
+
+What happens when a recipient opts out?
+If the contact’s status is changed to unsubscribed before the next step:
+
+The worker still claims the due recipient.
+executeCampaignSend() checks the contact status immediately before sending.
+No WhatsApp message is sent.
+The recipient is marked OPTED_OUT.
+The reason is stored as:
+Contact is not eligible for campaign sends
+
+A blocked contact is similarly prevented from sending and is marked SKIPPED.
+
+The current code does not automatically interpret an inbound “STOP” or similar reply as an unsubscribe. Opt-out requires the contact status to be changed to unsubscribed through the existing contact-management flow. Once that status is set, the recipient is stopped at the next scheduled step rather than continuing to send.
