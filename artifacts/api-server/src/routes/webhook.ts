@@ -322,11 +322,12 @@ async function handleIncomingMessage(
   }
 
   // Avoid duplicate messages
-  const existing = await MessageModel.findOne({ whatsappMessageId: msg.id });
+  const existing = await MessageModel.findOne({ whatsappMessageId: msg.id, userId });
   if (existing) return;
 
   const hasPreviousInboundMessage = Boolean(
     await MessageModel.exists({
+      userId,
       contactId,
       direction: "INBOUND",
     }),
@@ -346,7 +347,7 @@ async function handleIncomingMessage(
   // New customer activity belongs in Open and remains unread until an agent
   // opens the conversation. This also reopens conversations previously marked
   // Resolved.
-  await ContactModel.findByIdAndUpdate(contactId, {
+  await ContactModel.findOneAndUpdate({ _id: contactId, userId }, {
     $set: { lastContactedAt: new Date(), chatState: "ACTIVE" },
   });
 
@@ -426,6 +427,7 @@ async function tryRunLinkedChatbot(
   try {
     // Find the most recent outbound template message sent to this contact
     const lastTemplatMsg = await MessageModel.findOne({
+      userId,
       contactId,
       direction: "OUTBOUND",
       templateId: { $exists: true, $ne: null },
@@ -484,6 +486,7 @@ async function handleStatusUpdate(
   // concurrent duplicate webhooks cannot both increment the same counter.
   const statusFilter: Record<string, unknown> = {
     whatsappMessageId: status.id,
+    userId: new mongoose.Types.ObjectId(tenantUserId),
   };
   if (status.status === "delivered") {
     statusFilter.status = { $nin: ["DELIVERED", "READ", "FAILED"] };
@@ -502,7 +505,10 @@ async function handleStatusUpdate(
   );
 
   if (!msg) {
-    const knownMessage = await MessageModel.exists({ whatsappMessageId: status.id });
+    const knownMessage = await MessageModel.exists({
+      whatsappMessageId: status.id,
+      userId: new mongoose.Types.ObjectId(tenantUserId),
+    });
     if (knownMessage) {
       logger.info(
         { id: status.id, status: status.status },
@@ -525,7 +531,13 @@ async function handleStatusUpdate(
         : status.status === "read"
           ? "stats.read"
           : "stats.failed";
-    await CampaignModel.findByIdAndUpdate(msg.campaignId, { $inc: { [field]: 1 } });
+    await CampaignModel.findOneAndUpdate(
+      {
+        _id: msg.campaignId,
+        userId: new mongoose.Types.ObjectId(tenantUserId),
+      },
+      { $inc: { [field]: 1 } },
+    );
   }
 
   logger.info({ id: status.id, status: status.status }, "Updated message status");

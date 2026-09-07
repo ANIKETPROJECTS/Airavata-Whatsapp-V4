@@ -59,6 +59,7 @@ interface ReconciledCampaignCounts {
  * inflated counters and any future duplicate notifications.
  */
 async function getReconciledCampaignCounts(
+  userId: mongoose.Types.ObjectId,
   campaignIds: mongoose.Types.ObjectId[],
 ): Promise<Map<string, ReconciledCampaignCounts>> {
   if (campaignIds.length === 0) return new Map();
@@ -79,6 +80,7 @@ async function getReconciledCampaignCounts(
   }>([
     {
       $match: {
+        userId,
         campaignId: { $in: campaignIds },
         direction: "OUTBOUND",
       },
@@ -264,6 +266,7 @@ router.get("/campaigns", authenticate, async (req: AuthRequest, res) => {
     ]);
 
     const reconciledCounts = await getReconciledCampaignCounts(
+      userId,
       campaigns.map((campaign) => campaign._id as mongoose.Types.ObjectId),
     );
     res.json({
@@ -303,9 +306,10 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
 
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
 
-    const reconciledCounts = await getReconciledCampaignCounts([
-      campaign._id as mongoose.Types.ObjectId,
-    ]);
+    const reconciledCounts = await getReconciledCampaignCounts(
+      userId,
+      [campaign._id as mongoose.Types.ObjectId],
+    );
 
     // Per-recipient breakdown (latest 200 messages)
     const messages = await MessageModel.find({
@@ -641,6 +645,7 @@ router.get(
         .select("_id stats")
         .lean();
       const reconciledCounts = await getReconciledCampaignCounts(
+        userId,
         campaigns.map((campaign) => campaign._id as mongoose.Types.ObjectId),
       );
       const stats = campaigns.reduce(

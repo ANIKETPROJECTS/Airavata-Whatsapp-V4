@@ -113,7 +113,7 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
     });
     const whatsappMessageId = result.messages?.[0]?.id ?? null;
     await CampaignSendModel.updateOne(
-      { _id: send._id },
+      { _id: send._id, userId },
       { $set: { status: "SENT", whatsappMessageId, sentAt: new Date() } },
     );
     await MessageModel.create({
@@ -137,7 +137,7 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
   } catch (error) {
     const reason = error instanceof Error ? error.message : "Campaign send failed";
     await CampaignSendModel.updateOne(
-      { _id: send._id },
+      { _id: send._id, userId },
       { $set: { status: "FAILED", failureReason: reason }, $inc: { retryCount: 1 } },
     );
     await CampaignRecipientModel.updateOne(

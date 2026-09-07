@@ -1,6 +1,7 @@
 import { CampaignModel } from "../models/Campaign";
 import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { UserModel } from "../models/User";
+import mongoose from "mongoose";
 import { executeCampaignSend } from "./campaignExecutor";
 import { logger } from "./logger";
 import { runWithTenant } from "./tenantDatabase";
@@ -11,10 +12,11 @@ let running = false;
  * Claims one due recipient at a time. The atomic claim prevents multiple API
  * instances from processing the same contact concurrently.
  */
-async function processDueCampaignRecipientsForTenant() {
+async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.ObjectId) {
     for (;;) {
       const recipient = await CampaignRecipientModel.findOneAndUpdate(
         {
+          userId,
           status: "QUEUED",
           nextActionAt: { $lte: new Date() },
         },
@@ -31,7 +33,10 @@ async function processDueCampaignRecipientsForTenant() {
           contactId: recipient.contactId,
           stepId: recipient.currentStepId ?? "initial",
         });
-        const campaign = await CampaignModel.findById(recipient.campaignId).lean();
+        const campaign = await CampaignModel.findOne({
+          _id: recipient.campaignId,
+          userId,
+        }).lean();
         if (
           result &&
           "sent" in result &&
@@ -61,6 +66,7 @@ async function processDueCampaignRecipientsForTenant() {
 
       const remaining = await CampaignRecipientModel.exists({
         campaignId: recipient.campaignId,
+        userId,
         status: { $in: ["QUEUED", "ACTIVE", "WAITING"] },
       });
       if (!remaining) {
@@ -83,7 +89,8 @@ export async function processDueCampaignRecipients() {
   try {
     const users = await UserModel.find({ active: { $ne: false } }).select("_id").lean();
     for (const user of users) {
-      await runWithTenant(String(user._id), processDueCampaignRecipientsForTenant);
+      const userId = user._id as mongoose.Types.ObjectId;
+      await runWithTenant(String(userId), () => processDueCampaignRecipientsForTenant(userId));
     }
   } finally {
     running = false;
