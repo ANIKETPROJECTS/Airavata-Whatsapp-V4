@@ -9,6 +9,7 @@ import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvents, emitContactCreatedEvent } from "../lib/clientWebhooks";
+import { normalizeContactPhone, tryNormalizeContactPhone } from "../lib/contactPhone";
 
 const router = Router();
 router.use(authenticate);
@@ -350,10 +351,18 @@ router.post("/contacts", async (req: AuthRequest, res) => {
       }
     }
 
+    let normalizedPhone: string;
+    try {
+      normalizedPhone = normalizeContactPhone(phone);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Invalid phone number" });
+      return;
+    }
+
     const contact = await ContactModel.create({
       userId: req.user!.userId,
       name: name?.trim() || "NA",
-      phone: phone.trim(),
+      phone: normalizedPhone,
       email: email?.trim(),
       tags: tagIds,
       groupId: groupId || undefined,
@@ -400,7 +409,14 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
     if (!contact) { res.status(404).json({ error: "Contact not found" }); return; }
 
     if (name !== undefined) contact.name = name.trim() || "NA";
-    if (phone?.trim()) contact.phone = phone.trim();
+    if (phone?.trim()) {
+      const normalizedPhone = tryNormalizeContactPhone(phone);
+      if (!normalizedPhone) {
+        res.status(400).json({ error: "Phone number must include a country code and contain 7 to 15 digits" });
+        return;
+      }
+      contact.phone = normalizedPhone;
+    }
     if (email !== undefined) contact.email = email?.trim();
     if (attributes !== undefined) {
       contact.set("attributes", attributes);
@@ -541,13 +557,15 @@ router.post("/contacts/import", async (req: AuthRequest, res) => {
 
     const docs = lines.slice(1).map(line => {
       const cols = line.split(",").map(c => c.trim().replace(/"/g, ""));
+      const normalizedPhone = tryNormalizeContactPhone(cols[phoneIdx] ?? "");
+      if (!normalizedPhone) return null;
       return {
         userId: req.user!.userId,
         name: nameIdx !== -1 ? cols[nameIdx] || "NA" : "NA",
-        phone: cols[phoneIdx] ?? "",
+        phone: normalizedPhone,
         email: emailIdx !== -1 ? cols[emailIdx] : undefined,
       };
-    }).filter(d => d.phone);
+    }).filter((d): d is NonNullable<typeof d> => Boolean(d));
 
     const result = await ContactModel.insertMany(docs, { ordered: false }).catch((err) => err);
     const inserted = result.insertedCount ?? result.length ?? docs.length;

@@ -9,6 +9,7 @@ import { UserModel } from "../models/User";
 import { decryptToken } from "./credentialCrypto";
 import { logger } from "./logger";
 import { runWithTenant } from "./tenantDatabase";
+import { normalizeContactPhone } from "./contactPhone";
 import {
   getEcosystemWhatsAppCredentials,
   isProtectedMasterAdminUser,
@@ -21,11 +22,7 @@ const META_ANALYTICS_SAFE_LOOKBACK_DAYS = 270;
 
 /** Meta Cloud API recipient format: digits only, including the country code. */
 export function normalizeWhatsAppPhone(phone: string): string {
-  const normalized = phone.replace(/\D/g, "");
-  if (!/^\d{7,15}$/.test(normalized)) {
-    throw new Error("Recipient phone number must contain 7 to 15 digits including country code");
-  }
-  return normalized;
+  return normalizeContactPhone(phone).slice(1);
 }
 
 /**

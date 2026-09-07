@@ -22,6 +22,7 @@ import {
   enrollNewContactsInTriggerCampaigns,
 } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvents } from "../lib/clientWebhooks";
+import { normalizeContactPhone } from "../lib/contactPhone";
 
 const router = Router();
 const TRIGGER_EVENTS = new Set(["inbound_message", "contact_created", "tag_added"]);
@@ -173,10 +174,11 @@ type ResolvedCsvContact = {
 };
 
 function normalizeCampaignPhone(value: unknown): string | null {
-  const phone = String(value ?? "")
-    .trim()
-    .replace(/[\s\-\(\)\.]/g, "");
-  return /^\+?\d{7,15}$/.test(phone) ? phone : null;
+  try {
+    return normalizeContactPhone(value);
+  } catch {
+    return null;
+  }
 }
 
 function canonicalPhone(phone: string): string {
@@ -680,9 +682,16 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
         .filter(contact => contact.status === "active")
         .map(contact => String(contact._id));
     } else if (phoneNumbers.length > 0) {
+      const normalizedPhoneNumbers = phoneNumbers.flatMap((phone) => {
+        try {
+          return [normalizeContactPhone(phone)];
+        } catch {
+          return [];
+        }
+      });
       const byPhone = await ContactModel.find({
         userId,
-        phone: { $in: phoneNumbers },
+        phone: { $in: normalizedPhoneNumbers },
         status: "active",
       })
         .select("_id")

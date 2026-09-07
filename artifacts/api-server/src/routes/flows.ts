@@ -14,6 +14,7 @@ import { logger } from "../lib/logger";
 import { getCredentials, normalizeWhatsAppPhone } from "../lib/whatsapp";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvent } from "../lib/clientWebhooks";
+import { normalizeContactPhone } from "../lib/contactPhone";
 
 const router = Router();
 
@@ -474,10 +475,10 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
 
     if (!phone) return res.status(400).json({ error: "phone is required" });
 
-    const normalizedPhone = normalizeWhatsAppPhone(phone);
+    const normalizedPhone = normalizeContactPhone(phone);
     let contact = (await ContactModel.find({ userId }).lean()).find((candidate) => {
       try {
-        return normalizeWhatsAppPhone(candidate.phone) === normalizedPhone;
+        return normalizeContactPhone(candidate.phone) === normalizedPhone;
       } catch {
         return false;
       }
@@ -489,7 +490,7 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
       const created = await ContactModel.create({
         userId,
         name: normalizedPhone,
-        phone: `+${normalizedPhone}`,
+        phone: normalizedPhone,
       });
       await enrollNewContactsInTriggerCampaigns(userId, [created._id]);
       void emitContactCreatedEvent(userId, created._id);

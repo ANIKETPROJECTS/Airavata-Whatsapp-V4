@@ -26,6 +26,7 @@ import {
 import { sendInquiryCreated } from "../lib/airavataIntegration";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitClientWebhookEvent, emitContactCreatedEvent } from "../lib/clientWebhooks";
+import { normalizeContactPhone } from "../lib/contactPhone";
 import {
   getEcosystemWhatsAppCredentialIds,
   PROTECTED_MASTER_ADMIN_EMAIL,
@@ -44,10 +45,6 @@ const OPT_OUT_REPLIES = new Set([
 ]);
 
 /** Strip all non-digit characters for phone comparison */
-function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "");
-}
-
 function isOptOutReply(value: string | undefined): boolean {
   const normalized = value
     ?.trim()
@@ -169,7 +166,7 @@ async function handleIncomingMessage(
     logger.warn({ msgId: msg.id, type: msg.type }, "Skipping message with no 'from' field");
     return;
   }
-  const fromNorm = normalizePhone(fromRaw);
+  const normalizedFromPhone = normalizeContactPhone(fromRaw);
 
   // Resolve the tenant from the receiving WhatsApp phone number before
   // reading or creating any contact. Once resolved, recurse inside the
@@ -217,7 +214,7 @@ async function handleIncomingMessage(
   // Find a Contact for this tenant whose normalized phone matches.
   const tenantContacts = await ContactModel.find({ userId }).lean();
   const contact = tenantContacts.find(
-    (c) => normalizePhone(c.phone) === fromNorm,
+    (c) => normalizeContactPhone(c.phone) === normalizedFromPhone,
   );
 
   let contactId: mongoose.Types.ObjectId;
@@ -226,13 +223,19 @@ async function handleIncomingMessage(
     contactId = contact._id as mongoose.Types.ObjectId;
   } else {
     // Auto-create the contact under the user owning the receiving number.
-    const waContact = waContacts.find((wc) => normalizePhone(wc.wa_id) === fromNorm);
+    const waContact = waContacts.find((wc) => {
+      try {
+        return normalizeContactPhone(wc.wa_id) === normalizedFromPhone;
+      } catch {
+        return false;
+      }
+    });
     const displayName = waContact?.profile?.name ?? fromRaw;
 
     const created = await ContactModel.create({
       userId,
       name: displayName,
-      phone: `+${fromRaw}`,
+      phone: normalizedFromPhone,
     });
     await enrollNewContactsInTriggerCampaigns(userId, [created._id]);
       void emitContactCreatedEvent(userId, created._id);
@@ -426,7 +429,7 @@ async function handleIncomingMessage(
     contact: {
       id: String(contactId),
       name: contact?.name ?? fromRaw,
-      phone: `+${fromRaw}`,
+      phone: normalizedFromPhone,
     },
   });
 

@@ -19,6 +19,7 @@ import {
 import { withCreditCharge } from "../lib/creditDeduction";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvent } from "../lib/clientWebhooks";
+import { normalizeContactPhone } from "../lib/contactPhone";
 
 const router = Router();
 const headerMediaUpload = multer({
@@ -337,8 +338,7 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       }
     }
 
-    // Normalise phone: strip leading zeros / spaces
-    const phone = to.trim().replace(/\s+/g, "");
+    const phone = normalizeContactPhone(to);
 
     const category = String(template.category).toUpperCase() as
       | "AUTHENTICATION"
