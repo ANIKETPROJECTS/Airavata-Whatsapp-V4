@@ -16,6 +16,10 @@ import { logger } from "../lib/logger";
 import { executeCampaignSend } from "../lib/campaignExecutor";
 import { resolveAudience } from "../lib/audienceResolver";
 import { getMetaMessagingAnalytics } from "../lib/whatsapp";
+import {
+  enrollContactsInTriggerCampaign,
+  enrollNewContactsInTriggerCampaigns,
+} from "../lib/triggerEnrollment";
 
 const router = Router();
 
@@ -288,6 +292,11 @@ async function resolveCsvContacts(
       phone: contact.phone,
       status: contact.status,
     }));
+    await enrollNewContactsInTriggerCampaigns(
+      userId,
+      created.map((contact) => contact._id),
+      { session },
+    );
   }
 
   return {
@@ -494,69 +503,12 @@ router.post("/campaigns/:id/enroll", authenticate, async (req: AuthRequest, res)
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
     if (campaign.type !== "TRIGGER") return res.status(400).json({ error: "Only Trigger campaigns can be event-enrolled" });
     const { contactIds = [] } = req.body as { contactIds?: string[] };
-    const validContactIds = Array.isArray(contactIds)
-      ? contactIds
-          .filter((id) => mongoose.isValidObjectId(id))
-          .map((id) => new mongoose.Types.ObjectId(id))
-      : [];
-    const contacts = await ContactModel.find({
+    const result = await enrollContactsInTriggerCampaign(
       userId,
-      _id: { $in: validContactIds },
-      status: "active",
-    }).select("_id").lean();
-    if (contacts.length === 0) {
-      return res.status(200).json({ enrolled: 0, alreadyEnrolled: 0 });
-    }
-
-    try {
-      const result = await CampaignRecipientModel.bulkWrite(
-        contacts.map((contact) => ({
-          updateOne: {
-            filter: {
-              userId,
-              campaignId: campaign._id,
-              contactId: contact._id,
-            },
-            update: {
-              $setOnInsert: {
-                userId,
-                campaignId: campaign._id,
-                contactId: contact._id,
-                status: "QUEUED",
-                currentStepId: "initial",
-                nextActionAt: new Date(),
-              },
-            },
-            upsert: true,
-          },
-        })),
-        { ordered: false },
-      );
-      const enrolled = result.upsertedCount ?? 0;
-      return res.status(enrolled > 0 ? 201 : 200).json({
-        enrolled,
-        alreadyEnrolled: contacts.length - enrolled,
-      });
-    } catch (error) {
-      const duplicateKeyError =
-        (error as { code?: number }).code === 11000 ||
-        (error as { writeErrors?: Array<{ code?: number }> }).writeErrors?.some(
-          (writeError) => writeError.code === 11000,
-        );
-      if (!duplicateKeyError) throw error;
-
-      // A concurrent event may race the unique index after the upsert
-      // predicate was evaluated. Treat that race as an idempotent no-op.
-      const alreadyEnrolled = await CampaignRecipientModel.countDocuments({
-        userId,
-        campaignId: campaign._id,
-        contactId: { $in: contacts.map((contact) => contact._id) },
-      });
-      return res.status(200).json({
-        enrolled: 0,
-        alreadyEnrolled,
-      });
-    }
+      campaign._id as mongoose.Types.ObjectId,
+      Array.isArray(contactIds) ? contactIds : [],
+    );
+    return res.status(result.enrolled > 0 ? 201 : 200).json(result);
   } catch {
     res.status(500).json({ error: "Unable to enroll trigger contacts" });
   }

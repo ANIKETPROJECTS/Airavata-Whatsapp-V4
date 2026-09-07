@@ -22,6 +22,7 @@ import {
   resumeChatbotAfterFlowSubmission,
 } from "../lib/chatbotEngine";
 import { sendInquiryCreated } from "../lib/airavataIntegration";
+import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import {
   getEcosystemWhatsAppCredentialIds,
   PROTECTED_MASTER_ADMIN_EMAIL,
@@ -214,6 +215,7 @@ async function handleIncomingMessage(
       name: displayName,
       phone: `+${fromRaw}`,
     });
+    await enrollNewContactsInTriggerCampaigns(userId, [created._id]);
     contactId = created._id as mongoose.Types.ObjectId;
     logger.info({ phone: fromRaw, name: displayName }, "Auto-created contact from webhook");
   }

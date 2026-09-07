@@ -7,6 +7,7 @@ import { MessageModel } from "../models/Message";
 import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
+import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 
 const router = Router();
 router.use(authenticate);
@@ -357,6 +358,7 @@ router.post("/contacts", async (req: AuthRequest, res) => {
       groupId: groupId || undefined,
       groupIds: groupId ? [groupId] : [],
     });
+    await enrollNewContactsInTriggerCampaigns(req.user!.userId, [contact._id]);
 
     const populated = await ContactModel.findById(contact._id)
       .populate("tags", "name color")
@@ -547,6 +549,13 @@ router.post("/contacts/import", async (req: AuthRequest, res) => {
 
     const result = await ContactModel.insertMany(docs, { ordered: false }).catch((err) => err);
     const inserted = result.insertedCount ?? result.length ?? docs.length;
+    const createdContacts = Array.isArray(result)
+      ? result
+      : ((result as { insertedDocs?: Array<{ _id: mongoose.Types.ObjectId }> }).insertedDocs ?? []);
+    await enrollNewContactsInTriggerCampaigns(
+      req.user!.userId,
+      createdContacts.map((contact) => contact._id),
+    );
 
     res.json({ imported: inserted, total: docs.length });
   } catch {
