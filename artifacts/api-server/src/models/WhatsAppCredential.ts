@@ -22,6 +22,12 @@ const whatsAppCredentialSchema = new Schema(
      * Stored as a single base64 string: IV (12 bytes) + authTag (16 bytes) + ciphertext.
      */
     accessTokenEncrypted: { type: String, required: true },
+    // Tenant-owned Meta Commerce Catalog settings. These are local settings only;
+    // catalog discovery/synchronization is intentionally not implemented here.
+    metaCatalogId: { type: String, trim: true },
+    catalogName: { type: String, trim: true },
+    catalogConnected: { type: Boolean, default: false },
+    catalogLastSyncedAt: { type: Date },
   },
   { timestamps: true },
 );

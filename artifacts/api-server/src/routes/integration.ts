@@ -525,4 +525,138 @@ router.get(
   },
 );
 
+/**
+ * GET /api/integration/whatsapp/catalog-settings
+ *
+ * Local tenant settings only. This endpoint does not call Meta.
+ */
+router.get(
+  "/integration/whatsapp/catalog-settings",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const credential = await WhatsAppCredentialModel.findOne({
+        userId: req.user!.userId,
+      })
+        .select("metaCatalogId catalogName catalogConnected catalogLastSyncedAt")
+        .lean();
+
+      res.json({
+        settings: {
+          metaCatalogId: credential?.metaCatalogId ?? null,
+          catalogName: credential?.catalogName ?? null,
+          catalogConnected: credential?.catalogConnected === true,
+          catalogLastSyncedAt: credential?.catalogLastSyncedAt ?? null,
+        },
+      });
+    } catch (error) {
+      logger.error({ err: error, userId: req.user!.userId }, "Catalog settings lookup failed");
+      res.status(500).json({ error: "Unable to load catalog settings" });
+    }
+  },
+);
+
+/**
+ * PATCH /api/integration/whatsapp/catalog-settings
+ *
+ * Saves local tenant settings only. No Meta API calls are made.
+ */
+router.patch(
+  "/integration/whatsapp/catalog-settings",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const body = (req.body ?? {}) as {
+        metaCatalogId?: unknown;
+        catalogName?: unknown;
+        catalogConnected?: unknown;
+        catalogLastSyncedAt?: unknown;
+      };
+      const update: Record<string, unknown> = {};
+      const unset: Record<string, 1> = {};
+
+      if (body.metaCatalogId !== undefined) {
+        if (body.metaCatalogId === null || body.metaCatalogId === "") {
+          unset.metaCatalogId = 1;
+        } else if (typeof body.metaCatalogId === "string" && body.metaCatalogId.trim()) {
+          update.metaCatalogId = body.metaCatalogId.trim();
+        } else {
+          res.status(400).json({ error: "metaCatalogId must be a non-empty string or null" });
+          return;
+        }
+      }
+
+      if (body.catalogName !== undefined) {
+        if (body.catalogName === null || body.catalogName === "") {
+          unset.catalogName = 1;
+        } else if (typeof body.catalogName === "string" && body.catalogName.trim()) {
+          update.catalogName = body.catalogName.trim();
+        } else {
+          res.status(400).json({ error: "catalogName must be a non-empty string or null" });
+          return;
+        }
+      }
+
+      if (body.catalogConnected !== undefined) {
+        if (typeof body.catalogConnected !== "boolean") {
+          res.status(400).json({ error: "catalogConnected must be a boolean" });
+          return;
+        }
+        update.catalogConnected = body.catalogConnected;
+      }
+
+      if (body.catalogLastSyncedAt !== undefined) {
+        if (body.catalogLastSyncedAt === null || body.catalogLastSyncedAt === "") {
+          unset.catalogLastSyncedAt = 1;
+        } else if (
+          typeof body.catalogLastSyncedAt === "string" &&
+          !Number.isNaN(Date.parse(body.catalogLastSyncedAt))
+        ) {
+          update.catalogLastSyncedAt = new Date(body.catalogLastSyncedAt);
+        } else {
+          res.status(400).json({ error: "catalogLastSyncedAt must be a valid ISO date or null" });
+          return;
+        }
+      }
+
+      if (Object.keys(update).length === 0 && Object.keys(unset).length === 0) {
+        res.status(400).json({ error: "At least one catalog setting is required" });
+        return;
+      }
+
+      const updateDocument: Record<string, unknown> = {};
+      if (Object.keys(update).length > 0) updateDocument.$set = update;
+      if (Object.keys(unset).length > 0) updateDocument.$unset = unset;
+
+      const credential = await WhatsAppCredentialModel.findOneAndUpdate(
+        { userId: req.user!.userId },
+        updateDocument,
+        {
+          new: true,
+          runValidators: true,
+        },
+      )
+        .select("metaCatalogId catalogName catalogConnected catalogLastSyncedAt")
+        .lean();
+
+      if (!credential) {
+        res.status(404).json({ error: "WhatsApp credentials are not connected for this tenant" });
+        return;
+      }
+
+      res.json({
+        settings: {
+          metaCatalogId: credential.metaCatalogId ?? null,
+          catalogName: credential.catalogName ?? null,
+          catalogConnected: credential.catalogConnected === true,
+          catalogLastSyncedAt: credential.catalogLastSyncedAt ?? null,
+        },
+      });
+    } catch (error) {
+      logger.error({ err: error, userId: req.user!.userId }, "Catalog settings save failed");
+      res.status(500).json({ error: "Unable to save catalog settings" });
+    }
+  },
+);
+
 export default router;
