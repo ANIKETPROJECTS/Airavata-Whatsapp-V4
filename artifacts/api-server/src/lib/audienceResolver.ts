@@ -52,7 +52,7 @@ export async function resolveAudience(
     : null;
   const filter = input.filter ?? segment?.filter as AudienceFilter | undefined;
 
-  const clauses: Record<string, unknown>[] = [{ userId: owner }];
+  const clauses: Record<string, unknown>[] = [{ userId: owner, status: "active" }];
   const explicitIds = ids(input.contactIds);
   if (explicitIds.length) clauses.push({ _id: { $in: explicitIds } });
 
