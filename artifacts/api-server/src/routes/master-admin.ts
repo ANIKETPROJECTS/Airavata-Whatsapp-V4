@@ -30,6 +30,8 @@ const DEFAULT_PERMISSIONS = [
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\d{10}$/;
 const SERVICE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const BILLING_MODES = ["unknown", "airavata_credits", "meta_direct"] as const;
+type BillingMode = (typeof BILLING_MODES)[number];
 
 function isValidServiceStartDate(value: unknown): value is string {
   if (typeof value !== "string" || !SERVICE_DATE_PATTERN.test(value)) return false;
@@ -68,6 +70,10 @@ function publicUser(user: any, connection?: any) {
     permissions: user.permissions ?? DEFAULT_PERMISSIONS,
     protectedAccount,
     creditBalance: user.creditBalance ?? 0,
+    billingMode: user.billingMode ?? "unknown",
+    billingModeSetAt: user.billingModeSetAt ?? null,
+    billingModeSetBy: user.billingModeSetBy ?? null,
+    billingModeSetSource: user.billingModeSetSource ?? "system_default",
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     connection: protectedAccount
@@ -124,7 +130,7 @@ router.get("/master-admin/users", async (_req, res) => {
 
 router.post("/master-admin/users", async (req, res) => {
   try {
-    const { businessName, email, password, phone, serviceStartDate, servicePaidThroughDate, role, permissions, active } = req.body as Record<string, any>;
+    const { businessName, email, password, phone, serviceStartDate, servicePaidThroughDate, role, permissions, active, billingMode } = req.body as Record<string, any>;
     if (
       typeof businessName !== "string" ||
       businessName.trim().length < 2 ||
@@ -143,11 +149,16 @@ router.post("/master-admin/users", async (req, res) => {
       res.status(400).json({ error: "Enter a business name (2–100 characters), valid email, 10-digit phone number, service start date, and password (8–128 characters)" });
       return;
     }
+    if (billingMode !== undefined && !BILLING_MODES.includes(billingMode as BillingMode)) {
+      res.status(400).json({ error: "Billing mode must be unknown, airavata_credits, or meta_direct" });
+      return;
+    }
     const normalizedEmail = email.toLowerCase().trim();
     if (await UserModel.exists({ email: normalizedEmail })) {
       res.status(409).json({ error: "An account with this email already exists" });
       return;
     }
+    const requestedBillingMode = (billingMode ?? "unknown") as BillingMode;
     const user = await UserModel.create({
       businessName: businessName.trim(),
       email: normalizedEmail,
@@ -158,6 +169,14 @@ router.post("/master-admin/users", async (req, res) => {
       role: role === "admin" ? "admin" : "client",
       permissions: Array.isArray(permissions) ? permissions : DEFAULT_PERMISSIONS,
       active: active !== false,
+      billingMode: requestedBillingMode,
+      ...(billingMode !== undefined
+        ? {
+            billingModeSetAt: new Date(),
+            billingModeSetBy: req.user!.userId,
+            billingModeSetSource: "master_admin",
+          }
+        : {}),
       isProtectedMasterAdmin: normalizedEmail === "raneaniket23@gmail.com",
     });
     try {
@@ -181,7 +200,7 @@ router.put("/master-admin/users/:id", async (req, res) => {
   try {
     const id = validId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
-    const { businessName, email, phone, serviceStartDate, servicePaidThroughDate, timezone, role, permissions, active, password } = req.body as Record<string, any>;
+    const { businessName, email, phone, serviceStartDate, servicePaidThroughDate, timezone, role, permissions, active, password, billingMode } = req.body as Record<string, any>;
     const update: Record<string, any> = {};
     if (typeof businessName === "string" && businessName.trim()) {
       if (businessName.trim().length < 2 || businessName.trim().length > 100) {
@@ -226,6 +245,16 @@ router.put("/master-admin/users/:id", async (req, res) => {
     if (role === "admin" || role === "client") update.role = role;
     if (Array.isArray(permissions)) update.permissions = permissions;
     if (typeof active === "boolean") update.active = active;
+    if (billingMode !== undefined) {
+      if (!BILLING_MODES.includes(billingMode as BillingMode)) {
+        res.status(400).json({ error: "Billing mode must be unknown, airavata_credits, or meta_direct" });
+        return;
+      }
+      update.billingMode = billingMode;
+      update.billingModeSetAt = new Date();
+      update.billingModeSetBy = req.user!.userId;
+      update.billingModeSetSource = "master_admin";
+    }
     if (typeof password === "string" && password) {
       if (password.length < 8 || password.length > 128) {
         res.status(400).json({ error: "Password must be between 8 and 128 characters" });

@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { connectToDatabase } from "./lib/mongodb";
 import { CreditSettingModel } from "./models/CreditSetting";
+import { UserModel } from "./models/User";
 import { startCampaignWorker } from "./lib/campaignWorker";
 import { migrateAllExistingUsers } from "./lib/tenantMigration";
 import {
@@ -47,6 +48,18 @@ connectToDatabase()
       }
       await CreditSettingModel.deleteMany({ key: "creditsPerMessage" });
     });
+  })
+  .then(() => {
+    return UserModel.updateMany(
+      { billingMode: { $exists: false } },
+      {
+        $set: {
+          billingMode: "unknown",
+          billingModeSetAt: new Date(),
+          billingModeSetSource: "system_default",
+        },
+      },
+    );
   })
   .then(() => {
     return migrateAllExistingUsers();

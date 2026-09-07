@@ -41,6 +41,19 @@ const userSchema = new Schema(
       ],
     },
     creditBalance: { type: Number, default: 0 },
+    billingMode: {
+      type: String,
+      enum: ["unknown", "airavata_credits", "meta_direct"],
+      default: "unknown",
+      index: true,
+    },
+    billingModeSetAt: { type: Date, default: Date.now },
+    billingModeSetBy: { type: String, trim: true },
+    billingModeSetSource: {
+      type: String,
+      enum: ["system_default", "master_admin"],
+      default: "system_default",
+    },
     metaPhoneNumberId: { type: String, unique: true, sparse: true },
     // Embedded Signup — set when a business connects their WABA via Connect Facebook
     metaWabaConnected: { type: Boolean, default: false },
