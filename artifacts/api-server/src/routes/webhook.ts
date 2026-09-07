@@ -458,10 +458,10 @@ async function handleIncomingMessage(
       eventId: msg.id,
       sourceSystem: "airavata",
       source: "whatsapp",
-      externalInquiryId: `whatsapp:${fromNorm}`,
+      externalInquiryId: `whatsapp:${normalizedFromPhone}`,
       customer: {
         name: contact?.name ?? fromRaw,
-        phone: `+${fromRaw}`,
+        phone: normalizedFromPhone,
         whatsappContactName: contact?.name ?? fromRaw,
       },
       vehicle: {
