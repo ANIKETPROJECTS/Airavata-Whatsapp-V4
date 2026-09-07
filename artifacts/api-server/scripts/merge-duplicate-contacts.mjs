@@ -373,10 +373,17 @@ async function main() {
   const controlDb = mongoose.connection.db;
   if (!controlDb) throw new Error("MongoDB control-plane database is unavailable");
 
+  const targetBusinessName = process.env.MERGE_BUSINESS_NAME;
+  const targetUserId = process.env.MERGE_USER_ID;
+  const userFilter = {
+    businessName: { $exists: true, $ne: null },
+    ...(targetBusinessName ? { businessName: targetBusinessName } : {}),
+    ...(targetUserId ? { _id: new mongoose.Types.ObjectId(targetUserId) } : {}),
+  };
   const users = await controlDb
     .collection("users")
     .find(
-      { businessName: { $exists: true, $ne: null } },
+      userFilter,
       { projection: { _id: 1, email: 1, businessName: 1, tenantDatabaseName: 1 } },
     )
     .sort({ _id: 1 })
@@ -406,7 +413,12 @@ async function main() {
     });
   }
 
-  console.log(JSON.stringify({ tenants, readOnly: false }, null, 2));
+  console.log(JSON.stringify({
+    readOnly: false,
+    targetBusinessName: targetBusinessName ?? null,
+    targetUserId: targetUserId ?? null,
+    tenants,
+  }, null, 2));
   await mongoose.disconnect();
 }
 
