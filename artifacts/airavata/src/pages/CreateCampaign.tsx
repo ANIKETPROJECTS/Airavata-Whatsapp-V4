@@ -26,6 +26,7 @@ interface Template {
 interface Group    { id: string; name: string; memberCount?: number; }
 interface TagItem  { id: string; name: string; color?: string; }
 interface Contact  { id: string; name: string; phone: string; }
+interface PublishedFlow { id: string; name: string; status: string; metaFlowId?: string; }
 interface CsvContactRow {
   phone: string;
   name?: string;
@@ -485,6 +486,7 @@ export default function CreateCampaign() {
   const [csvDuplicates, setCsvDuplicates]  = useState(0);
   const [csvParsing, setCsvParsing]         = useState(false);
   const [csvError, setCsvError]             = useState('');
+  const [flowId, setFlowId]                 = useState('');
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const csvInputRef = useRef<HTMLInputElement>(null);
 
@@ -536,6 +538,15 @@ export default function CreateCampaign() {
     enabled: view !== 'select' && view !== 'csv',
   });
   const contacts = contactsData?.contacts ?? [];
+
+  const { data: flowsData, isLoading: flowsLoading } = useQuery<{ flows: PublishedFlow[] }>({
+    queryKey: ['flows'],
+    queryFn: () => api.get('/flows'),
+    enabled: view === 'flow',
+  });
+  const publishedFlows = (flowsData?.flows ?? []).filter(
+    flow => flow.status === 'PUBLISHED' && Boolean(flow.metaFlowId),
+  );
 
   // ── Parsed numbers ─────────────────────────────────────────────────────────
 
@@ -589,14 +600,19 @@ export default function CreateCampaign() {
 
   function validateCommon() {
     if (!campaignName.trim()) { toast.error('Enter a campaign name'); return false; }
-    if (!templateId)          { toast.error('Select an approved template'); return false; }
+    if (view === 'flow') {
+      if (!flowId) { toast.error('Select a published Flow'); return false; }
+    } else if (!templateId) {
+      toast.error('Select an approved template');
+      return false;
+    }
     return true;
   }
 
   function buildPayload(extra: Record<string, unknown> = {}, scheduled = false) {
     return {
       name: campaignName,
-      templateId,
+      ...(templateId ? { templateId } : {}),
       variableValues,
       type: view === 'segment' ? 'SEGMENT' : view === 'drip' ? 'DRIP' : view === 'trigger' ? 'TRIGGER' : view === 'flow' ? 'FLOW' : view === 'csv' ? 'CSV' : 'QUICK',
       ...(view === 'drip' ? {
@@ -633,6 +649,12 @@ export default function CreateCampaign() {
     launchMutation.mutate(buildPayload(csvPayload()));
   }
 
+  function handleFlowSend() {
+    if (!validateCommon()) return;
+    if (parsed.valid.length === 0) { toast.error('No valid phone numbers entered'); return; }
+    launchMutation.mutate(buildPayload({ flowId, phoneNumbers: parsed.valid }));
+  }
+
   function handleGroupSend() {
     if (!validateCommon()) return;
     if (!groupId) { toast.error('Select a contact group'); return; }
@@ -656,6 +678,7 @@ export default function CreateCampaign() {
     setTemplateId(''); setCampaignName(''); setCountryCode('');
     setNumbers(''); setGroupId(''); setTagId(''); setSegmentGroupId(''); setSegmentTagId('');
     setCsvFile(null); setCsvContacts([]); setCsvInvalid([]); setCsvDuplicates(0); setCsvError('');
+    setFlowId('');
     setDripSteps('1:0'); setTriggerEvent('inbound_message');
     setVariableValues({});
     setView(v);
@@ -1138,12 +1161,22 @@ export default function CreateCampaign() {
           </div>
 
           {/* Select Flow */}
-          <div className="space-y-1.5">
+           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Select Flow *</p>
-            <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm text-yellow-800">
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-yellow-500" />
-              No published flows found. Publish a flow first from the Flow Builder.
-            </div>
+             <select
+               value={flowId}
+               onChange={e => setFlowId(e.target.value)}
+               disabled={flowsLoading}
+               className="w-full border rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+             >
+               <option value="">{flowsLoading ? 'Loading published Flows…' : 'Select a published Flow'}</option>
+               {publishedFlows.map(flow => (
+                 <option key={flow.id} value={flow.id}>{flow.name}</option>
+               ))}
+             </select>
+             {!flowsLoading && publishedFlows.length === 0 && (
+               <p className="text-xs text-amber-700">No published Flows found. Publish a Flow first from the Flow Builder.</p>
+             )}
           </div>
 
           {/* Country code */}
@@ -1184,13 +1217,14 @@ export default function CreateCampaign() {
 
         <div className="flex items-center gap-3 bg-white border rounded-xl p-4 w-fit">
           <button
-            onClick={() => handleSchedule({ phoneNumbers: parsed.valid })}
+             onClick={() => handleSchedule({ flowId, phoneNumbers: parsed.valid })}
             className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
           >
             Schedule Campaign
           </button>
           <button
-            disabled={parsed.valid.length === 0 || launchMutation.isPending}
+             onClick={handleFlowSend}
+             disabled={parsed.valid.length === 0 || !flowId || launchMutation.isPending}
             className="px-5 py-2.5 bg-gray-300 text-gray-500 text-sm font-semibold rounded-lg disabled:opacity-60 enabled:bg-gray-900 enabled:text-white enabled:hover:bg-gray-800 transition-colors flex items-center gap-2"
           >
             {launchMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}

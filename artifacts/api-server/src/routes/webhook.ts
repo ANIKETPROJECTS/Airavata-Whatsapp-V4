@@ -222,6 +222,7 @@ async function handleIncomingMessage(
   let body: string | undefined;
   let flowData: Record<string, unknown> | undefined;
   let flowId: mongoose.Types.ObjectId | undefined;
+  let campaignId: mongoose.Types.ObjectId | undefined;
   let interactiveReplyId: string | undefined; // button_reply / list_reply ID for chatbot engine
   let runChatbot = false; // only fire engine for text + interactive button/list replies
   let isTemplateQuickReply = false; // true only for template quick-reply button taps (msg.type === "button")
@@ -278,10 +279,21 @@ async function handleIncomingMessage(
           (typeof flowData["flow_token"] === "string" ? flowData["flow_token"] : undefined) ??
           (typeof nestedToken === "string" ? nestedToken : undefined);
         if (token) {
-          const match = token.match(/^flow_([a-f0-9]{24})_/);
+          const match = token.match(/^flow_([a-f0-9]{24})(?:_campaign_([a-f0-9]{24}))?_/);
           if (match?.[1]) {
             const candidate = await FlowModel.findOne({ _id: match[1], userId }).lean();
-            if (candidate) flowId = candidate._id as mongoose.Types.ObjectId;
+            if (candidate) {
+              flowId = candidate._id as mongoose.Types.ObjectId;
+              if (match[2]) {
+                const campaign = await CampaignModel.findOne({
+                  _id: match[2],
+                  userId,
+                  type: "FLOW",
+                  flowId: candidate._id,
+                }).lean();
+                if (campaign) campaignId = campaign._id as mongoose.Types.ObjectId;
+              }
+            }
           }
         }
 
@@ -311,6 +323,7 @@ async function handleIncomingMessage(
           from: fromRaw,
           tokenFound: Boolean(token),
           flowId: flowId ? String(flowId) : undefined,
+          campaignId: campaignId ? String(campaignId) : undefined,
           sessionFound: Boolean((contact as Record<string, unknown>)["chatbotSession"]),
         }, "Resolved WhatsApp Flow submission context");
       } catch (parseErr) {
@@ -367,6 +380,7 @@ async function handleIncomingMessage(
     status: "RECEIVED",
     ...(flowData ? { flowData } : {}),
     ...(flowId ? { flowId } : {}),
+    ...(campaignId ? { campaignId } : {}),
   });
 
   // New customer activity belongs in Open and remains unread until an agent

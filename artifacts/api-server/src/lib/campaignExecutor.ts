@@ -5,7 +5,8 @@ import { CampaignSendModel } from "../models/CampaignSend";
 import { ContactModel } from "../models/Contact";
 import { MessageModel } from "../models/Message";
 import { TemplateModel } from "../models/Template";
-import { sendTemplateMessage } from "./whatsapp";
+import { FlowModel } from "../models/Flow";
+import { sendTemplateMessage, sendWhatsAppFlowMessage } from "./whatsapp";
 import { withCreditCharge } from "./creditDeduction";
 import { logger } from "./logger";
 
@@ -59,9 +60,19 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
   const campaign = await CampaignModel.findOne({ _id: campaignId, userId }).lean();
   if (!campaign) throw new Error("Campaign not found");
 
+  const isFlowCampaign = campaign.type === "FLOW";
   const templateId = input.templateId ?? campaign.templateId;
-  const template = await TemplateModel.findOne({ _id: templateId, userId }).lean();
-  if (!template || String(template.status).toUpperCase() !== "APPROVED") {
+  const template = !isFlowCampaign && templateId
+    ? await TemplateModel.findOne({ _id: templateId, userId }).lean()
+    : null;
+  const flow = isFlowCampaign && campaign.flowId
+    ? await FlowModel.findOne({ _id: campaign.flowId, userId }).lean()
+    : null;
+  if (isFlowCampaign) {
+    if (!flow || flow.status !== "PUBLISHED" || !flow.metaFlowId) {
+      throw new Error("Published Flow not found for campaign");
+    }
+  } else if (!template || String(template.status).toUpperCase() !== "APPROVED") {
     throw new Error("Only APPROVED templates can be used in campaigns");
   }
 
@@ -85,7 +96,8 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
       recipientId,
       contactId,
       stepId,
-      templateId: new mongoose.Types.ObjectId(String(template._id)),
+      ...(template ? { templateId: new mongoose.Types.ObjectId(String(template._id)) } : {}),
+      ...(flow ? { flowId: new mongoose.Types.ObjectId(String(flow._id)) } : {}),
       idempotencyKey,
       status: "SENDING",
     });
@@ -100,16 +112,23 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
   try {
     const result = await withCreditCharge({
       userId,
-      category: template.category,
+      category: template?.category,
       campaignId,
       description: `Campaign message to ${contact.phone}`,
-      send: () => sendTemplateMessage(
-        contact.phone,
-        template.name,
-        template.language ?? "en_US",
-        buildComponents(values, contact),
-        String(userId),
-      ),
+      send: () => isFlowCampaign
+        ? sendWhatsAppFlowMessage(
+            contact.phone,
+            flow!,
+            String(userId),
+            { campaignId: String(campaignId), recipientId: String(recipientId) },
+          )
+        : sendTemplateMessage(
+            contact.phone,
+            template!.name,
+            template!.language ?? "en_US",
+            buildComponents(values, contact),
+            String(userId),
+          ),
     });
     const whatsappMessageId = result.messages?.[0]?.id ?? null;
     await CampaignSendModel.updateOne(
@@ -121,8 +140,9 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
       contactId,
       campaignId,
       direction: "OUTBOUND",
-      body: resolveBody(template.body, values, contact),
-      templateId: template._id,
+      body: isFlowCampaign ? `WhatsApp Flow: ${flow!.name}` : resolveBody(template!.body, values, contact),
+      ...(template ? { templateId: template._id } : {}),
+      ...(flow ? { flowId: flow._id } : {}),
       whatsappMessageId,
       status: "SENT",
       sentAt: new Date(),
@@ -149,8 +169,9 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
       contactId,
       campaignId,
       direction: "OUTBOUND",
-      body: resolveBody(template.body, values, contact),
-      templateId: template._id,
+      body: isFlowCampaign ? `WhatsApp Flow: ${flow!.name}` : resolveBody(template!.body, values, contact),
+      ...(template ? { templateId: template._id } : {}),
+      ...(flow ? { flowId: flow._id } : {}),
       status: "FAILED",
       failureReason: reason,
     });

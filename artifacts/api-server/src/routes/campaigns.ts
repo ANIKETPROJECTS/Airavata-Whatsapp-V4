@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import { CampaignModel } from "../models/Campaign";
 import { ContactModel } from "../models/Contact";
 import { TemplateModel } from "../models/Template";
+import { FlowModel } from "../models/Flow";
 import { MessageModel } from "../models/Message";
 import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
@@ -579,6 +580,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       name,
       type = "QUICK",
       templateId,
+      flowId,
       contactIds = [],
       groupIds = [],
       variableValues = {},
@@ -593,7 +595,8 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     } = req.body as {
       name: string;
       type?: "QUICK" | "CSV" | "SEGMENT" | "FLOW" | "DRIP" | "TRIGGER";
-      templateId: string;
+      templateId?: string;
+      flowId?: string;
       contactIds?: string[];
       groupIds?: string[];
       variableValues?: Record<string, string>;
@@ -608,23 +611,41 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       trigger?: Record<string, unknown>;
     };
     const isCsvCampaign = type === "CSV";
+    const isFlowCampaign = type === "FLOW";
 
-    if (!name || !templateId) {
+    if (!name || (!templateId && !(isFlowCampaign && flowId))) {
       return res
         .status(400)
-        .json({ error: "name and templateId are required" });
+        .json({
+          error: isFlowCampaign
+            ? "name and flowId are required"
+            : "name and templateId are required",
+        });
     }
 
-    // Validate template belongs to user and is APPROVED
-    const template = await TemplateModel.findOne({
-      _id: templateId,
-      userId,
-    }).lean();
-    if (!template) return res.status(404).json({ error: "Template not found" });
-    if (String(template.status).toUpperCase() !== "APPROVED") {
-      return res
-        .status(400)
-        .json({ error: "Only APPROVED templates can be used in campaigns" });
+    let template = null;
+    let flow = null;
+    if (isFlowCampaign) {
+      if (!flowId || !mongoose.isValidObjectId(flowId)) {
+        return res.status(400).json({ error: "A valid flowId is required" });
+      }
+      flow = await FlowModel.findOne({ _id: flowId, userId }).lean();
+      if (!flow) return res.status(404).json({ error: "Flow not found" });
+      if (flow.status !== "PUBLISHED" || !flow.metaFlowId) {
+        return res.status(400).json({ error: "Flow must be published before sending" });
+      }
+    } else {
+      // Validate template belongs to user and is APPROVED
+      template = await TemplateModel.findOne({
+        _id: templateId,
+        userId,
+      }).lean();
+      if (!template) return res.status(404).json({ error: "Template not found" });
+      if (String(template.status).toUpperCase() !== "APPROVED") {
+        return res
+          .status(400)
+          .json({ error: "Only APPROVED templates can be used in campaigns" });
+      }
     }
 
     // Resolve contacts by raw phone numbers (Quick / Tags / Flow campaigns)
@@ -692,14 +713,15 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
 
     // Create campaign record
     const isScheduled = !!scheduledAt && new Date(scheduledAt) > new Date();
-    const deferred = isScheduled || type === "DRIP" || type === "TRIGGER";
+    const deferred = isScheduled || type === "DRIP" || type === "TRIGGER" || isFlowCampaign;
     const campaign = await CampaignModel.create(
       [
         {
           userId,
           name,
           type,
-          templateId: new mongoose.Types.ObjectId(templateId),
+          ...(templateId ? { templateId: new mongoose.Types.ObjectId(templateId) } : {}),
+          ...(flowId ? { flowId: new mongoose.Types.ObjectId(flowId) } : {}),
           audience: {
             contactIds: contactIds.map((id) => new mongoose.Types.ObjectId(id)),
             groupIds: groupIds.map((id) => new mongoose.Types.ObjectId(id)),

@@ -8,7 +8,8 @@ const campaignSendSchema = new Schema(
     recipientId: { type: Schema.Types.ObjectId, ref: "CampaignRecipient", required: true },
     contactId: { type: Schema.Types.ObjectId, ref: "Contact", required: true, index: true },
     stepId: { type: String, required: true },
-    templateId: { type: Schema.Types.ObjectId, ref: "Template", required: true },
+    templateId: { type: Schema.Types.ObjectId, ref: "Template" },
+    flowId: { type: Schema.Types.ObjectId, ref: "Flow" },
     idempotencyKey: { type: String, required: true },
     status: {
       type: String,

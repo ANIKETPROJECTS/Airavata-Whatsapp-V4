@@ -940,3 +940,79 @@ export async function sendTemplateMessage(
   );
   return result;
 }
+
+function sanitizeFlowScreenId(id: string): string {
+  const digitWords = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"];
+  return id.replace(/\d/g, (digit) => digitWords[Number(digit)] ?? digit);
+}
+
+export type CampaignFlow = {
+  _id: unknown;
+  name: string;
+  metaFlowId?: string | null;
+  screens?: Array<{ id: string }>;
+};
+
+/**
+ * Send a WhatsApp Flow through the same strict tenant credential path used by
+ * campaign template sends. The token carries campaign context so inbound
+ * submissions can be attributed back to the originating campaign.
+ */
+export async function sendWhatsAppFlowMessage(
+  to: string,
+  flow: CampaignFlow,
+  userId: string,
+  context: { campaignId: string; recipientId: string },
+) {
+  if (!flow.metaFlowId) throw new Error("Flow has not been published to Meta");
+
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
+  const flowToken = [
+    "flow",
+    String(flow._id),
+    "campaign",
+    context.campaignId,
+    "recipient",
+    context.recipientId,
+    Date.now(),
+  ].join("_");
+  const firstScreenId = sanitizeFlowScreenId(flow.screens?.[0]?.id ?? "SCREEN_A");
+
+  const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
+    `/${phoneNumberId}/messages`,
+    accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: normalizeWhatsAppPhone(to),
+        type: "interactive",
+        interactive: {
+          type: "flow",
+          header: { type: "text", text: flow.name },
+          body: { text: "Please complete the form below." },
+          footer: { text: "Powered by Airavata" },
+          action: {
+            name: "flow",
+            parameters: {
+              flow_message_version: "3",
+              flow_token: flowToken,
+              flow_id: flow.metaFlowId,
+              flow_cta: "Open Form",
+              flow_action: "navigate",
+              flow_action_payload: { screen: firstScreenId },
+            },
+          },
+        },
+      }),
+    },
+  );
+
+  if (!result.messages?.[0]?.id) {
+    throw new Error("Meta accepted the Flow request but did not return a message ID");
+  }
+  return { ...result, flowToken };
+}

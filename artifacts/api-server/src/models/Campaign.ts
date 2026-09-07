@@ -11,7 +11,8 @@ const campaignSchema = new Schema(
       default: "QUICK",
       index: true,
     },
-    templateId: { type: Schema.Types.ObjectId, ref: "Template", required: true },
+    templateId: { type: Schema.Types.ObjectId, ref: "Template" },
+    flowId: { type: Schema.Types.ObjectId, ref: "Flow" },
     audience: {
       contactIds: [{ type: Schema.Types.ObjectId, ref: "Contact" }],
       groupIds: [{ type: Schema.Types.ObjectId, ref: "Group" }],

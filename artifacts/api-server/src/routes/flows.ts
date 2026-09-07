@@ -5,6 +5,8 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { FlowModel } from "../models/Flow";
+import { CampaignModel } from "../models/Campaign";
+import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { ContactModel } from "../models/Contact";
 import { MessageModel } from "../models/Message";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
@@ -454,9 +456,6 @@ router.post("/flows/:id/sync", authenticate, async (req: AuthRequest, res) => {
 
 router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { phoneNumberId, accessToken } = await getCredentials(req.user!.userId, {
-      allowEnvFallback: false,
-    });
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const flow = await FlowModel.findOne({
       _id: new mongoose.Types.ObjectId(req.params["id"]),
@@ -467,98 +466,23 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "Flow must be published before sending" });
     }
 
-    const { phone, headerText, bodyText, ctaLabel } = req.body as {
+    const { phone } = req.body as {
       phone: string;
-      headerText?: string;
-      bodyText?: string;
-      ctaLabel?: string;
     };
 
     if (!phone) return res.status(400).json({ error: "phone is required" });
 
-    // Meta requires phone numbers without the leading '+' (digits only)
     const normalizedPhone = normalizeWhatsAppPhone(phone);
-
-    // The first screen ID must match the sanitized ID that was uploaded to Meta
-    const firstScreenId = sanitizeScreenId(flow.screens?.[0]?.id ?? "SCREEN_A");
-
-    const msgRes = await fetch(`${META_BASE}/${phoneNumberId}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: normalizedPhone,
-        type: "interactive",
-        interactive: {
-          type: "flow",
-          header: { type: "text", text: headerText ?? flow.name },
-          body: { text: bodyText ?? "Please complete the form below." },
-          footer: { text: "Powered by Airavata" },
-          action: {
-            name: "flow",
-            parameters: {
-              flow_message_version: "3",
-              flow_token: `flow_${String(flow._id)}_${Date.now()}`,
-              flow_id: flow.metaFlowId,
-              flow_cta: ctaLabel ?? "Open Form",
-              flow_action: "navigate",
-              flow_action_payload: {
-                screen: firstScreenId,
-              },
-            },
-          },
-        },
-      }),
-    });
-
-    const msgData = (await msgRes.json()) as {
-      error?: { message?: string; type?: string; code?: number; error_subcode?: number; fbtrace_id?: string };
-      messages?: Array<{ id: string }>;
-    };
-
-    if (!msgRes.ok) {
-      const metaErr = msgData.error;
-      logger.error({
-        metaStatus: msgRes.status,
-        metaError: metaErr,
-        sentPayload: {
-          to: normalizedPhone,
-          flow_id: flow.metaFlowId,
-          firstScreenId,
-          flow_message_version: "3",
-        },
-      }, "Meta send-flow API error");
-      return res.status(502).json({
-        error: metaErr?.message ?? "Meta API error",
-        meta: {
-          code: metaErr?.code,
-          subcode: metaErr?.error_subcode,
-          type: metaErr?.type,
-          fbtrace_id: metaErr?.fbtrace_id,
-        },
-      });
-    }
-
-    const messageId = msgData.messages?.[0]?.id;
-    if (!messageId) {
-      logger.error({ metaStatus: msgRes.status, msgData, to: normalizedPhone }, "Meta flow send returned no message ID");
-      return res.status(502).json({ error: "Meta accepted the Flow request but did not return a message ID" });
-    }
-
-    // Persist the accepted message so delivery/failure webhooks can update it
-    // and the Flow send is visible in Live Chat and reporting.
-    const contacts = await ContactModel.find({ userId }).lean();
-    let contact = contacts.find((candidate) => {
+    let contact = (await ContactModel.find({ userId }).lean()).find((candidate) => {
       try {
         return normalizeWhatsAppPhone(candidate.phone) === normalizedPhone;
       } catch {
         return false;
       }
     });
+    if (contact && contact.status !== "active") {
+      return res.status(400).json({ error: "Contact is not eligible for Flow sends" });
+    }
     if (!contact) {
       const created = await ContactModel.create({
         userId,
@@ -567,20 +491,29 @@ router.post("/flows/:id/send", authenticate, async (req: AuthRequest, res) => {
       });
       contact = created.toObject();
     }
-    await MessageModel.create({
+
+    const [campaign] = await CampaignModel.create([{
       userId,
-      contactId: contact._id,
-      direction: "OUTBOUND",
-      body: bodyText ?? `WhatsApp Flow: ${flow.name}`,
+      name: `Flow: ${flow.name}`,
+      type: "FLOW",
       flowId: flow._id,
-      whatsappMessageId: messageId,
-      status: "SENT",
-      sentAt: new Date(),
+      audience: { contactIds: [contact._id] },
+      status: "SCHEDULED",
+      stats: { totalRecipients: 1, sent: 0, delivered: 0, read: 0, failed: 0 },
+      creditCost: 1,
+    }]);
+    await CampaignRecipientModel.create({
+      userId,
+      campaignId: campaign!._id,
+      contactId: contact._id,
+      status: "QUEUED",
+      currentStepId: "initial",
+      nextActionAt: new Date(),
     });
 
-    res.json({ success: true, messageId });
+    res.status(202).json({ success: true, campaignId: String(campaign!._id) });
   } catch (err: unknown) {
-    logger.error({ err }, "Unexpected error in send-flow route");
+    logger.error({ err }, "Unable to queue Flow campaign send");
     if (isWhatsAppDisconnectedError(err)) {
       return res.status(409).json({ error: err.message });
     }
