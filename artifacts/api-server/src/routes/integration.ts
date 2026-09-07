@@ -20,13 +20,44 @@ import {
   getEcosystemWhatsAppCredentialIds,
   isProtectedMasterAdminUser,
 } from "../lib/protectedMasterAdmin";
-import { ensureWhatsAppWebhookSubscription } from "../lib/whatsapp";
+import { ensureWhatsAppWebhookSubscription, getCredentials } from "../lib/whatsapp";
 
 const router = Router();
 
 const META_APP_ID = process.env.META_APP_ID ?? "1324395306544610";
 const META_APP_SECRET = process.env.META_APP_SECRET;
 const GRAPH_API_VERSION = "v21.0";
+const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+
+type MetaCatalog = {
+  id: string;
+  name?: string;
+  vertical?: string;
+};
+
+async function metaGet<T>(path: string, accessToken: string): Promise<T> {
+  const response = await fetch(`${GRAPH_BASE}/${path}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const raw = await response.text();
+  let data: T & {
+    error?: { message?: string; code?: number; error_subcode?: number; type?: string; fbtrace_id?: string };
+  };
+  try {
+    data = JSON.parse(raw) as typeof data;
+  } catch {
+    data = {} as typeof data;
+  }
+  if (!response.ok || data.error) {
+    const error = new Error(data.error?.message ?? `Meta Graph API request failed (${response.status})`);
+    Object.assign(error, {
+      status: response.status,
+      meta: data.error ?? { message: raw.slice(0, 500) },
+    });
+    throw error;
+  }
+  return data;
+}
 
 async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -655,6 +686,139 @@ router.patch(
     } catch (error) {
       logger.error({ err: error, userId: req.user!.userId }, "Catalog settings save failed");
       res.status(500).json({ error: "Unable to save catalog settings" });
+    }
+  },
+);
+
+/**
+ * GET /api/integration/whatsapp/catalogs
+ *
+ * Discovers Commerce Catalogs available to this tenant's connected WABA.
+ */
+router.get(
+  "/integration/whatsapp/catalogs",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const user = await UserModel.findById(req.user!.userId)
+        .select("isProtectedMasterAdmin")
+        .lean();
+      const protectedAccount = isProtectedMasterAdminUser(user);
+      const credentials = await getCredentials(req.user!.userId, {
+        allowEnvFallback: false,
+      });
+      if (!credentials.wabaId) {
+        res.status(409).json({ error: "Connected WhatsApp account has no WABA ID" });
+        return;
+      }
+
+      const data = await metaGet<{ data?: MetaCatalog[] }>(
+        `${encodeURIComponent(credentials.wabaId)}/product_catalogs?fields=id,name,vertical&limit=100`,
+        credentials.accessToken,
+      );
+      res.json({
+        catalogs: (data.data ?? []).filter((catalog) => Boolean(catalog.id)),
+        source: protectedAccount ? "ecosystem" : "tenant",
+      });
+    } catch (error) {
+      const typedError = error as Error & {
+        status?: number;
+        meta?: Record<string, unknown>;
+      };
+      logger.error(
+        { err: error, userId: req.user!.userId },
+        "Meta Commerce Catalog discovery failed",
+      );
+      res.status(502).json({
+        error: typedError.message || "Unable to discover Commerce Catalogs",
+        meta: typedError.meta,
+      });
+    }
+  },
+);
+
+/**
+ * POST /api/integration/whatsapp/catalogs/connect
+ *
+ * Verifies the selected catalog with the tenant's token and stores the local
+ * connection settings. The catalog itself is not modified.
+ */
+router.post(
+  "/integration/whatsapp/catalogs/connect",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const catalogId = typeof req.body?.catalogId === "string"
+        ? req.body.catalogId.trim()
+        : "";
+      if (!catalogId) {
+        res.status(400).json({ error: "catalogId is required" });
+        return;
+      }
+
+      const user = await UserModel.findById(req.user!.userId)
+        .select("isProtectedMasterAdmin")
+        .lean();
+      if (isProtectedMasterAdminUser(user)) {
+        res.status(409).json({
+          error: "The protected Master Admin account cannot save tenant catalog settings",
+        });
+        return;
+      }
+
+      const credentials = await getCredentials(req.user!.userId, {
+        allowEnvFallback: false,
+      });
+      const catalog = await metaGet<MetaCatalog>(
+        `${encodeURIComponent(catalogId)}?fields=id,name,vertical`,
+        credentials.accessToken,
+      );
+      if (!catalog.id) {
+        res.status(502).json({ error: "Meta returned an invalid catalog" });
+        return;
+      }
+
+      const saved = await WhatsAppCredentialModel.findOneAndUpdate(
+        { userId: req.user!.userId },
+        {
+          $set: {
+            metaCatalogId: catalog.id,
+            catalogName: catalog.name ?? catalog.id,
+            catalogConnected: true,
+            catalogLastSyncedAt: new Date(),
+          },
+        },
+        { new: true, runValidators: true },
+      )
+        .select("metaCatalogId catalogName catalogConnected catalogLastSyncedAt")
+        .lean();
+
+      if (!saved) {
+        res.status(404).json({ error: "WhatsApp credentials are not connected for this tenant" });
+        return;
+      }
+
+      res.json({
+        settings: {
+          metaCatalogId: saved.metaCatalogId ?? null,
+          catalogName: saved.catalogName ?? null,
+          catalogConnected: saved.catalogConnected === true,
+          catalogLastSyncedAt: saved.catalogLastSyncedAt ?? null,
+        },
+      });
+    } catch (error) {
+      const typedError = error as Error & {
+        status?: number;
+        meta?: Record<string, unknown>;
+      };
+      logger.error(
+        { err: error, userId: req.user!.userId },
+        "Meta Commerce Catalog connection failed",
+      );
+      res.status(502).json({
+        error: typedError.message || "Unable to connect Commerce Catalog",
+        meta: typedError.meta,
+      });
     }
   },
 );
