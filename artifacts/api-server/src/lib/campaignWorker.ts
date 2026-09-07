@@ -61,7 +61,35 @@ async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.Obje
           }
         }
       } catch (error) {
-        logger.error({ err: error, recipientId: String(recipient._id) }, "Scheduled campaign recipient failed");
+        const reason = error instanceof Error ? error.message : "Campaign send failed";
+        const recovered = await CampaignRecipientModel.updateOne(
+          {
+            _id: recipient._id,
+            userId: recipient.userId,
+            status: "ACTIVE",
+          },
+          {
+            $set: {
+              status: "FAILED",
+              lastError: reason,
+            },
+          },
+        );
+        if (recovered.modifiedCount > 0) {
+          await CampaignModel.updateOne(
+            { _id: recipient.campaignId, userId: recipient.userId },
+            { $inc: { "stats.failed": 1 } },
+          );
+        }
+        logger.error(
+          {
+            err: error,
+            recipientId: String(recipient._id),
+            recovered: recovered.modifiedCount > 0,
+            reason,
+          },
+          "Scheduled campaign recipient failed",
+        );
       }
 
       const remaining = await CampaignRecipientModel.exists({
