@@ -214,6 +214,9 @@ export default function AddTemplate() {
   });
   const previewBusinessName = businessProfile?.businessName?.trim() || user?.businessName || 'Your Business';
   const previewLogoUrl = businessProfile?.logoUrl ?? null;
+  useEffect(() => {
+    setLogoLoadFailed(false);
+  }, [previewLogoUrl]);
 
   const headerUploadMutation = useMutation<{ mediaId: string }, Error, File>({
     mutationFn: async file => {
@@ -1227,7 +1230,10 @@ export default function AddTemplate() {
                 <button
                   key={device}
                   type="button"
-                  onClick={() => setPreviewDevice(device)}
+                  onClick={() => {
+                    setPreviewDevice(device);
+                    setLogoLoadFailed(false);
+                  }}
                   title={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
                   aria-label={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
                   className={`flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition-colors ${
@@ -1253,9 +1259,11 @@ export default function AddTemplate() {
               <div className="flex h-14 shrink-0 items-center bg-[#075e54] px-3 shadow-sm">
                 {previewLogoUrl && !logoLoadFailed ? (
                   <img
+                    key={`${previewDevice}-${previewLogoUrl}`}
                     src={previewLogoUrl}
                     alt=""
                     onError={() => setLogoLoadFailed(true)}
+                    onLoad={() => setLogoLoadFailed(false)}
                     className="mr-2 h-8 w-8 rounded-full object-cover"
                   />
                 ) : (

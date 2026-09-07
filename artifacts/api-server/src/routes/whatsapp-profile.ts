@@ -44,10 +44,31 @@ router.get("/whatsapp/business-profile", authenticate, async (req: AuthRequest, 
     const profilePayload = (await profileResponse.json()) as {
       data?: Array<{ profile_picture_url?: string }>;
     };
+    const profilePictureUrl = profilePayload.data?.[0]?.profile_picture_url;
+    let logoUrl: string | null = null;
+
+    // Meta's profile picture URL can be protected by the tenant's access token
+    // and may expire. Fetch it server-side so both device previews can reuse a
+    // stable browser-safe image without exposing WhatsApp credentials.
+    if (profilePictureUrl) {
+      let imageResponse = await fetch(profilePictureUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!imageResponse.ok) {
+        imageResponse = await fetch(profilePictureUrl);
+      }
+      if (imageResponse.ok) {
+        const contentType = imageResponse.headers.get("content-type") ?? "image/jpeg";
+        if (contentType.startsWith("image/")) {
+          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+          logoUrl = `data:${contentType};base64,${imageBuffer.toString("base64")}`;
+        }
+      }
+    }
 
     res.json({
       businessName: phone?.verified_name ?? null,
-      logoUrl: profilePayload.data?.[0]?.profile_picture_url ?? null,
+      logoUrl,
       phoneNumber: phone?.display_phone_number ?? null,
       phoneNumberId,
     });
