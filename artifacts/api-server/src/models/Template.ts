@@ -30,6 +30,9 @@ const templateSchema = new Schema(
     status: { type: String, enum: ["PENDING", "APPROVED", "REJECTED"], default: "PENDING" },
     rejectionReason: { type: String },
     metaTemplateId: { type: String },
+    // Live approved structure returned by Meta, retained so sends can match
+    // the provider's current body/header requirements.
+    metaComponents: { type: Schema.Types.Mixed },
   },
   { timestamps: true },
 );

@@ -48,6 +48,7 @@ function shape(t: Record<string, unknown> & { _id: unknown; createdAt?: unknown;
     status: t.status,
     rejectionReason: t.rejectionReason,
     metaTemplateId: t.metaTemplateId,
+    metaComponents: t.metaComponents,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
   };
@@ -98,20 +99,26 @@ router.post("/templates/header-media", authenticate, headerMediaUpload.single("f
 router.get("/templates", authenticate, async (req: AuthRequest, res) => {
   try {
     // Best-effort status sync from Meta
+    let liveTemplates: Awaited<ReturnType<typeof getMetaTemplates>> = [];
     try {
-      const metaList = await getMetaTemplates(req.user!.userId);
-      const statusMap = new Map(metaList.map((t) => [t.name, t.status]));
+      liveTemplates = await getMetaTemplates(req.user!.userId);
+      const metaByName = new Map(liveTemplates.map((t) => [t.name, t]));
       const dbTemplates = await TemplateModel.find({ userId: req.user!.userId }).lean();
 
       const ops = dbTemplates
         .filter((t) => {
-          const metaStatus = statusMap.get(t.name);
-          return metaStatus && metaStatus !== String(t.status).toUpperCase();
+          const metaTemplate = metaByName.get(t.name);
+          return Boolean(metaTemplate);
         })
         .map((t) => ({
           updateOne: {
             filter: { _id: t._id },
-            update: { $set: { status: statusMap.get(t.name) } },
+            update: {
+              $set: {
+                status: metaByName.get(t.name)!.status,
+                metaComponents: metaByName.get(t.name)!.components ?? [],
+              },
+            },
           },
         }));
 
@@ -124,7 +131,17 @@ router.get("/templates", authenticate, async (req: AuthRequest, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json({ templates: templates.map(shape) });
+    const metaByName = new Map(liveTemplates.map((template) => [template.name, template]));
+    res.json({
+      templates: templates.map((template) => {
+        const live = metaByName.get(String(template.name));
+        return shape({
+          ...template,
+          ...(live?.components ? { metaComponents: live.components } : {}),
+          ...(live?.status ? { status: live.status } : {}),
+        });
+      }),
+    });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }

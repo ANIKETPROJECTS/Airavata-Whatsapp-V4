@@ -23,6 +23,7 @@ import {
 } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvents } from "../lib/clientWebhooks";
 import { normalizeContactPhone, sameContactPhone } from "../lib/contactPhone";
+import { validateTemplateParameters } from "../lib/templateComponents";
 
 const router = Router();
 const TRIGGER_EVENTS = new Set(["inbound_message", "contact_created", "tag_added"]);
@@ -424,28 +425,6 @@ function resolveBody(
   });
 }
 
-/** Build WhatsApp template components from variableValues and a contact */
-function buildComponents(
-  variableValues: Record<string, string>,
-  contact: { name: string; phone: string },
-): Array<{ type: string; parameters: Array<{ type: string; text: string }> }> {
-  const indices = Object.keys(variableValues)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  if (indices.length === 0) return [];
-
-  const parameters = indices.map((i) => {
-    let value = variableValues[String(i)] ?? "";
-    // Support field references: {{name}}, {{phone}}
-    value = value.replace(/\{\{name\}\}/gi, contact.name);
-    value = value.replace(/\{\{phone\}\}/gi, contact.phone);
-    return { type: "text", text: value };
-  });
-
-  return [{ type: "body", parameters }];
-}
-
 // ── GET /api/campaigns ────────────────────────────────────────────────────────
 
 router.get("/campaigns", authenticate, async (req: AuthRequest, res) => {
@@ -687,6 +666,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       contactIds = [],
       groupIds = [],
       variableValues = {},
+      headerValues = {},
       scheduledAt,
       phoneNumbers = [],
       tagId,
@@ -703,6 +683,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       contactIds?: string[];
       groupIds?: string[];
       variableValues?: Record<string, string>;
+      headerValues?: Record<string, string>;
       scheduledAt?: string;
       phoneNumbers?: string[];
       csvContacts?: CsvCampaignContactInput[];
@@ -765,6 +746,19 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
         return res
           .status(400)
           .json({ error: "Only APPROVED templates can be used in campaigns" });
+      }
+      const missingParameters = validateTemplateParameters(
+        template,
+        variableValues,
+        headerValues,
+      );
+      if (missingParameters.length > 0) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({
+          error: `Missing required template parameters: ${missingParameters.join(", ")}`,
+          missingParameters,
+        });
       }
     }
 
@@ -861,6 +855,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
             ...(filter ? { filter } : {}),
           },
           variableValues,
+          headerValues,
           scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
           status: deferred ? "SCHEDULED" : "SENDING",
           ...(steps.length ? { steps } : {}),
@@ -925,6 +920,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           contactId: recipient.contactId,
           templateId: template._id,
           variableValues,
+          headerValues,
         });
         if ("deferred" in result && result.deferred) {
           limitDeferred = true;

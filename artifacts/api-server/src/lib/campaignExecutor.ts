@@ -10,6 +10,10 @@ import { MetaApiError, sendTemplateMessage, sendWhatsAppFlowMessage } from "./wh
 import { withCreditCharge } from "./creditDeduction";
 import { logger } from "./logger";
 import { checkMessagingLimitBeforeSend } from "./messagingLimit";
+import {
+  buildTemplateComponents,
+  type TemplateParameterValues,
+} from "./templateComponents";
 
 type VariableValues = Record<string, string>;
 
@@ -22,20 +26,6 @@ function resolveBody(body: string, values: VariableValues, contact: { name?: str
   });
 }
 
-function buildComponents(values: VariableValues, contact: { name?: string; phone: string }) {
-  const indices = Object.keys(values).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
-  if (!indices.length) return [];
-  return [{
-    type: "body",
-    parameters: indices.map((index) => ({
-      type: "text",
-      text: (values[String(index)] ?? "")
-        .replace(/\{\{name\}\}/gi, contact.name ?? "")
-        .replace(/\{\{phone\}\}/gi, contact.phone),
-    })),
-  }];
-}
-
 export type ExecuteCampaignSendInput = {
   userId: mongoose.Types.ObjectId | string;
   campaignId: mongoose.Types.ObjectId | string;
@@ -44,6 +34,7 @@ export type ExecuteCampaignSendInput = {
   stepId?: string;
   templateId?: mongoose.Types.ObjectId | string;
   variableValues?: VariableValues;
+  headerValues?: TemplateParameterValues;
 };
 
 /**
@@ -132,6 +123,9 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
   }
 
   const values = input.variableValues ?? (campaign.variableValues as VariableValues | undefined) ?? {};
+  const headerValues = input.headerValues ??
+    (campaign.headerValues as TemplateParameterValues | undefined) ??
+    {};
   let requestPayload: unknown;
   try {
     const result = await withCreditCharge({
@@ -150,7 +144,7 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
             contact.phone,
             template!.name,
             template!.language ?? "en_US",
-            buildComponents(values, contact),
+            buildTemplateComponents(template!, values, headerValues, contact),
             String(userId),
           ),
     });

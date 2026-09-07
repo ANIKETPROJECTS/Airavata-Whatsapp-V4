@@ -20,6 +20,7 @@ type CampaignView = 'select' | 'quick' | 'csv' | 'segment' | 'groups' | 'tags' |
 interface Template {
   id: string; name: string; body: string; status: string; language: string;
   headerType?: string; headerContent?: string; footer?: string;
+  metaComponents?: Array<{ type?: string; format?: string; text?: string }>;
   buttons?: Array<{ type: string; text: string; value?: string }>;
   category?: string;
 }
@@ -488,6 +489,7 @@ export default function CreateCampaign() {
   const [csvError, setCsvError]             = useState('');
   const [flowId, setFlowId]                 = useState('');
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [headerValues, setHeaderValues]     = useState<Record<string, string>>({});
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   // Schedule modal state (simple — just stores a datetime string)
@@ -507,15 +509,32 @@ export default function CreateCampaign() {
   // ── Template variable detection ────────────────────────────────────────────
 
   const selectedTemplate = approvedTemplates.find(t => t.id === templateId) ?? null;
-  const templateVarIndices: number[] = useMemo(() => {
-    if (!selectedTemplate?.body) return [];
-    const matches = [...selectedTemplate.body.matchAll(/\{\{(\d+)\}\}/g)];
-    return [...new Set(matches.map(m => parseInt(m[1]!, 10)))].sort((a, b) => a - b);
-  }, [selectedTemplate?.body]);
+  const templateStructure = useMemo(() => {
+    const components = selectedTemplate?.metaComponents ?? [];
+    const bodyComponent = components.find(component => String(component.type).toUpperCase() === 'BODY');
+    const headerComponent = components.find(component => String(component.type).toUpperCase() === 'HEADER');
+    const bodyText = bodyComponent?.text ?? selectedTemplate?.body ?? '';
+    const headerFormat = String(headerComponent?.format ?? selectedTemplate?.headerType ?? 'NONE').toUpperCase();
+    const headerText = headerComponent?.text ?? selectedTemplate?.headerContent ?? '';
+    const indices = (text: string) => [...new Set(
+      [...text.matchAll(/\{\{(\d+)\}\}/g)].map(match => parseInt(match[1]!, 10)),
+    )].sort((a, b) => a - b);
+
+    return {
+      bodyText,
+      bodyVariableIndices: indices(bodyText),
+      headerFormat,
+      headerText,
+      headerVariableIndices: indices(headerText),
+      requiresMediaHeader: ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerFormat),
+    };
+  }, [selectedTemplate]);
+  const templateVarIndices = templateStructure.bodyVariableIndices;
 
   // Reset variable values when template changes
   useEffect(() => {
     setVariableValues({});
+    setHeaderValues({});
   }, [templateId]);
 
   const { data: groupsData } = useQuery<{ groups: Group[] }>({
@@ -606,6 +625,25 @@ export default function CreateCampaign() {
       toast.error('Select an approved template');
       return false;
     }
+    if (templateId) {
+      const missingBody = templateStructure.bodyVariableIndices.filter(
+        index => !String(variableValues[String(index)] ?? '').trim(),
+      );
+      const missingHeader = templateStructure.headerVariableIndices.filter(
+        index => !String(headerValues[String(index)] ?? '').trim(),
+      );
+      const missing = [
+        ...missingBody.map(index => `body variable {{${index}}}`),
+        ...missingHeader.map(index => `header variable {{${index}}}`),
+        ...(templateStructure.requiresMediaHeader && !String(headerValues.media ?? '').trim()
+          ? [`${templateStructure.headerFormat.toLowerCase()} header media`]
+          : []),
+      ];
+      if (missing.length > 0) {
+        toast.error(`Enter required template values: ${missing.join(', ')}`);
+        return false;
+      }
+    }
     return true;
   }
 
@@ -614,6 +652,7 @@ export default function CreateCampaign() {
       name: campaignName,
       ...(templateId ? { templateId } : {}),
       variableValues,
+      headerValues,
       type: view === 'segment' ? 'SEGMENT' : view === 'drip' ? 'DRIP' : view === 'trigger' ? 'TRIGGER' : view === 'flow' ? 'FLOW' : view === 'csv' ? 'CSV' : 'QUICK',
       ...(view === 'drip' ? {
         steps: dripSteps.split(',').map((delay, index) => ({
@@ -681,6 +720,7 @@ export default function CreateCampaign() {
     setFlowId('');
     setDripSteps('1:0'); setTriggerEvent('inbound_message');
     setVariableValues({});
+    setHeaderValues({});
     setView(v);
   }
 
@@ -717,7 +757,10 @@ export default function CreateCampaign() {
 
   function VariableValuesSection() {
     if (!selectedTemplate) return null;
-    const hasVars = templateVarIndices.length > 0;
+    const hasBodyVars = templateStructure.bodyVariableIndices.length > 0;
+    const hasHeaderVars = templateStructure.headerVariableIndices.length > 0;
+    const needsHeaderInput = hasHeaderVars || templateStructure.requiresMediaHeader;
+    const hasInputs = hasBodyVars || needsHeaderInput;
 
     return (
       <div className="flex flex-col lg:flex-row gap-4">
@@ -778,28 +821,66 @@ export default function CreateCampaign() {
         </div>
 
         {/* Variable inputs */}
-        {hasVars && (
+        {hasInputs && (
           <div className="flex-1 bg-white border rounded-xl p-4 space-y-4">
             <div>
-              <p className="text-sm font-semibold text-gray-800">Template Variables</p>
+              <p className="text-sm font-semibold text-gray-800">Template inputs</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                Use <code className="bg-gray-100 px-1 rounded">{'{{name}}'}</code> or{' '}
-                <code className="bg-gray-100 px-1 rounded">{'{{phone}}'}</code> to auto-fill from each contact.
+                These values are required by the approved Meta template structure.
               </p>
             </div>
             <div className="space-y-3">
-              {templateVarIndices.map(i => (
-                <div key={i}>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Variable {i}:</label>
+              {hasBodyVars && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Body variables</p>
+                  {templateStructure.bodyVariableIndices.map(i => (
+                    <div key={`body-${i}`}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Body variable {`{{${i}}}`}:</label>
+                      <input
+                        type="text"
+                        value={variableValues[String(i)] ?? ''}
+                        onChange={e => setVariableValues(prev => ({ ...prev, [String(i)]: e.target.value }))}
+                        placeholder="Text, {{name}}, or {{phone}}"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {hasHeaderVars && (
+                <div className="space-y-3 border-t pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Header variables</p>
+                  {templateStructure.headerVariableIndices.map(i => (
+                    <div key={`header-${i}`}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Header variable {`{{${i}}}`}:</label>
+                      <input
+                        type="text"
+                        value={headerValues[String(i)] ?? ''}
+                        onChange={e => setHeaderValues(prev => ({ ...prev, [String(i)]: e.target.value }))}
+                        placeholder="Header text, {{name}}, or {{phone}}"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {templateStructure.requiresMediaHeader && (
+                <div className="space-y-2 border-t pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    {templateStructure.headerFormat} header
+                  </p>
+                  <label className="block text-xs font-medium text-gray-600">
+                    Media URL or Meta media ID <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
-                    value={variableValues[String(i)] ?? ''}
-                    onChange={e => setVariableValues(prev => ({ ...prev, [String(i)]: e.target.value }))}
-                    placeholder={`e.g. {{name}}, an order ID, or any text`}
+                    value={headerValues.media ?? ''}
+                    onChange={e => setHeaderValues(prev => ({ ...prev, media: e.target.value }))}
+                    placeholder={`Enter the ${templateStructure.headerFormat.toLowerCase()} URL or media ID`}
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}

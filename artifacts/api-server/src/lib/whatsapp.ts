@@ -627,6 +627,7 @@ export interface MetaTemplateRecord {
   status: string;
   category: string;
   language: string;
+  components?: Array<Record<string, unknown>>;
 }
 
 // ── Template operations ────────────────────────────────────────────────────────
@@ -819,7 +820,7 @@ export async function getMetaTemplates(userId: string): Promise<MetaTemplateReco
     throw new Error("Stored WhatsApp credentials are missing a WABA ID");
   }
   const result = await graphFetchWithCreds<{ data: MetaTemplateRecord[] }>(
-    `/${credentials.wabaId}/message_templates?fields=id,name,status,category,language`,
+    `/${credentials.wabaId}/message_templates?fields=id,name,status,category,language,components`,
     credentials.accessToken,
   );
   return result.data ?? [];

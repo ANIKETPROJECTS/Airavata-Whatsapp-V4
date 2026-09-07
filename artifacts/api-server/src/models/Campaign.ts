@@ -21,6 +21,7 @@ const campaignSchema = new Schema(
       csvImportId: { type: Schema.Types.ObjectId, ref: "CampaignCsvImport" },
     },
     variableValues: { type: Schema.Types.Mixed },
+    headerValues: { type: Schema.Types.Mixed },
     scheduledAt: { type: Date },
     schedule: { type: Schema.Types.Mixed },
     trigger: { type: Schema.Types.Mixed },
