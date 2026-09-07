@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowDownAZ, ArrowUpAZ, BarChart3, Bell, CreditCard, FileBarChart, Grid2X2, LayoutDashboard, Link2Off, List, LogOut, PanelLeftClose, PanelLeftOpen, Plus, ReceiptText, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { masterApi, masterTokenStorage } from '../lib/api';
+import { masterApi, masterTokenStorage, USER_PROFILE_CHANGED_KEY } from '../lib/api';
 import { useFacebookEmbeddedSignup } from '../hooks/use-facebook-embedded-signup';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 
@@ -307,7 +307,13 @@ export default function MasterAdmin() {
       if (selected) await masterApi.put(`/master-admin/users/${selected.id}`, body);
       else if (!form.password) { toast.error('Set a password for the new user'); return; }
       else await masterApi.post('/master-admin/users', body);
-      toast.success(selected ? 'User updated' : 'User created'); setShowForm(false); await load();
+      toast.success(selected ? 'User updated' : 'User created');
+      localStorage.setItem(USER_PROFILE_CHANGED_KEY, JSON.stringify({
+        userId: selected?.id ?? null,
+        changedAt: Date.now(),
+      }));
+      setShowForm(false);
+      await load();
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to save user'); }
   };
   const removeUser = async (user: ManagedUser) => {

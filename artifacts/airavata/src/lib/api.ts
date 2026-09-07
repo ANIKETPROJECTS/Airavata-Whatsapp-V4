@@ -2,6 +2,7 @@
 const BASE = "/api";
 
 const TOKEN_KEY = "auth_token";
+export const USER_PROFILE_CHANGED_KEY = "airavata:user-profile-changed";
 
 export const tokenStorage = {
   get: (): string | null => localStorage.getItem(TOKEN_KEY),

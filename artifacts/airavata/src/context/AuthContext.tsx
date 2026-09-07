@@ -6,7 +6,7 @@ import {
   useCallback,
   ReactNode,
 } from 'react';
-import { api, tokenStorage } from '../lib/api';
+import { api, tokenStorage, USER_PROFILE_CHANGED_KEY } from '../lib/api';
 
 export interface AuthUser {
   id: string;
@@ -55,6 +55,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser()
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
+  }, [refreshUser]);
+
+  // Billing mode and section permissions can be changed by Master Admin while
+  // this account is already open in another tab or window. Keep the session
+  // state fresh without requiring a full page reload.
+  useEffect(() => {
+    const syncVisibleSession = () => {
+      if (document.visibilityState !== 'visible' || !tokenStorage.get()) return;
+      void refreshUser().catch(() => undefined);
+    };
+    const handleProfileChanged = (event: StorageEvent) => {
+      if (event.key === USER_PROFILE_CHANGED_KEY) syncVisibleSession();
+    };
+    const interval = window.setInterval(syncVisibleSession, 15_000);
+
+    window.addEventListener('focus', syncVisibleSession);
+    window.addEventListener('storage', handleProfileChanged);
+    document.addEventListener('visibilitychange', syncVisibleSession);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', syncVisibleSession);
+      window.removeEventListener('storage', handleProfileChanged);
+      document.removeEventListener('visibilitychange', syncVisibleSession);
+    };
   }, [refreshUser]);
 
   const login = useCallback(async (email: string, password: string) => {
