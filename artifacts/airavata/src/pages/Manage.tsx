@@ -6,12 +6,14 @@ import {
   Plus, Trash2, X, Search, Pencil,
   FileSpreadsheet, Upload, Save,
   LogOut,
+  BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 import { useLocation } from 'wouter';
+import MetaInsightsPanel from '../components/MetaInsightsPanel';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ApiKeyRecord { id: string; label: string; keyPrefix: string; lastUsedAt: string | null; createdAt: string; }
@@ -871,7 +873,7 @@ function ServicePricingTab() {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-type TabId = 'api' | 'agents' | 'phone' | 'canned' | 'livechat' | 'attributes' | 'tags' | 'pricing';
+type TabId = 'api' | 'agents' | 'phone' | 'canned' | 'livechat' | 'attributes' | 'tags' | 'pricing' | 'meta';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'api',        label: 'API key',           icon: Key },
@@ -882,17 +884,21 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'attributes', label: 'Attributes',         icon: Layers },
   { id: 'tags',       label: 'Tags',               icon: Tag },
   { id: 'pricing',    label: 'Service Pricing',    icon: FileSpreadsheet },
+  { id: 'meta',       label: 'Meta Billing Insights', icon: BarChart3 },
 ];
 
 export default function Manage() {
   const [location] = useLocation();
   const requestedTab = new URLSearchParams(location.split('?')[1] ?? '').get('tab');
-  const initialTab: TabId = TABS.some(tab => tab.id === requestedTab)
+  const { logout, user } = useAuth();
+  const availableTabs = user?.billingMode === 'meta_direct'
+    ? TABS
+    : TABS.filter(tab => tab.id !== 'meta');
+  const initialTab: TabId = availableTabs.some(tab => tab.id === requestedTab)
     ? requestedTab as TabId
     : 'api';
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [loggingOut, setLoggingOut] = useState(false);
-  const { logout } = useAuth();
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -918,7 +924,7 @@ export default function Manage() {
       <div className="flex min-w-0 flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-56 shrink-0 space-y-1">
-          {TABS.map(tab => (
+          {availableTabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
                 activeTab === tab.id ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
@@ -949,6 +955,7 @@ export default function Manage() {
           {activeTab === 'attributes' && <AttributesTab />}
           {activeTab === 'tags'       && <TagsTab />}
           {activeTab === 'pricing'    && <ServicePricingTab />}
+          {activeTab === 'meta'       && <MetaInsightsPanel />}
         </div>
       </div>
     </div>

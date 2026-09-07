@@ -9,13 +9,15 @@ type RangeDays = 7 | 30;
 type MetaInsights = {
   sent: number;
   delivered: number;
-  totalConversations: number;
+  received: number;
+  totalMessages: number;
   totalCharges: number;
   currency: string | null;
   chargesAvailable: boolean;
   categories: Array<{
     category: string;
-    conversations: number;
+    pricingType: string | null;
+    messages: number;
     charges: number;
     currency: string | null;
   }>;
@@ -81,10 +83,11 @@ export default function MetaInsightsPanel() {
           </div>
         ) : insights ? (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <InsightCard label="Messages sent" value={formatNumber(insights.sent)} icon={Send} />
               <InsightCard label="Messages delivered" value={formatNumber(insights.delivered)} icon={Truck} detail={`Delivery rate ${deliveryRate}`} />
-              <InsightCard label="Conversations" value={formatNumber(insights.totalConversations)} icon={MessageCircle} />
+              <InsightCard label="Messages received" value={formatNumber(insights.received)} icon={MessageCircle} />
+              <InsightCard label="Priced messages" value={formatNumber(insights.totalMessages)} icon={BarChart3} detail="Paid and free message volume" />
               <InsightCard
                 label="Approx. charges"
                 value={insights.chargesAvailable ? formatCharge(insights.totalCharges, insights.currency) : 'Unavailable'}
@@ -96,7 +99,7 @@ export default function MetaInsightsPanel() {
             <div className="mt-6">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="font-bold text-black">Conversation category breakdown</h3>
+                  <h3 className="font-bold text-black">Message pricing breakdown</h3>
                   <p className="mt-1 text-xs text-gray-500">
                     {new Date(insights.start * 1000).toLocaleDateString()} – {new Date(insights.end * 1000).toLocaleDateString()}
                   </p>
@@ -113,15 +116,22 @@ export default function MetaInsightsPanel() {
                     <thead className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
                       <tr>
                         <th className="pb-3 font-semibold">Category</th>
-                        <th className="pb-3 text-right font-semibold">Conversations</th>
+                        <th className="pb-3 text-right font-semibold">Messages</th>
                         <th className="pb-3 text-right font-semibold">Approx. charges</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {insights.categories.map((category) => (
-                        <tr key={category.category}>
-                          <td className="py-3 font-semibold text-gray-800">{formatCategory(category.category)}</td>
-                          <td className="py-3 text-right text-gray-700">{formatNumber(category.conversations)}</td>
+                        <tr key={`${category.category}-${category.pricingType ?? 'unknown'}`}>
+                          <td className="py-3 font-semibold text-gray-800">
+                            {formatCategory(category.category)}
+                            {category.pricingType && (
+                              <span className="ml-2 text-xs font-normal text-gray-500">
+                                {formatCategory(category.pricingType)}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 text-right text-gray-700">{formatNumber(category.messages)}</td>
                           <td className="py-3 text-right font-semibold text-gray-800">
                             {insights.chargesAvailable ? formatCharge(category.charges, category.currency || insights.currency) : '—'}
                           </td>
@@ -133,7 +143,7 @@ export default function MetaInsightsPanel() {
               )}
             </div>
             <p className="mt-5 text-xs text-gray-500">
-              Charges are approximate values returned by Meta’s conversation analytics and may differ from the final Meta invoice.
+              Charges are approximate values returned by Meta’s pricing analytics and may differ from the final Meta invoice.
             </p>
           </>
         ) : null}

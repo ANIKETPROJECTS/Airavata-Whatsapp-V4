@@ -251,13 +251,15 @@ export interface MetaMessagingAnalytics {
 export interface MetaBillingInsights {
   sent: number;
   delivered: number;
-  totalConversations: number;
+  received: number;
+  totalMessages: number;
   totalCharges: number;
   currency: string | null;
   chargesAvailable: boolean;
   categories: Array<{
     category: string;
-    conversations: number;
+    pricingType: string | null;
+    messages: number;
     charges: number;
     currency: string | null;
   }>;
@@ -285,10 +287,10 @@ export async function getMetaBillingInsights(
   const start = Math.floor((now - rangeDays * 24 * 60 * 60 * 1000) / 1000);
   const wabaPath = encodeURIComponent(credentials.wabaId);
 
-  const [messaging, conversations] = await Promise.all([
+  const [messaging, inboundMessaging, conversations] = await Promise.all([
     graphFetchWithCreds<{
       analytics?: {
-        data_points?: Array<{ sent?: number; delivered?: number }>;
+        data_points?: Array<{ sent?: number; delivered?: number; received?: number }>;
       };
     }>(
       `/${wabaPath}?${new URLSearchParams({
@@ -299,25 +301,40 @@ export async function getMetaBillingInsights(
       ANALYTICS_GRAPH_BASE,
     ),
     graphFetchWithCreds<{
-      conversation_analytics?: {
+      analytics?: {
+        data_points?: Array<{ received?: number }>;
+      };
+    }>(
+      `/${wabaPath}?${new URLSearchParams({
+        fields: `analytics.start(${start}).end(${end}).granularity(DAY).product_types(100)`,
+      }).toString()}`,
+      credentials.accessToken,
+      {},
+      ANALYTICS_GRAPH_BASE,
+    ),
+    graphFetchWithCreds<{
+      currency?: string;
+      pricing_analytics?: {
         data_points?: Array<{
-          conversation?: number;
+          volume?: number;
           cost?: number;
+          pricing_category?: string;
+          pricing_type?: string;
           currency?: string;
-          conversation_category?: string;
         }>;
         data?: Array<{
           data_points?: Array<{
-            conversation?: number;
+            volume?: number;
             cost?: number;
+            pricing_category?: string;
+            pricing_type?: string;
             currency?: string;
-            conversation_category?: string;
           }>;
         }>;
       };
     }>(
       `/${wabaPath}?${new URLSearchParams({
-        fields: `conversation_analytics.start(${start}).end(${end}).granularity(DAILY).dimensions(CONVERSATION_CATEGORY)`,
+        fields: `currency,pricing_analytics.start(${start}).end(${end}).granularity(DAILY).dimensions(PRICING_CATEGORY,PRICING_TYPE,COUNTRY)`,
       }).toString()}`,
       credentials.accessToken,
       {},
@@ -326,38 +343,54 @@ export async function getMetaBillingInsights(
   ]);
 
   const messagingPoints = messaging.analytics?.data_points ?? [];
-  const conversationAnalytics = conversations.conversation_analytics;
-  const conversationPoints = conversationAnalytics?.data_points ??
-    conversationAnalytics?.data?.flatMap((item) => item.data_points ?? []) ??
+  const pricingAnalytics = conversations.pricing_analytics;
+  const pricingPoints = pricingAnalytics?.data_points ??
+    pricingAnalytics?.data?.flatMap((item) => item.data_points ?? []) ??
     [];
-  const categoryMap = new Map<string, { conversations: number; charges: number; currency: string | null }>();
+  const categoryMap = new Map<string, {
+    category: string;
+    pricingType: string | null;
+    messages: number;
+    charges: number;
+    currency: string | null;
+  }>();
 
-  for (const point of conversationPoints) {
-    const category = point.conversation_category || "UNKNOWN";
-    const current = categoryMap.get(category) ?? {
-      conversations: 0,
+  for (const point of pricingPoints) {
+    const category = point.pricing_category || "UNKNOWN";
+    const pricingType = point.pricing_type || null;
+    const key = `${category}:${pricingType ?? "UNKNOWN"}`;
+    const current = categoryMap.get(key) ?? {
+      category,
+      pricingType,
+      messages: 0,
       charges: 0,
-      currency: point.currency ?? null,
+      currency: point.currency ?? conversations.currency ?? null,
     };
-    current.conversations += point.conversation ?? 0;
+    current.messages += point.volume ?? 0;
     current.charges += point.cost ?? 0;
     if (!current.currency && point.currency) current.currency = point.currency;
-    categoryMap.set(category, current);
+    categoryMap.set(key, current);
   }
 
-  const totalCharges = conversationPoints.reduce((total, point) => total + (point.cost ?? 0), 0);
-  const currencies = [...new Set(conversationPoints.map((point) => point.currency).filter(Boolean))];
+  const totalCharges = pricingPoints.reduce((total, point) => total + (point.cost ?? 0), 0);
+  const currencies = [...new Set([
+    conversations.currency,
+    ...pricingPoints.map((point) => point.currency),
+  ].filter(Boolean))];
 
   return {
     sent: messagingPoints.reduce((total, point) => total + (point.sent ?? 0), 0),
     delivered: messagingPoints.reduce((total, point) => total + (point.delivered ?? 0), 0),
-    totalConversations: conversationPoints.reduce((total, point) => total + (point.conversation ?? 0), 0),
+    received: inboundMessaging.analytics?.data_points?.reduce(
+      (total, point) => total + (point.received ?? 0),
+      0,
+    ) ?? 0,
+    totalMessages: pricingPoints.reduce((total, point) => total + (point.volume ?? 0), 0),
     totalCharges,
     currency: currencies.length === 1 ? currencies[0]! : null,
-    chargesAvailable: conversationPoints.some((point) => typeof point.cost === "number"),
-    categories: [...categoryMap.entries()]
-      .map(([category, values]) => ({ category, ...values }))
-      .sort((a, b) => b.conversations - a.conversations),
+    chargesAvailable: pricingPoints.some((point) => typeof point.cost === "number"),
+    categories: [...categoryMap.values()]
+      .sort((a, b) => b.messages - a.messages),
     start,
     end,
     rangeDays,
