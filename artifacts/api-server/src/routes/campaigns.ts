@@ -161,6 +161,145 @@ function statsForCampaign(
   return { ...storedStats, ...counts };
 }
 
+type CsvCampaignContactInput = {
+  phone?: unknown;
+  name?: unknown;
+  email?: unknown;
+  attributes?: unknown;
+};
+
+type ResolvedCsvContact = {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  phone: string;
+  status: "active" | "blocked" | "unsubscribed";
+};
+
+function normalizeCampaignPhone(value: unknown): string | null {
+  const phone = String(value ?? "")
+    .trim()
+    .replace(/[\s\-\(\)\.]/g, "");
+  return /^\+?\d{7,15}$/.test(phone) ? phone : null;
+}
+
+function canonicalPhone(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+/**
+ * Resolve CSV numbers inside the tenant transaction. Existing contacts are
+ * reused regardless of status so blocked/unsubscribed contacts cannot be
+ * bypassed by creating a second contact with the same number.
+ */
+async function resolveCsvContacts(
+  userId: mongoose.Types.ObjectId,
+  rows: CsvCampaignContactInput[],
+  session: mongoose.ClientSession,
+): Promise<{ contacts: ResolvedCsvContact[]; invalid: string[] }> {
+  const uniqueRows = new Map<string, {
+    phone: string;
+    name?: string;
+    email?: string;
+    attributes?: Record<string, string>;
+  }>();
+  const invalid: string[] = [];
+
+  for (const row of rows) {
+    const rawPhone = String(row.phone ?? "").trim();
+    const phone = normalizeCampaignPhone(rawPhone);
+    if (!phone) {
+      if (rawPhone) invalid.push(rawPhone);
+      continue;
+    }
+
+    const key = canonicalPhone(phone);
+    if (uniqueRows.has(key)) continue;
+
+    const attributes =
+      row.attributes && typeof row.attributes === "object"
+        ? Object.fromEntries(
+            Object.entries(row.attributes as Record<string, unknown>)
+              .map(([key, value]) => [key, String(value ?? "").trim()])
+              .filter(([, value]) => value),
+          )
+        : undefined;
+    const name = String(row.name ?? "").trim();
+    const email = String(row.email ?? "").trim();
+    uniqueRows.set(key, {
+      phone,
+      ...(name ? { name } : {}),
+      ...(email ? { email } : {}),
+      ...(attributes && Object.keys(attributes).length ? { attributes } : {}),
+    });
+  }
+
+  const entries = [...uniqueRows.values()];
+  if (!entries.length) return { contacts: [], invalid };
+
+  // Include common formatted variants when matching legacy/imported contacts.
+  const phoneVariants = [
+    ...new Set(
+      entries.flatMap(({ phone }) => {
+        const digits = canonicalPhone(phone);
+        return [phone, digits, `+${digits}`];
+      }),
+    ),
+  ];
+  const existing = await ContactModel.find({
+    userId,
+    phone: { $in: phoneVariants },
+  })
+    .select("_id name phone status")
+    .session(session)
+    .lean();
+  const existingByPhone = new Map<string, ResolvedCsvContact>();
+  for (const contact of existing) {
+    const key = canonicalPhone(contact.phone);
+    if (!existingByPhone.has(key)) {
+      existingByPhone.set(key, {
+        _id: contact._id as mongoose.Types.ObjectId,
+        name: contact.name,
+        phone: contact.phone,
+        status: contact.status,
+      });
+    }
+  }
+
+  const newEntries = entries.filter(
+    entry => !existingByPhone.has(canonicalPhone(entry.phone)),
+  );
+  let created: ResolvedCsvContact[] = [];
+  if (newEntries.length) {
+    const inserted = await ContactModel.insertMany(
+      newEntries.map(entry => ({
+        userId,
+        name: entry.name || entry.phone,
+        phone: entry.phone,
+        ...(entry.email ? { email: entry.email } : {}),
+        ...(entry.attributes ? { attributes: entry.attributes } : {}),
+        status: "active",
+      })),
+      { ordered: true, session },
+    );
+    created = inserted.map(contact => ({
+      _id: contact._id as mongoose.Types.ObjectId,
+      name: contact.name,
+      phone: contact.phone,
+      status: contact.status,
+    }));
+  }
+
+  return {
+    contacts: [
+      ...entries
+        .map(entry => existingByPhone.get(canonicalPhone(entry.phone)))
+        .filter((contact): contact is ResolvedCsvContact => Boolean(contact)),
+      ...created,
+    ],
+    invalid,
+  };
+}
+
 /** Resolve all unique contacts for a campaign's audience (contactIds + groups) */
 async function resolveRecipients(
   userId: mongoose.Types.ObjectId,
@@ -460,6 +599,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       variableValues?: Record<string, string>;
       scheduledAt?: string;
       phoneNumbers?: string[];
+      csvContacts?: CsvCampaignContactInput[];
       tagId?: string;
       tagIds?: string[];
       segmentId?: string;
@@ -467,6 +607,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       steps?: Array<Record<string, unknown>>;
       trigger?: Record<string, unknown>;
     };
+    const isCsvCampaign = type === "CSV";
 
     if (!name || !templateId) {
       return res
@@ -488,7 +629,22 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
 
     // Resolve contacts by raw phone numbers (Quick / Tags / Flow campaigns)
     let phoneContactIds: string[] = [];
-    if (phoneNumbers.length > 0) {
+    if (isCsvCampaign) {
+      const csvRows = Array.isArray(csvContacts) && csvContacts.length
+        ? csvContacts
+        : (Array.isArray(phoneNumbers) ? phoneNumbers.map(phone => ({ phone })) : []);
+      const csvResolution = await resolveCsvContacts(userId, csvRows, session);
+      if (csvResolution.invalid.length > 0) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({
+          error: `CSV contains invalid phone numbers: ${csvResolution.invalid.slice(0, 5).join(", ")}`,
+        });
+      }
+      phoneContactIds = csvResolution.contacts
+        .filter(contact => contact.status === "active")
+        .map(contact => String(contact._id));
+    } else if (phoneNumbers.length > 0) {
       const byPhone = await ContactModel.find({
         userId,
         phone: { $in: phoneNumbers },
@@ -527,6 +683,8 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
 
     const recipients = audienceContacts ?? await resolveRecipients(userId, allContactIds, groupIds);
     if (recipients.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(400)
         .json({ error: "No active contacts found for the selected audience" });

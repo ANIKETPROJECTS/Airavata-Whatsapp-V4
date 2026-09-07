@@ -19,3 +19,4 @@
 - [Service start date](service-start-date.md) — keep each user’s editable service date as a timezone-safe calendar value.
 - [Workspace package installs](workspace-package-installs.md) — add frontend dependencies with the package filter in this pnpm monorepo, not at the workspace root.
 - [Meta template media uploads](meta-template-media-upload.md) — template header examples require Meta resumable-upload handles, not regular WhatsApp message media IDs.
+- [CSV campaign enrollment](csv-campaign-enrollment.md) — match existing numbers, including blocked or unsubscribed contacts, before creating new tenant contacts.

@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { api } from '@/lib/api';
+import * as XLSX from 'xlsx';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,12 @@ interface Template {
 interface Group    { id: string; name: string; memberCount?: number; }
 interface TagItem  { id: string; name: string; color?: string; }
 interface Contact  { id: string; name: string; phone: string; }
+interface CsvContactRow {
+  phone: string;
+  name?: string;
+  email?: string;
+  attributes?: Record<string, string>;
+}
 
 // ── Country codes ─────────────────────────────────────────────────────────────
 
@@ -53,14 +60,18 @@ const COUNTRY_CODES = [
 
 // ── Number parser ─────────────────────────────────────────────────────────────
 
+function normalizePhone(value: unknown, countryCode: string) {
+  let n = String(value ?? '').trim().replace(/[\s\-\(\)\.]/g, '');
+  if (!n.startsWith('+') && countryCode) n = countryCode + n;
+  return n;
+}
+
 function parseNumbers(raw: string, countryCode: string) {
   const entries = raw.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
   const normalised: string[] = [];
 
   for (const entry of entries) {
-    let n = entry.replace(/[\s\-\(\)\.]/g, '');
-    if (!n.startsWith('+') && countryCode) n = countryCode + n;
-    normalised.push(n);
+    normalised.push(normalizePhone(entry, countryCode));
   }
 
   const valid: string[]    = [];
@@ -78,6 +89,91 @@ function parseNumbers(raw: string, countryCode: string) {
   }
 
   return { valid, invalid, duplicates: dupeSet.size };
+}
+
+const normalizedHeader = (value: unknown) =>
+  String(value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const PHONE_HEADERS = new Set([
+  'phone', 'phonenumber', 'mobile', 'mobilenumber', 'whatsapp',
+  'whatsappnumber', 'contactnumber', 'number',
+]);
+const NAME_HEADERS = new Set(['name', 'fullname', 'contactname']);
+const EMAIL_HEADERS = new Set(['email', 'emailaddress']);
+
+async function parseSpreadsheetFile(file: File, countryCode: string) {
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) throw new Error('The selected spreadsheet is empty');
+
+  const sheet = workbook.Sheets[firstSheetName];
+  const rows = XLSX.utils.sheet_to_json<unknown[][]>(sheet, {
+    header: 1,
+    defval: '',
+    blankrows: false,
+  });
+  if (!rows.length) throw new Error('The selected spreadsheet is empty');
+
+  const firstRow = rows[0] ?? [];
+  const headers = firstRow.map(value => String(value ?? '').trim());
+  const normalizedHeaders = headers.map(normalizedHeader);
+  const phoneIndex = normalizedHeaders.findIndex(header => PHONE_HEADERS.has(header));
+  const hasHeader = phoneIndex !== -1;
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+  const actualPhoneIndex = hasHeader ? phoneIndex : 0;
+  const nameIndex = hasHeader
+    ? normalizedHeaders.findIndex(header => NAME_HEADERS.has(header))
+    : -1;
+  const emailIndex = hasHeader
+    ? normalizedHeaders.findIndex(header => EMAIL_HEADERS.has(header))
+    : -1;
+
+  const contacts: CsvContactRow[] = [];
+  const invalid: string[] = [];
+  const seen = new Set<string>();
+  let duplicates = 0;
+
+  for (const row of dataRows) {
+    const rawPhone = String(row[actualPhoneIndex] ?? '').trim();
+    if (!rawPhone) continue;
+    const phone = normalizePhone(rawPhone, countryCode);
+    if (!/^\+?\d{7,15}$/.test(phone)) {
+      invalid.push(rawPhone);
+      continue;
+    }
+    if (seen.has(phone)) {
+      duplicates++;
+      continue;
+    }
+    seen.add(phone);
+
+    const attributes: Record<string, string> = {};
+    if (hasHeader) {
+      headers.forEach((header, index) => {
+        const value = String(row[index] ?? '').trim();
+        if (
+          value &&
+          index !== actualPhoneIndex &&
+          index !== nameIndex &&
+          index !== emailIndex &&
+          header
+        ) {
+          attributes[header] = value;
+        }
+      });
+    }
+
+    const name = nameIndex >= 0 ? String(row[nameIndex] ?? '').trim() : '';
+    const email = emailIndex >= 0 ? String(row[emailIndex] ?? '').trim() : '';
+    contacts.push({
+      phone,
+      ...(name ? { name } : {}),
+      ...(email ? { email } : {}),
+      ...(Object.keys(attributes).length ? { attributes } : {}),
+    });
+  }
+
+  return { contacts, invalid, duplicates };
 }
 
 // ── Shared form fields ────────────────────────────────────────────────────────
@@ -384,6 +480,11 @@ export default function CreateCampaign() {
   const [dripSteps, setDripSteps]           = useState('1:0');
   const [triggerEvent, setTriggerEvent]     = useState('inbound_message');
   const [csvFile, setCsvFile]               = useState<File | null>(null);
+  const [csvContacts, setCsvContacts]       = useState<CsvContactRow[]>([]);
+  const [csvInvalid, setCsvInvalid]         = useState<string[]>([]);
+  const [csvDuplicates, setCsvDuplicates]  = useState(0);
+  const [csvParsing, setCsvParsing]         = useState(false);
+  const [csvError, setCsvError]             = useState('');
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const csvInputRef = useRef<HTMLInputElement>(null);
 
@@ -440,6 +541,41 @@ export default function CreateCampaign() {
 
   const parsed = useMemo(() => parseNumbers(numbers, countryCode), [numbers, countryCode]);
 
+  useEffect(() => {
+    if (!csvFile) {
+      setCsvContacts([]);
+      setCsvInvalid([]);
+      setCsvDuplicates(0);
+      setCsvError('');
+      return;
+    }
+
+    let cancelled = false;
+    setCsvParsing(true);
+    setCsvError('');
+    parseSpreadsheetFile(csvFile, countryCode)
+      .then(result => {
+        if (cancelled) return;
+        setCsvContacts(result.contacts);
+        setCsvInvalid(result.invalid);
+        setCsvDuplicates(result.duplicates);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setCsvContacts([]);
+        setCsvInvalid([]);
+        setCsvDuplicates(0);
+        setCsvError(error instanceof Error ? error.message : 'Unable to read the spreadsheet');
+      })
+      .finally(() => {
+        if (!cancelled) setCsvParsing(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [csvFile, countryCode]);
+
   // ── Campaign mutation ──────────────────────────────────────────────────────
 
   const launchMutation = useMutation({
@@ -482,6 +618,21 @@ export default function CreateCampaign() {
     launchMutation.mutate(buildPayload({ phoneNumbers: parsed.valid }));
   }
 
+  function csvPayload() {
+    return {
+      phoneNumbers: csvContacts.map(contact => contact.phone),
+      csvContacts,
+    };
+  }
+
+  function handleCsvSend() {
+    if (!validateCommon()) return;
+    if (csvParsing) { toast.error('Wait for the spreadsheet to finish processing'); return; }
+    if (csvError) { toast.error(csvError); return; }
+    if (csvContacts.length === 0) { toast.error('No valid phone numbers found in the spreadsheet'); return; }
+    launchMutation.mutate(buildPayload(csvPayload()));
+  }
+
   function handleGroupSend() {
     if (!validateCommon()) return;
     if (!groupId) { toast.error('Select a contact group'); return; }
@@ -503,7 +654,8 @@ export default function CreateCampaign() {
 
   function resetAndGo(v: CampaignView) {
     setTemplateId(''); setCampaignName(''); setCountryCode('');
-    setNumbers(''); setGroupId(''); setTagId(''); setSegmentGroupId(''); setSegmentTagId(''); setCsvFile(null);
+    setNumbers(''); setGroupId(''); setTagId(''); setSegmentGroupId(''); setSegmentTagId('');
+    setCsvFile(null); setCsvContacts([]); setCsvInvalid([]); setCsvDuplicates(0); setCsvError('');
     setDripSteps('1:0'); setTriggerEvent('inbound_message');
     setVariableValues({});
     setView(v);
@@ -830,7 +982,7 @@ export default function CreateCampaign() {
           type="file"
           accept=".csv,.xlsx,.xls"
           className="hidden"
-          onChange={e => setCsvFile(e.target.files?.[0] ?? null)}
+           onChange={e => setCsvFile(e.target.files?.[0] ?? null)}
         />
         <div>
           <button
@@ -845,14 +997,31 @@ export default function CreateCampaign() {
               Selected: <span className="font-medium">{csvFile.name}</span>
             </p>
           )}
+          {csvParsing && <p className="mt-2 text-sm text-gray-500">Reading spreadsheet…</p>}
+          {csvError && <p className="mt-2 text-sm text-red-600">{csvError}</p>}
+          {!csvParsing && !csvError && csvFile && (
+            <div className="mt-2 space-y-1 text-sm text-gray-600">
+              <p>{csvContacts.length} valid unique number{csvContacts.length === 1 ? '' : 's'} ready</p>
+              {csvDuplicates > 0 && <p className="text-amber-600">{csvDuplicates} duplicate number{csvDuplicates === 1 ? '' : 's'} removed</p>}
+              {csvInvalid.length > 0 && <p className="text-amber-600">{csvInvalid.length} invalid number{csvInvalid.length === 1 ? '' : 's'} skipped</p>}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3 bg-white border rounded-xl p-4 w-fit">
           <button
-            onClick={() => handleSchedule()}
+            onClick={() => handleSchedule(csvPayload())}
+            disabled={csvParsing || csvContacts.length === 0 || launchMutation.isPending}
             className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
           >
             Schedule Campaign
+          </button>
+          <button
+            onClick={handleCsvSend}
+            disabled={csvParsing || csvContacts.length === 0 || launchMutation.isPending}
+            className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          >
+            {launchMutation.isPending ? 'Creating…' : 'Send Campaign'}
           </button>
         </div>
       </SubViewShell>
