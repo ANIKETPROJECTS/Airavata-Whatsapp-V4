@@ -184,6 +184,14 @@ async function handleIncomingMessage(
 
   if (!tenantUserId) {
     const owningUser = await resolveOwningUser(phoneNumberId);
+    logger.info(
+      {
+        msgId: msg.id,
+        phoneNumberId,
+        owningUserId: owningUser ? String(owningUser._id) : undefined,
+      },
+      "Resolved incoming WhatsApp message tenant",
+    );
     if (!owningUser) {
       logger.error(
         { msgId: msg.id, from: fromRaw, phoneNumberId },
@@ -197,6 +205,14 @@ async function handleIncomingMessage(
   }
 
   const userId = new mongoose.Types.ObjectId(tenantUserId);
+  logger.info(
+    {
+      msgId: msg.id,
+      phoneNumberId,
+      userId: String(userId),
+    },
+    "Processing incoming WhatsApp message in tenant context",
+  );
 
   // Find a Contact for this tenant whose normalized phone matches.
   const tenantContacts = await ContactModel.find({ userId }).lean();
@@ -388,6 +404,16 @@ async function handleIncomingMessage(
     ...(flowId ? { flowId } : {}),
     ...(campaignId ? { campaignId } : {}),
   });
+  logger.info(
+    {
+      userId: String(userId),
+      contactId: String(contactId),
+      messageId: String(createdMessage._id),
+      whatsappMessageId: msg.id,
+      event: "message_received",
+    },
+    "Inbound message persisted; scheduling client webhook delivery",
+  );
   void emitClientWebhookEvent(userId, "message_received", {
     message: {
       id: String(createdMessage._id),

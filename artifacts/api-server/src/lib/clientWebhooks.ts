@@ -33,6 +33,18 @@ async function deliverToWebhook(
 
   let lastError = "Unknown webhook delivery error";
   for (let attempt = 1; attempt <= MAX_DELIVERY_ATTEMPTS; attempt += 1) {
+    const startedAt = Date.now();
+    logger.info(
+      {
+        webhookId: String(webhook._id),
+        event,
+        url: webhook.url,
+        eventId,
+        attempt,
+        maxAttempts: MAX_DELIVERY_ATTEMPTS,
+      },
+      "Client webhook delivery attempt started",
+    );
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
     try {
@@ -49,10 +61,48 @@ async function deliverToWebhook(
         body: payload,
         signal: controller.signal,
       });
-      if (response.ok) return;
+      if (response.ok) {
+        logger.info(
+          {
+            webhookId: String(webhook._id),
+            event,
+            url: webhook.url,
+            eventId,
+            attempt,
+            status: response.status,
+            durationMs: Date.now() - startedAt,
+          },
+          "Client webhook delivered",
+        );
+        return;
+      }
       lastError = `HTTP ${response.status}`;
+      logger.warn(
+        {
+          webhookId: String(webhook._id),
+          event,
+          url: webhook.url,
+          eventId,
+          attempt,
+          status: response.status,
+          durationMs: Date.now() - startedAt,
+        },
+        "Client webhook delivery returned a non-success response",
+      );
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
+      logger.warn(
+        {
+          err: error,
+          webhookId: String(webhook._id),
+          event,
+          url: webhook.url,
+          eventId,
+          attempt,
+          durationMs: Date.now() - startedAt,
+        },
+        "Client webhook delivery attempt failed",
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -80,6 +130,10 @@ async function deliverEventInTenant(
   data: JsonRecord,
 ): Promise<void> {
   const tenantUserId = objectId(userId);
+  logger.info(
+    { userId: String(tenantUserId), event },
+    "Looking up client webhooks for tenant",
+  );
   const webhooks = await WebhookModel.find({
     userId: tenantUserId,
     isActive: true,
@@ -88,7 +142,23 @@ async function deliverEventInTenant(
     .select("+secret")
     .lean();
 
-  if (webhooks.length === 0) return;
+  logger.info(
+    {
+      userId: String(tenantUserId),
+      event,
+      webhookCount: webhooks.length,
+      webhookIds: webhooks.map((webhook) => String(webhook._id)),
+    },
+    "Client webhook lookup completed",
+  );
+
+  if (webhooks.length === 0) {
+    logger.info(
+      { userId: String(tenantUserId), event },
+      "No active client webhooks are registered for this tenant event",
+    );
+    return;
+  }
 
   const eventId = randomUUID();
   const payload = JSON.stringify({
@@ -120,6 +190,10 @@ export async function emitClientWebhookEvent(
   event: ClientWebhookEvent,
   data: JsonRecord,
 ): Promise<void> {
+  logger.info(
+    { userId: String(userId), event },
+    "Client webhook event dispatch requested",
+  );
   try {
     await runWithTenant(String(userId), () =>
       deliverEventInTenant(String(userId), event, data),
@@ -129,7 +203,12 @@ export async function emitClientWebhookEvent(
       { err: error, userId: String(userId), event },
       "Client webhook event could not be dispatched",
     );
+    return;
   }
+  logger.info(
+    { userId: String(userId), event },
+    "Client webhook event dispatch finished",
+  );
 }
 
 export async function emitContactCreatedEvent(
