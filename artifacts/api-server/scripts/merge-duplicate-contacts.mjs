@@ -32,6 +32,7 @@ function normalizeContactPhone(value) {
 function isMeaningfulName(name, phones) {
   const value = String(name ?? "").trim();
   if (!value || /^(na|n\/a|unnamed contact)$/i.test(value)) return false;
+  if (/^[A-Z0-9]{2,5}$/.test(value)) return false;
   return !phones.some((phone) => value === phone || value === phone.slice(1));
 }
 
@@ -57,8 +58,9 @@ function chooseSurvivor(contacts, messageCounts) {
   const scored = contacts.map((contact) => {
     const phone = normalizeContactPhone(contact.phone);
     const phones = [phone, contact.phone].filter(Boolean);
+    const meaningfulName = isMeaningfulName(contact.name, phones);
     const score =
-      (isMeaningfulName(contact.name, phones) ? 100 : 0) +
+      (meaningfulName ? 100 + String(contact.name).trim().length : 0) +
       (nonEmpty(contact.email) ? 20 : 0) +
       objectSize(contact.attributes) * 5 +
       (contact.tags?.length ?? 0) * 3 +
@@ -268,6 +270,7 @@ async function mergeTenant(db, userId) {
     messagesReassigned: 0,
     recipientRecordsDeleted: 0,
     sendRecordsDeleted: 0,
+    groups: [],
   };
 
   if (!duplicateGroups.length) return result;
@@ -291,6 +294,16 @@ async function mergeTenant(db, userId) {
         const survivor = chooseSurvivor(group, messageCounts);
         const duplicateIds = ids.filter((id) => String(id) !== String(survivor._id));
         const mergedContacts = [survivor, ...group.filter((contact) => String(contact._id) !== String(survivor._id))];
+        const messageCountsBefore = Object.fromEntries(
+          group.map((contact) => [
+            String(contact._id),
+            messageCounts.get(String(contact._id)) ?? 0,
+          ]),
+        );
+        const messageCountBefore = Object.values(messageCountsBefore).reduce(
+          (sum, count) => sum + count,
+          0,
+        );
 
         const messageUpdate = await messagesCollection.updateMany(
           { userId, contactId: { $in: duplicateIds } },
@@ -314,12 +327,35 @@ async function mergeTenant(db, userId) {
           { userId, _id: { $in: duplicateIds } },
           { session },
         );
+        const messageCountAfter = await messagesCollection.countDocuments(
+          { userId, contactId: survivor._id },
+          { session },
+        );
 
         result.contactsMerged += duplicateIds.length;
         result.contactsDeleted += duplicateIds.length;
         result.messagesReassigned += messageUpdate.modifiedCount;
         result.recipientRecordsDeleted += referenceResult.recipientDeleted;
         result.sendRecordsDeleted += referenceResult.sendDeleted;
+        result.groups.push({
+          normalizedPhone,
+          kept: {
+            id: String(survivor._id),
+            name: survivor.name ?? null,
+            phone: survivor.phone,
+          },
+          deleted: group
+            .filter((contact) => String(contact._id) !== String(survivor._id))
+            .map((contact) => ({
+              id: String(contact._id),
+              name: contact.name ?? null,
+              phone: contact.phone,
+            })),
+          messageCountsBefore,
+          messageCountBefore,
+          messageCountAfter,
+          messagesPreserved: messageCountBefore === messageCountAfter,
+        });
       }
     });
   } finally {
