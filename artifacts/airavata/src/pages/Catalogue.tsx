@@ -17,11 +17,45 @@ type MetaCatalog = {
   vertical?: string;
 };
 
+type CatalogProduct = {
+  id: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  currency?: string;
+  image_url?: string;
+  retailer_id?: string;
+  availability?: string;
+};
+
+type ProductForm = {
+  name: string;
+  description: string;
+  price: string;
+  currency: string;
+  imageUrl: string;
+  retailerId: string;
+  availability: 'in stock' | 'out of stock';
+};
+
+const emptyProductForm: ProductForm = {
+  name: '',
+  description: '',
+  price: '',
+  currency: 'INR',
+  imageUrl: '',
+  retailerId: '',
+  availability: 'in stock',
+};
+
 export default function Catalogue() {
   const queryClient = useQueryClient();
   const [showPicker, setShowPicker] = useState(false);
   const [catalogs, setCatalogs] = useState<MetaCatalog[]>([]);
   const [selectedCatalogId, setSelectedCatalogId] = useState('');
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm);
+  const [search, setSearch] = useState('');
 
   const { data: catalogSettings, isLoading: settingsLoading } = useQuery<{ settings: CatalogSettings }>({
     queryKey: ['catalog-settings'],
@@ -51,6 +85,49 @@ export default function Catalogue() {
   });
 
   const settings = catalogSettings?.settings;
+  const { data: productData, isLoading: productsLoading } = useQuery<{ products: CatalogProduct[] }>({
+    queryKey: ['catalog-products', settings?.metaCatalogId],
+    queryFn: () => api.get('/integration/whatsapp/catalog/products'),
+    enabled: Boolean(settings?.catalogConnected && settings.metaCatalogId),
+  });
+
+  const createProduct = useMutation({
+    mutationFn: (payload: ProductForm) =>
+      api.post<{ product: CatalogProduct }>('/integration/whatsapp/catalog/products', {
+        ...payload,
+        price: Number(payload.price),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['catalog-products'] });
+      setShowProductForm(false);
+      setProductForm(emptyProductForm);
+      toast.success('Product added to your Meta catalog');
+    },
+    onError: (error: Error) => toast.error(error.message || 'Unable to add product'),
+  });
+
+  const products = productData?.products ?? [];
+  const filteredProducts = products.filter((product) =>
+    `${product.name ?? ''} ${product.retailer_id ?? ''}`.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const openProductForm = () => {
+    if (!settings?.catalogConnected) {
+      toast.info('Connect a catalog before adding products');
+      return;
+    }
+    setProductForm(emptyProductForm);
+    setShowProductForm(true);
+  };
+
+  const updateProductForm = <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => {
+    setProductForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleProductSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    createProduct.mutate(productForm);
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -67,8 +144,10 @@ export default function Catalogue() {
             Manage Visibility
           </button>
           <button
-            onClick={() => toast('Coming soon')}
-            className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2 shadow-sm whitespace-nowrap"
+            onClick={openProductForm}
+            disabled={!settings?.catalogConnected || settingsLoading}
+            title={!settings?.catalogConnected ? 'Connect a catalog first' : undefined}
+            className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm whitespace-nowrap"
           >
             <Plus className="w-4 h-4" /> Add Product
           </button>
@@ -114,6 +193,8 @@ export default function Catalogue() {
           <input
             type="text"
             placeholder="Search products..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
           />
         </div>
@@ -122,22 +203,67 @@ export default function Catalogue() {
         </button>
       </div>
 
-      {/* Empty state */}
-      <div className="flex flex-col items-center justify-center py-24 gap-4 text-gray-400">
-        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-          <ShoppingBag className="w-8 h-8 opacity-40" />
+      {productsLoading ? (
+        <div className="flex items-center justify-center py-24 gap-2 text-gray-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">Loading catalog products…</span>
         </div>
-        <div className="text-center">
-          <p className="text-base font-medium text-gray-600">No products yet</p>
-          <p className="text-sm mt-1">Add products to your catalogue so customers can browse and order via WhatsApp.</p>
+      ) : filteredProducts.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredProducts.map((product) => (
+            <article key={product.id} className="rounded-xl border bg-white overflow-hidden shadow-sm">
+              <div className="aspect-[4/3] bg-gray-100">
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.name || 'Catalog product'} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <ShoppingBag className="w-10 h-10 opacity-40" />
+                  </div>
+                )}
+              </div>
+              <div className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-semibold text-gray-900 truncate">{product.name || 'Unnamed product'}</h3>
+                  <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                    {product.currency || ''} {product.price ?? '—'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 line-clamp-2">{product.description || 'No description'}</p>
+                <div className="flex items-center justify-between gap-2 text-xs text-gray-400">
+                  <span className="truncate">SKU: {product.retailer_id || '—'}</span>
+                  <span className={product.availability === 'out of stock' ? 'text-red-600' : 'text-emerald-600'}>
+                    {product.availability || 'Availability unknown'}
+                  </span>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
-        <button
-          onClick={() => toast('Coming soon')}
-          className="mt-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Add your first product
-        </button>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-gray-400">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
+            <ShoppingBag className="w-8 h-8 opacity-40" />
+          </div>
+          <div className="text-center">
+            <p className="text-base font-medium text-gray-600">
+              {settings?.catalogConnected ? (search ? 'No matching products' : 'No products yet') : 'Connect a catalog first'}
+            </p>
+            <p className="text-sm mt-1">
+              {settings?.catalogConnected
+                ? 'Add products to your Meta catalog so customers can browse and order via WhatsApp.'
+                : 'Connect your Meta Commerce Catalog before adding products.'}
+            </p>
+          </div>
+          {settings?.catalogConnected && !search && (
+            <button
+              onClick={openProductForm}
+              className="mt-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Add your first product
+            </button>
+          )}
+        </div>
+      )}
 
       {showPicker && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
@@ -183,6 +309,71 @@ export default function Catalogue() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {showProductForm && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setShowProductForm(false)}>
+          <form
+            onSubmit={handleProductSubmit}
+            onClick={(event) => event.stopPropagation()}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-xl p-6 space-y-5 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Add Product</h2>
+                <p className="text-sm text-gray-500 mt-1">This product will be created in your connected Meta Commerce Catalog.</p>
+              </div>
+              <button type="button" onClick={() => setShowProductForm(false)} className="text-gray-400 hover:text-gray-700" aria-label="Close">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="sm:col-span-2 space-y-1.5">
+                <span className="text-sm font-medium text-gray-700">Product name</span>
+                <input required value={productForm.name} onChange={(event) => updateProductForm('name', event.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm" placeholder="Premium Coffee Blend" />
+              </label>
+              <label className="sm:col-span-2 space-y-1.5">
+                <span className="text-sm font-medium text-gray-700">Description</span>
+                <textarea required rows={3} value={productForm.description} onChange={(event) => updateProductForm('description', event.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm resize-none" placeholder="Describe this product" />
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-gray-700">Price</span>
+                <input required min="0.01" step="0.01" type="number" value={productForm.price} onChange={(event) => updateProductForm('price', event.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm" placeholder="450" />
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-gray-700">Currency</span>
+                <input required maxLength={3} value={productForm.currency} onChange={(event) => updateProductForm('currency', event.target.value.toUpperCase())} className="w-full border rounded-lg px-3 py-2.5 text-sm uppercase" placeholder="INR" />
+              </label>
+              <label className="sm:col-span-2 space-y-1.5">
+                <span className="text-sm font-medium text-gray-700">Image URL</span>
+                <input required type="url" value={productForm.imageUrl} onChange={(event) => updateProductForm('imageUrl', event.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm" placeholder="https://example.com/product.jpg" />
+                <span className="block text-xs text-gray-400">Use a publicly reachable HTTPS image URL for Meta.</span>
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-gray-700">Retailer ID / SKU</span>
+                <input required value={productForm.retailerId} onChange={(event) => updateProductForm('retailerId', event.target.value)} className="w-full border rounded-lg px-3 py-2.5 text-sm" placeholder="COF-001" />
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-sm font-medium text-gray-700">Availability</span>
+                <select value={productForm.availability} onChange={(event) => updateProductForm('availability', event.target.value as ProductForm['availability'])} className="w-full border rounded-lg px-3 py-2.5 text-sm bg-white">
+                  <option value="in stock">In stock</option>
+                  <option value="out of stock">Out of stock</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setShowProductForm(false)} className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button type="submit" disabled={createProduct.isPending} className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
+                {createProduct.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                Create product
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
