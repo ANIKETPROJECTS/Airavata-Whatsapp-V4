@@ -35,9 +35,53 @@ type MetaCatalog = {
   vertical?: string;
 };
 
+type MetaProduct = {
+  id: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  currency?: string;
+  image_url?: string;
+  retailer_id?: string;
+  availability?: string;
+};
+
 async function metaGet<T>(path: string, accessToken: string): Promise<T> {
   const response = await fetch(`${GRAPH_BASE}/${path}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const raw = await response.text();
+  let data: T & {
+    error?: { message?: string; code?: number; error_subcode?: number; type?: string; fbtrace_id?: string };
+  };
+  try {
+    data = JSON.parse(raw) as typeof data;
+  } catch {
+    data = {} as typeof data;
+  }
+  if (!response.ok || data.error) {
+    const error = new Error(data.error?.message ?? `Meta Graph API request failed (${response.status})`);
+    Object.assign(error, {
+      status: response.status,
+      meta: data.error ?? { message: raw.slice(0, 500) },
+    });
+    throw error;
+  }
+  return data;
+}
+
+async function metaPost<T>(
+  path: string,
+  accessToken: string,
+  body: Record<string, unknown>,
+): Promise<T> {
+  const response = await fetch(`${GRAPH_BASE}/${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
   const raw = await response.text();
   let data: T & {
@@ -817,6 +861,164 @@ router.post(
       );
       res.status(502).json({
         error: typedError.message || "Unable to connect Commerce Catalog",
+        meta: typedError.meta,
+      });
+    }
+  },
+);
+
+/**
+ * GET /api/integration/whatsapp/catalog/products
+ */
+router.get(
+  "/integration/whatsapp/catalog/products",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const credential = await WhatsAppCredentialModel.findOne({
+        userId: req.user!.userId,
+      })
+        .select("metaCatalogId catalogConnected")
+        .lean();
+      if (!credential?.catalogConnected || !credential.metaCatalogId) {
+        res.status(409).json({ error: "Connect a Commerce Catalog before loading products" });
+        return;
+      }
+
+      const { accessToken } = await getCredentials(req.user!.userId, {
+        allowEnvFallback: false,
+      });
+      const data = await metaGet<{ data?: MetaProduct[] }>(
+        `${encodeURIComponent(credential.metaCatalogId)}/products?fields=id,name,description,price,currency,image_url,retailer_id,availability&limit=100`,
+        accessToken,
+      );
+      res.json({ products: (data.data ?? []).filter((product) => Boolean(product.id)) });
+    } catch (error) {
+      const typedError = error as Error & { meta?: Record<string, unknown> };
+      logger.error(
+        { err: error, userId: req.user!.userId },
+        "Meta Commerce Catalog product listing failed",
+      );
+      res.status(502).json({
+        error: typedError.message || "Unable to load catalog products",
+        meta: typedError.meta,
+      });
+    }
+  },
+);
+
+/**
+ * POST /api/integration/whatsapp/catalog/products
+ */
+router.post(
+  "/integration/whatsapp/catalog/products",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const body = (req.body ?? {}) as {
+        name?: unknown;
+        description?: unknown;
+        price?: unknown;
+        currency?: unknown;
+        imageUrl?: unknown;
+        retailerId?: unknown;
+        availability?: unknown;
+      };
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      const description = typeof body.description === "string" ? body.description.trim() : "";
+      const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+      const retailerId = typeof body.retailerId === "string" ? body.retailerId.trim() : "";
+      const currency = typeof body.currency === "string" ? body.currency.trim().toUpperCase() : "";
+      const availability = body.availability === "out of stock" ? "out of stock" : body.availability === "in stock" ? "in stock" : "";
+      const price = typeof body.price === "number" ? body.price : Number(body.price);
+
+      if (!name) {
+        res.status(400).json({ error: "Product name is required" });
+        return;
+      }
+      if (!description) {
+        res.status(400).json({ error: "Product description is required" });
+        return;
+      }
+      if (!Number.isFinite(price) || price <= 0) {
+        res.status(400).json({ error: "Product price must be greater than zero" });
+        return;
+      }
+      if (!/^[A-Z]{3}$/.test(currency)) {
+        res.status(400).json({ error: "Currency must be a 3-letter ISO code" });
+        return;
+      }
+      if (!imageUrl) {
+        res.status(400).json({ error: "A publicly reachable image URL is required" });
+        return;
+      }
+      try {
+        const parsedImageUrl = new URL(imageUrl);
+        if (!["http:", "https:"].includes(parsedImageUrl.protocol)) throw new Error();
+      } catch {
+        res.status(400).json({ error: "Image must be a valid http(s) URL" });
+        return;
+      }
+      if (!retailerId) {
+        res.status(400).json({ error: "Retailer ID / SKU is required" });
+        return;
+      }
+      if (!availability) {
+        res.status(400).json({ error: "Availability must be in stock or out of stock" });
+        return;
+      }
+
+      const credential = await WhatsAppCredentialModel.findOne({
+        userId: req.user!.userId,
+      })
+        .select("metaCatalogId catalogConnected")
+        .lean();
+      if (!credential?.catalogConnected || !credential.metaCatalogId) {
+        res.status(409).json({ error: "Connect a Commerce Catalog before adding products" });
+        return;
+      }
+
+      const { accessToken } = await getCredentials(req.user!.userId, {
+        allowEnvFallback: false,
+      });
+      const created = await metaPost<{ id?: string }>(
+        `${encodeURIComponent(credential.metaCatalogId)}/products`,
+        accessToken,
+        {
+          name,
+          description,
+          price,
+          currency,
+          image_url: imageUrl,
+          retailer_id: retailerId,
+          availability,
+        },
+      );
+      if (!created.id) {
+        res.status(502).json({ error: "Meta did not return a created product ID" });
+        return;
+      }
+
+      res.status(201).json({
+        product: {
+          id: created.id,
+          name,
+          description,
+          price,
+          currency,
+          image_url: imageUrl,
+          retailer_id: retailerId,
+          availability,
+        },
+      });
+    } catch (error) {
+      const typedError = error as Error & { meta?: Record<string, unknown> };
+      logger.error(
+        { err: error, userId: req.user!.userId },
+        "Meta Commerce Catalog product creation failed",
+      );
+      res.status(502).json({
+        error: typedError.message || "Unable to create catalog product",
         meta: typedError.meta,
       });
     }
