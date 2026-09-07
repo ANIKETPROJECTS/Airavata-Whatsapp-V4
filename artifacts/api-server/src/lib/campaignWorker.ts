@@ -7,12 +7,18 @@ import { logger } from "./logger";
 import { runWithTenant } from "./tenantDatabase";
 
 let running = false;
+export const CAMPAIGN_SEND_PACING_MS = 350;
+
+function sleep(milliseconds: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+}
 
 /**
  * Claims one due recipient at a time. The atomic claim prevents multiple API
  * instances from processing the same contact concurrently.
  */
 async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.ObjectId) {
+    let lastSendStartedAt: number | undefined;
     for (;;) {
       const recipient = await CampaignRecipientModel.findOneAndUpdate(
         {
@@ -25,6 +31,13 @@ async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.Obje
       ).lean();
       if (!recipient) break;
 
+      if (lastSendStartedAt !== undefined) {
+        const elapsed = Date.now() - lastSendStartedAt;
+        const remaining = CAMPAIGN_SEND_PACING_MS - elapsed;
+        if (remaining > 0) await sleep(remaining);
+      }
+      const sendStartedAt = Date.now();
+
       try {
         const result = await executeCampaignSend({
           userId: recipient.userId,
@@ -33,6 +46,9 @@ async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.Obje
           contactId: recipient.contactId,
           stepId: recipient.currentStepId ?? "initial",
         });
+        if (!("skipped" in result) && !("duplicate" in result)) {
+          lastSendStartedAt = sendStartedAt;
+        }
         const campaign = await CampaignModel.findOne({
           _id: recipient.campaignId,
           userId,
@@ -61,6 +77,7 @@ async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.Obje
           }
         }
       } catch (error) {
+        lastSendStartedAt = sendStartedAt;
         const reason = error instanceof Error ? error.message : "Campaign send failed";
         const recovered = await CampaignRecipientModel.updateOne(
           {
