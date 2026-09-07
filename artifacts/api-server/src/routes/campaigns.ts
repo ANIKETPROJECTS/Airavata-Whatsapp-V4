@@ -796,6 +796,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     // ── Send through the shared executor asynchronously ──────────────────────
     let sent = 0;
     let failed = 0;
+    let limitDeferred = false;
     for (const recipient of enrolledRecipients) {
       try {
         const result = await executeCampaignSend({
@@ -806,6 +807,10 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           templateId: template._id,
           variableValues,
         });
+        if ("deferred" in result && result.deferred) {
+          limitDeferred = true;
+          break;
+        }
         if ("sent" in result && result.sent) sent++;
       } catch (err) {
         failed++;
@@ -814,9 +819,17 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     }
     await CampaignModel.findOneAndUpdate(
       { _id: camp._id, userId },
-      { $set: { status: failed > 0 && sent === 0 ? "FAILED" : "COMPLETED" } },
+      {
+        $set: {
+          status: limitDeferred
+            ? "SENDING"
+            : failed > 0 && sent === 0
+              ? "FAILED"
+              : "COMPLETED",
+        },
+      },
     );
-    logger.info({ campaignId: String(camp._id), sent, failed }, "Campaign completed");
+    logger.info({ campaignId: String(camp._id), sent, failed, deferred: limitDeferred }, "Campaign completed");
   } catch (err: unknown) {
     await session.abortTransaction().catch(() => {});
     session.endSession();

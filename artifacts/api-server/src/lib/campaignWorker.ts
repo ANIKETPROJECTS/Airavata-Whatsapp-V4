@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { executeCampaignSend } from "./campaignExecutor";
 import { logger } from "./logger";
 import { runWithTenant } from "./tenantDatabase";
+import { checkMessagingLimitBeforeSend } from "./messagingLimit";
 
 let running = false;
 export const CAMPAIGN_SEND_PACING_MS = 350;
@@ -31,6 +32,35 @@ async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.Obje
       ).lean();
       if (!recipient) break;
 
+      const messagingLimit = await checkMessagingLimitBeforeSend(
+        String(userId),
+        recipient.contactId,
+      );
+      if (!messagingLimit.allowed) {
+        await CampaignRecipientModel.updateOne(
+          { _id: recipient._id, userId, status: "ACTIVE" },
+          {
+            $set: {
+              status: "QUEUED",
+              nextActionAt: messagingLimit.resumeAt,
+              lastError: `Daily WhatsApp messaging limit safeguard reached (${messagingLimit.uniqueContactsMessagedToday}/${messagingLimit.limit}); resumes next day`,
+            },
+          },
+        );
+        logger.warn(
+          {
+            userId: String(userId),
+            recipientId: String(recipient._id),
+            uniqueContactsMessagedToday: messagingLimit.uniqueContactsMessagedToday,
+            limit: messagingLimit.limit,
+            threshold: messagingLimit.threshold,
+            resumeAt: messagingLimit.resumeAt,
+          },
+          "Paused tenant campaign sends at WhatsApp messaging limit safeguard",
+        );
+        break;
+      }
+
       if (lastSendStartedAt !== undefined) {
         const elapsed = Date.now() - lastSendStartedAt;
         const remaining = CAMPAIGN_SEND_PACING_MS - elapsed;
@@ -46,7 +76,7 @@ async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.Obje
           contactId: recipient.contactId,
           stepId: recipient.currentStepId ?? "initial",
         });
-        if (!("skipped" in result) && !("duplicate" in result)) {
+        if (!("skipped" in result) && !("duplicate" in result) && !("deferred" in result)) {
           lastSendStartedAt = sendStartedAt;
         }
         const campaign = await CampaignModel.findOne({

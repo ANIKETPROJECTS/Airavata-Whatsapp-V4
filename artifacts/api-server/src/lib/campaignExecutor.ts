@@ -9,6 +9,7 @@ import { FlowModel } from "../models/Flow";
 import { sendTemplateMessage, sendWhatsAppFlowMessage } from "./whatsapp";
 import { withCreditCharge } from "./creditDeduction";
 import { logger } from "./logger";
+import { checkMessagingLimitBeforeSend } from "./messagingLimit";
 
 type VariableValues = Record<string, string>;
 
@@ -85,6 +86,28 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
       { $set: { status: contact.status === "unsubscribed" ? "OPTED_OUT" : "SKIPPED", lastError: "Contact is not eligible for campaign sends" } },
     );
     return { skipped: true, reason: "CONTACT_NOT_ACTIVE" as const };
+  }
+
+  const messagingLimit = await checkMessagingLimitBeforeSend(
+    String(userId),
+    contactId,
+  );
+  if (!messagingLimit.allowed) {
+    await CampaignRecipientModel.updateOne(
+      { _id: recipientId, userId, status: { $in: ["ACTIVE", "QUEUED"] } },
+      {
+        $set: {
+          status: "QUEUED",
+          nextActionAt: messagingLimit.resumeAt,
+          lastError: `Daily WhatsApp messaging limit safeguard reached (${messagingLimit.uniqueContactsMessagedToday}/${messagingLimit.limit}); resumes next day`,
+        },
+      },
+    );
+    return {
+      deferred: true,
+      reason: "MESSAGING_LIMIT_REACHED" as const,
+      resumeAt: messagingLimit.resumeAt,
+    };
   }
 
   const idempotencyKey = `${campaignId}:${contactId}:${stepId}`;

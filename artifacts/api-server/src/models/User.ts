@@ -47,6 +47,9 @@ const userSchema = new Schema(
     metaWabaId: { type: String, unique: true, sparse: true },
     metaWabaAccessToken: { type: String }, // system-user token from Embedded Signup
     metaEmbeddedSignupCode: { type: String }, // fallback: raw code if APP_SECRET not set
+    whatsappMessagingLimitTier: { type: String, trim: true },
+    whatsappMessagingLimit: { type: Number },
+    whatsappMessagingLimitFetchedAt: { type: Date },
   },
   { timestamps: true },
 );
