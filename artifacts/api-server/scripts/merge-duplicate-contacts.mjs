@@ -122,10 +122,12 @@ function mergedContactUpdate(contacts, normalizedPhone) {
         ...(contact.groupId ? [String(contact.groupId)] : []),
       ]),
     ),
-  ].map((value) => new mongoose.Types.ObjectId(value));
+  ].filter((value) => mongoose.isValidObjectId(value))
+    .map((value) => new mongoose.Types.ObjectId(value));
   const tags = [
     ...new Set(contacts.flatMap((contact) => (contact.tags ?? []).map(String))),
-  ].map((value) => new mongoose.Types.ObjectId(value));
+  ].filter((value) => mongoose.isValidObjectId(value))
+    .map((value) => new mongoose.Types.ObjectId(value));
 
   return {
     phone: normalizedPhone,
