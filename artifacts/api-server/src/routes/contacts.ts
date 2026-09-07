@@ -9,7 +9,7 @@ import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvents, emitContactCreatedEvent } from "../lib/clientWebhooks";
-import { normalizeContactPhone, tryNormalizeContactPhone } from "../lib/contactPhone";
+import { normalizeContactPhone, sameContactPhone, tryNormalizeContactPhone } from "../lib/contactPhone";
 
 const router = Router();
 router.use(authenticate);
@@ -359,6 +359,13 @@ router.post("/contacts", async (req: AuthRequest, res) => {
       return;
     }
 
+    const existingContact = (await ContactModel.find({ userId: req.user!.userId }).select("_id phone").lean())
+      .find((candidate) => sameContactPhone(candidate.phone, normalizedPhone));
+    if (existingContact) {
+      res.status(409).json({ error: "A contact with this phone number already exists" });
+      return;
+    }
+
     const contact = await ContactModel.create({
       userId: req.user!.userId,
       name: name?.trim() || "NA",
@@ -567,8 +574,15 @@ router.post("/contacts/import", async (req: AuthRequest, res) => {
       };
     }).filter((d): d is NonNullable<typeof d> => Boolean(d));
 
-    const result = await ContactModel.insertMany(docs, { ordered: false }).catch((err) => err);
-    const inserted = result.insertedCount ?? result.length ?? docs.length;
+    const existingPhones = await ContactModel.find({ userId: req.user!.userId })
+      .select("phone")
+      .lean();
+    const newDocs = docs.filter((doc) =>
+      !existingPhones.some((existing) => sameContactPhone(existing.phone, doc.phone)),
+    );
+
+    const result = await ContactModel.insertMany(newDocs, { ordered: false }).catch((err) => err);
+    const inserted = result.insertedCount ?? result.length ?? newDocs.length;
     const createdContacts = Array.isArray(result)
       ? result
       : ((result as { insertedDocs?: Array<{ _id: mongoose.Types.ObjectId }> }).insertedDocs ?? []);

@@ -38,6 +38,12 @@ export function tryNormalizeContactPhone(value: unknown): string | null {
   }
 }
 
+export function sameContactPhone(left: unknown, right: unknown): boolean {
+  const normalizedLeft = tryNormalizeContactPhone(left);
+  const normalizedRight = tryNormalizeContactPhone(right);
+  return Boolean(normalizedLeft && normalizedRight && normalizedLeft === normalizedRight);
+}
+
 export function contactPhoneDigits(value: unknown): string {
   return normalizeContactPhone(value).slice(1);
 }

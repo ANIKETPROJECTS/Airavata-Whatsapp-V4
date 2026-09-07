@@ -22,7 +22,7 @@ import {
   enrollNewContactsInTriggerCampaigns,
 } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvents } from "../lib/clientWebhooks";
-import { normalizeContactPhone } from "../lib/contactPhone";
+import { normalizeContactPhone, sameContactPhone } from "../lib/contactPhone";
 
 const router = Router();
 const TRIGGER_EVENTS = new Set(["inbound_message", "contact_created", "tag_added"]);
@@ -248,21 +248,18 @@ async function resolveCsvContacts(
       }),
     ),
   ];
-  const existing = await ContactModel.find({
-    userId,
-    phone: { $in: phoneVariants },
-  })
+  const existing = await ContactModel.find({ userId })
     .select("_id name phone status")
     .session(session)
     .lean();
   const existingByPhone = new Map<string, ResolvedCsvContact>();
   for (const contact of existing) {
-    const key = canonicalPhone(contact.phone);
+    const key = normalizeContactPhone(contact.phone);
     if (!existingByPhone.has(key)) {
       existingByPhone.set(key, {
         _id: contact._id as mongoose.Types.ObjectId,
         name: contact.name,
-        phone: contact.phone,
+        phone: normalizeContactPhone(contact.phone),
         status: contact.status,
       });
     }
@@ -689,14 +686,17 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           return [];
         }
       });
-      const byPhone = await ContactModel.find({
-        userId,
-        phone: { $in: normalizedPhoneNumbers },
-        status: "active",
-      })
+      const allContacts = await ContactModel.find({ userId, status: "active" })
         .select("_id")
         .lean();
-      phoneContactIds = byPhone.map((c) => String(c._id));
+      const contactPhones = await ContactModel.find({ userId, status: "active" })
+        .select("_id phone")
+        .lean();
+      phoneContactIds = contactPhones
+        .filter((contact) =>
+          normalizedPhoneNumbers.some((phone) => sameContactPhone(contact.phone, phone)),
+        )
+        .map((c) => String(c._id));
     }
 
     // Resolve contacts by tag

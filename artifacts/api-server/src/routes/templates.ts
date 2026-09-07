@@ -19,7 +19,7 @@ import {
 import { withCreditCharge } from "../lib/creditDeduction";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvent } from "../lib/clientWebhooks";
-import { normalizeContactPhone } from "../lib/contactPhone";
+import { normalizeContactPhone, sameContactPhone } from "../lib/contactPhone";
 
 const router = Router();
 const headerMediaUpload = multer({
@@ -361,7 +361,9 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
 
     // ── Persist to Live Chat ───────────────────────────────────────────────────
     // Find or create the contact for this phone number
-    let contact = await ContactModel.findOne({ userId, phone });
+    let contact = (await ContactModel.find({ userId })).find((candidate) =>
+      sameContactPhone(candidate.phone, phone),
+    );
     if (!contact) {
       contact = await ContactModel.create({
         userId,
