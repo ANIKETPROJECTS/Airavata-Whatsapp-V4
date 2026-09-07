@@ -10,6 +10,8 @@ import { MessageModel } from "../models/Message";
 import { ContactModel } from "../models/Contact";
 import { UserModel } from "../models/User";
 import { CampaignModel } from "../models/Campaign";
+import { CampaignSendModel } from "../models/CampaignSend";
+import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { FlowModel } from "../models/Flow";
 import { TemplateModel } from "../models/Template";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
@@ -555,12 +557,24 @@ async function handleStatusUpdate(
     { new: true },
   );
 
-  if (!msg) {
-    const knownMessage = await MessageModel.exists({
-      whatsappMessageId: status.id,
-      userId: new mongoose.Types.ObjectId(tenantUserId),
-    });
-    if (knownMessage) {
+  const campaignSend = await CampaignSendModel.findOneAndUpdate(
+    statusFilter,
+    { $set: update },
+    { new: true },
+  );
+
+  if (!msg && !campaignSend) {
+    const [knownMessage, knownCampaignSend] = await Promise.all([
+      MessageModel.exists({
+        whatsappMessageId: status.id,
+        userId: new mongoose.Types.ObjectId(tenantUserId),
+      }),
+      CampaignSendModel.exists({
+        whatsappMessageId: status.id,
+        userId: new mongoose.Types.ObjectId(tenantUserId),
+      }),
+    ]);
+    if (knownMessage || knownCampaignSend) {
       logger.info(
         { id: status.id, status: status.status },
         "Ignored duplicate or stale message status",
@@ -574,8 +588,15 @@ async function handleStatusUpdate(
     return;
   }
 
-  // Propagate stats to campaign if applicable
-  if (msg.campaignId && (status.status === "delivered" || status.status === "read" || status.status === "failed")) {
+  // A campaign send is the report source of truth. Legacy messages without a
+  // CampaignSend row still update their Message record and cached campaign
+  // counter for compatibility.
+  const campaignId = campaignSend?.campaignId ?? msg?.campaignId;
+  if (
+    campaignId &&
+    (status.status === "delivered" || status.status === "read" || status.status === "failed") &&
+    (campaignSend || !msg?.campaignId)
+  ) {
     const field =
       status.status === "delivered"
         ? "stats.delivered"
@@ -584,14 +605,42 @@ async function handleStatusUpdate(
           : "stats.failed";
     await CampaignModel.findOneAndUpdate(
       {
-        _id: msg.campaignId,
+        _id: campaignId,
         userId: new mongoose.Types.ObjectId(tenantUserId),
       },
       { $inc: { [field]: 1 } },
     );
   }
 
-  logger.info({ id: status.id, status: status.status }, "Updated message status");
+  if (campaignSend && status.status === "failed") {
+    await CampaignRecipientModel.updateOne(
+      {
+        _id: campaignSend.recipientId,
+        userId: new mongoose.Types.ObjectId(tenantUserId),
+        status: { $nin: ["FAILED", "OPTED_OUT", "SKIPPED"] },
+      },
+      {
+        $set: {
+          status: "FAILED",
+          lastError: status.errors?.[0]?.title ?? "Unknown error",
+        },
+      },
+    );
+  }
+
+  if (!campaignSend && msg?.campaignId) {
+    logger.info(
+      { id: status.id, status: status.status },
+      "Updated legacy campaign message status without CampaignSend row",
+    );
+  }
+
+  if (msg || campaignSend) {
+    logger.info(
+      { id: status.id, status: status.status, campaignSendUpdated: Boolean(campaignSend) },
+      "Updated message and campaign send status",
+    );
+  }
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────

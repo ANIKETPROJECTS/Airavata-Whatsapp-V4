@@ -11,6 +11,7 @@ import { TemplateModel } from "../models/Template";
 import { FlowModel } from "../models/Flow";
 import { MessageModel } from "../models/Message";
 import { CampaignRecipientModel } from "../models/CampaignRecipient";
+import { CampaignSendModel } from "../models/CampaignSend";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { executeCampaignSend } from "../lib/campaignExecutor";
@@ -57,12 +58,12 @@ interface ReconciledCampaignCounts {
 }
 
 /**
- * Rebuild report counters from the latest state of each outbound message.
+ * Rebuild report counters from the latest state of each campaign send.
  *
  * Campaign.stats is maintained incrementally for fast writes, but webhook
  * delivery notifications can be retried by Meta. The message state is the
- * idempotent source of truth, so reports use these counts to repair both old
- * inflated counters and any future duplicate notifications.
+ * idempotent source of truth, so reports use per-send status rows to repair
+ * both old inflated counters and any future duplicate notifications.
  */
 async function getReconciledCampaignCounts(
   userId: mongoose.Types.ObjectId,
@@ -70,14 +71,7 @@ async function getReconciledCampaignCounts(
 ): Promise<Map<string, ReconciledCampaignCounts>> {
   if (campaignIds.length === 0) return new Map();
 
-  const hasMessageId = {
-    $and: [
-      { $ne: ["$whatsappMessageId", null] },
-      { $ne: ["$whatsappMessageId", ""] },
-    ],
-  };
-
-  const rows = await MessageModel.aggregate<{
+  const rows = await CampaignSendModel.aggregate<{
     _id: mongoose.Types.ObjectId;
     sent: number;
     delivered: number;
@@ -88,7 +82,6 @@ async function getReconciledCampaignCounts(
       $match: {
         userId,
         campaignId: { $in: campaignIds },
-        direction: "OUTBOUND",
       },
     },
     { $sort: { updatedAt: 1, _id: 1 } },
@@ -96,12 +89,9 @@ async function getReconciledCampaignCounts(
       $group: {
         _id: {
           campaignId: "$campaignId",
-          messageKey: {
-            $cond: [hasMessageId, "$whatsappMessageId", { $toString: "$_id" }],
-          },
+          sendKey: { $toString: "$_id" },
         },
         status: { $last: "$status" },
-        hasWhatsappMessageId: { $max: { $cond: [hasMessageId, 1, 0] } },
       },
     },
     {
@@ -113,7 +103,6 @@ async function getReconciledCampaignCounts(
               {
                 $or: [
                   { $in: ["$status", ["SENT", "DELIVERED", "READ"]] },
-                  { $eq: ["$hasWhatsappMessageId", 1] },
                 ],
               },
               1,
@@ -158,13 +147,14 @@ function statsForCampaign(
   reconciledCounts: Map<string, ReconciledCampaignCounts>,
 ): unknown {
   const counts = reconciledCounts.get(String(campaign._id));
-  if (!counts) return campaign.stats;
-
   const storedStats =
     campaign.stats && typeof campaign.stats === "object"
       ? (campaign.stats as Record<string, unknown>)
       : {};
-  return { ...storedStats, ...counts };
+  return {
+    ...storedStats,
+    ...(counts ?? { sent: 0, delivered: 0, read: 0, failed: 0 }),
+  };
 }
 
 type CsvCampaignContactInput = {

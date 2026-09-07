@@ -7,4 +7,4 @@ The dashboard's delivery overview should count unique outbound WhatsApp messages
 
 **Why:** Workspace users expect messages visible in Live Chat and direct template sends to appear in delivery health; campaign-only aggregation makes a connected workspace incorrectly show zero.
 
-**How to apply:** Keep dashboard metrics on the all-message summary and keep campaign report metrics on campaign-scoped reconciliation.
+**How to apply:** Keep dashboard metrics on the all-message summary, but have campaign reports aggregate live `CampaignSend` statuses scoped by tenant user ID. Meta delivery/read/failed webhooks must update the matching `CampaignSend` row idempotently; cached `Campaign.stats` values are only compatibility counters.
