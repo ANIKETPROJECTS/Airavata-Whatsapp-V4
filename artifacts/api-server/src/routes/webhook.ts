@@ -29,9 +29,28 @@ import {
 
 const router = Router();
 
+const OPT_OUT_REPLIES = new Set([
+  "stop",
+  "unsubscribe",
+  "cancel",
+  "end",
+  "quit",
+  "opt out",
+  "opt-out",
+]);
+
 /** Strip all non-digit characters for phone comparison */
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "");
+}
+
+function isOptOutReply(value: string | undefined): boolean {
+  const normalized = value
+    ?.trim()
+    .toLowerCase()
+    .replace(/^[.!?,;:\s]+|[.!?,;:\s]+$/g, "")
+    .replace(/\s+/g, " ");
+  return normalized ? OPT_OUT_REPLIES.has(normalized) : false;
 }
 
 async function resolveOwningUser(phoneNumberId: string) {
@@ -321,6 +340,12 @@ async function handleIncomingMessage(
     body = `[${msg.type}]`;
   }
 
+  const isOptOut = isOptOutReply(body);
+  if (isOptOut) {
+    // Do not let chatbot automation respond to an unsubscribe request.
+    runChatbot = false;
+  }
+
   // Avoid duplicate messages
   const existing = await MessageModel.findOne({ whatsappMessageId: msg.id, userId });
   if (existing) return;
@@ -347,11 +372,21 @@ async function handleIncomingMessage(
   // New customer activity belongs in Open and remains unread until an agent
   // opens the conversation. This also reopens conversations previously marked
   // Resolved.
-  await ContactModel.findOneAndUpdate({ _id: contactId, userId }, {
-    $set: { lastContactedAt: new Date(), chatState: "ACTIVE" },
-  });
+  await ContactModel.findOneAndUpdate(
+    { _id: contactId, userId },
+    {
+      $set: {
+        lastContactedAt: new Date(),
+        chatState: "ACTIVE",
+        ...(isOptOut ? { status: "unsubscribed" } : {}),
+      },
+    },
+  );
 
   logger.info({ from: fromRaw, body }, "Stored incoming message");
+  if (isOptOut) {
+    logger.info({ contactId: String(contactId), keyword: body }, "Contact automatically unsubscribed from WhatsApp messaging");
+  }
 
   if (!hasPreviousInboundMessage) {
     void sendInquiryCreated({
