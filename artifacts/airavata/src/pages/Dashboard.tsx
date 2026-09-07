@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import MetaInsightsPanel from '@/components/MetaInsightsPanel';
 import { useFacebookEmbeddedSignup } from '@/hooks/use-facebook-embedded-signup';
 import { toast } from 'sonner';
 import facebookIcon from '@assets/facebook_(1)_1787158279371.png';
@@ -221,6 +220,7 @@ function StatusPill({ status, large = false }: { status: string; large?: boolean
 
 export default function Dashboard() {
   const { user, refreshUser } = useAuth();
+  const isMetaDirect = user?.billingMode === 'meta_direct';
   const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup();
   const handleReconnectFacebook = async () => {
     try {
@@ -278,6 +278,7 @@ export default function Dashboard() {
   const { data: billingData, isLoading: billingLoading } = useQuery<{ balance: number; transactions: CreditTransaction[] }>({
     queryKey: ['dashboard-billing'],
     queryFn: () => api.get('/billing'),
+    enabled: !isMetaDirect,
     refetchInterval: 30_000,
   });
 
@@ -643,9 +644,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <MetaInsightsPanel />
-
-        <section>
+        {!isMetaDirect && <section>
           <SectionHeading eyebrow="Credits" title="Available balance" href="/wa-pay" />
           <div className="rounded-none border border-gray-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col justify-between gap-5 border-b border-gray-200 pb-5 sm:flex-row sm:items-center">
@@ -696,7 +695,7 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        </section>
+        </section>}
       </div>
     </div>
   );

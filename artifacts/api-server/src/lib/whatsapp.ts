@@ -263,6 +263,15 @@ export interface MetaBillingInsights {
     charges: number;
     currency: string | null;
   }>;
+  daily: Array<{
+    start: number;
+    end: number;
+    sent: number;
+    delivered: number;
+    received: number;
+    messages: number;
+    charges: number;
+  }>;
   start: number;
   end: number;
   rangeDays: number;
@@ -290,7 +299,7 @@ export async function getMetaBillingInsights(
   const [messaging, inboundMessaging, conversations] = await Promise.all([
     graphFetchWithCreds<{
       analytics?: {
-        data_points?: Array<{ sent?: number; delivered?: number; received?: number }>;
+        data_points?: Array<{ start?: number; end?: number; sent?: number; delivered?: number; received?: number }>;
       };
     }>(
       `/${wabaPath}?${new URLSearchParams({
@@ -302,7 +311,7 @@ export async function getMetaBillingInsights(
     ),
     graphFetchWithCreds<{
       analytics?: {
-        data_points?: Array<{ received?: number }>;
+        data_points?: Array<{ start?: number; end?: number; received?: number }>;
       };
     }>(
       `/${wabaPath}?${new URLSearchParams({
@@ -316,6 +325,8 @@ export async function getMetaBillingInsights(
       currency?: string;
       pricing_analytics?: {
         data_points?: Array<{
+          start?: number;
+          end?: number;
           volume?: number;
           cost?: number;
           pricing_category?: string;
@@ -324,6 +335,8 @@ export async function getMetaBillingInsights(
         }>;
         data?: Array<{
           data_points?: Array<{
+            start?: number;
+            end?: number;
             volume?: number;
             cost?: number;
             pricing_category?: string;
@@ -377,6 +390,47 @@ export async function getMetaBillingInsights(
     conversations.currency,
     ...pricingPoints.map((point) => point.currency),
   ].filter(Boolean))];
+  const dailyMap = new Map<number, {
+    start: number;
+    end: number;
+    sent: number;
+    delivered: number;
+    received: number;
+    messages: number;
+    charges: number;
+  }>();
+  const getDaily = (startValue: number, endValue: number) => {
+    const current = dailyMap.get(startValue) ?? {
+      start: startValue,
+      end: endValue,
+      sent: 0,
+      delivered: 0,
+      received: 0,
+      messages: 0,
+      charges: 0,
+    };
+    dailyMap.set(startValue, current);
+    return current;
+  };
+  for (const point of messagingPoints) {
+    if (typeof point.start === "number") {
+      const dailyPoint = getDaily(point.start, point.end ?? point.start);
+      dailyPoint.sent += point.sent ?? 0;
+      dailyPoint.delivered += point.delivered ?? 0;
+    }
+  }
+  for (const point of inboundMessaging.analytics?.data_points ?? []) {
+    if (typeof point.start === "number") {
+      getDaily(point.start, point.end ?? point.start).received += point.received ?? 0;
+    }
+  }
+  for (const point of pricingPoints) {
+    if (typeof point.start === "number") {
+      const dailyPoint = getDaily(point.start, point.end ?? point.start);
+      dailyPoint.messages += point.volume ?? 0;
+      dailyPoint.charges += point.cost ?? 0;
+    }
+  }
 
   return {
     sent: messagingPoints.reduce((total, point) => total + (point.sent ?? 0), 0),
@@ -391,6 +445,7 @@ export async function getMetaBillingInsights(
     chargesAvailable: pricingPoints.some((point) => typeof point.cost === "number"),
     categories: [...categoryMap.values()]
       .sort((a, b) => b.messages - a.messages),
+    daily: [...dailyMap.values()].sort((a, b) => a.start - b.start),
     start,
     end,
     rangeDays,

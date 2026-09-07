@@ -915,7 +915,7 @@ export default function Manage() {
   };
 
   return (
-    <div className="w-full min-w-0 p-6 max-w-5xl mx-auto space-y-6">
+    <div className="w-full min-w-0 p-6 max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Manage Workspace</h1>
         <p className="text-sm text-gray-500">Configure your business settings and workspace resources</p>
@@ -946,7 +946,11 @@ export default function Manage() {
         </div>
 
         {/* Content */}
-        <div className="min-w-0 flex-1 bg-white rounded-xl border shadow-sm min-h-[400px] overflow-hidden">
+        <div className={`min-w-0 flex-1 min-h-[400px] ${
+          activeTab === 'meta'
+            ? 'overflow-visible'
+            : 'overflow-hidden rounded-xl border bg-white shadow-sm'
+        }`}>
           {activeTab === 'api'        && <ApiKeysTab />}
           {activeTab === 'agents'     && <AgentsTab />}
           {activeTab === 'phone'      && <PhoneNumbersTab />}

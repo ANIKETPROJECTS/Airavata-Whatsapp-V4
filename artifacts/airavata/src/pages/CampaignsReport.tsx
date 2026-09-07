@@ -8,6 +8,7 @@ import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2 }
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import MetaInsightsPanel from '@/components/MetaInsightsPanel';
+import { useAuth } from '@/context/AuthContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,8 @@ interface Stats {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function CampaignsReport() {
+  const { user } = useAuth();
+  const isMetaDirect = user?.billingMode === 'meta_direct';
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
   const { data, isLoading } = useQuery<{ campaigns: Campaign[] }>({
@@ -355,10 +358,10 @@ export default function CampaignsReport() {
                     <span>Status</span>
                     <span className="font-medium text-gray-900">{campaignDisplayStatus(selectedCampaign).label}</span>
                   </div>
-                  <div className="flex justify-between">
+                  {!isMetaDirect && <div className="flex justify-between">
                     <span>Credits Used</span>
                     <span className="font-medium text-gray-900">{selectedCampaign.creditCost}</span>
-                  </div>
+                  </div>}
                 </div>
               </div>
 

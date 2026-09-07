@@ -21,6 +21,15 @@ type MetaInsights = {
     charges: number;
     currency: string | null;
   }>;
+  daily: Array<{
+    start: number;
+    end: number;
+    sent: number;
+    delivered: number;
+    received: number;
+    messages: number;
+    charges: number;
+  }>;
   start: number;
   end: number;
   rangeDays: number;
@@ -35,6 +44,7 @@ const formatCategory = (value: string) =>
 export default function MetaInsightsPanel() {
   const { user } = useAuth();
   const [rangeDays, setRangeDays] = useState<RangeDays>(7);
+  const [showDaily, setShowDaily] = useState(false);
   const visible = user?.billingMode === 'meta_direct';
 
   const { data, isLoading, error } = useQuery<{ insights: MetaInsights }>({
@@ -104,7 +114,16 @@ export default function MetaInsightsPanel() {
                     {new Date(insights.start * 1000).toLocaleDateString()} – {new Date(insights.end * 1000).toLocaleDateString()}
                   </p>
                 </div>
-                <BarChart3 className="h-5 w-5 text-gray-400" />
+                <button
+                  type="button"
+                  onClick={() => setShowDaily((current) => !current)}
+                  aria-expanded={showDaily}
+                  aria-label={showDaily ? 'Hide daily analytics' : 'Show daily analytics'}
+                  title={showDaily ? 'Hide daily analytics' : 'Show daily analytics'}
+                  className={`rounded-md p-1.5 transition-colors ${showDaily ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:bg-gray-100 hover:text-primary'}`}
+                >
+                  <BarChart3 className="h-5 w-5" />
+                </button>
               </div>
               {insights.categories.length === 0 ? (
                 <div className="border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
@@ -142,6 +161,46 @@ export default function MetaInsightsPanel() {
                 </div>
               )}
             </div>
+            {showDaily && (
+              <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="mb-3">
+                  <h3 className="font-bold text-black">Daily analytics</h3>
+                  <p className="mt-1 text-xs text-gray-500">Messages, delivery, inbound activity, and approximate charges by day.</p>
+                </div>
+                {insights.daily.length === 0 ? (
+                  <p className="py-5 text-center text-sm text-gray-500">No daily Meta analytics are available for this period.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-sm">
+                      <thead className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
+                        <tr>
+                          <th className="pb-3 font-semibold">Date</th>
+                          <th className="pb-3 text-right font-semibold">Sent</th>
+                          <th className="pb-3 text-right font-semibold">Delivered</th>
+                          <th className="pb-3 text-right font-semibold">Received</th>
+                          <th className="pb-3 text-right font-semibold">Priced</th>
+                          <th className="pb-3 text-right font-semibold">Charges</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {insights.daily.map((day) => (
+                          <tr key={day.start}>
+                            <td className="py-3 font-medium text-gray-800">{new Date(day.start * 1000).toLocaleDateString()}</td>
+                            <td className="py-3 text-right text-gray-700">{formatNumber(day.sent)}</td>
+                            <td className="py-3 text-right text-gray-700">{formatNumber(day.delivered)}</td>
+                            <td className="py-3 text-right text-gray-700">{formatNumber(day.received)}</td>
+                            <td className="py-3 text-right text-gray-700">{formatNumber(day.messages)}</td>
+                            <td className="py-3 text-right font-semibold text-gray-800">
+                              {insights.chargesAvailable ? formatCharge(day.charges, insights.currency) : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
             <p className="mt-5 text-xs text-gray-500">
               Charges are approximate values returned by Meta’s pricing analytics and may differ from the final Meta invoice.
             </p>

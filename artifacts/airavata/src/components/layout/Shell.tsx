@@ -109,6 +109,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const visibleSidebarItems = SIDEBAR_ITEMS.filter(
     item =>
       (!('adminOnly' in item) || !item.adminOnly || user?.role === 'admin') &&
+      (user?.billingMode !== 'meta_direct' || item.href !== '/credits') &&
       (!user?.permissions?.length || user.permissions.includes(item.href.slice(1))),
   );
   const currentItem = visibleSidebarItems.find(i => i.href === location) || visibleSidebarItems[0];

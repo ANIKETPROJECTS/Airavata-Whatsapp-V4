@@ -32,6 +32,13 @@ function ProtectedRouter() {
     return <Redirect to={`/login?next=${encodeURIComponent(location)}`} />;
   }
 
+  if (
+    user.billingMode === 'meta_direct' &&
+    location === '/credits'
+  ) {
+    return <Redirect to="/dashboard" />;
+  }
+
   const requestedRoute = routes.find(route => route.path === location);
   const section = requestedRoute?.path === '/notifications'
     ? undefined
