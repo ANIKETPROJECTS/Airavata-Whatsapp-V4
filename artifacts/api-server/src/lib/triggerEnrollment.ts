@@ -4,7 +4,7 @@ import { CampaignRecipientModel } from "../models/CampaignRecipient";
 import { ContactModel } from "../models/Contact";
 import { logger } from "./logger";
 
-const NEW_CONTACT_EVENTS = ["contact_created", "new_contact_added", "new_contact"];
+const NEW_CONTACT_EVENT = "contact_created";
 const ACTIVE_TRIGGER_STATUSES = ["SCHEDULED", "SENDING", "COMPLETED"];
 
 type EnrollmentOptions = {
@@ -147,7 +147,7 @@ export async function enrollNewContactInTriggerCampaigns(
       userId,
       type: "TRIGGER",
       status: { $in: ACTIVE_TRIGGER_STATUSES },
-      "trigger.event": { $in: NEW_CONTACT_EVENTS },
+      "trigger.event": NEW_CONTACT_EVENT,
     }).select("_id");
     if (options.session) campaignQuery.session(options.session);
     campaigns = await campaignQuery.lean() as Array<{ _id: mongoose.Types.ObjectId }>;

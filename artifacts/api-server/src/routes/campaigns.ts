@@ -22,6 +22,7 @@ import {
 } from "../lib/triggerEnrollment";
 
 const router = Router();
+const TRIGGER_EVENTS = new Set(["inbound_message", "contact_created", "tag_added"]);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -610,6 +611,23 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
     };
     const isCsvCampaign = type === "CSV";
     const isFlowCampaign = type === "FLOW";
+    let normalizedTrigger: { event: string } | undefined;
+
+    if (type === "TRIGGER") {
+      const requestedEvent =
+        typeof trigger?.event === "string" ? trigger.event : "";
+      const canonicalEvent =
+        requestedEvent === "new_contact_added" ? "contact_created" : requestedEvent;
+      if (!TRIGGER_EVENTS.has(canonicalEvent)) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({
+          error: "A valid trigger event is required",
+          allowedEvents: [...TRIGGER_EVENTS],
+        });
+      }
+      normalizedTrigger = { event: canonicalEvent };
+    }
 
     if (!name || (!templateId && !(isFlowCampaign && flowId))) {
       return res
@@ -730,7 +748,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
           scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
           status: deferred ? "SCHEDULED" : "SENDING",
           ...(steps.length ? { steps } : {}),
-          ...(trigger ? { trigger } : {}),
+          ...(normalizedTrigger ? { trigger: normalizedTrigger } : {}),
           stats: {
             totalRecipients: recipients.length,
             sent: 0,

@@ -944,7 +944,7 @@ export default function CreateCampaign() {
             <p className="text-sm font-semibold text-gray-800">Enrollment trigger</p>
             <select value={triggerEvent} onChange={e => setTriggerEvent(e.target.value)} className="border rounded-lg px-3 py-2 text-sm bg-white">
               <option value="inbound_message">Inbound message</option>
-              <option value="contact_created">Contact created</option>
+               <option value="contact_created">New contact added</option>
               <option value="tag_added">Tag added</option>
             </select>
           </div>
