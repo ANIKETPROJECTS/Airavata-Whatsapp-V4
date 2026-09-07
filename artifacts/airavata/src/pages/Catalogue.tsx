@@ -52,7 +52,7 @@ export default function Catalogue() {
   const queryClient = useQueryClient();
   const [showPicker, setShowPicker] = useState(false);
   const [catalogs, setCatalogs] = useState<MetaCatalog[]>([]);
-  const [selectedCatalogId, setSelectedCatalogId] = useState('');
+  const [catalogIdInput, setCatalogIdInput] = useState('');
   const [showProductForm, setShowProductForm] = useState(false);
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm);
   const [search, setSearch] = useState('');
@@ -66,7 +66,7 @@ export default function Catalogue() {
     mutationFn: () => api.get<{ catalogs: MetaCatalog[] }>('/integration/whatsapp/catalogs'),
     onSuccess: ({ catalogs: found }) => {
       setCatalogs(found);
-      setSelectedCatalogId(found.length === 1 ? found[0]!.id : '');
+      setCatalogIdInput(found.length === 1 ? found[0]!.id : '');
       setShowPicker(true);
       if (found.length === 0) toast.info('No Commerce Catalogs are available for this WhatsApp account');
     },
@@ -278,14 +278,14 @@ export default function Catalogue() {
               </button>
             </div>
             <div className="space-y-2 max-h-72 overflow-y-auto">
-              {catalogs.map((catalog) => (
-                <label key={catalog.id} className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer ${selectedCatalogId === catalog.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+              {catalogs.length > 0 ? catalogs.map((catalog) => (
+                <label key={catalog.id} className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer ${catalogIdInput === catalog.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`}>
                   <input
                     type="radio"
                     name="catalog"
                     value={catalog.id}
-                    checked={selectedCatalogId === catalog.id}
-                    onChange={() => setSelectedCatalogId(catalog.id)}
+                    checked={catalogIdInput === catalog.id}
+                    onChange={() => setCatalogIdInput(catalog.id)}
                     className="accent-primary"
                   />
                   <span className="min-w-0">
@@ -293,15 +293,30 @@ export default function Catalogue() {
                     <span className="block text-xs text-gray-500 mt-0.5">ID: {catalog.id}{catalog.vertical ? ` · ${catalog.vertical}` : ''}</span>
                   </span>
                 </label>
-              ))}
+              )) : (
+                <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-800">
+                  No catalogs were auto-discovered. You can still connect a catalog from Meta Business Manager by entering its ID below.
+                </p>
+              )}
             </div>
+            <label className="space-y-1.5 block">
+              <span className="text-sm font-medium text-gray-700">Or enter Catalog ID directly</span>
+              <input
+                value={catalogIdInput}
+                onChange={(event) => setCatalogIdInput(event.target.value)}
+                placeholder="Meta Catalog ID"
+                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                inputMode="numeric"
+              />
+              <span className="block text-xs text-gray-400">We’ll verify that this ID is accessible with the connected WhatsApp credentials.</span>
+            </label>
             <div className="flex justify-end gap-3">
               <button onClick={() => setShowPicker(false)} className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                 Cancel
               </button>
               <button
-                onClick={() => selectedCatalogId && connectCatalog.mutate(selectedCatalogId)}
-                disabled={!selectedCatalogId || connectCatalog.isPending}
+                onClick={() => catalogIdInput.trim() && connectCatalog.mutate(catalogIdInput.trim())}
+                disabled={!catalogIdInput.trim() || connectCatalog.isPending}
                 className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
               >
                 {connectCatalog.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
