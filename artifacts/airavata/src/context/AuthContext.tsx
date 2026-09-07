@@ -16,6 +16,7 @@ export interface AuthUser {
   timezone?: string;
   role?: 'admin' | 'client';
   creditBalance?: number;
+  billingMode?: 'unknown' | 'airavata_credits' | 'meta_direct';
   metaWabaConnected?: boolean;
   isProtectedMasterAdmin?: boolean;
   active?: boolean;

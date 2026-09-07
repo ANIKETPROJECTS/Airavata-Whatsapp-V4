@@ -248,6 +248,122 @@ export interface MetaMessagingAnalytics {
   lookbackDays: number;
 }
 
+export interface MetaBillingInsights {
+  sent: number;
+  delivered: number;
+  totalConversations: number;
+  totalCharges: number;
+  currency: string | null;
+  chargesAvailable: boolean;
+  categories: Array<{
+    category: string;
+    conversations: number;
+    charges: number;
+    currency: string | null;
+  }>;
+  start: number;
+  end: number;
+  rangeDays: number;
+}
+
+/**
+ * Fetch Meta Partner Insights-style messaging and conversation billing data.
+ * This is intentionally separate from the general dashboard totals because it
+ * is only available to tenants explicitly marked as Meta-direct billed.
+ */
+export async function getMetaBillingInsights(
+  userId: string,
+  rangeDays: 7 | 30,
+  now = Date.now(),
+): Promise<MetaBillingInsights> {
+  const credentials = await getCredentials(userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) {
+    throw new Error("Stored WhatsApp credentials are missing a WABA ID");
+  }
+
+  const end = Math.floor(now / 1000);
+  const start = Math.floor((now - rangeDays * 24 * 60 * 60 * 1000) / 1000);
+  const wabaPath = encodeURIComponent(credentials.wabaId);
+
+  const [messaging, conversations] = await Promise.all([
+    graphFetchWithCreds<{
+      analytics?: {
+        data_points?: Array<{ sent?: number; delivered?: number }>;
+      };
+    }>(
+      `/${wabaPath}?${new URLSearchParams({
+        fields: `analytics.start(${start}).end(${end}).granularity(DAY)`,
+      }).toString()}`,
+      credentials.accessToken,
+      {},
+      ANALYTICS_GRAPH_BASE,
+    ),
+    graphFetchWithCreds<{
+      conversation_analytics?: {
+        data_points?: Array<{
+          conversation?: number;
+          cost?: number;
+          currency?: string;
+          conversation_category?: string;
+        }>;
+        data?: Array<{
+          data_points?: Array<{
+            conversation?: number;
+            cost?: number;
+            currency?: string;
+            conversation_category?: string;
+          }>;
+        }>;
+      };
+    }>(
+      `/${wabaPath}?${new URLSearchParams({
+        fields: `conversation_analytics.start(${start}).end(${end}).granularity(DAILY).dimensions(CONVERSATION_CATEGORY)`,
+      }).toString()}`,
+      credentials.accessToken,
+      {},
+      ANALYTICS_GRAPH_BASE,
+    ),
+  ]);
+
+  const messagingPoints = messaging.analytics?.data_points ?? [];
+  const conversationAnalytics = conversations.conversation_analytics;
+  const conversationPoints = conversationAnalytics?.data_points ??
+    conversationAnalytics?.data?.flatMap((item) => item.data_points ?? []) ??
+    [];
+  const categoryMap = new Map<string, { conversations: number; charges: number; currency: string | null }>();
+
+  for (const point of conversationPoints) {
+    const category = point.conversation_category || "UNKNOWN";
+    const current = categoryMap.get(category) ?? {
+      conversations: 0,
+      charges: 0,
+      currency: point.currency ?? null,
+    };
+    current.conversations += point.conversation ?? 0;
+    current.charges += point.cost ?? 0;
+    if (!current.currency && point.currency) current.currency = point.currency;
+    categoryMap.set(category, current);
+  }
+
+  const totalCharges = conversationPoints.reduce((total, point) => total + (point.cost ?? 0), 0);
+  const currencies = [...new Set(conversationPoints.map((point) => point.currency).filter(Boolean))];
+
+  return {
+    sent: messagingPoints.reduce((total, point) => total + (point.sent ?? 0), 0),
+    delivered: messagingPoints.reduce((total, point) => total + (point.delivered ?? 0), 0),
+    totalConversations: conversationPoints.reduce((total, point) => total + (point.conversation ?? 0), 0),
+    totalCharges,
+    currency: currencies.length === 1 ? currencies[0]! : null,
+    chargesAvailable: conversationPoints.some((point) => typeof point.cost === "number"),
+    categories: [...categoryMap.entries()]
+      .map(([category, values]) => ({ category, ...values }))
+      .sort((a, b) => b.conversations - a.conversations),
+    start,
+    end,
+    rangeDays,
+  };
+}
+
 /**
  * Fetch Meta's authoritative messaging totals for the connected user's WABA.
  *

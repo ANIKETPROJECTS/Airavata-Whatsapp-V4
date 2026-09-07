@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import MetaInsightsPanel from '@/components/MetaInsightsPanel';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -189,6 +190,8 @@ export default function CampaignsReport() {
           <Download className="w-4 h-4" /> Export
         </button>
       </div>
+
+      <MetaInsightsPanel />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

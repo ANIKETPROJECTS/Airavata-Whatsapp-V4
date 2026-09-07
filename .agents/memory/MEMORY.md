@@ -15,6 +15,7 @@
 - [Protected operator account](protected-operator-account.md) — the designated operator stays editable, cannot be deleted or disconnected, and uses deployment-level WhatsApp credentials directly.
 - [Dashboard message reporting](dashboard-message-reporting.md) — delivery health counts unique outbound messages across the workspace; campaign reports stay campaign-only.
 - [Meta dashboard analytics](meta-dashboard-analytics.md) — sent/delivered use Meta WABA analytics within a one-year window; read/failed remain webhook-derived.
+- [Meta conversation analytics](meta-conversation-analytics.md) — messaging analytics uses DAY, conversation analytics uses DAILY, and category response blocks may be omitted when no billing data exists.
 - [Meta messaging limit field](meta-messaging-limit-field.md) — prefer Meta's Business Manager limit field because the legacy phone tier can be stale.
 - [Service start date](service-start-date.md) — keep each user’s editable service date as a timezone-safe calendar value.
 - [Workspace package installs](workspace-package-installs.md) — add frontend dependencies with the package filter in this pnpm monorepo, not at the workspace root.

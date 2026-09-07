@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import MetaInsightsPanel from '@/components/MetaInsightsPanel';
 import { useFacebookEmbeddedSignup } from '@/hooks/use-facebook-embedded-signup';
 import { toast } from 'sonner';
 import facebookIcon from '@assets/facebook_(1)_1787158279371.png';
@@ -641,6 +642,8 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+
+        <MetaInsightsPanel />
 
         <section>
           <SectionHeading eyebrow="Credits" title="Available balance" href="/wa-pay" />
