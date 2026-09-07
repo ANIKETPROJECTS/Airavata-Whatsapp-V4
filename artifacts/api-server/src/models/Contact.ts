@@ -1,11 +1,17 @@
 import { Schema, type InferSchemaType } from "mongoose";
 import { tenantModel } from "../lib/tenantDatabase";
+import { normalizeContactPhone } from "../lib/contactPhone";
 
 const contactSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     name: { type: String, required: true, trim: true },
-    phone: { type: String, required: true, trim: true },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+      set: (value: string) => normalizeContactPhone(value),
+    },
     email: { type: String, trim: true },
     attributes: { type: Schema.Types.Mixed, default: {} },
     tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
