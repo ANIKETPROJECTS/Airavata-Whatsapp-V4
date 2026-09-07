@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2, X } from 'lucide-react';
+import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2, X, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import MetaInsightsPanel from '@/components/MetaInsightsPanel';
@@ -151,6 +151,14 @@ export default function CampaignsReport() {
   const rate = (value: number, total: number) =>
     total > 0 ? `${((value / total) * 100).toFixed(1)}%` : '0.0%';
   const formatJson = (value: unknown) => JSON.stringify(value ?? {}, null, 2);
+  const copyJson = async (label: string, value: unknown) => {
+    try {
+      await navigator.clipboard.writeText(formatJson(value));
+      toast.success(`${label} copied.`);
+    } catch {
+      toast.error(`Unable to copy ${label.toLowerCase()}.`);
+    }
+  };
 
   const handleExport = () => {
     if (campaigns.length === 0) {
@@ -459,12 +467,34 @@ export default function CampaignsReport() {
                         </div>
                       </div>
                       <div>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Variables used</p>
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Variables used</p>
+                          <button
+                            type="button"
+                            onClick={() => copyJson('Variables', campaignDetailData?.apiRequest?.variables ?? {})}
+                            className="inline-flex items-center gap-1 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                            aria-label="Copy variables used"
+                            title="Copy variables used"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                         <pre className="max-h-32 overflow-auto rounded-lg bg-gray-950 p-3 text-xs text-green-300">{formatJson(campaignDetailData?.apiRequest?.variables ?? {})}</pre>
                       </div>
                     </div>
                     <div className="border-t border-gray-200 p-4 sm:p-5">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Recorded Meta payloads</p>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Recorded Meta payloads</p>
+                        <button
+                          type="button"
+                          onClick={() => copyJson('Recorded Meta payloads', campaignDetailData?.apiRequest?.payloads ?? [])}
+                          className="inline-flex items-center gap-1 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                          aria-label="Copy all recorded Meta payloads"
+                          title="Copy all recorded Meta payloads"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       {campaignDetailData?.apiRequest?.payloads.length ? (
                         <pre className="max-h-64 overflow-auto rounded-lg bg-gray-950 p-4 text-xs leading-5 text-green-300">{formatJson(campaignDetailData.apiRequest?.payloads)}</pre>
                       ) : (
@@ -476,8 +506,21 @@ export default function CampaignsReport() {
                   {/* Raw responses */}
                   <section className="rounded-xl border border-gray-200">
                     <div className="border-b border-gray-200 px-4 py-4 sm:px-5">
-                      <h3 className="text-base font-bold text-gray-900">Raw response received from Meta</h3>
-                      <p className="mt-1 text-sm text-gray-500">The provider response captured for each send attempt.</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-base font-bold text-gray-900">Raw response received from Meta</h3>
+                          <p className="mt-1 text-sm text-gray-500">The provider response captured for each send attempt.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyJson('Raw Meta responses', campaignDetailData?.rawResponses ?? [])}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 p-1.5 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800"
+                          aria-label="Copy all raw Meta responses"
+                          title="Copy all raw Meta responses"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                     <div className="p-4 sm:p-5">
                       {campaignDetailData?.rawResponses.length ? (
