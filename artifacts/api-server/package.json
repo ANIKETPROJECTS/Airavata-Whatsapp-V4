@@ -8,6 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "report:contact-duplicates": "node ./scripts/report-contact-duplicates.mjs",
+    "merge:duplicate-contacts": "node ./scripts/merge-duplicate-contacts.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
