@@ -3,7 +3,7 @@ name: Trigger enrollment idempotency
 description: Safety rule for repeated trigger events enrolling campaign recipients.
 ---
 
-Trigger enrollment must use an upsert keyed by `userId`, `campaignId`, and `contactId`, with `$setOnInsert` for the queued recipient fields. Existing recipients should produce a successful no-op response rather than a duplicate-key failure. Automatic enrollment for the contact-created event should go through one shared service called by every contact creation path.
+Trigger enrollment must use an upsert keyed by `userId`, `campaignId`, and `contactId`, with `$setOnInsert` for the queued recipient fields. Existing recipients should produce a successful no-op response rather than a duplicate-key failure. Automatic enrollment for the canonical `contact_created` event should go through one shared service called by every contact creation path.
 
 **Why:** Webhook and event delivery is retryable, so the same event can arrive more than once or race with another enrollment attempt.
 
