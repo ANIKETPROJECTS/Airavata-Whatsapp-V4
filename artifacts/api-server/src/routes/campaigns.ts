@@ -52,6 +52,61 @@ function shapeCampaign(
   };
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? value as Record<string, unknown> : {};
+}
+
+function getMetaErrorDetails(response: unknown, failureReason?: string) {
+  const error = asRecord(asRecord(response).error);
+  const code = typeof error.code === "number" || typeof error.code === "string"
+    ? String(error.code)
+    : failureReason?.match(/\bcode=([0-9]+)\b/)?.[1] ?? null;
+  const reason =
+    (typeof error.message === "string" ? error.message : null) ??
+    failureReason ??
+    null;
+  return { code, reason };
+}
+
+function buildTemplateRequestFallback(
+  template: Record<string, unknown>,
+  phoneNumber: string,
+  variableValues: unknown,
+) {
+  const values = asRecord(variableValues);
+  const indices = Object.keys(values)
+    .map(Number)
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  const components = indices.length
+    ? [{
+        type: "body",
+        parameters: indices.map((index) => ({
+          type: "text",
+          text: String(values[String(index)] ?? "")
+            .replace(/\{\{name\}\}/gi, "")
+            .replace(/\{\{phone\}\}/gi, phoneNumber),
+        })),
+      }]
+    : undefined;
+
+  return {
+    method: "POST",
+    path: null,
+    body: {
+      messaging_product: "whatsapp",
+      to: phoneNumber.replace(/\D/g, ""),
+      type: "template",
+      template: {
+        name: template.name ?? null,
+        language: { code: template.language ?? "en_US" },
+        ...(components?.length ? { components } : {}),
+      },
+    },
+    reconstructed: true,
+  };
+}
+
 interface ReconciledCampaignCounts {
   sent: number;
   delivered: number;
@@ -465,9 +520,63 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
       .limit(200)
       .lean();
 
+    const sends = await CampaignSendModel.find({
+      campaignId: new mongoose.Types.ObjectId(req.params.id),
+      userId,
+    })
+      .populate("contactId", "name phone")
+      .sort({ createdAt: 1 })
+      .limit(5000)
+      .lean();
+
+    const template = asRecord(asRecord(campaign).template?.[0]);
+    const messageDetails = sends.map((send) => {
+      const contact = asRecord(send.contactId);
+      const error = getMetaErrorDetails(send.responsePayload, send.failureReason);
+      const phoneNumber = typeof contact.phone === "string" ? contact.phone : "—";
+      const request = send.requestPayload ??
+        (template.name ? buildTemplateRequestFallback(template, phoneNumber, campaign.variableValues) : null);
+      const response = send.responsePayload ??
+        (send.whatsappMessageId
+          ? { messages: [{ id: send.whatsappMessageId }], reconstructed: true }
+          : send.failureReason
+            ? { error: { message: send.failureReason }, reconstructed: true }
+            : null);
+      return {
+        id: String(send._id),
+        phoneNumber,
+        contactName: typeof contact.name === "string" ? contact.name : null,
+        status: send.status,
+        messageId: send.whatsappMessageId ?? null,
+        updatedAt: send.updatedAt,
+        errorCode: error.code,
+        errorReason: error.reason,
+        request,
+        response,
+      };
+    });
+
+    const requestPayloads = messageDetails
+      .map((detail) => detail.request)
+      .filter(Boolean);
+
     res.json({
       campaign: shapeCampaign(campaign, statsForCampaign(campaign, reconciledCounts)),
       messages,
+      messageDetails,
+      apiRequest: {
+        templateName: template.name ?? null,
+        language: template.language ?? null,
+        variables: campaign.variableValues ?? {},
+        phoneNumbers: messageDetails.map((detail) => detail.phoneNumber),
+        payloads: requestPayloads,
+      },
+      rawResponses: messageDetails.map((detail) => ({
+        phoneNumber: detail.phoneNumber,
+        messageId: detail.messageId,
+        status: detail.status,
+        response: detail.response,
+      })),
     });
   } catch (err: unknown) {
     res

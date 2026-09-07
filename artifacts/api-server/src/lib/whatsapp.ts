@@ -20,6 +20,25 @@ const ANALYTICS_GRAPH_BASE = "https://graph.facebook.com/v23.0";
 const META_ANALYTICS_LOOKBACK_DAYS = 365;
 const META_ANALYTICS_SAFE_LOOKBACK_DAYS = 270;
 
+export class MetaApiError extends Error {
+  status: number;
+  response: unknown;
+  request: { path: string; method: string; body?: unknown };
+
+  constructor(
+    message: string,
+    status: number,
+    response: unknown,
+    request: { path: string; method: string; body?: unknown },
+  ) {
+    super(message);
+    this.name = "MetaApiError";
+    this.status = status;
+    this.response = response;
+    this.request = request;
+  }
+}
+
 /** Meta Cloud API recipient format: digits only, including the country code. */
 export function normalizeWhatsAppPhone(phone: string): string {
   return normalizeContactPhone(phone).slice(1);
@@ -171,9 +190,16 @@ async function graphFetchWithCreds<T>(
       `  fbtrace_id    : ${e.fbtrace_id ?? "(none)"}\n` +
       `  full body     : ${rawText}`,
     );
-    throw new Error(
+    throw new MetaApiError(
       `Meta API HTTP ${res.status} | code=${e.code ?? "-"} subcode=${e.error_subcode ?? "-"} ` +
       `type=${e.type ?? "-"} fbtrace=${e.fbtrace_id ?? "-"} | ${e.message ?? rawText}`,
+      res.status,
+      data,
+      {
+        path,
+        method: options.method ?? "GET",
+        body: typeof options.body === "string" ? JSON.parse(options.body) : undefined,
+      },
     );
   }
   return data;
@@ -1122,24 +1148,26 @@ export async function sendTemplateMessage(
   const { phoneNumberId, accessToken } = await getCredentials(userId, {
     allowEnvFallback: false,
   });
+  const path = `/${phoneNumberId}/messages`;
+  const body = {
+    messaging_product: "whatsapp",
+    to: normalizeWhatsAppPhone(to),
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+      ...(components?.length ? { components } : {}),
+    },
+  };
   const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
-    `/${phoneNumberId}/messages`,
+    path,
     accessToken,
     {
       method: "POST",
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: normalizeWhatsAppPhone(to),
-        type: "template",
-        template: {
-          name: templateName,
-          language: { code: languageCode },
-          ...(components?.length ? { components } : {}),
-        },
-      }),
+      body: JSON.stringify(body),
     },
   );
-  return result;
+  return { ...result, _metaRequest: { method: "POST", path, body } };
 }
 
 function sanitizeFlowScreenId(id: string): string {
@@ -1180,40 +1208,42 @@ export async function sendWhatsAppFlowMessage(
     Date.now(),
   ].join("_");
   const firstScreenId = sanitizeFlowScreenId(flow.screens?.[0]?.id ?? "SCREEN_A");
+  const path = `/${phoneNumberId}/messages`;
+  const body = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: normalizeWhatsAppPhone(to),
+    type: "interactive",
+    interactive: {
+      type: "flow",
+      header: { type: "text", text: flow.name },
+      body: { text: "Please complete the form below." },
+      footer: { text: "Powered by Airavata" },
+      action: {
+        name: "flow",
+        parameters: {
+          flow_message_version: "3",
+          flow_token: flowToken,
+          flow_id: flow.metaFlowId,
+          flow_cta: "Open Form",
+          flow_action: "navigate",
+          flow_action_payload: { screen: firstScreenId },
+        },
+      },
+    },
+  };
 
   const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
-    `/${phoneNumberId}/messages`,
+    path,
     accessToken,
     {
       method: "POST",
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: normalizeWhatsAppPhone(to),
-        type: "interactive",
-        interactive: {
-          type: "flow",
-          header: { type: "text", text: flow.name },
-          body: { text: "Please complete the form below." },
-          footer: { text: "Powered by Airavata" },
-          action: {
-            name: "flow",
-            parameters: {
-              flow_message_version: "3",
-              flow_token: flowToken,
-              flow_id: flow.metaFlowId,
-              flow_cta: "Open Form",
-              flow_action: "navigate",
-              flow_action_payload: { screen: firstScreenId },
-            },
-          },
-        },
-      }),
+      body: JSON.stringify(body),
     },
   );
 
   if (!result.messages?.[0]?.id) {
     throw new Error("Meta accepted the Flow request but did not return a message ID");
   }
-  return { ...result, flowToken };
+  return { ...result, flowToken, _metaRequest: { method: "POST", path, body } };
 }

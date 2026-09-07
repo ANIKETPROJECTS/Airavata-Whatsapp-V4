@@ -18,6 +18,8 @@ const campaignSendSchema = new Schema(
       index: true,
     },
     whatsappMessageId: { type: String, index: true },
+    requestPayload: { type: Schema.Types.Mixed },
+    responsePayload: { type: Schema.Types.Mixed },
     retryCount: { type: Number, default: 0 },
     nextRetryAt: { type: Date },
     failureReason: { type: String },

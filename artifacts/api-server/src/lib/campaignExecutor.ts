@@ -6,7 +6,7 @@ import { ContactModel } from "../models/Contact";
 import { MessageModel } from "../models/Message";
 import { TemplateModel } from "../models/Template";
 import { FlowModel } from "../models/Flow";
-import { sendTemplateMessage, sendWhatsAppFlowMessage } from "./whatsapp";
+import { MetaApiError, sendTemplateMessage, sendWhatsAppFlowMessage } from "./whatsapp";
 import { withCreditCharge } from "./creditDeduction";
 import { logger } from "./logger";
 import { checkMessagingLimitBeforeSend } from "./messagingLimit";
@@ -132,6 +132,7 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
   }
 
   const values = input.variableValues ?? (campaign.variableValues as VariableValues | undefined) ?? {};
+  let requestPayload: unknown;
   try {
     const result = await withCreditCharge({
       userId,
@@ -153,10 +154,23 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
             String(userId),
           ),
     });
+    requestPayload = (result as { _metaRequest?: unknown })._metaRequest;
+    const responsePayload = Object.fromEntries(
+      Object.entries(result as Record<string, unknown>)
+        .filter(([key]) => key !== "_metaRequest" && key !== "flowToken"),
+    );
     const whatsappMessageId = result.messages?.[0]?.id ?? null;
     await CampaignSendModel.updateOne(
       { _id: send._id, userId },
-      { $set: { status: "SENT", whatsappMessageId, sentAt: new Date() } },
+      {
+        $set: {
+          status: "SENT",
+          whatsappMessageId,
+          sentAt: new Date(),
+          requestPayload,
+          responsePayload,
+        },
+      },
     );
     await MessageModel.create({
       userId,
@@ -179,9 +193,18 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
     return { sent: true, whatsappMessageId };
   } catch (error) {
     const reason = error instanceof Error ? error.message : "Campaign send failed";
+    const metaError = error instanceof MetaApiError ? error : null;
     await CampaignSendModel.updateOne(
       { _id: send._id, userId },
-      { $set: { status: "FAILED", failureReason: reason }, $inc: { retryCount: 1 } },
+      {
+        $set: {
+          status: "FAILED",
+          failureReason: reason,
+          ...(metaError?.request ? { requestPayload: metaError.request } : {}),
+          ...(metaError ? { responsePayload: metaError.response } : {}),
+        },
+        $inc: { retryCount: 1 },
+      },
     );
     await CampaignRecipientModel.updateOne(
       { _id: recipientId, userId },

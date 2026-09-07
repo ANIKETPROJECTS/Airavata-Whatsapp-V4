@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2 } from 'lucide-react';
+import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import MetaInsightsPanel from '@/components/MetaInsightsPanel';
@@ -28,12 +28,35 @@ interface Campaign {
   createdAt: string;
 }
 
-interface CampaignRecipient {
-  _id: string;
+interface CampaignMessageDetail {
+  id: string;
+  phoneNumber: string;
+  contactName: string | null;
   status: string;
-  currentStepId?: string;
-  lastError?: string;
-  contactId?: { name?: string; phone?: string };
+  messageId: string | null;
+  updatedAt: string;
+  errorCode: string | null;
+  errorReason: string | null;
+  request: unknown;
+  response: unknown;
+}
+
+interface CampaignDetailResponse {
+  campaign: Campaign;
+  messageDetails: CampaignMessageDetail[];
+  apiRequest: {
+    templateName: string | null;
+    language: string | null;
+    variables: Record<string, unknown>;
+    phoneNumbers: string[];
+    payloads: unknown[];
+  };
+  rawResponses: Array<{
+    phoneNumber: string;
+    messageId: string | null;
+    status: string;
+    response: unknown;
+  }>;
 }
 
 interface Stats {
@@ -63,9 +86,9 @@ export default function CampaignsReport() {
     refetchInterval: 15_000,
   });
 
-  const { data: recipientData, isLoading: recipientsLoading } = useQuery<{ recipients: CampaignRecipient[] }>({
-    queryKey: ['campaign-recipients', selectedCampaign?.id],
-    queryFn: () => api.get(`/campaigns/${selectedCampaign!.id}/recipients`),
+  const { data: campaignDetailData, isLoading: campaignDetailLoading } = useQuery<CampaignDetailResponse>({
+    queryKey: ['campaign-detail', selectedCampaign?.id],
+    queryFn: () => api.get(`/campaigns/${selectedCampaign!.id}`),
     enabled: Boolean(selectedCampaign),
     refetchInterval: selectedCampaign ? 10_000 : false,
   });
@@ -88,6 +111,11 @@ export default function CampaignsReport() {
       case 'SENDING': return 'bg-blue-100 text-blue-700';
       case 'SCHEDULED': return 'bg-yellow-100 text-yellow-700';
       case 'FAILED': return 'bg-red-100 text-red-700';
+      case 'SENT': return 'bg-blue-100 text-blue-700';
+      case 'DELIVERED': return 'bg-green-100 text-green-700';
+      case 'READ': return 'bg-emerald-100 text-emerald-700';
+      case 'QUEUED':
+      case 'RESERVED': return 'bg-blue-100 text-blue-700';
       default: return 'bg-gray-100 text-gray-600';
     }
   };
@@ -122,6 +150,7 @@ export default function CampaignsReport() {
   const fmt = (n?: number) => (n ?? 0).toLocaleString();
   const rate = (value: number, total: number) =>
     total > 0 ? `${((value / total) * 100).toFixed(1)}%` : '0.0%';
+  const formatJson = (value: unknown) => JSON.stringify(value ?? {}, null, 2);
 
   const handleExport = () => {
     if (campaigns.length === 0) {
@@ -177,6 +206,46 @@ export default function CampaignsReport() {
     link.remove();
     URL.revokeObjectURL(url);
     toast.success(`Exported ${campaigns.length} campaign${campaigns.length === 1 ? '' : 's'}.`);
+  };
+
+  const handleMessageExport = () => {
+    const rows = campaignDetailData?.messageDetails ?? [];
+    if (rows.length === 0) {
+      toast.info('There are no message records to export for this campaign.');
+      return;
+    }
+
+    const csvCell = (value: unknown) =>
+      `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const headers = [
+      'Phone Number',
+      'Status',
+      'Message ID',
+      'Updated timestamp',
+      'Error Code',
+      'Error Reason',
+    ];
+    const csv = [
+      headers,
+      ...rows.map(row => [
+        row.phoneNumber,
+        row.status,
+        row.messageId ?? '',
+        new Date(row.updatedAt).toISOString(),
+        row.errorCode ?? '',
+        row.errorReason ?? '',
+      ]),
+    ].map(row => row.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(selectedCampaign?.name ?? 'campaign').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-messages.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} message record${rows.length === 1 ? '' : 's'}.`);
   };
 
   return (
@@ -298,99 +367,176 @@ export default function CampaignsReport() {
         )}
       </div>
 
-      {/* Campaign Detail Drawer */}
+      {/* Campaign Detail View */}
       {selectedCampaign && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end animate-in fade-in"
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-3 sm:p-6 animate-in fade-in"
           onClick={() => setSelectedCampaign(null)}
         >
           <div
-            className="bg-white w-full max-w-md h-full shadow-xl animate-in slide-in-from-right overflow-y-auto"
+            className="mx-auto min-h-full w-full max-w-7xl overflow-hidden rounded-xl bg-white shadow-2xl animate-in zoom-in-95"
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-6 border-b sticky top-0 bg-white/90 backdrop-blur z-10 flex justify-between items-center">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">{selectedCampaign.name}</h2>
-                <p className="text-sm text-gray-500">Details & Performance</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Campaign details</p>
+                <h2 className="mt-1 text-xl font-bold text-gray-900">{selectedCampaign.name}</h2>
               </div>
-              <button
-                onClick={() => setSelectedCampaign(null)}
-                className="text-sm text-gray-500 hover:text-gray-900"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleMessageExport}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  <Download className="h-4 w-4" /> Download
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCampaign(null)}
+                  aria-label="Close campaign details"
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Funnel */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900">Delivery Funnel</h3>
-                <div className="space-y-3">
-                  {[
-                    { label: 'Sent', value: selectedCampaign.stats.sent, cls: 'bg-gray-50 border' },
-                    { label: 'Delivered', value: selectedCampaign.stats.delivered, cls: 'bg-green-50 border-green-100', ml: 'ml-4' },
-                    { label: 'Read', value: selectedCampaign.stats.read, cls: 'bg-emerald-50 border-emerald-100', ml: 'ml-8' },
-                    { label: 'Failed', value: selectedCampaign.stats.failed, cls: 'bg-red-50 border-red-100', ml: 'ml-4' },
-                  ].map(row => (
-                    <div key={row.label} className={`border rounded-lg p-3 flex justify-between items-center ${row.cls} ${row.ml ?? ''}`}>
-                      <span className="text-sm text-gray-600">{row.label}</span>
-                      <span className="font-bold text-gray-900">{(row.value ?? 0).toLocaleString()}</span>
-                    </div>
-                  ))}
+            <div className="space-y-6 p-5 sm:p-7">
+              {campaignDetailLoading ? (
+                <div className="flex min-h-72 items-center justify-center text-gray-400">
+                  <Loader2 className="h-7 w-7 animate-spin" />
                 </div>
-              </div>
-
-              {/* Info */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Information</h3>
-                <div className="text-sm space-y-2 text-gray-600">
-                  <div className="flex justify-between border-b pb-2">
-                    <span>Template</span>
-                    <span className="font-medium text-gray-900">{selectedCampaign.templateName ?? '—'}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-2">
-                    <span>Date</span>
-                    <span className="font-medium text-gray-900">
-                      {new Date(selectedCampaign.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b pb-2">
-                    <span>Status</span>
-                    <span className="font-medium text-gray-900">{campaignDisplayStatus(selectedCampaign).label}</span>
-                  </div>
-                  {!isMetaDirect && <div className="flex justify-between">
-                    <span>Credits Used</span>
-                    <span className="font-medium text-gray-900">{selectedCampaign.creditCost}</span>
-                  </div>}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Recipient status</h3>
-                  <span className="text-xs text-gray-400">{recipientData?.recipients.length ?? 0} enrolled</span>
-                </div>
-                {recipientsLoading ? (
-                  <div className="flex justify-center py-6 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
-                ) : !recipientData?.recipients.length ? (
-                  <p className="text-sm text-gray-500">Recipient records will appear when the campaign is enrolled.</p>
-                ) : (
-                  <div className="max-h-72 overflow-y-auto rounded-lg border divide-y">
-                    {recipientData.recipients.map(recipient => (
-                      <div key={recipient._id} className="px-3 py-2.5 flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-800 truncate">{recipient.contactId?.name || 'Unnamed contact'}</p>
-                          <p className="text-xs text-gray-500">{recipient.contactId?.phone ?? '—'}</p>
-                          {recipient.lastError && <p className="text-[11px] text-red-600 truncate">{recipient.lastError}</p>}
-                        </div>
-                        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${statusColor(recipient.status)}`}>
-                          {recipient.status.replace('_', ' ')}
-                        </span>
+              ) : (
+                <>
+                  {/* Campaign summary */}
+                  <section>
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">Campaign summary</h3>
+                        <p className="mt-1 text-sm text-gray-500">The send overview and delivery outcome for this campaign.</p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${campaignDisplayStatus(selectedCampaign).className}`}>
+                        {campaignDisplayStatus(selectedCampaign).label}
+                      </span>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                      {[
+                        ['Template name', selectedCampaign.templateName ?? '—'],
+                        ['Campaign ID', selectedCampaign.id],
+                        ['Date & time', new Date(selectedCampaign.createdAt).toLocaleString()],
+                        ['Total messages', fmt(campaignDetailData?.apiRequest?.phoneNumbers.length ?? selectedCampaign.stats.totalRecipients)],
+                        ['Sent', fmt(selectedCampaign.stats.sent)],
+                        ['Failed', fmt(selectedCampaign.stats.failed)],
+                      ].map(([label, value]) => (
+                        <div key={label} className="min-w-0 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+                          <p className="mt-1 truncate text-sm font-bold text-gray-900" title={value}>{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Request sent to Meta */}
+                  <section className="rounded-xl border border-gray-200">
+                    <div className="border-b border-gray-200 px-4 py-4 sm:px-5">
+                      <h3 className="text-base font-bold text-gray-900">API request sent to Meta</h3>
+                      <p className="mt-1 text-sm text-gray-500">Template, recipients, variables, and the recorded request payloads.</p>
+                    </div>
+                    <div className="grid gap-4 p-4 lg:grid-cols-3 sm:p-5">
+                      <div>
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Template</p>
+                        <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-800">
+                          <p className="font-semibold">{campaignDetailData?.apiRequest?.templateName ?? selectedCampaign.templateName ?? '—'}</p>
+                          <p className="mt-1 text-xs text-gray-500">Language: {campaignDetailData?.apiRequest?.language ?? '—'}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Phone numbers</p>
+                        <div className="max-h-32 overflow-y-auto rounded-lg bg-gray-50 p-3 font-mono text-xs text-gray-700">
+                          {campaignDetailData?.apiRequest?.phoneNumbers.length
+                            ? campaignDetailData.apiRequest.phoneNumbers.map(phone => <div key={phone}>{phone}</div>)
+                            : 'No send records available'}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Variables used</p>
+                        <pre className="max-h-32 overflow-auto rounded-lg bg-gray-950 p-3 text-xs text-green-300">{formatJson(campaignDetailData?.apiRequest?.variables ?? {})}</pre>
+                      </div>
+                    </div>
+                    <div className="border-t border-gray-200 p-4 sm:p-5">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Recorded Meta payloads</p>
+                      {campaignDetailData?.apiRequest?.payloads.length ? (
+                        <pre className="max-h-64 overflow-auto rounded-lg bg-gray-950 p-4 text-xs leading-5 text-green-300">{formatJson(campaignDetailData.apiRequest?.payloads)}</pre>
+                      ) : (
+                        <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">Request payloads were not recorded for these historical sends.</p>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Raw responses */}
+                  <section className="rounded-xl border border-gray-200">
+                    <div className="border-b border-gray-200 px-4 py-4 sm:px-5">
+                      <h3 className="text-base font-bold text-gray-900">Raw response received from Meta</h3>
+                      <p className="mt-1 text-sm text-gray-500">The provider response captured for each send attempt.</p>
+                    </div>
+                    <div className="p-4 sm:p-5">
+                      {campaignDetailData?.rawResponses.length ? (
+                        <pre className="max-h-72 overflow-auto rounded-lg bg-gray-950 p-4 text-xs leading-5 text-sky-300">{formatJson(campaignDetailData.rawResponses)}</pre>
+                      ) : (
+                        <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">No Meta responses have been recorded yet.</p>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Individual message table */}
+                  <section className="rounded-xl border border-gray-200">
+                    <div className="flex flex-col gap-3 border-b border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">Individual message details</h3>
+                        <p className="mt-1 text-sm text-gray-500">{campaignDetailData?.messageDetails.length ?? 0} message records</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleMessageExport}
+                        className="inline-flex w-fit items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
+                      >
+                        <Download className="h-4 w-4" /> Download table
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[980px] text-left text-sm">
+                        <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold">Phone Number</th>
+                            <th className="px-4 py-3 font-semibold">Status</th>
+                            <th className="px-4 py-3 font-semibold">Message ID</th>
+                            <th className="px-4 py-3 font-semibold">Updated timestamp</th>
+                            <th className="px-4 py-3 font-semibold">Error Code</th>
+                            <th className="px-4 py-3 font-semibold">Error reason</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {(campaignDetailData?.messageDetails ?? []).map(row => (
+                            <tr key={row.id} className="align-top">
+                              <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{row.phoneNumber}</td>
+                              <td className="px-4 py-3">
+                                <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusColor(row.status)}`}>{row.status.replace('_', ' ')}</span>
+                              </td>
+                              <td className="max-w-[220px] truncate px-4 py-3 font-mono text-xs text-gray-600" title={row.messageId ?? ''}>{row.messageId ?? '—'}</td>
+                              <td className="whitespace-nowrap px-4 py-3 text-gray-600">{row.updatedAt ? new Date(row.updatedAt).toLocaleString() : '—'}</td>
+                              <td className="px-4 py-3 font-mono text-xs font-semibold text-red-700">{row.errorCode ?? '—'}</td>
+                              <td className="max-w-[360px] px-4 py-3 text-xs text-gray-600">{row.errorReason ?? '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {!campaignDetailData?.messageDetails.length && (
+                        <p className="p-6 text-center text-sm text-gray-500">No individual message records are available for this campaign.</p>
+                      )}
+                    </div>
+                  </section>
+                </>
+              )}
             </div>
           </div>
         </div>
