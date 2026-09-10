@@ -61,16 +61,25 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? value as Record<string, unknown> : {};
 }
 
-function getMetaErrorDetails(response: unknown, failureReason?: string) {
+function getMetaErrorDetails(
+  response: unknown,
+  failureReason?: string,
+  metaErrorCode?: number,
+  metaErrorTitle?: string,
+  metaErrorDetails?: string,
+) {
   const error = asRecord(asRecord(response).error);
   const code = typeof error.code === "number" || typeof error.code === "string"
     ? String(error.code)
+    : typeof metaErrorCode === "number"
+      ? String(metaErrorCode)
     : failureReason?.match(/\bcode=([0-9]+)\b/)?.[1] ?? null;
   const reason =
     (typeof error.message === "string" ? error.message : null) ??
+    metaErrorTitle ??
     failureReason ??
     null;
-  return { code, reason };
+  return { code, reason, details: metaErrorDetails ?? null };
 }
 
 function buildTemplateRequestFallback(
@@ -519,7 +528,13 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
     const template = asRecord(asRecord(campaign).template?.[0]);
     const messageDetails = sends.map((send) => {
       const contact = asRecord(send.contactId);
-      const error = getMetaErrorDetails(send.responsePayload, send.failureReason);
+      const error = getMetaErrorDetails(
+        send.responsePayload,
+        send.failureReason,
+        send.metaErrorCode,
+        send.metaErrorTitle,
+        send.metaErrorDetails,
+      );
       const phoneNumber = typeof contact.phone === "string" ? contact.phone : "—";
       const request = send.requestPayload ??
         (template.name ? buildTemplateRequestFallback(template, phoneNumber, campaign.variableValues) : null);
@@ -538,6 +553,7 @@ router.get("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
         updatedAt: send.updatedAt,
         errorCode: error.code,
         errorReason: error.reason,
+        errorDetails: error.details,
         request,
         response,
       };

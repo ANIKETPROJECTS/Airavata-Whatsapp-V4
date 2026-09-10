@@ -575,8 +575,17 @@ async function handleStatusUpdate(
   if (status.status === "delivered") update.deliveredAt = new Date(Number(status.timestamp) * 1000);
   if (status.status === "read") update.readAt = new Date(Number(status.timestamp) * 1000);
   if (status.status === "failed") {
+    const metaError = status.errors?.[0];
+    const metaErrorTitle = metaError?.title ?? metaError?.message ?? "Unknown error";
+    const metaErrorDetails =
+      metaError?.details ??
+      metaError?.error_data?.details ??
+      metaError?.message;
     update.status = "FAILED";
-    update.failureReason = status.errors?.[0]?.title ?? "Unknown error";
+    update.failureReason = metaErrorTitle;
+    if (typeof metaError?.code === "number") update.metaErrorCode = metaError.code;
+    update.metaErrorTitle = metaErrorTitle;
+    if (metaErrorDetails) update.metaErrorDetails = metaErrorDetails;
   }
 
   // Meta can retry the same webhook, and status notifications can arrive out
@@ -659,6 +668,12 @@ async function handleStatusUpdate(
   }
 
   if (campaignSend && status.status === "failed") {
+    const metaError = status.errors?.[0];
+    const diagnostic = [
+      typeof metaError?.code === "number" ? `Meta code ${metaError.code}` : null,
+      metaError?.title ?? metaError?.message ?? "Unknown error",
+      metaError?.details ?? metaError?.error_data?.details ?? null,
+    ].filter(Boolean).join(": ");
     await CampaignRecipientModel.updateOne(
       {
         _id: campaignSend.recipientId,
@@ -668,7 +683,7 @@ async function handleStatusUpdate(
       {
         $set: {
           status: "FAILED",
-          lastError: status.errors?.[0]?.title ?? "Unknown error",
+          lastError: diagnostic,
         },
       },
     );
@@ -734,7 +749,13 @@ interface WebhookStatus {
   status: string;
   timestamp: string;
   recipient_id: string;
-  errors?: Array<{ code: number; title: string }>;
+  errors?: Array<{
+    code?: number;
+    title?: string;
+    message?: string;
+    details?: string;
+    error_data?: { details?: string };
+  }>;
 }
 
 interface WebhookContact {

@@ -37,6 +37,7 @@ interface CampaignMessageDetail {
   updatedAt: string;
   errorCode: string | null;
   errorReason: string | null;
+  errorDetails: string | null;
   request: unknown;
   response: unknown;
 }
@@ -262,6 +263,7 @@ export default function CampaignsReport() {
       'Updated timestamp',
       'Error Code',
       'Error Reason',
+      'Error Details',
     ];
     const csv = [
       headers,
@@ -272,6 +274,7 @@ export default function CampaignsReport() {
         new Date(row.updatedAt).toISOString(),
         row.errorCode ?? '',
         row.errorReason ?? '',
+        row.errorDetails ?? '',
       ]),
     ].map(row => row.map(csvCell).join(',')).join('\r\n');
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
@@ -631,7 +634,10 @@ export default function CampaignsReport() {
                               <td className="max-w-[220px] truncate px-4 py-3 font-mono text-xs text-gray-600" title={row.messageId ?? ''}>{row.messageId ?? '—'}</td>
                               <td className="whitespace-nowrap px-4 py-3 text-gray-600">{row.updatedAt ? new Date(row.updatedAt).toLocaleString() : '—'}</td>
                               <td className="px-4 py-3 font-mono text-xs font-semibold text-red-700">{row.errorCode ?? '—'}</td>
-                              <td className="max-w-[360px] px-4 py-3 text-xs text-gray-600">{row.errorReason ?? '—'}</td>
+                             <td className="max-w-[360px] px-4 py-3 text-xs text-gray-600">
+                               <div>{row.errorReason ?? '—'}</div>
+                               {row.errorDetails && <div className="mt-1 text-gray-500">{row.errorDetails}</div>}
+                             </td>
                             </tr>
                           ))}
                         </tbody>
