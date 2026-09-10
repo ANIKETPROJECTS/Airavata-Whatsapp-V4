@@ -56,3 +56,17 @@ mtime_ms = 1788508123410
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/d67df60a-e7d6-477e-a92f-4eecdb5d1703/046bdb65-c31e-499a-8a50-1733fd9639f6"
 storage_version_token = "1788508134753897"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "xfiHZsyR98QBfKTfW_rFj"
+uri = "file://attached_assets/contacts_part1_fixed.csv"
+type = "table"
+title = "Fixed contacts CSV"
+description = "Cleaned CSV with 243 valid Indian WhatsApp numbers using exactly one +91 prefix. The 7 rows with missing digits were removed because their numbers could not be safely reconstructed."
+logical_id = "506ca5fb-8840-44dc-b06b-451b3351681b"
+content_hash = "sha256:c5fc7f10a82ce8d8a746760ab2e8964513fa27df4d5b325f5ab6233c67d5e4a2"
+size = 6607
+mtime_ms = 1789041536574
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/506ca5fb-8840-44dc-b06b-451b3351681b/989e2853-f103-4de3-b172-4ec30633cf36"
+storage_version_token = "1789041542632571"
+content_type = "text/csv"
