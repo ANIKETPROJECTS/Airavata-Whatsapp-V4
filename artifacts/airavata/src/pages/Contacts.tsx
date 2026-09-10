@@ -1077,19 +1077,30 @@ export default function Contacts() {
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {selected.size > 0 && (
-            <button
-              onClick={async () => {
-                if (!await confirm({
-                  title: 'Delete selected contacts?',
-                  description: `Delete ${selected.size} selected contact${selected.size === 1 ? '' : 's'}? This cannot be undone.`,
-                  confirmLabel: 'Delete contacts',
-                })) return;
-                bulkDeleteMutation.mutate([...selected]);
-              }}
-              className="px-3 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
-            >
-              Delete {selected.size}
-            </button>
+            <>
+              <button
+                onClick={() => exitSelectionMode()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                title="Clear selection without deleting contacts"
+                aria-label="Clear selection without deleting contacts"
+              >
+                <X className="h-4 w-4" />
+                Clear selection
+              </button>
+              <button
+                onClick={async () => {
+                  if (!await confirm({
+                    title: 'Delete selected contacts?',
+                    description: `Delete ${selected.size} selected contact${selected.size === 1 ? '' : 's'}? This cannot be undone.`,
+                    confirmLabel: 'Delete contacts',
+                  })) return;
+                  bulkDeleteMutation.mutate([...selected]);
+                }}
+                className="px-3 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
+              >
+                Delete {selected.size}
+              </button>
+            </>
           )}
 
           {selectionMode ? (
