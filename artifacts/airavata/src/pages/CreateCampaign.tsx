@@ -34,6 +34,13 @@ interface CsvContactRow {
   email?: string;
   attributes?: Record<string, string>;
 }
+interface ParsedCsvBatch {
+  file: File;
+  contacts: CsvContactRow[];
+  invalid: string[];
+  duplicates: number;
+  error?: string;
+}
 
 // ── Country codes ─────────────────────────────────────────────────────────────
 
@@ -481,16 +488,14 @@ export default function CreateCampaign() {
   const [segmentTagId, setSegmentTagId]     = useState('');
   const [dripSteps, setDripSteps]           = useState('1:0');
   const [triggerEvent, setTriggerEvent]     = useState('inbound_message');
-  const [csvFile, setCsvFile]               = useState<File | null>(null);
-  const [csvContacts, setCsvContacts]       = useState<CsvContactRow[]>([]);
-  const [csvInvalid, setCsvInvalid]         = useState<string[]>([]);
-  const [csvDuplicates, setCsvDuplicates]  = useState(0);
+  const [csvFiles, setCsvFiles]             = useState<File[]>([]);
+  const [csvBatches, setCsvBatches]         = useState<ParsedCsvBatch[]>([]);
   const [csvParsing, setCsvParsing]         = useState(false);
-  const [csvError, setCsvError]             = useState('');
   const [flowId, setFlowId]                 = useState('');
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const [headerValues, setHeaderValues]     = useState<Record<string, string>>({});
   const csvInputRef = useRef<HTMLInputElement>(null);
+  const csvBatchLaunchRef = useRef(false);
 
   // Schedule modal state (simple — just stores a datetime string)
   const [scheduledAt, setScheduledAt] = useState('');
@@ -572,30 +577,29 @@ export default function CreateCampaign() {
   const parsed = useMemo(() => parseNumbers(numbers, countryCode), [numbers, countryCode]);
 
   useEffect(() => {
-    if (!csvFile) {
-      setCsvContacts([]);
-      setCsvInvalid([]);
-      setCsvDuplicates(0);
-      setCsvError('');
+    if (!csvFiles.length) {
+      setCsvBatches([]);
       return;
     }
 
     let cancelled = false;
     setCsvParsing(true);
-    setCsvError('');
-    parseSpreadsheetFile(csvFile, countryCode)
-      .then(result => {
-        if (cancelled) return;
-        setCsvContacts(result.contacts);
-        setCsvInvalid(result.invalid);
-        setCsvDuplicates(result.duplicates);
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setCsvContacts([]);
-        setCsvInvalid([]);
-        setCsvDuplicates(0);
-        setCsvError(error instanceof Error ? error.message : 'Unable to read the spreadsheet');
+    Promise.all(csvFiles.map(async file => {
+      try {
+        const result = await parseSpreadsheetFile(file, countryCode);
+        return { file, ...result };
+      } catch (error: unknown) {
+        return {
+          file,
+          contacts: [],
+          invalid: [],
+          duplicates: 0,
+          error: error instanceof Error ? error.message : 'Unable to read the spreadsheet',
+        };
+      }
+    }))
+      .then(results => {
+        if (!cancelled) setCsvBatches(results);
       })
       .finally(() => {
         if (!cancelled) setCsvParsing(false);
@@ -604,7 +608,7 @@ export default function CreateCampaign() {
     return () => {
       cancelled = true;
     };
-  }, [csvFile, countryCode]);
+  }, [csvFiles, countryCode]);
 
   // ── Campaign mutation ──────────────────────────────────────────────────────
 
@@ -612,7 +616,9 @@ export default function CreateCampaign() {
     mutationFn: (payload: Record<string, unknown>) => api.post('/campaigns', payload),
     onSuccess: () => {
       toast.success('Campaign created successfully!');
-      setTimeout(() => navigate('/campaigns-report'), 1200);
+      if (!csvBatchLaunchRef.current) {
+        setTimeout(() => navigate('/campaigns-report'), 1200);
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -673,19 +679,63 @@ export default function CreateCampaign() {
     launchMutation.mutate(buildPayload({ phoneNumbers: parsed.valid }));
   }
 
-  function csvPayload() {
+  function csvPayload(batch: ParsedCsvBatch) {
     return {
-      phoneNumbers: csvContacts.map(contact => contact.phone),
-      csvContacts,
+      phoneNumbers: batch.contacts.map(contact => contact.phone),
+      csvContacts: batch.contacts,
     };
   }
 
-  function handleCsvSend() {
+  async function launchCsvBatches(scheduledAtIso?: string) {
     if (!validateCommon()) return;
-    if (csvParsing) { toast.error('Wait for the spreadsheet to finish processing'); return; }
-    if (csvError) { toast.error(csvError); return; }
-    if (csvContacts.length === 0) { toast.error('No valid phone numbers found in the spreadsheet'); return; }
-    launchMutation.mutate(buildPayload(csvPayload()));
+    if (csvParsing) { toast.error('Wait for the spreadsheets to finish processing'); return; }
+    if (!csvBatches.length) { toast.error('Add at least one CSV file'); return; }
+    if (csvBatches.some(batch => batch.error)) {
+      toast.error('Fix or remove the CSV file that could not be read');
+      return;
+    }
+    if (csvBatches.some(batch => batch.contacts.length === 0)) {
+      toast.error('Each CSV batch must contain at least one valid phone number');
+      return;
+    }
+
+    csvBatchLaunchRef.current = true;
+    try {
+      for (const [index, batch] of csvBatches.entries()) {
+        const batchName = csvBatches.length > 1
+          ? `${campaignName.trim()} - Batch ${index + 1}/${csvBatches.length}`
+          : campaignName.trim();
+        await launchMutation.mutateAsync(buildPayload({
+          name: batchName,
+          ...(scheduledAtIso ? { scheduledAt: scheduledAtIso } : {}),
+          ...csvPayload(batch),
+        }));
+      }
+      toast.success(
+        csvBatches.length > 1
+          ? `Created ${csvBatches.length} campaign batches successfully`
+          : 'Campaign created successfully!',
+      );
+      setTimeout(() => navigate('/campaigns-report'), 1200);
+    } finally {
+      csvBatchLaunchRef.current = false;
+    }
+  }
+
+  function handleCsvSend() {
+    void launchCsvBatches();
+  }
+
+  function handleCsvSchedule() {
+    if (!validateCommon()) return;
+    const dt = prompt('Enter scheduled date/time (YYYY-MM-DDTHH:MM):');
+    if (!dt) return;
+    const date = new Date(dt);
+    if (Number.isNaN(date.getTime())) {
+      toast.error('Enter a valid scheduled date and time');
+      return;
+    }
+    void launchCsvBatches(date.toISOString());
   }
 
   function handleFlowSend() {
@@ -716,7 +766,7 @@ export default function CreateCampaign() {
   function resetAndGo(v: CampaignView) {
     setTemplateId(''); setCampaignName(''); setCountryCode('');
     setNumbers(''); setGroupId(''); setTagId(''); setSegmentGroupId(''); setSegmentTagId('');
-    setCsvFile(null); setCsvContacts([]); setCsvInvalid([]); setCsvDuplicates(0); setCsvError('');
+    setCsvFiles([]); setCsvBatches([]);
     setFlowId('');
     setDripSteps('1:0'); setTriggerEvent('inbound_message');
     setVariableValues({});
@@ -1055,6 +1105,21 @@ export default function CreateCampaign() {
           countryCode={countryCode} setCountryCode={setCountryCode}
         />
         <VariableValuesSection />
+         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+           <div>
+             <p className="text-sm font-semibold text-blue-900">Need to reach more than 50 contacts?</p>
+             <p className="text-xs text-blue-700 mt-1">
+               Upload one or more CSV batches. Each file will run as a separate campaign.
+             </p>
+           </div>
+           <button
+             type="button"
+             onClick={() => setView('csv')}
+             className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+           >
+             Upload CSV batches
+           </button>
+         </div>
         <NumbersSection value={numbers} onChange={setNumbers} countryCode={countryCode} contacts={contacts} />
         <ActionButtons
           validCount={parsed.valid.length}
@@ -1082,9 +1147,22 @@ export default function CreateCampaign() {
         <input
           ref={csvInputRef}
           type="file"
+           multiple
           accept=".csv,.xlsx,.xls"
           className="hidden"
-           onChange={e => setCsvFile(e.target.files?.[0] ?? null)}
+           onChange={e => {
+             const selected = Array.from(e.target.files ?? []);
+             if (selected.length) {
+               setCsvFiles(previous => {
+                 const existing = new Set(previous.map(file => `${file.name}:${file.size}:${file.lastModified}`));
+                 return [
+                   ...previous,
+                   ...selected.filter(file => !existing.has(`${file.name}:${file.size}:${file.lastModified}`)),
+                 ];
+               });
+             }
+             e.currentTarget.value = '';
+           }}
         />
         <div>
           <button
@@ -1092,38 +1170,55 @@ export default function CreateCampaign() {
             className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
           >
             <Upload className="w-4 h-4" />
-            IMPORT FROM EXCEL
+             ADD CSV FILES
           </button>
-          {csvFile && (
-            <p className="mt-2 text-sm text-gray-600">
-              Selected: <span className="font-medium">{csvFile.name}</span>
-            </p>
-          )}
-          {csvParsing && <p className="mt-2 text-sm text-gray-500">Reading spreadsheet…</p>}
-          {csvError && <p className="mt-2 text-sm text-red-600">{csvError}</p>}
-          {!csvParsing && !csvError && csvFile && (
-            <div className="mt-2 space-y-1 text-sm text-gray-600">
-              <p>{csvContacts.length} valid unique number{csvContacts.length === 1 ? '' : 's'} ready</p>
-              {csvDuplicates > 0 && <p className="text-amber-600">{csvDuplicates} duplicate number{csvDuplicates === 1 ? '' : 's'} removed</p>}
-              {csvInvalid.length > 0 && <p className="text-amber-600">{csvInvalid.length} invalid number{csvInvalid.length === 1 ? '' : 's'} skipped</p>}
-            </div>
-          )}
+           {csvParsing && <p className="mt-2 text-sm text-gray-500">Reading spreadsheets…</p>}
+           {!csvParsing && csvBatches.length > 0 && (
+             <div className="mt-3 space-y-2">
+               <p className="text-sm font-semibold text-gray-700">
+                 {csvBatches.length} batch{csvBatches.length === 1 ? '' : 'es'} · {csvBatches.reduce((total, batch) => total + batch.contacts.length, 0)} valid recipients
+               </p>
+               {csvBatches.map((batch, index) => (
+                 <div key={`${batch.file.name}-${batch.file.lastModified}`} className="flex items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2 text-sm">
+                   <div className="min-w-0">
+                     <p className="font-medium text-gray-700 truncate">{batch.file.name}</p>
+                     {batch.error ? (
+                       <p className="text-red-600">{batch.error}</p>
+                     ) : (
+                       <p className="text-gray-500">
+                         {batch.contacts.length} valid · {batch.duplicates} duplicate{batch.duplicates === 1 ? '' : 's'} removed
+                         {batch.invalid.length > 0 ? ` · ${batch.invalid.length} invalid skipped` : ''}
+                       </p>
+                     )}
+                   </div>
+                   <button
+                     type="button"
+                     onClick={() => setCsvFiles(previous => previous.filter((_, fileIndex) => fileIndex !== index))}
+                     className="shrink-0 p-1 text-gray-400 hover:text-red-600"
+                     aria-label={`Remove ${batch.file.name}`}
+                   >
+                     <X className="w-4 h-4" />
+                   </button>
+                 </div>
+               ))}
+             </div>
+           )}
         </div>
 
         <div className="flex items-center gap-3 bg-white border rounded-xl p-4 w-fit">
           <button
-            onClick={() => handleSchedule(csvPayload())}
-            disabled={csvParsing || csvContacts.length === 0 || launchMutation.isPending}
+             onClick={handleCsvSchedule}
+             disabled={csvParsing || csvBatches.length === 0 || launchMutation.isPending}
             className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
           >
             Schedule Campaign
           </button>
           <button
             onClick={handleCsvSend}
-            disabled={csvParsing || csvContacts.length === 0 || launchMutation.isPending}
+             disabled={csvParsing || csvBatches.length === 0 || launchMutation.isPending}
             className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
           >
-            {launchMutation.isPending ? 'Creating…' : 'Send Campaign'}
+             {launchMutation.isPending ? 'Creating batches…' : 'Run CSV campaign batches'}
           </button>
         </div>
       </SubViewShell>
