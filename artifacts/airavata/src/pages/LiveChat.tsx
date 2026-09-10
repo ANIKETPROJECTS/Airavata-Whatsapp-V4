@@ -974,7 +974,7 @@ export default function LiveChat() {
   const [activeTab, setActiveTab] = useState('All');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [chatDateFrom, setChatDateFrom] = useState('');
   const [chatDateTo, setChatDateTo] = useState('');
