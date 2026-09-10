@@ -680,9 +680,10 @@ export default function CreateCampaign() {
   }
 
   function csvPayload(batch: ParsedCsvBatch) {
+    const contactRows = batch.contacts;
     return {
-      phoneNumbers: batch.contacts.map(contact => contact.phone),
-      csvContacts: batch.contacts,
+      phoneNumbers: contactRows.map(contact => contact.phone),
+      csvContacts: contactRows,
     };
   }
 
