@@ -311,8 +311,9 @@ async function resolveCsvContacts(
   const existingByPhone = new Map<string, ResolvedCsvContact>();
   for (const contact of existing) {
     const key = normalizeContactPhone(contact.phone);
-    if (!existingByPhone.has(key)) {
-      existingByPhone.set(key, {
+    const canonicalKey = canonicalPhone(key);
+    if (!existingByPhone.has(canonicalKey)) {
+      existingByPhone.set(canonicalKey, {
         _id: contact._id as mongoose.Types.ObjectId,
         name: contact.name,
         phone: normalizeContactPhone(contact.phone),
@@ -367,6 +368,7 @@ async function resolveRecipients(
   userId: mongoose.Types.ObjectId,
   contactIds: string[],
   groupIds: string[],
+  session: mongoose.ClientSession,
 ): Promise<
   Array<{ _id: mongoose.Types.ObjectId; name: string; phone: string }>
 > {
@@ -377,6 +379,7 @@ async function resolveRecipients(
         status: "active",
       })
         .select("_id name phone")
+        .session(session)
         .lean()
     : [];
 
@@ -387,6 +390,7 @@ async function resolveRecipients(
         status: "active",
       })
         .select("_id name phone")
+        .session(session)
         .lean()
     : [];
 
@@ -829,7 +833,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       ...new Set([...contactIds, ...phoneContactIds, ...tagContactIds]),
     ];
 
-    const recipients = audienceContacts ?? await resolveRecipients(userId, allContactIds, groupIds);
+    const recipients = audienceContacts ?? await resolveRecipients(userId, allContactIds, groupIds, session);
     if (recipients.length === 0) {
       await session.abortTransaction();
       session.endSession();
