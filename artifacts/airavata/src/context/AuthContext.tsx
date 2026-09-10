@@ -4,9 +4,11 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import { api, tokenStorage, USER_PROFILE_CHANGED_KEY } from '../lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface AuthUser {
   id: string;
@@ -44,18 +46,33 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const userIdRef = useRef<string | null>(null);
+
+  const setSessionUser = useCallback(async (nextUser: AuthUser | null) => {
+    if (userIdRef.current !== nextUser?.id) {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+    }
+    userIdRef.current = nextUser?.id ?? null;
+    setUser(nextUser);
+  }, [queryClient]);
 
   const refreshUser = useCallback(async () => {
     const { user: freshUser } = await api.get<{ user: AuthUser }>('/auth/me');
-    setUser(freshUser);
-  }, []);
+    await setSessionUser(freshUser);
+  }, [setSessionUser]);
 
   // Restore session on mount
   useEffect(() => {
     refreshUser()
-      .catch(() => setUser(null))
+      .catch(() => {
+        userIdRef.current = null;
+        queryClient.clear();
+        setUser(null);
+      })
       .finally(() => setLoading(false));
-  }, [refreshUser]);
+  }, [queryClient, refreshUser]);
 
   // Billing mode and section permissions can be changed by Master Admin while
   // this account is already open in another tab or window. Keep the session
@@ -85,20 +102,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const { token, user } = await api.post<{ token: string; user: AuthUser }>('/auth/login', { email, password });
     tokenStorage.set(token);
-    setUser(user);
-  }, []);
+    await setSessionUser(user);
+  }, [setSessionUser]);
 
   const signup = useCallback(async (data: SignupData) => {
     const { token, user } = await api.post<{ token: string; user: AuthUser }>('/auth/signup', data);
     tokenStorage.set(token);
-    setUser(user);
-  }, []);
+    await setSessionUser(user);
+  }, [setSessionUser]);
 
   const logout = useCallback(async () => {
-    await api.post('/auth/logout');
-    tokenStorage.clear();
-    setUser(null);
-  }, []);
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      tokenStorage.clear();
+      await setSessionUser(null);
+    }
+  }, [setSessionUser]);
 
   return (
     <AuthContext.Provider value={{ user, loading, refreshUser, login, signup, logout }}>

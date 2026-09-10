@@ -55,7 +55,7 @@ function ProtectedRouter() {
   }
 
   return (
-    <Shell>
+    <Shell key={user.id}>
       <Switch>
         <Route path="/" component={() => <Redirect to="/dashboard" />} />
         {routes.map(r => (
