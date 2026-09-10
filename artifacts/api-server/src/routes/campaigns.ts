@@ -22,7 +22,11 @@ import {
   enrollNewContactsInTriggerCampaigns,
 } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvents } from "../lib/clientWebhooks";
-import { normalizeContactPhone, sameContactPhone } from "../lib/contactPhone";
+import {
+  normalizeCampaignPhone as normalizeCampaignPhoneValue,
+  normalizeContactPhone,
+  sameContactPhone,
+} from "../lib/contactPhone";
 import { validateTemplateParameters } from "../lib/templateComponents";
 
 const router = Router();
@@ -231,7 +235,7 @@ type ResolvedCsvContact = {
 
 function normalizeCampaignPhone(value: unknown): string | null {
   try {
-    return normalizeContactPhone(value);
+    return normalizeCampaignPhoneValue(value);
   } catch {
     return null;
   }

@@ -30,6 +30,23 @@ export function normalizeContactPhone(value: unknown): string {
   return `+${digits}`;
 }
 
+/**
+ * Normalize a phone number for an outbound campaign and reject malformed
+ * Indian numbers before they reach Meta. The campaign UI currently operates
+ * primarily on Indian recipients, where the canonical format is +91 followed
+ * by exactly 10 subscriber digits.
+ */
+export function normalizeCampaignPhone(value: unknown): string {
+  const normalized = normalizeContactPhone(value);
+  const digits = normalized.slice(1);
+  if (digits.startsWith(DEFAULT_CONTACT_COUNTRY_CODE) && digits.length !== 12) {
+    throw new Error(
+      "Indian WhatsApp numbers must contain country code 91 followed by 10 digits",
+    );
+  }
+  return normalized;
+}
+
 export function tryNormalizeContactPhone(value: unknown): string | null {
   try {
     return normalizeContactPhone(value);

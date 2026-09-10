@@ -75,6 +75,15 @@ function normalizePhone(value: unknown, countryCode: string) {
   return n;
 }
 
+function isValidCampaignPhone(value: string, countryCode: string) {
+  if (!/^\+?\d{7,15}$/.test(value)) return false;
+  const digits = value.replace(/\D/g, '');
+  if (countryCode === '+91' || digits.startsWith('91')) {
+    return digits.length === 12;
+  }
+  return true;
+}
+
 function parseNumbers(raw: string, countryCode: string) {
   const entries = raw.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
   const normalised: string[] = [];
@@ -89,7 +98,7 @@ function parseNumbers(raw: string, countryCode: string) {
   const dupeSet = new Set<string>();
 
   for (const n of normalised) {
-    if (/^\+?\d{7,15}$/.test(n)) {
+    if (isValidCampaignPhone(n, countryCode)) {
       if (seen.has(n)) dupeSet.add(n);
       else { seen.add(n); valid.push(n); }
     } else {
@@ -146,7 +155,7 @@ async function parseSpreadsheetFile(file: File, countryCode: string) {
     const rawPhone = String(row[actualPhoneIndex] ?? '').trim();
     if (!rawPhone) continue;
     const phone = normalizePhone(rawPhone, countryCode);
-    if (!/^\+?\d{7,15}$/.test(phone)) {
+    if (!isValidCampaignPhone(phone, countryCode)) {
       invalid.push(rawPhone);
       continue;
     }
@@ -697,6 +706,13 @@ export default function CreateCampaign() {
     }
     if (csvBatches.some(batch => batch.contacts.length === 0)) {
       toast.error('Each CSV batch must contain at least one valid phone number');
+      return;
+    }
+    const invalidCount = csvBatches.reduce((total, batch) => total + batch.invalid.length, 0);
+    if (invalidCount > 0) {
+      toast.error(
+        `Remove or correct ${invalidCount} invalid phone number${invalidCount === 1 ? '' : 's'} before sending`,
+      );
       return;
     }
 

@@ -10,6 +10,7 @@ import { MetaApiError, sendTemplateMessage, sendWhatsAppFlowMessage } from "./wh
 import { withCreditCharge } from "./creditDeduction";
 import { logger } from "./logger";
 import { checkMessagingLimitBeforeSend } from "./messagingLimit";
+import { normalizeCampaignPhone } from "./contactPhone";
 import {
   buildTemplateComponents,
   type TemplateParameterValues,
@@ -128,6 +129,7 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
     {};
   let requestPayload: unknown;
   try {
+    const normalizedPhone = normalizeCampaignPhone(contact.phone);
     const result = await withCreditCharge({
       userId,
       category: template?.category,
@@ -135,13 +137,13 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
       description: `Campaign message to ${contact.phone}`,
       send: () => isFlowCampaign
         ? sendWhatsAppFlowMessage(
-            contact.phone,
+            normalizedPhone,
             flow!,
             String(userId),
             { campaignId: String(campaignId), recipientId: String(recipientId) },
           )
         : sendTemplateMessage(
-            contact.phone,
+            normalizedPhone,
             template!.name,
             template!.language ?? "en_US",
             buildTemplateComponents(template!, values, headerValues, contact),
