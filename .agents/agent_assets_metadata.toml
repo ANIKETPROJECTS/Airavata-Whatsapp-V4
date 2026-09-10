@@ -70,3 +70,45 @@ mtime_ms = 1789041536574
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/506ca5fb-8840-44dc-b06b-451b3351681b/989e2853-f103-4de3-b172-4ec30633cf36"
 storage_version_token = "1789041542632571"
 content_type = "text/csv"
+
+[[outputs]]
+id = "LK0ruEiqhlyDcDktqSDxX"
+uri = "file://attached_assets/contacts_test_3.csv"
+type = "table"
+title = "3-contact test CSV"
+description = "Test file containing the three requested numbers, normalized with exactly one +91 prefix."
+logical_id = "48a23151-4e0d-444c-92ef-e74db704f8e9"
+content_hash = "sha256:883e25a232d687e98147d92e1b26ce7e09f15736fdc4fee7d869e14fde94dcf5"
+size = 149
+mtime_ms = 1789042180411
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/48a23151-4e0d-444c-92ef-e74db704f8e9/a827e922-34f9-440f-889c-9db6ef49bc40"
+storage_version_token = "1789042187740283"
+content_type = "text/csv"
+
+[[outputs]]
+id = "FFwaB3UvEJJfQRQOEP_Up"
+uri = "file://attached_assets/contacts_bulk_200.csv"
+type = "table"
+title = "200-contact bulk CSV"
+description = "First safe bulk file. It excludes all three test numbers to prevent duplicate sends."
+logical_id = "353d3439-1dcf-4847-8b38-2d590d108c19"
+content_hash = "sha256:b0022ec508e7cc94e7109ea6fe7b9d3a5f3fac3a37d6f14df12283caabec6ea7"
+size = 5435
+mtime_ms = 1789042180412
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/353d3439-1dcf-4847-8b38-2d590d108c19/d4d9c89b-ce68-4180-9995-5ddda652b936"
+storage_version_token = "1789042189066335"
+content_type = "text/csv"
+
+[[outputs]]
+id = "I2gHVmZfKjZ3v4mBdmStQ"
+uri = "file://attached_assets/contacts_bulk_42.csv"
+type = "table"
+title = "42-contact remaining CSV"
+description = "Remaining safe bulk file. It excludes all three test numbers to prevent duplicate sends."
+logical_id = "e660cc45-d834-4cc3-a8fb-4c239cbc7852"
+content_hash = "sha256:5fd1e7d624449bdb10caaa547fc7c755885fcdd3653a3f3bbeb9a969d6c3a937"
+size = 1169
+mtime_ms = 1789042180412
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/e660cc45-d834-4cc3-a8fb-4c239cbc7852/c8aca183-7b0e-4060-a2f4-4d75f0fbda19"
+storage_version_token = "1789042190400320"
+content_type = "text/csv"
