@@ -584,6 +584,64 @@ router.get("/campaigns/:id/recipients", authenticate, async (req: AuthRequest, r
   }
 });
 
+router.delete("/campaigns/:id", authenticate, async (req: AuthRequest, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: "Invalid campaign ID" });
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const campaignId = new mongoose.Types.ObjectId(req.params.id);
+    const campaign = await CampaignModel.findOne({ _id: campaignId, userId })
+      .session(session)
+      .lean();
+
+    if (!campaign) {
+      await session.abortTransaction();
+      return res.status(404).json({ error: "Campaign not found" });
+    }
+
+    if (campaign.status !== "FAILED") {
+      await session.abortTransaction();
+      return res.status(400).json({
+        error: "Only failed campaigns can be deleted",
+      });
+    }
+
+    const pendingRecipients = await CampaignRecipientModel.countDocuments({
+      campaignId,
+      userId,
+      status: { $in: ["QUEUED", "ACTIVE", "WAITING"] },
+    }).session(session);
+
+    if (pendingRecipients > 0) {
+      await session.abortTransaction();
+      return res.status(409).json({
+        error: "This campaign still has queued messages and cannot be deleted",
+      });
+    }
+
+    await MessageModel.deleteMany({ campaignId, userId }).session(session);
+    await CampaignSendModel.deleteMany({ campaignId, userId }).session(session);
+    await CampaignRecipientModel.deleteMany({ campaignId, userId }).session(session);
+    await CampaignModel.deleteOne({ _id: campaignId, userId }).session(session);
+
+    await session.commitTransaction();
+    return res.json({ deleted: true, campaignId: String(campaignId) });
+  } catch (err: unknown) {
+    await session.abortTransaction().catch(() => {});
+    return res.status(500).json({
+      error: err instanceof Error ? err.message : "Unable to delete campaign",
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
 router.post("/campaigns/:id/enroll", authenticate, async (req: AuthRequest, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user!.userId);

@@ -3,8 +3,8 @@
  */
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2, X, Copy } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BarChart3, Users, CheckCircle2, MessageSquare, Download, Eye, Loader2, X, Copy, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import MetaInsightsPanel from '@/components/MetaInsightsPanel';
@@ -73,6 +73,7 @@ export default function CampaignsReport() {
   const { user } = useAuth();
   const isMetaDirect = user?.billingMode === 'meta_direct';
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<{ campaigns: Campaign[] }>({
     queryKey: ['campaigns'],
@@ -91,6 +92,21 @@ export default function CampaignsReport() {
     queryFn: () => api.get(`/campaigns/${selectedCampaign!.id}`),
     enabled: Boolean(selectedCampaign),
     refetchInterval: selectedCampaign ? 10_000 : false,
+  });
+
+  const deleteCampaignMutation = useMutation({
+    mutationFn: (campaignId: string) => api.delete(`/campaigns/${campaignId}`),
+    onSuccess: () => {
+      toast.success('Failed campaign deleted.');
+      const deletedId = selectedCampaign?.id;
+      setSelectedCampaign(null);
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns-stats'] });
+      if (deletedId) {
+        queryClient.removeQueries({ queryKey: ['campaign-detail', deletedId] });
+      }
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const campaigns = data?.campaigns ?? [];
@@ -145,6 +161,20 @@ export default function CampaignsReport() {
       label: campaign.status.charAt(0) + campaign.status.slice(1).toLowerCase(),
       className: statusColor(campaign.status),
     };
+  };
+
+  const isFailedCampaign = (campaign: Campaign) =>
+    campaign.status.toUpperCase() === 'FAILED';
+
+  const handleDeleteCampaign = (campaign: Campaign) => {
+    if (!isFailedCampaign(campaign) || deleteCampaignMutation.isPending) return;
+    const confirmed = window.confirm(
+      `Delete the failed campaign "${campaign.name}"? This removes its report and send records but keeps your contacts.`,
+    );
+    if (confirmed) {
+      setSelectedCampaign(null);
+      deleteCampaignMutation.mutate(campaign.id);
+    }
   };
 
   const fmt = (n?: number) => (n ?? 0).toLocaleString();
@@ -363,9 +393,31 @@ export default function CampaignsReport() {
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      <button className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-md">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedCampaign(camp);
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-md"
+                        aria-label={`View ${camp.name}`}
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
+                      {isFailedCampaign(camp) && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteCampaign(camp);
+                          }}
+                          className="ml-1 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
+                          aria-label={`Delete failed campaign ${camp.name}`}
+                          title="Delete failed campaign"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -398,6 +450,17 @@ export default function CampaignsReport() {
                 >
                   <Download className="h-4 w-4" /> Download
                 </button>
+                {isFailedCampaign(selectedCampaign) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCampaign(selectedCampaign)}
+                    disabled={deleteCampaignMutation.isPending}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deleteCampaignMutation.isPending ? 'Deleting…' : 'Delete'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setSelectedCampaign(null)}

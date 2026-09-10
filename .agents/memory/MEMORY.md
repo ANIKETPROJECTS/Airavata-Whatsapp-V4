@@ -9,6 +9,7 @@
 - [Credit category policy](credit-category-policy.md) — template sends use category rates; non-template session messages remain free.
 - [Tenant notifications](notifications.md) — use persisted, deduplicated tenant events for the bell and notification center; never seed placeholder records.
 - [Campaign execution architecture](campaign-engine.md) — enroll audiences once, recheck eligibility at send time, and claim campaign/contact/step work before calling Meta.
+- [Failed campaign deletion](campaign-deletion-policy.md) — failed campaign cleanup removes campaign artifacts but preserves tenant contacts and blocks deletion while work is queued.
 - [Master Admin report pages](master-admin-report-pages.md) — user reports live at dedicated per-user routes with detailed usage and transaction history.
 - [Master Admin delegated connections](master-admin-delegated-connections.md) — Master Admin can run Embedded Signup for a selected user while credentials remain encrypted and tenant-scoped.
 - [Per-user MongoDB isolation](per-user-mongodb-isolation.md) — use immutable user-ID database names, central control-plane records, and copy/verify migration for existing tenants.
