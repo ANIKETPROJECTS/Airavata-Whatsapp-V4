@@ -1226,6 +1226,12 @@ export default function LiveChat() {
       .reduce((sum, conversation) => sum + conversation.unread, 0),
   };
 
+  const conversationTotals = {
+    All: dateFiltered.length,
+    Open: dateFiltered.filter(conversation => conversation.status === 'Open').length,
+    Resolved: dateFiltered.filter(conversation => conversation.status === 'Resolved').length,
+  };
+
   const tabs: Array<'All' | 'Open' | 'Resolved'> = ['All', 'Open', 'Resolved'];
 
   const formatTime = (iso: string) => {
@@ -1335,6 +1341,13 @@ export default function LiveChat() {
                 }`}
               >
                 {tab}
+                <span
+                  className={`ml-1.5 inline-flex min-w-5 h-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                    activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {conversationTotals[tab]}
+                </span>
                 {unreadTotals[tab] > 0 && (
                   <span
                     className={`ml-1.5 inline-flex min-w-4 h-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
@@ -1346,6 +1359,15 @@ export default function LiveChat() {
                 )}
               </button>
             ))}
+          </div>
+          <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+            <span>
+              Showing {filtered.length} {filtered.length === 1 ? 'number' : 'numbers'}
+              {search || chatDateFrom || chatDateTo ? ' matching the current filters' : ' in Live Chat'}
+            </span>
+            {(search || chatDateFrom || chatDateTo) && (
+              <span className="shrink-0">{dateFiltered.length} before search</span>
+            )}
           </div>
         </div>
 
@@ -1386,6 +1408,7 @@ export default function LiveChat() {
                     <span className="font-medium text-gray-900 text-sm truncate">{conv.contactName}</span>
                     <span className="text-xs text-gray-400 shrink-0 ml-1">{formatTime(conv.lastMessageAt)}</span>
                   </div>
+                    <p className="text-[11px] text-gray-400 truncate">{conv.contactPhone}</p>
                   <p className="text-sm text-gray-500 truncate">{conv.lastMessage || '—'}</p>
                 </div>
               </button>
