@@ -65,6 +65,13 @@ export async function withCreditCharge<T>({
   send,
 }: CreditChargeOptions<T>): Promise<T> {
   const resolvedUserId = objectId(userId);
+  const billingUser = await UserModel.findById(resolvedUserId)
+    .select("billingMode")
+    .lean();
+  if (billingUser?.billingMode === "meta_direct") {
+    return send();
+  }
+
   const amount = await creditsForCategory(category);
   if (amount === 0) {
     return send();

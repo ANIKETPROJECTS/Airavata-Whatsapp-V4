@@ -7,4 +7,4 @@ Only WhatsApp template sends are credit-charged. Authentication, Utility, and Ma
 
 **Why:** The product owner explicitly chose not to deduct credits from free-form session messages because they do not have a Meta template category.
 
-**How to apply:** Pass a validated template category into the shared deduction helper. Leave category unset for non-template sends so the helper sends without reserving or recording credits.
+**How to apply:** Pass a validated template category into the shared deduction helper. Leave category unset for non-template sends so the helper sends without reserving or recording credits. Skip Airavata credit reservation entirely for tenants whose billing mode is `meta_direct`; those sends are billed directly by Meta.
