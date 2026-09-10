@@ -669,6 +669,7 @@ router.post("/campaigns", authenticate, async (req: AuthRequest, res) => {
       headerValues = {},
       scheduledAt,
       phoneNumbers = [],
+      csvContacts = [],
       tagId,
       tagIds = [],
       segmentId,
