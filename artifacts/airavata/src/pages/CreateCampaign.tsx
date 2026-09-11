@@ -70,9 +70,33 @@ const COUNTRY_CODES = [
 // ── Number parser ─────────────────────────────────────────────────────────────
 
 function normalizePhone(value: unknown, countryCode: string) {
-  let n = String(value ?? '').trim().replace(/[\s\-\(\)\.]/g, '');
-  if (!n.startsWith('+') && countryCode) n = countryCode + n;
-  return n;
+  const raw = String(value ?? '').trim();
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+
+  const selectedCountryDigits = countryCode.replace(/\D/g, '');
+  const hadInternationalPrefix = raw.startsWith('+') || raw.startsWith('00');
+  const withoutInternationalPrefix = raw.startsWith('00') ? digits.slice(2) : digits;
+  const looksCountryCoded = selectedCountryDigits === '91'
+    ? withoutInternationalPrefix.length === 12
+    : withoutInternationalPrefix.startsWith(selectedCountryDigits) &&
+      withoutInternationalPrefix.length > selectedCountryDigits.length + 6;
+
+  // CSV/XLSX readers can coerce values such as +918600126395 into the
+  // number 918600126395 and drop the leading '+'. If the value already
+  // starts with the selected country code and has a subscriber number,
+  // preserve it instead of adding the country code a second time.
+  if (
+    hadInternationalPrefix ||
+    (selectedCountryDigits &&
+      looksCountryCoded)
+  ) {
+    return `+${withoutInternationalPrefix}`;
+  }
+
+  return selectedCountryDigits
+    ? `+${selectedCountryDigits}${withoutInternationalPrefix}`
+    : withoutInternationalPrefix;
 }
 
 function isValidCampaignPhone(value: string, countryCode: string) {
