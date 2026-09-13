@@ -27,7 +27,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
@@ -69,7 +69,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
@@ -111,7 +111,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
@@ -153,7 +153,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
@@ -195,7 +195,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
@@ -237,7 +237,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
@@ -279,7 +279,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:
@@ -321,7 +321,7 @@ module.exports = {
         WEBHOOK_VERIFY_TOKEN: "airavata_wh_2026",
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
-        META_REDIRECT_URI: "https://airavataintelligence.com/",
+        META_REDIRECT_URI: "https://app.atwassup.com/",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:

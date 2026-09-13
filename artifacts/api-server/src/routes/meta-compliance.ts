@@ -140,7 +140,7 @@ router.post("/auth/data-deletion", (req, res) => {
   // Meta requires this exact response shape:
   // { url: <status page URL>, confirmation_code: <unique string> }
   res.status(200).json({
-    url: `https://airavataintelligence.com/privacy/deletion-status?code=${confirmationCode}`,
+    url: `https://app.atwassup.com/privacy/deletion-status?code=${confirmationCode}`,
     confirmation_code: confirmationCode,
   });
 });
