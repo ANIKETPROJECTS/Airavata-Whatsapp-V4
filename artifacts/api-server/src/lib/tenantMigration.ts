@@ -31,6 +31,16 @@ const TENANT_COLLECTIONS = [
 
 type CollectionName = (typeof TENANT_COLLECTIONS)[number];
 
+// These collections contain one logical document per tenant. Their unique
+// userId indexes must be reconciled independently of MongoDB _id values when
+// copying data after a partial migration.
+const UNIQUE_USER_ID_COLLECTIONS = new Set<CollectionName>([
+  "attributes",
+  "livechatsettings",
+  "servicepricingcatalogs",
+  "whatsappcredentials",
+]);
+
 function controlPlaneDb() {
   const db = mongoose.connection.db;
   if (!db) throw new Error("MongoDB is not connected");
@@ -52,18 +62,45 @@ async function copyCollection(
     return { collectionName, sourceCount: 0, targetCount: 0 };
   }
 
-  await target.collection(collectionName).bulkWrite(
-    documents.map((document) => ({
+  const targetCollection = target.collection(collectionName);
+  const operations = [];
+
+  for (const document of documents) {
+    let filter = { _id: document._id };
+    let replacement = document;
+
+    /**
+     * A previous migration or application write may have created the same
+     * logical document with a different MongoDB _id. Replacing by _id in that
+     * case attempts to insert a second userId and crashes the entire API
+     * during startup.
+     *
+     * Reconcile by the unique logical key and preserve the target _id, since
+     * MongoDB does not allow a replacement update to change _id.
+     */
+    if (UNIQUE_USER_ID_COLLECTIONS.has(collectionName)) {
+      const existing = await targetCollection.findOne(
+        { userId: document.userId },
+        { projection: { _id: 1 } },
+      );
+      if (existing) {
+        filter = { _id: existing._id };
+        replacement = { ...document, _id: existing._id };
+      }
+    }
+
+    operations.push({
       replaceOne: {
-        filter: { _id: document._id },
-        replacement: document,
+        filter,
+        replacement,
         upsert: true,
       },
-    })),
-    { ordered: false },
-  );
+    });
+  }
 
-  const targetCount = await target.collection(collectionName).countDocuments({ userId });
+  await targetCollection.bulkWrite(operations, { ordered: false });
+
+  const targetCount = await targetCollection.countDocuments({ userId });
   return { collectionName, sourceCount: documents.length, targetCount };
 }
 
