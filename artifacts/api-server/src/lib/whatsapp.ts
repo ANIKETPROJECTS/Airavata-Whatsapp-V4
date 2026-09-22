@@ -886,6 +886,7 @@ export async function uploadMedia(
 export async function uploadTemplateHeaderMedia(
   fileBuffer: Buffer,
   mimeType: string,
+  fileName: string,
   userId: string,
 ): Promise<string> {
   const { accessToken } = await getCredentials(userId, { allowEnvFallback: false });
@@ -894,8 +895,13 @@ export async function uploadTemplateHeaderMedia(
     throw new Error("Meta app ID is not configured for template media uploads");
   }
 
+  const uploadParams = new URLSearchParams({
+    file_name: fileName,
+    file_length: String(fileBuffer.byteLength),
+    file_type: mimeType,
+  });
   const startResponse = await fetch(
-    `${GRAPH_BASE}/${encodeURIComponent(appId)}/uploads?file_length=${fileBuffer.byteLength}&file_type=${encodeURIComponent(mimeType)}`,
+    `${GRAPH_BASE}/${encodeURIComponent(appId)}/uploads?${uploadParams.toString()}`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -903,10 +909,22 @@ export async function uploadTemplateHeaderMedia(
   );
   const startData = (await startResponse.json()) as {
     id?: string;
-    error?: { message?: string };
+    error?: {
+      message?: string;
+      code?: number;
+      error_subcode?: number;
+      fbtrace_id?: string;
+    };
   };
   if (!startResponse.ok || !startData.id) {
-    throw new Error(`Template media session failed: ${startData.error?.message ?? JSON.stringify(startData)}`);
+    const error = startData.error;
+    throw new Error(
+      `Template media session failed: ${error?.message ?? JSON.stringify(startData)}` +
+      (error?.code ? ` (Meta code ${error.code}` : "") +
+      (error?.error_subcode ? `, subcode ${error.error_subcode}` : "") +
+      (error?.fbtrace_id ? `, trace ${error.fbtrace_id}` : "") +
+      (error?.code ? ")" : ""),
+    );
   }
 
   const bytes = new Uint8Array(fileBuffer.byteLength);
@@ -922,10 +940,22 @@ export async function uploadTemplateHeaderMedia(
   });
   const uploadData = (await uploadResponse.json()) as {
     h?: string;
-    error?: { message?: string };
+    error?: {
+      message?: string;
+      code?: number;
+      error_subcode?: number;
+      fbtrace_id?: string;
+    };
   };
   if (!uploadResponse.ok || !uploadData.h) {
-    throw new Error(`Template media upload failed: ${uploadData.error?.message ?? JSON.stringify(uploadData)}`);
+    const error = uploadData.error;
+    throw new Error(
+      `Template media upload failed: ${error?.message ?? JSON.stringify(uploadData)}` +
+      (error?.code ? ` (Meta code ${error.code}` : "") +
+      (error?.error_subcode ? `, subcode ${error.error_subcode}` : "") +
+      (error?.fbtrace_id ? `, trace ${error.fbtrace_id}` : "") +
+      (error?.code ? ")" : ""),
+    );
   }
   return uploadData.h;
 }

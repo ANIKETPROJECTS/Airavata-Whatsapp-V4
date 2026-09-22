@@ -80,7 +80,12 @@ router.post("/templates/header-media", authenticate, headerMediaUpload.single("f
       return res.status(400).json({ error: `The selected file does not match the ${headerType.toLowerCase()} header type` });
     }
 
-    const mediaId = await uploadTemplateHeaderMedia(file.buffer, file.mimetype, req.user!.userId);
+    const mediaId = await uploadTemplateHeaderMedia(
+      file.buffer,
+      file.mimetype,
+      file.originalname,
+      req.user!.userId,
+    );
     res.json({
       mediaId,
       fileName: file.originalname,
