@@ -2,7 +2,9 @@ import { Router } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { ApiKeyModel } from "../models/ApiKey";
+import { UserModel } from "../models/User";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
+import { getCredentials } from "../lib/whatsapp";
 
 const router = Router();
 
@@ -27,6 +29,34 @@ router.get("/apikeys", async (req: AuthRequest, res) => {
       revokedAt: { $exists: false },
     }).sort({ createdAt: -1 });
 
+    let whatsapp: {
+      connected: boolean;
+      wabaId: string | null;
+      phoneNumberId: string | null;
+      accessTokenAvailable: boolean;
+    } = {
+      connected: false,
+      wabaId: null,
+      phoneNumberId: null,
+      accessTokenAvailable: false,
+    };
+
+    try {
+      const credentials = await getCredentials(req.user!.userId, {
+        allowEnvFallback: false,
+      });
+      whatsapp = {
+        connected: true,
+        wabaId: credentials.wabaId ?? null,
+        phoneNumberId: credentials.phoneNumberId,
+        accessTokenAvailable: Boolean(credentials.accessToken),
+      };
+    } catch {
+      // A tenant without a connected WhatsApp account still has usable API
+      // key management; report the integration as disconnected without ever
+      // falling back to another account's shared environment credentials.
+    }
+
     res.json({
       keys: keys.map((k) => ({
         id: k._id,
@@ -35,6 +65,7 @@ router.get("/apikeys", async (req: AuthRequest, res) => {
         lastUsedAt: k.lastUsedAt ?? null,
         createdAt: k.createdAt,
       })),
+      whatsapp,
     });
   } catch {
     res.status(500).json({ error: "Internal server error" });
@@ -69,6 +100,42 @@ router.post("/apikeys", async (req: AuthRequest, res) => {
     });
   } catch {
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/apikeys/whatsapp/reveal — re-authenticate before returning the
+// decrypted tenant-scoped WhatsApp access token.
+router.post("/apikeys/whatsapp/reveal", async (req: AuthRequest, res) => {
+  try {
+    const password = (req.body as { password?: string }).password;
+    if (!password) {
+      res.status(400).json({ error: "Password is required to reveal the WhatsApp access token" });
+      return;
+    }
+
+    const user = await UserModel.findById(req.user!.userId)
+      .select("passwordHash")
+      .lean();
+    if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+      res.status(401).json({ error: "Incorrect password" });
+      return;
+    }
+
+    const credentials = await getCredentials(req.user!.userId, {
+      allowEnvFallback: false,
+    });
+
+    res.json({
+      credentials: {
+        wabaId: credentials.wabaId ?? null,
+        phoneNumberId: credentials.phoneNumberId,
+        accessToken: credentials.accessToken,
+      },
+    });
+  } catch (error) {
+    res.status(409).json({
+      error: error instanceof Error ? error.message : "WhatsApp credentials are not connected for this account",
+    });
   }
 });
 

@@ -16,6 +16,17 @@ import { useLocation } from 'wouter';
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ApiKeyRecord { id: string; label: string; keyPrefix: string; lastUsedAt: string | null; createdAt: string; }
 interface GeneratedKey extends ApiKeyRecord { rawKey: string; }
+interface WhatsAppCredentialSummary {
+  connected: boolean;
+  wabaId: string | null;
+  phoneNumberId: string | null;
+  accessTokenAvailable: boolean;
+}
+interface RevealedWhatsAppCredentials {
+  wabaId: string | null;
+  phoneNumberId: string;
+  accessToken: string;
+}
 interface PhoneNumber { id: string; number: string; verifiedName: string; quality: string; messagingTier: string; status: string; verified: boolean; }
 interface Agent { id: string; name: string; email: string; role: string; permissions: Record<string, boolean>; status: string; createdAt: string; }
 interface CannedMsg { id: string; name: string; message: string; type: string; }
@@ -50,8 +61,16 @@ function ApiKeysTab() {
   const [generating, setGenerating] = useState(false);
   const [newKey, setNewKey] = useState<GeneratedKey | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [whatsappPassword, setWhatsappPassword] = useState('');
+  const [showWhatsappPassword, setShowWhatsappPassword] = useState(false);
+  const [whatsappCredentials, setWhatsappCredentials] = useState<RevealedWhatsAppCredentials | null>(null);
+  const [whatsappTokenRevealed, setWhatsappTokenRevealed] = useState(false);
+  const [revealingWhatsapp, setRevealingWhatsapp] = useState(false);
 
-  const { data, isLoading } = useQuery<{ keys: ApiKeyRecord[] }>({ queryKey: ['apikeys'], queryFn: () => api.get('/apikeys') });
+  const { data, isLoading } = useQuery<{ keys: ApiKeyRecord[]; whatsapp: WhatsAppCredentialSummary }>({
+    queryKey: ['apikeys'],
+    queryFn: () => api.get('/apikeys'),
+  });
   const revokeMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/apikeys/${id}`),
     onSuccess: () => { toast.success('API key revoked'); qc.invalidateQueries({ queryKey: ['apikeys'] }); },
@@ -71,11 +90,124 @@ function ApiKeysTab() {
 
   const copy = (text: string) => { navigator.clipboard.writeText(text); toast.success('Copied'); };
 
+  const revealWhatsappCredentials = async () => {
+    if (!whatsappPassword) {
+      toast.error('Enter your account password first');
+      return;
+    }
+    setRevealingWhatsapp(true);
+    try {
+      const result = await api.post<{ credentials: RevealedWhatsAppCredentials }>(
+        '/apikeys/whatsapp/reveal',
+        { password: whatsappPassword },
+      );
+      setWhatsappCredentials(result.credentials);
+      setWhatsappTokenRevealed(true);
+      setWhatsappPassword('');
+      setShowWhatsappPassword(false);
+      toast.success('WhatsApp access token revealed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Unable to reveal WhatsApp credentials');
+    } finally {
+      setRevealingWhatsapp(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="border-b pb-4">
         <h2 className="text-lg font-semibold text-gray-900">API Keys</h2>
         <p className="text-xs text-gray-500 mt-0.5">Keys are hashed and stored securely — the full key is shown only once.</p>
+      </div>
+      <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50/50 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">WhatsApp API credentials</h3>
+          <p className="text-xs text-gray-600 mt-0.5">
+            Your connected WhatsApp credentials are tenant-specific. The access token stays hidden until you re-enter your password.
+          </p>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center text-sm text-gray-500">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading WhatsApp connection…
+          </div>
+        ) : !data?.whatsapp?.connected ? (
+          <p className="text-sm text-gray-500">WhatsApp is not connected for this account.</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-md border border-emerald-100 bg-white p-3">
+                <p className="text-xs font-medium text-gray-500">Phone Number ID</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all text-sm font-mono text-gray-800">{data.whatsapp.phoneNumberId}</code>
+                  <button onClick={() => copy(data.whatsapp.phoneNumberId ?? '')} className="shrink-0 p-1 text-gray-400 hover:text-gray-800" aria-label="Copy phone number ID">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="rounded-md border border-emerald-100 bg-white p-3">
+                <p className="text-xs font-medium text-gray-500">WhatsApp Business Account ID</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all text-sm font-mono text-gray-800">{data.whatsapp.wabaId ?? '—'}</code>
+                  {data.whatsapp.wabaId && (
+                    <button onClick={() => copy(data.whatsapp.wabaId ?? '')} className="shrink-0 p-1 text-gray-400 hover:text-gray-800" aria-label="Copy WhatsApp Business Account ID">
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="rounded-md border border-emerald-100 bg-white p-3">
+              <p className="text-xs font-medium text-gray-500">WhatsApp API access token</p>
+              <div className="mt-1 flex items-center gap-2">
+                <code className="min-w-0 flex-1 break-all text-sm font-mono text-gray-800">
+                  {whatsappTokenRevealed && whatsappCredentials
+                    ? whatsappCredentials.accessToken
+                    : '••••••••••••••••••••••••••••••••••••'}
+                </code>
+                <button
+                  onClick={() => {
+                    if (whatsappTokenRevealed) {
+                      setWhatsappTokenRevealed(false);
+                      setWhatsappCredentials(null);
+                    } else {
+                      setShowWhatsappPassword(true);
+                    }
+                  }}
+                  className="shrink-0 p-1 text-gray-400 hover:text-gray-800"
+                  aria-label={whatsappTokenRevealed ? 'Hide WhatsApp access token' : 'Reveal WhatsApp access token'}
+                >
+                  {whatsappTokenRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+                {whatsappTokenRevealed && whatsappCredentials && (
+                  <button onClick={() => copy(whatsappCredentials.accessToken)} className="shrink-0 p-1 text-gray-400 hover:text-gray-800" aria-label="Copy WhatsApp access token">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {showWhatsappPassword && !whatsappTokenRevealed && (
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="password"
+                    value={whatsappPassword}
+                    onChange={event => setWhatsappPassword(event.target.value)}
+                    onKeyDown={event => { if (event.key === 'Enter') void revealWhatsappCredentials(); }}
+                    placeholder="Re-enter your account password"
+                    className="min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => void revealWhatsappCredentials()}
+                    disabled={revealingWhatsapp}
+                    className="flex items-center justify-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+                  >
+                    {revealingWhatsapp && <Loader2 className="h-4 w-4 animate-spin" />} Reveal
+                  </button>
+                </div>
+              )}
+              <p className="mt-2 text-xs text-gray-500">The token is encrypted at rest and is only returned after password confirmation.</p>
+            </div>
+          </div>
+        )}
       </div>
       <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
         <h3 className="text-sm font-medium text-gray-700">Generate New Key</h3>
