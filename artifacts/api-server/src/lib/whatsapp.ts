@@ -232,13 +232,25 @@ export async function getCredentials(
   }
 
   try {
-    const cred = await WhatsAppCredentialModel.findOne({ userId }).lean();
+    // Do not rely on the caller's ambient AsyncLocalStorage context. Some
+    // Express middleware chains resume after an async boundary, so explicitly
+    // enter this user's tenant before reading the encrypted credential.
+    const cred = await runWithTenant(userId, () =>
+      WhatsAppCredentialModel.findOne({ userId }).lean(),
+    );
     if (cred) {
       const accessToken = decryptToken(cred.accessTokenEncrypted);
       return { phoneNumberId: cred.phoneNumberId, accessToken, wabaId: cred.wabaId };
     }
   } catch (err) {
     if (!allowEnvFallback) {
+      logger.error(
+        {
+          userId,
+          reason: err instanceof Error ? err.message : String(err),
+        },
+        "[getCredentials] Failed to read tenant WhatsApp credentials",
+      );
       throw new Error("Stored WhatsApp credentials could not be read");
     }
     logger.warn({ userId, err }, "[getCredentials] Failed to read/decrypt whatsappcredentials — falling back to shared env token");
