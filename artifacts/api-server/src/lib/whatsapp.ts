@@ -891,6 +891,34 @@ export async function uploadMedia(
 }
 
 /**
+ * Re-upload a template's approved sample asset through the phone-number media
+ * endpoint so a template message can use a fresh, provider-owned media ID.
+ * Template review handles and signed example URLs are not durable message IDs.
+ */
+export async function uploadTemplateSampleForMessage(
+  sampleUrl: string,
+  headerType: "IMAGE" | "VIDEO" | "DOCUMENT",
+  userId: string,
+): Promise<string> {
+  const response = await fetch(sampleUrl);
+  if (!response.ok) {
+    throw new Error(`Template header sample could not be downloaded (HTTP ${response.status})`);
+  }
+
+  const mimeType =
+    response.headers.get("content-type")?.split(";")[0]?.trim() ||
+    (headerType === "DOCUMENT"
+      ? "application/pdf"
+      : headerType === "VIDEO"
+        ? "video/mp4"
+        : "image/jpeg");
+  const extension =
+    headerType === "DOCUMENT" ? "pdf" : headerType === "VIDEO" ? "mp4" : "jpg";
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return uploadMedia(buffer, mimeType, `template-header.${extension}`, userId);
+}
+
+/**
  * Upload a media sample for a message template and return Meta's header handle.
  * Template examples use the resumable upload handle, which is different from
  * the media ID returned by the regular message-media endpoint.

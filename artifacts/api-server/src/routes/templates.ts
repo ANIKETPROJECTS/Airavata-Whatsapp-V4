@@ -11,6 +11,7 @@ import {
   deleteMetaTemplate,
   getMetaTemplates,
   sendTemplateMessage,
+  uploadTemplateSampleForMessage,
   uploadTemplateHeaderMedia,
   type TemplateCategory,
   type HeaderType,
@@ -331,14 +332,19 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       const headerValues: TemplateParameterValues = {};
       if (structure.requiresMediaHeader) {
         // headerContent is Meta's resumable template-upload handle and cannot
-        // be sent as a WhatsApp message media ID. The live approved template
-        // includes a signed sample URL that is valid as the header link.
-        headerValues.media = getTemplateMediaExample(template);
-        if (!headerValues.media) {
+        // be sent as a WhatsApp message media ID. Re-upload the live approved
+        // sample and send the fresh phone-number media ID instead.
+        const sampleUrl = getTemplateMediaExample(template);
+        if (!sampleUrl) {
           return res.status(400).json({
             error: "This template's media header sample is unavailable. Refresh templates from Meta and try again.",
           });
         }
+        headerValues.media = await uploadTemplateSampleForMessage(
+          sampleUrl,
+          structure.headerFormat as "IMAGE" | "VIDEO" | "DOCUMENT",
+          req.user!.userId,
+        );
       }
 
       const renderedComponents = buildTemplateComponents(
