@@ -16,6 +16,12 @@ import {
   type HeaderType,
   type CtaButtonParam,
 } from "../lib/whatsapp";
+import {
+  buildTemplateComponents,
+  getTemplateMediaExample,
+  getTemplateStructure,
+  type TemplateParameterValues,
+} from "../lib/templateComponents";
 import { withCreditCharge } from "../lib/creditDeduction";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitContactCreatedEvent } from "../lib/clientWebhooks";
@@ -286,10 +292,12 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       return res.status(400).json({ error: "Only APPROVED templates can be sent" });
     }
 
+    const phone = normalizeContactPhone(to);
+
     // Authentication templates pass the OTP code as a button parameter, not a body parameter.
     // Meta error #132000 occurs when you send no components (or body components) for auth templates.
     const isAuth = String(template.category).toUpperCase() === "AUTHENTICATION";
-    let components: Array<{ type: string; sub_type?: string; index?: string; parameters: Array<{ type: string; text?: string }> }> | undefined;
+    let components: Array<Record<string, unknown>> | undefined;
 
     if (isAuth) {
       // The OTP code is the first element of variables[] when sent from the frontend.
@@ -313,13 +321,32 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
         },
       ];
     } else {
-      // Build the body component (only when there are variables to fill)
-      const bodyComponent = variables && variables.length > 0
-        ? {
-            type: "body",
-            parameters: variables.map((v) => ({ type: "text", text: v })),
-          }
-        : null;
+      const structure = getTemplateStructure(template);
+      const bodyValues: TemplateParameterValues = {};
+      for (const [position, value] of (variables ?? []).entries()) {
+        const index = structure.bodyVariableIndices[position] ?? position + 1;
+        bodyValues[String(index)] = value;
+      }
+
+      const headerValues: TemplateParameterValues = {};
+      if (structure.requiresMediaHeader) {
+        // headerContent is Meta's resumable template-upload handle and cannot
+        // be sent as a WhatsApp message media ID. The live approved template
+        // includes a signed sample URL that is valid as the header link.
+        headerValues.media = getTemplateMediaExample(template);
+        if (!headerValues.media) {
+          return res.status(400).json({
+            error: "This template's media header sample is unavailable. Refresh templates from Meta and try again.",
+          });
+        }
+      }
+
+      const renderedComponents = buildTemplateComponents(
+        template,
+        bodyValues,
+        headerValues,
+        { phone },
+      );
 
       // If the template has FLOW buttons, Meta requires a button component with
       // sub_type "flow" and a flow_token action parameter, even when there are no
@@ -331,7 +358,7 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       );
 
       const flowButtonComponents = await Promise.all(
-        flowButtons.map(async (btn: { type: string; flowId?: string }, i: number) => {
+        flowButtons.map(async (btn, i) => {
           // Look up internal MongoDB _id by metaFlowId so the webhook regex resolves it
           let flowToken = "unused";
           if (btn.flowId) {
@@ -352,15 +379,13 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
         }),
       );
 
-      if (bodyComponent || flowButtonComponents.length > 0) {
+      if (renderedComponents.length > 0 || flowButtonComponents.length > 0) {
         components = [
-          ...(bodyComponent ? [bodyComponent] : []),
+          ...renderedComponents,
           ...flowButtonComponents,
         ];
       }
     }
-
-    const phone = normalizeContactPhone(to);
 
     const category = String(template.category).toUpperCase() as
       | "AUTHENTICATION"

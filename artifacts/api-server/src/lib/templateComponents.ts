@@ -2,6 +2,9 @@ type TemplateComponent = {
   type?: string;
   format?: string;
   text?: string;
+  example?: {
+    header_handle?: unknown;
+  };
 };
 
 type TemplateLike = {
@@ -19,6 +22,19 @@ export function getMetaComponents(template: TemplateLike): TemplateComponent[] {
         Boolean(component && typeof component === "object"),
       )
     : [];
+}
+
+/**
+ * Meta returns the approved header sample as a usable URL for media-header
+ * templates. This is different from headerContent, which is the resumable
+ * upload handle used only while creating the template.
+ */
+export function getTemplateMediaExample(template: TemplateLike): string {
+  const header = getMetaComponents(template).find(
+    (component) => String(component.type).toUpperCase() === "HEADER",
+  );
+  const handles = header?.example?.header_handle;
+  return Array.isArray(handles) && typeof handles[0] === "string" ? handles[0] : "";
 }
 
 function variableIndices(text: string): number[] {

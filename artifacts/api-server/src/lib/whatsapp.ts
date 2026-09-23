@@ -1180,12 +1180,7 @@ export async function sendTemplateMessage(
   to: string,
   templateName: string,
   languageCode: string,
-  components: Array<{
-    type: string;
-    sub_type?: string;
-    index?: string;
-    parameters: Array<{ type: string; text?: string; action?: Record<string, unknown> }>;
-  }> | undefined,
+  components: Array<Record<string, unknown>> | undefined,
   userId: string,
 ) {
   const { phoneNumberId, accessToken } = await getCredentials(userId, {
