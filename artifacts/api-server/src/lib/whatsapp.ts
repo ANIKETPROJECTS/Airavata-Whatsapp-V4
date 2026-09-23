@@ -905,16 +905,33 @@ export async function uploadTemplateSampleForMessage(
     throw new Error(`Template header sample could not be downloaded (HTTP ${response.status})`);
   }
 
-  const mimeType =
-    response.headers.get("content-type")?.split(";")[0]?.trim() ||
-    (headerType === "DOCUMENT"
+  const responseMimeType = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  const fallbackMimeType =
+    headerType === "DOCUMENT"
       ? "application/pdf"
       : headerType === "VIDEO"
         ? "video/mp4"
-        : "image/jpeg");
+        : "image/jpeg";
+  // Signed Meta sample URLs occasionally return application/octet-stream even
+  // when the asset is a PDF. Do not upload that generic MIME type: WhatsApp
+  // only guarantees delivery for its supported document MIME types.
+  const mimeType =
+    responseMimeType && responseMimeType !== "application/octet-stream"
+      ? responseMimeType
+      : fallbackMimeType;
   const extension =
     headerType === "DOCUMENT" ? "pdf" : headerType === "VIDEO" ? "mp4" : "jpg";
   const buffer = Buffer.from(await response.arrayBuffer());
+  logger.info(
+    {
+      userId,
+      headerType,
+      mimeType,
+      byteLength: buffer.byteLength,
+      sourceMimeType: responseMimeType ?? null,
+    },
+    "Template sample uploaded as message media",
+  );
   return uploadMedia(buffer, mimeType, `template-header.${extension}`, userId);
 }
 
@@ -1225,6 +1242,26 @@ export async function sendTemplateMessage(
       ...(components?.length ? { components } : {}),
     },
   };
+  const componentSummary = (components ?? []).map((component) => ({
+    type: component.type,
+    parameterTypes: Array.isArray(component.parameters)
+      ? (component.parameters as Array<Record<string, unknown>>).map((parameter) => ({
+          type: parameter.type,
+          mediaObject: parameter.type && typeof parameter.type === "string"
+            ? (() => {
+                const value = parameter[parameter.type] as Record<string, unknown> | undefined;
+                return value
+                  ? { hasId: typeof value.id === "string", hasLink: typeof value.link === "string" }
+                  : null;
+              })()
+            : null,
+        }))
+      : [],
+  }));
+  logger.info(
+    { userId, templateName, componentSummary },
+    "Sending WhatsApp template message",
+  );
   const result = await graphFetchWithCreds<{ messages: Array<{ id: string }> }>(
     path,
     accessToken,
@@ -1232,6 +1269,10 @@ export async function sendTemplateMessage(
       method: "POST",
       body: JSON.stringify(body),
     },
+  );
+  logger.info(
+    { userId, templateName, messageId: result.messages?.[0]?.id ?? null },
+    "WhatsApp template accepted by Meta",
   );
   return { ...result, _metaRequest: { method: "POST", path, body } };
 }

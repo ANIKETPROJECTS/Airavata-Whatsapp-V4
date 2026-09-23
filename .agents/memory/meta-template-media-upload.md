@@ -7,4 +7,4 @@ Template image, video, and document examples must use the handle returned by Met
 
 **Why:** Meta uses separate upload flows for message attachments and template samples; using the regular media ID can make an otherwise valid template submission fail.
 
-**How to apply:** Keep template header uploads tenant-scoped and strict-credentialed, validate type and size before upload, and clear any previously uploaded handle whenever the selected header type changes.
+**How to apply:** Keep template header uploads tenant-scoped and strict-credentialed, validate type and size before upload, and clear any previously uploaded handle whenever the selected header type changes. Signed sample URLs may report `application/octet-stream`; normalize known document samples to a supported MIME type such as `application/pdf` before uploading for delivery.
