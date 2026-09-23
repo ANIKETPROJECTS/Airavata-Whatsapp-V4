@@ -29,3 +29,4 @@
 - [Meta template component structure](meta-template-components.md) — campaign forms and sends must use Meta’s live approved components, not only locally stored template body text.
 - [Auth query cache isolation](auth-query-cache-isolation.md) — clear user-scoped client cache and remount protected UI whenever the authenticated user changes.
 - [Tenant migration reconciliation](tenant-migration-unique-docs.md) — one-per-tenant documents must reconcile by logical user ID, not only MongoDB document ID.
+- [Artifact webhook routing](artifact-webhook-routing.md) — frontend artifact callbacks need an explicit proxy to the API for root webhook paths.

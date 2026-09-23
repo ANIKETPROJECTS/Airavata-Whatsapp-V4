@@ -78,6 +78,13 @@ export default defineConfig({
         changeOrigin: true,
         // Forward cookies so httpOnly auth_token cookie works correctly
       },
+      // Meta webhook callbacks may be configured with or without the /api
+      // prefix. Forward the root callback to the API instead of letting the
+      // SPA fallback return index.html.
+      '/webhook': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   preview: {
