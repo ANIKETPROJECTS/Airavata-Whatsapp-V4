@@ -345,6 +345,9 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
           structure.headerFormat as "IMAGE" | "VIDEO" | "DOCUMENT",
           req.user!.userId,
         );
+        if (structure.headerFormat === "DOCUMENT") {
+          headerValues.mediaFilename = `${template.name}.pdf`;
+        }
       }
 
       const renderedComponents = buildTemplateComponents(

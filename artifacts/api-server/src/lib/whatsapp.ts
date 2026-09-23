@@ -1234,6 +1234,7 @@ export async function sendTemplateMessage(
   const path = `/${phoneNumberId}/messages`;
   const body = {
     messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: normalizeWhatsAppPhone(to),
     type: "template",
     template: {

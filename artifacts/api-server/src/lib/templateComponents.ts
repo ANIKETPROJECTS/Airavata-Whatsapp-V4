@@ -129,8 +129,18 @@ export function buildTemplateComponents(
     const mediaValue = resolveValue(String(headerValues.media ?? ""), contact);
     const mediaType = structure.headerFormat.toLowerCase();
     const media = /^https?:\/\//i.test(mediaValue)
-      ? { link: mediaValue }
-      : { id: mediaValue };
+      ? {
+          link: mediaValue,
+          ...(mediaType === "document" && headerValues.mediaFilename
+            ? { filename: headerValues.mediaFilename }
+            : {}),
+        }
+      : {
+          id: mediaValue,
+          ...(mediaType === "document" && headerValues.mediaFilename
+            ? { filename: headerValues.mediaFilename }
+            : {}),
+        };
     components.push({
       type: "header",
       parameters: [{ type: mediaType, [mediaType]: media }],
