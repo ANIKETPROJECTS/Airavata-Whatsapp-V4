@@ -15,6 +15,7 @@ import {
   Terminal, Search, CopyPlus, ChevronDown, GitBranch,
 } from 'lucide-react';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 import NodeSidebar from '../components/chatbot/NodeSidebar';
 import ConfigPanel from '../components/chatbot/ConfigPanel';
@@ -63,6 +64,8 @@ function normalizeImportedNodes(rawNodes: unknown): Node[] {
 const fetchFlows = () => api.get<{ flows: ChatbotFlowSummary[] }>('/chatbot/flows').then(r => r.flows);
 const fetchFlow = (id: string) => api.get<{ flow: ChatbotFlow }>(`/chatbot/flows/${id}`).then(r => r.flow);
 const createFlow = (name: string) => api.post<{ flow: ChatbotFlow }>('/chatbot/flows', { name }).then(r => r.flow);
+const createQuickFaqFlow = (details: { businessName: string; location: string; contact: string }) =>
+  api.post<{ flow: ChatbotFlow }>('/chatbot/flows/quick-faq', details).then(r => r.flow);
 const saveFlow = (id: string, data: object) => api.put<{ flow: ChatbotFlow }>(`/chatbot/flows/${id}`, data).then(r => r.flow);
 const deleteFlow = (id: string) => api.delete(`/chatbot/flows/${id}`);
 
@@ -929,8 +932,97 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
   );
 }
 
+// ── Quick FAQ setup ────────────────────────────────────────────────────────────
+function QuickFAQSetupDialog({
+  businessName,
+  initialLocation,
+  initialContact,
+  isSaving,
+  onClose,
+  onActivate,
+}: {
+  businessName: string;
+  initialLocation: string;
+  initialContact: string;
+  isSaving: boolean;
+  onClose: () => void;
+  onActivate: (details: { businessName: string; location: string; contact: string }) => void;
+}) {
+  const [location, setLocation] = useState(initialLocation);
+  const [contact, setContact] = useState(initialContact);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-faq-title"
+        onSubmit={event => {
+          event.preventDefault();
+          onActivate({ businessName, location: location.trim(), contact: contact.trim() });
+        }}
+        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="quick-faq-title" className="text-lg font-bold text-gray-900">Set up location and contact replies</h2>
+            <p className="mt-1 text-sm text-gray-500">The bot will answer matching incoming WhatsApp messages for {businessName}.</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <label className="mt-5 block text-sm font-medium text-gray-700">
+          Location or map link
+          <textarea
+            required
+            maxLength={500}
+            rows={2}
+            value={location}
+            onChange={event => setLocation(event.target.value)}
+            className="mt-1.5 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            placeholder="Paste an address or map link"
+          />
+        </label>
+        <label className="mt-4 block text-sm font-medium text-gray-700">
+          Contact number or details
+          <input
+            required
+            maxLength={200}
+            value={contact}
+            onChange={event => setContact(event.target.value)}
+            className="mt-1.5 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            placeholder="Phone number, email, or website"
+          />
+        </label>
+
+        <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-5 text-emerald-900">
+          <p><strong>Location questions</strong> (location, address, map) get the location link.</p>
+          <p><strong>Contact questions</strong> (contact, phone, call) get the contact details.</p>
+          <p className="mt-1 font-medium">This publishes the replies right away. Other messages won’t trigger this FAQ bot.</p>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSaving || !location.trim() || !contact.trim()}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Create and activate bot
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ── Empty state ─────────────────────────────────────────────────────────────────
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState({ onCreate, onQuickSetup }: { onCreate: () => void; onQuickSetup: () => void }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 gap-5">
       <div className="w-24 h-24 rounded-3xl bg-white border-2 border-dashed border-gray-300 flex items-center justify-center shadow-sm">
@@ -943,6 +1035,9 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <button onClick={onCreate} className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-2xl hover:bg-primary/90 shadow-md transition-colors">
         <Plus className="w-4 h-4" /> Create Your First Flow
       </button>
+      <button onClick={onQuickSetup} className="rounded-xl border border-emerald-200 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-50">
+        Set up location &amp; contact FAQ bot
+      </button>
     </div>
   );
 }
@@ -950,7 +1045,9 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 // ── Root ───────────────────────────────────────────────────────────────────────
 export default function Chatbot() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
+  const [showQuickFAQ, setShowQuickFAQ] = useState(false);
   // Bridge: FlowCanvas exposes its addNode fn via this ref so NodeSidebar can call it
   const addNodeRef = useRef<((type: string) => void) | null>(null);
 
@@ -968,6 +1065,17 @@ export default function Chatbot() {
       toast.success('New flow created');
     },
     onError: () => toast.error('Failed to create flow'),
+  });
+
+  const quickFAQMutation = useMutation({
+    mutationFn: createQuickFaqFlow,
+    onSuccess: (flow) => {
+      qc.invalidateQueries({ queryKey: ['chatbot-flows'] });
+      setShowQuickFAQ(false);
+      setActiveFlowId(flow.id);
+      toast.success('Location and contact FAQ bot is active');
+    },
+    onError: () => toast.error('Could not create the FAQ bot. Check whether a flow with this name already exists.'),
   });
 
   const deleteMutation = useMutation({
@@ -1005,7 +1113,17 @@ export default function Chatbot() {
           <FlowCanvas flowId={activeFlowId} addNodeRef={addNodeRef} />
         </ReactFlowProvider>
       ) : (
-        <EmptyState onCreate={createMutation.mutate} />
+        <EmptyState onCreate={createMutation.mutate} onQuickSetup={() => setShowQuickFAQ(true)} />
+      )}
+      {showQuickFAQ && (
+        <QuickFAQSetupDialog
+          businessName={user?.businessName?.trim() || 'Your Business'}
+          initialLocation={user?.businessName?.toLowerCase().includes('auto gamma') ? 'https://maps.app.goo.gl/23wvtc6knnrwLhtz5' : ''}
+          initialContact={user?.businessName?.toLowerCase().includes('auto gamma') ? '+91 9226882024' : ''}
+          isSaving={quickFAQMutation.isPending}
+          onClose={() => setShowQuickFAQ(false)}
+          onActivate={details => quickFAQMutation.mutate(details)}
+        />
       )}
     </div>
   );

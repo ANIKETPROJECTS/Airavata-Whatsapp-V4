@@ -35,6 +35,104 @@ router.post("/chatbot/flows", authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// ── POST /api/chatbot/flows/quick-faq ────────────────────────────────────────
+// Create and publish a tenant-scoped location/contact auto-reply flow.
+router.post("/chatbot/flows/quick-faq", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { businessName, location, contact } = req.body as {
+      businessName?: unknown;
+      location?: unknown;
+      contact?: unknown;
+    };
+
+    const cleanBusinessName =
+      typeof businessName === "string" ? businessName.trim() : "";
+    const cleanLocation = typeof location === "string" ? location.trim() : "";
+    const cleanContact = typeof contact === "string" ? contact.trim() : "";
+
+    if (
+      !cleanBusinessName ||
+      cleanBusinessName.length > 100 ||
+      !cleanLocation ||
+      cleanLocation.length > 500 ||
+      !cleanContact ||
+      cleanContact.length > 200
+    ) {
+      return res.status(400).json({
+        error: "Business name, location, and contact details are required and must fit the allowed lengths.",
+      });
+    }
+
+    const userId = req.user!.userId;
+    const name = `${cleanBusinessName} Location & Contact FAQ`;
+    const existing = await ChatbotFlowModel.findOne({ userId, name }).select("_id").lean();
+    if (existing) {
+      return res.status(409).json({
+        error: "A location and contact FAQ flow with this name already exists.",
+        flowId: String(existing._id),
+      });
+    }
+
+    const flow = await ChatbotFlowModel.create({
+      userId,
+      name,
+      status: "PUBLISHED",
+      nodes: [
+        {
+          id: "location-trigger",
+          type: "keyword",
+          position: { x: 120, y: 90 },
+          data: {
+            label: "Location question",
+            keywords: ["location", "address", "where are you located", "where are you", "map", "directions"],
+            matchType: "contains",
+            caseSensitive: false,
+          },
+        },
+        {
+          id: "location-reply",
+          type: "textReply",
+          position: { x: 120, y: 250 },
+          data: {
+            label: "Send location",
+            message: `Our location: ${cleanLocation}`,
+            typingDelay: 0,
+          },
+        },
+        {
+          id: "contact-trigger",
+          type: "keyword",
+          position: { x: 480, y: 90 },
+          data: {
+            label: "Contact question",
+            keywords: ["contact", "phone", "call", "reach you", "how can we contact", "how can i contact"],
+            matchType: "contains",
+            caseSensitive: false,
+          },
+        },
+        {
+          id: "contact-reply",
+          type: "textReply",
+          position: { x: 480, y: 250 },
+          data: {
+            label: "Send contact details",
+            message: `You can contact ${cleanBusinessName} at ${cleanContact}.`,
+            typingDelay: 0,
+          },
+        },
+      ],
+      edges: [
+        { id: "location-to-reply", source: "location-trigger", target: "location-reply", animated: true },
+        { id: "contact-to-reply", source: "contact-trigger", target: "contact-reply", animated: true },
+      ],
+    });
+
+    res.status(201).json({ flow: { ...flow.toObject(), id: String(flow._id) } });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
 // ── GET /api/chatbot/flows/:id ───────────────────────────────────────────────
 router.get("/chatbot/flows/:id", authenticate, async (req: AuthRequest, res) => {
   try {
