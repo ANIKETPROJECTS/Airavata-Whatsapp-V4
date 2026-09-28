@@ -110,6 +110,12 @@ interface FacebookRecoveryStatus {
   canRestoreLegacy: boolean;
 }
 
+interface FacebookConnectionStatus {
+  connected: boolean;
+  credentialStored: boolean;
+  credentialReadable: boolean;
+}
+
 const fmt = (value: number) => value.toLocaleString();
 const fmtCompact = (value: number) => value >= 1000
   ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`
@@ -240,6 +246,12 @@ export default function Dashboard() {
     enabled: Boolean(user && !user.metaWabaConnected && !user.isProtectedMasterAdmin),
     refetchOnWindowFocus: true,
   });
+  const { data: facebookStatus } = useQuery<FacebookConnectionStatus>({
+    queryKey: ['facebook-connection-status', user?.id],
+    queryFn: () => api.get('/integration/facebook/status'),
+    enabled: Boolean(user && !user.isProtectedMasterAdmin),
+    refetchOnWindowFocus: true,
+  });
   const handleRestoreFacebookConnection = async () => {
     setRestoringFacebookConnection(true);
     try {
@@ -263,7 +275,12 @@ export default function Dashboard() {
   const { data: phoneData, isLoading: phoneLoading } = useQuery<{ numbers: PhoneNumber[] }>({
     queryKey: ['dashboard-phonenumbers'],
     queryFn: () => api.get('/phonenumbers'),
-    enabled: Boolean(user?.metaWabaConnected),
+    enabled: Boolean(
+      user?.metaWabaConnected ||
+      facebookStatus?.connected ||
+      (facebookStatus?.credentialStored && facebookStatus.credentialReadable),
+    ),
+    retry: false,
     refetchInterval: 60_000,
   });
   const { data: statsData, isLoading: statsLoading } = useQuery<MessageStatsResponse>({
@@ -312,6 +329,7 @@ export default function Dashboard() {
   const connectedPhone = phoneData?.numbers?.find(
     (phone) => phone.status.trim().toUpperCase() === 'CONNECTED',
   ) ?? phoneData?.numbers?.[0];
+  const isWhatsAppConnected = Boolean(user?.metaWabaConnected || facebookStatus?.connected || connectedPhone);
   const contactTotal = contactsData?.total ?? 0;
 
   const activeChats = conversations.filter(c => c.status.toLowerCase() === 'open').length;
@@ -362,7 +380,7 @@ export default function Dashboard() {
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 Ecosystem WhatsApp connected
               </div>
-            ) : user?.metaWabaConnected ? (
+            ) : isWhatsAppConnected ? (
               <button
                 onClick={() => launchFbSignup()}
                 disabled={fbConnecting}
@@ -385,7 +403,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {!user?.metaWabaConnected &&
+        {!isWhatsAppConnected &&
           !user?.isProtectedMasterAdmin &&
           recoveryStatus?.legacyCredentialFound &&
           !recoveryStatus.credentialStored && (
@@ -410,7 +428,7 @@ export default function Dashboard() {
             </div>
           )}
 
-        {user?.metaWabaConnected && (
+        {isWhatsAppConnected && (
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-none border border-green-200 bg-white px-5 py-4 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="h-2.5 w-2.5 rounded-full bg-green-500 ring-4 ring-green-100" />
