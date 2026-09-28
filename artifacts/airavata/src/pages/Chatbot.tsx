@@ -69,6 +69,78 @@ const createQuickFaqFlow = (details: { businessName: string; location: string; c
 const saveFlow = (id: string, data: object) => api.put<{ flow: ChatbotFlow }>(`/chatbot/flows/${id}`, data).then(r => r.flow);
 const deleteFlow = (id: string) => api.delete(`/chatbot/flows/${id}`);
 
+const COMBINED_FAQ_KEYWORDS = [
+  'contact and location',
+  'location and contact',
+  'contact details and location',
+  'location and contact details',
+];
+
+function isQuickFaqFlowNodes(nodes: Node[]) {
+  return nodes.some(node => node.id === 'location-trigger' && node.type === 'keyword') &&
+    nodes.some(node => node.id === 'contact-trigger' && node.type === 'keyword');
+}
+
+function hasCombinedFaqBranch(nodes: Node[]) {
+  return nodes.some(node => node.type === 'keyword' && node.data['quickFaqCombined'] === true);
+}
+
+function addCombinedFaqBranch(nodes: Node[], edges: Edge[]) {
+  if (hasCombinedFaqBranch(nodes)) return null;
+
+  const locationReply =
+    nodes.find(node => node.id === 'location-reply') ??
+    nodes.find(node => node.type === 'textReply' && node.data['label'] === 'Send location');
+  const contactReply =
+    nodes.find(node => node.id === 'contact-reply') ??
+    nodes.find(node => node.type === 'textReply' && node.data['label'] === 'Send contact details');
+  const locationMessage = String(locationReply?.data['message'] ?? '').trim();
+  const contactMessage = String(contactReply?.data['message'] ?? '').trim();
+
+  if (!locationMessage || !contactMessage) {
+    throw new Error('Could not find both FAQ replies. Keep the location and contact reply nodes in the flow, then try again.');
+  }
+
+  const triggerId = `combined-faq-trigger-${nanoid()}`;
+  const replyId = `combined-faq-reply-${nanoid()}`;
+  const maxY = nodes.reduce((value, node) => Math.max(value, node.position.y), 0);
+  const combinedNodes: Node[] = [
+    {
+      id: triggerId,
+      type: 'keyword',
+      position: { x: 300, y: maxY + 260 },
+      data: {
+        label: 'Location and contact question',
+        keywords: COMBINED_FAQ_KEYWORDS,
+        matchType: 'contains',
+        caseSensitive: false,
+        quickFaqCombined: true,
+      },
+    },
+    {
+      id: replyId,
+      type: 'textReply',
+      position: { x: 300, y: maxY + 430 },
+      data: {
+        label: 'Send location and contact details',
+        message: `${locationMessage}\n\n${contactMessage}`,
+        typingDelay: 0,
+      },
+    },
+  ];
+  const combinedEdge: Edge = {
+    id: `${triggerId}-to-${replyId}`,
+    source: triggerId,
+    target: replyId,
+    animated: true,
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
+    style: { stroke: '#6366f1', strokeWidth: 2 },
+  };
+
+  // Keyword triggers are evaluated in node order, so put this specific branch first.
+  return { nodes: [...combinedNodes, ...nodes], edges: [combinedEdge, ...edges] };
+}
+
 // ── History hook ──────────────────────────────────────────────────────────────
 function useHistory<T>(initial: T) {
   const [index, setIndex] = useState(0);
@@ -583,6 +655,28 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
     onError: () => { setSaveStatus('unsaved'); toast.error('Failed to save'); },
   });
 
+  const addCombinedFaqMutation = useMutation({
+    mutationFn: () => {
+      const combinedBranch = addCombinedFaqBranch(nodes, edges);
+      if (!combinedBranch) throw new Error('Combined location and contact questions are already enabled.');
+      return saveFlow(flowId, combinedBranch);
+    },
+    onSuccess: flow => {
+      setNodes(flow.nodes);
+      setEdges(flow.edges);
+      setSelectedEdgeId(null);
+      setSaveStatus('saved');
+      qc.setQueryData(['chatbot-flow', flowId], flow);
+      qc.invalidateQueries({ queryKey: ['chatbot-flows'] });
+      setTimeout(() => fitView({ padding: 0.15 }), 75);
+      toast.success('Added replies for four combined-question formats');
+    },
+    onError: error => {
+      setSaveStatus('unsaved');
+      toast.error(error instanceof Error ? error.message : 'Could not add combined-question replies');
+    },
+  });
+
   const scheduleAutoSave = useCallback((ns: Node[], es: Edge[]) => {
     setSaveStatus('unsaved');
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -794,6 +888,8 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
   };
 
   const isPublished = flowData?.status === 'PUBLISHED';
+  const isQuickFaqFlow = isQuickFaqFlowNodes(nodes);
+  const combinedFaqEnabled = hasCombinedFaqBranch(nodes);
 
   const togglePanel = (panel: RightPanel) => {
     setRightPanel(prev => prev === panel ? null : panel);
@@ -944,6 +1040,38 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
             pannable
             zoomable
           />
+
+          {isQuickFaqFlow && (
+            <Panel position="top-right">
+              <div className="max-w-64 rounded-xl border border-violet-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
+                <p className="text-xs font-bold text-gray-800">Combined questions</p>
+                {combinedFaqEnabled ? (
+                  <p className="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-green-700">
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                    Four combined-question formats are enabled.
+                  </p>
+                ) : (
+                  <>
+                    <p className="mt-1 text-[10px] leading-4 text-gray-500">
+                      Reply with both the location and contact details when customers ask for both.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => addCombinedFaqMutation.mutate()}
+                      disabled={addCombinedFaqMutation.isPending}
+                      title={COMBINED_FAQ_KEYWORDS.join(' · ')}
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-2.5 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-violet-700 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {addCombinedFaqMutation.isPending
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <Plus className="h-3 w-3" />}
+                      Enable 4 formats
+                    </button>
+                  </>
+                )}
+              </div>
+            </Panel>
+          )}
 
           {/* Keyboard hints */}
           <Panel position="bottom-center">
