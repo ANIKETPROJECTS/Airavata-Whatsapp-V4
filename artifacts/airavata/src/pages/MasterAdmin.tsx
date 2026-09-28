@@ -32,6 +32,21 @@ type UserForm = {
   billingMode: 'unknown' | 'airavata_credits' | 'meta_direct';
 };
 
+function resolveManagedUserId(value: unknown): string | null {
+  let candidate = value;
+  if (candidate && typeof candidate === 'object') {
+    const record = candidate as Record<string, unknown>;
+    candidate = record.id ?? record._id ?? record.userId ?? record.$oid;
+    if (candidate && typeof candidate === 'object') {
+      const nested = candidate as Record<string, unknown>;
+      candidate = nested.$oid ?? nested.id ?? nested._id;
+    }
+  }
+  if (typeof candidate !== 'string') return null;
+  const id = candidate.trim();
+  return /^[a-f\d]{24}$/i.test(id) ? id : null;
+}
+
 type MasterNotification = {
   id: string; userId: string; businessName: string; email: string; severity: 'WARNING' | 'ERROR';
   title: string; message: string; paidThroughDate: string | null; active: boolean;
@@ -239,10 +254,23 @@ export default function MasterAdmin() {
     toast.success('Facebook / WhatsApp connection saved');
     await load();
   });
-  const launchFacebookSignup = (targetUserId: string) => {
+  const launchFacebookSignup = (targetUserRef: unknown) => {
+    const targetUserId = resolveManagedUserId(targetUserRef);
+    if (!targetUserId) {
+      toast.error('Unable to identify the selected account. Refresh the user list and try again.');
+      return;
+    }
     const target = users.find((user) => user.id === targetUserId);
+    if (!target) {
+      toast.error('The selected account is no longer available. Refresh the user list and try again.');
+      return;
+    }
     if (target?.protectedAccount) {
       toast.error('This protected Master Admin account uses ecosystem WhatsApp credentials');
+      return;
+    }
+    if (!masterTokenStorage.get()) {
+      toast.error('Your Master Admin session has expired. Sign in again before connecting this account.');
       return;
     }
     launchFacebookSignupRaw(targetUserId);
