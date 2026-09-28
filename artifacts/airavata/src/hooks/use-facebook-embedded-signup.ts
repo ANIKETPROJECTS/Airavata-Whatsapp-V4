@@ -11,7 +11,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { api, masterApi } from "@/lib/api";
+import { api, masterApi, masterTokenStorage } from "@/lib/api";
 
 const CONFIG_ID = "2519748081877556";
 
@@ -100,6 +100,17 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void, targetUserId?:
 
   const launch = useCallback((overrideTargetUserId?: string) => {
     const connectionTargetUserId = overrideTargetUserId ?? targetUserId;
+    if (
+      connectionTargetUserId &&
+      !/^[a-f\d]{24}$/i.test(connectionTargetUserId)
+    ) {
+      toast.error("The selected account ID is invalid. Refresh the user list and try again.");
+      return;
+    }
+    if (connectionTargetUserId && !masterTokenStorage.get()) {
+      toast.error("Your Master Admin session has expired. Sign in again before connecting this account.");
+      return;
+    }
     if (typeof window.FB === "undefined" || !window.fbSDKReady) {
       toast.error(
         "Facebook SDK is still loading — please try again in a moment.",
@@ -166,7 +177,11 @@ export function useFacebookEmbeddedSignup(onSuccess?: () => void, targetUserId?:
             const msg =
               err instanceof Error ? err.message : "Failed to connect account";
 
-            toast.error(msg);
+            toast.error(
+              connectionTargetUserId && /unauthorized|401/i.test(msg)
+                ? "Your Master Admin session is no longer valid. Sign in again, then retry the connection."
+                : msg,
+            );
           } finally {
             setIsConnecting(false);
           }
