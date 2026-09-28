@@ -609,10 +609,18 @@ router.get("/contacts/export", async (req: AuthRequest, res) => {
       .populate("groupId", "name")
       .sort({ createdAt: -1 });
 
+    const displayName = (name: string | null | undefined, phone: string) => {
+      const trimmedName = name?.trim() ?? "";
+      const nameDigits = trimmedName.replace(/\D/g, "");
+      const phoneDigits = phone.replace(/\D/g, "");
+      return !trimmedName || trimmedName === phone.trim() || nameDigits === phoneDigits
+        ? "NA"
+        : trimmedName;
+    };
     const rows = [
       ["Name", "Phone", "Email", "Tags", "Group", "Status"],
       ...contacts.map(c => [
-        c.name,
+        displayName(c.name, c.phone),
         c.phone,
         c.email ?? "",
         (c.tags as unknown as { name: string }[]).map(t => t.name).join(";"),

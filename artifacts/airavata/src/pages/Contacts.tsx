@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 import { ContactGroupsManager, ContactTagsManager } from './ContactManagers';
+import * as XLSX from 'xlsx';
 import contactViewIcon from '@assets/eye_1788722260035.png';
 import contactDeleteIcon from '@assets/bin_1788722265074.png';
 import importContactsIcon from '@assets/import_1788724282150.png';
@@ -866,6 +867,8 @@ export default function Contacts() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [viewContact, setViewContact] = useState<Contact | null>(null);
   const [showImport, setShowImport]   = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const params = new URLSearchParams({
     search, page: String(page), limit: String(perPage),
@@ -924,6 +927,64 @@ export default function Contacts() {
   const tags     = tagsData?.tags ?? [];
   const countryCounts = new Map((countriesData?.countries ?? []).map(country => [country.code, country.count]));
   const availableCountries = COUNTRIES.filter(country => (countryCounts.get(country.code) ?? 0) > 0);
+
+  const exportContactsToExcel = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setShowExportOptions(false);
+    try {
+      const firstPage = await api.get<{ contacts: Contact[]; pages: number }>(
+        '/contacts?page=1&limit=500',
+      );
+      const allContacts = [...firstPage.contacts];
+
+      for (let pageNumber = 2; pageNumber <= firstPage.pages; pageNumber += 1) {
+        const pageResult = await api.get<{ contacts: Contact[] }>(
+          `/contacts?page=${pageNumber}&limit=500`,
+        );
+        allContacts.push(...pageResult.contacts);
+      }
+
+      const rows = [
+        ['Name', 'Phone', 'Email', 'Tags', 'Group', 'Status'],
+        ...allContacts.map(contact => [
+          contactDisplayName(contact),
+          String(contact.phone ?? ''),
+          String(contact.email ?? ''),
+          (contact.tags ?? []).map(tag => tag.name).join('; '),
+          contactGroups(contact).map(group => group.name).join('; '),
+          contactStatusLabel(contact.status),
+        ]),
+      ];
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      worksheet['!cols'] = [
+        { wch: 32 },
+        { wch: 22 },
+        { wch: 32 },
+        { wch: 28 },
+        { wch: 28 },
+        { wch: 16 },
+      ];
+
+      // Keep E.164 values as strings so spreadsheet apps don't turn them into numbers.
+      for (let row = 1; row < rows.length; row += 1) {
+        const phoneCell = worksheet[XLSX.utils.encode_cell({ r: row, c: 1 })];
+        if (phoneCell) {
+          phoneCell.t = 's';
+          phoneCell.z = '@';
+        }
+      }
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Contacts');
+      XLSX.writeFile(workbook, `contacts-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast.success(`Downloaded ${allContacts.length} contacts as an Excel file`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not export contacts');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const toggleSelect = (id: string) => setSelected(prev => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
@@ -1136,15 +1197,47 @@ export default function Contacts() {
             <img src={importContactsIcon} alt="" className="h-5 w-5 object-contain" />
           </button>
 
-          <div className="relative">
+          <div className="relative flex">
             <button
-              onClick={() => window.open('/api/contacts/export', '_blank')}
-              className="rounded-lg border border-primary/30 p-2 text-primary hover:bg-primary/5"
-              title="Export contacts"
-              aria-label="Export contacts"
+              onClick={() => void exportContactsToExcel()}
+              disabled={isExporting}
+              className="rounded-l-lg border border-primary/30 p-2 text-primary hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60"
+              title="Download Excel workbook; phone numbers stay as text"
+              aria-label="Download contacts as an Excel workbook"
             >
-              <img src={exportContactsIcon} alt="" className="h-5 w-5 object-contain" />
+              {isExporting
+                ? <Loader2 className="h-5 w-5 animate-spin" />
+                : <img src={exportContactsIcon} alt="" className="h-5 w-5 object-contain" />}
             </button>
+            <button
+              type="button"
+              onClick={() => setShowExportOptions(open => !open)}
+              className="rounded-r-lg border border-l-0 border-primary/30 px-1.5 text-primary hover:bg-primary/5"
+              title="Other export formats"
+              aria-label="Show other export formats"
+              aria-haspopup="menu"
+              aria-expanded={showExportOptions}
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            {showExportOptions && (
+              <div className="absolute right-0 top-full z-30 mt-2 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowExportOptions(false);
+                    window.open('/api/contacts/export', '_blank');
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-left hover:bg-gray-50"
+                >
+                  <span className="block text-xs font-semibold text-gray-800">Download standard CSV</span>
+                  <span className="mt-0.5 block text-[10px] leading-4 text-gray-500">
+                    For importing into other apps. Excel may reformat phone numbers.
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
         </div>

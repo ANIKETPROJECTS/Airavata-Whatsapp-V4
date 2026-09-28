@@ -140,3 +140,17 @@ mtime_ms = 1789042490425
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/ee53f1f8-4db6-4785-89fa-4c8e549ac190/02fd0f51-3c9d-4914-a13b-bb4d69385c28"
 storage_version_token = "1789042500040724"
 content_type = "text/csv"
+
+[[outputs]]
+id = "9SgRN_1l9O1EJNz7WtsO5"
+uri = "file://attached_assets/contacts_formatted.xlsx"
+type = "table"
+title = "Formatted contacts spreadsheet"
+description = "An Excel workbook with readable contact names and phone numbers stored as text."
+logical_id = "6ca5196b-b718-4c22-ab20-5b9f4386c002"
+content_hash = "sha256:414db79b0a8ac432fcdea1527a1703349dea981b89eb04b29696dd03e742ca78"
+size = 98552
+mtime_ms = 1790580214127
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/6ca5196b-b718-4c22-ab20-5b9f4386c002/070e93f6-34e1-4a85-bc14-3619d0107c2f"
+storage_version_token = "1790580291407586"
+content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
