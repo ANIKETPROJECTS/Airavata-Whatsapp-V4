@@ -163,7 +163,7 @@ router.patch("/notifications/:id/read", authenticate, async (req: AuthRequest, r
     const notification = await NotificationModel.findOneAndUpdate(
       { _id: req.params.id, userId: req.user!.userId },
       { $set: { readAt: new Date() } },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!notification) {
       res.status(404).json({ error: "Notification not found" });

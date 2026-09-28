@@ -436,7 +436,7 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
             phoneNumberId,
             accessTokenEncrypted,
           },
-          { upsert: true, new: true },
+          { upsert: true, returnDocument: "after" },
         ),
       );
 
@@ -761,7 +761,13 @@ router.post(
     const userIdString = req.user!.userId;
     try {
       const userId = new mongoose.Types.ObjectId(userIdString);
-      const user = await UserModel.findById(userId).select("isProtectedMasterAdmin").lean();
+      const user = await UserModel.findById(userId)
+        .select("isProtectedMasterAdmin metaPhoneNumberId metaWabaId metaWabaConnected")
+        .lean();
+      if (!user) {
+        res.status(404).json({ error: "Account not found" });
+        return;
+      }
       if (isProtectedMasterAdminUser(user)) {
         res.status(409).json({ error: "Protected Master Admin credentials are repaired separately" });
         return;
@@ -769,7 +775,7 @@ router.post(
 
       const credential = await runWithTenant(userIdString, () =>
         WhatsAppCredentialModel.findOne({ userId })
-          .select("wabaId accessTokenEncrypted")
+          .select("wabaId phoneNumberId accessTokenEncrypted")
           .lean(),
       );
       if (!credential) {
@@ -790,8 +796,50 @@ router.post(
         return;
       }
 
+      if (typeof credential.phoneNumberId !== "string" || !credential.phoneNumberId) {
+        res.status(409).json({ error: "The saved WhatsApp connection is missing its phone number ID" });
+        return;
+      }
+
+      const conflictingOwner = await UserModel.findOne({
+        _id: { $ne: userId },
+        $or: [
+          { metaPhoneNumberId: credential.phoneNumberId },
+          { metaWabaId: credential.wabaId },
+        ],
+      })
+        .select("_id")
+        .lean();
+      if (conflictingOwner) {
+        res.status(409).json({
+          error: "The saved WhatsApp number or business account is already assigned to another account",
+        });
+        return;
+      }
+
+      const mappingNeedsRepair =
+        user.metaPhoneNumberId !== credential.phoneNumberId ||
+        user.metaWabaId !== credential.wabaId ||
+        user.metaWabaConnected !== true;
+      if (mappingNeedsRepair) {
+        await UserModel.updateOne(
+          { _id: userId },
+          {
+            $set: {
+              metaPhoneNumberId: credential.phoneNumberId,
+              metaWabaId: credential.wabaId,
+              metaWabaConnected: true,
+            },
+          },
+        );
+        logger.info(
+          { userId: userIdString, phoneNumberId: credential.phoneNumberId },
+          "Reconciled WhatsApp webhook ownership from the saved tenant credential",
+        );
+      }
+
       await ensureWhatsAppWebhookSubscription(credential.wabaId, accessToken);
-      res.json({ ok: true, subscribed: true });
+      res.json({ ok: true, subscribed: true, mappingReconciled: mappingNeedsRepair });
     } catch (error) {
       logger.error(
         { err: error, userId: userIdString },
@@ -947,7 +995,7 @@ router.patch(
         { userId: req.user!.userId },
         updateDocument,
         {
-          new: true,
+          returnDocument: "after",
           runValidators: true,
         },
       )
@@ -1072,7 +1120,7 @@ router.post(
             catalogLastSyncedAt: new Date(),
           },
         },
-        { new: true, runValidators: true },
+        { returnDocument: "after", runValidators: true },
       )
         .select("metaCatalogId catalogName catalogConnected catalogLastSyncedAt")
         .lean();

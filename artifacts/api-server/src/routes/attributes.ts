@@ -11,7 +11,7 @@ router.get("/attributes", authenticate, async (req: AuthRequest, res) => {
     const doc = await AttributeModel.findOneAndUpdate(
       { userId },
       { $setOnInsert: { userId } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     ).lean();
     res.json({ attributes: (doc?.attributes ?? []).map(a => ({ ...a, id: String(a._id) })) });
   } catch (err) {
@@ -27,7 +27,7 @@ router.put("/attributes", authenticate, async (req: AuthRequest, res) => {
     const doc = await AttributeModel.findOneAndUpdate(
       { userId },
       { $set: { attributes } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     ).lean();
     res.json({ attributes: (doc?.attributes ?? []).map(a => ({ ...a, id: String(a._id) })) });
   } catch (err) {

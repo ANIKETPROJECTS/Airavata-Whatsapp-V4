@@ -200,7 +200,7 @@ async function syncFlowFromMeta(flowId: unknown, metaFlowId: string, accessToken
   if (meta.status) patch["status"] = meta.status;
   if (meta.endpoint_uri) patch["endpointUri"] = meta.endpoint_uri;
 
-  return FlowModel.findByIdAndUpdate(flowId, { $set: patch }, { new: true }).lean();
+  return FlowModel.findByIdAndUpdate(flowId, { $set: patch }, { returnDocument: "after" }).lean();
 }
 
 /** Make an authenticated request to the Meta Graph API */
@@ -308,7 +308,7 @@ router.put("/flows/:id", authenticate, async (req: AuthRequest, res) => {
     const flow = await FlowModel.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(req.params["id"]), userId },
       { $set: updates },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
 
     if (!flow) return res.status(404).json({ error: "Flow not found" });

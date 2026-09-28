@@ -35,7 +35,7 @@ router.put("/agents/:id", authenticate, async (req: AuthRequest, res) => {
     const agent = await AgentModel.findOneAndUpdate(
       { _id: req.params.id, userId },
       { $set: req.body },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     res.json({ agent: { ...agent, id: String(agent._id) } });

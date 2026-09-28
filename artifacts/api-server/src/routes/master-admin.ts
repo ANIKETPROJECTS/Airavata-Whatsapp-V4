@@ -275,7 +275,7 @@ router.put("/master-admin/users/:id", async (req, res) => {
         typeof existingUser.phone === "string" ? existingUser.phone : undefined,
       );
     }
-    const user = await UserModel.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true }).lean();
+    const user = await UserModel.findByIdAndUpdate(id, { $set: update }, { returnDocument: "after", runValidators: true }).lean();
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
     const connection = await runWithTenant(String(id), () =>
       WhatsAppCredentialModel.findOne({ userId: id }).lean(),
@@ -355,7 +355,7 @@ router.post("/master-admin/users/:id/credits", async (req, res) => {
     res.status(400).json({ error: "A whole-number credit amount from 1 to 100,000 is required" });
     return;
   }
-  const user = await UserModel.findByIdAndUpdate(id, { $inc: { creditBalance: amount } }, { new: true }).lean();
+  const user = await UserModel.findByIdAndUpdate(id, { $inc: { creditBalance: amount } }, { returnDocument: "after" }).lean();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   await CreditTransactionModel.create({ userId: id, type: "PURCHASE", amount, balanceAfter: user.creditBalance ?? 0, description: req.body?.description || "Master Admin credit top-up" });
   res.json({ balance: user.creditBalance ?? 0 });
@@ -376,7 +376,7 @@ router.post("/master-admin/users/:id/credits/adjust", async (req, res) => {
   const user = await UserModel.findOneAndUpdate(
     query,
     { $inc: { creditBalance: direction === "add" ? amount : -amount } },
-    { new: true },
+    { returnDocument: "after" },
   ).lean();
   if (!user) {
     res.status(direction === "deduct" ? 409 : 404).json({
@@ -577,7 +577,7 @@ router.put("/master-admin/credit-setting", async (req, res) => {
   const setting = await CreditSettingModel.findOneAndUpdate(
     { key: "messageRates" },
     { $set: rates },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
   ).lean();
   res.json({
     authenticationRate: setting!.authenticationRate,

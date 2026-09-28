@@ -183,7 +183,7 @@ router.post("/billing/add-credits", authenticate, async (req: AuthRequest, res) 
     const user = await UserModel.findByIdAndUpdate(
       userId,
       { $inc: { creditBalance: amount } },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!user) return res.status(404).json({ error: "User not found" });
 

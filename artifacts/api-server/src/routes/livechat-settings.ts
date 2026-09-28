@@ -11,7 +11,7 @@ router.get("/livechat-settings", authenticate, async (req: AuthRequest, res) => 
     const settings = await LiveChatSettingsModel.findOneAndUpdate(
       { userId },
       { $setOnInsert: { userId } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     ).lean();
     res.json({ settings: { ...settings, id: String(settings!._id) } });
   } catch (err) {
@@ -25,7 +25,7 @@ router.put("/livechat-settings", authenticate, async (req: AuthRequest, res) => 
     const settings = await LiveChatSettingsModel.findOneAndUpdate(
       { userId },
       { $set: req.body },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     ).lean();
     res.json({ settings: { ...settings, id: String(settings!._id) } });
   } catch (err) {

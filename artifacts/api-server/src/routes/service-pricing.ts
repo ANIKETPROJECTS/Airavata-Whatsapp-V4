@@ -44,7 +44,7 @@ router.post("/service-pricing/import", authenticate, upload.single("file"), asyn
     const catalog = await ServicePricingCatalogModel.findOneAndUpdate(
       { userId: userId(req) },
       { $set: { rows, sourceFilename: req.file.originalname, importedAt: new Date() } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     ).lean();
     res.json({ catalog: shapeCatalog(catalog as Record<string, unknown>) });
   } catch (err) {
@@ -72,7 +72,7 @@ router.put("/service-pricing", authenticate, async (req: AuthRequest, res) => {
     const catalog = await ServicePricingCatalogModel.findOneAndUpdate(
       { userId: userId(req) },
       { $set: { rows: cleanRows, sourceFilename: "Edited in Service Pricing", importedAt: new Date() } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     ).lean();
     res.json({ catalog: shapeCatalog(catalog as Record<string, unknown>) });
   } catch (err) {

@@ -609,13 +609,13 @@ async function handleStatusUpdate(
   const msg = await MessageModel.findOneAndUpdate(
     statusFilter,
     { $set: update },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   const campaignSend = await CampaignSendModel.findOneAndUpdate(
     statusFilter,
     { $set: update },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   if (!msg && !campaignSend) {

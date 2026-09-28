@@ -52,7 +52,7 @@ router.post("/admin/users/:id/credits", async (req: AuthRequest, res) => {
     const user = await UserModel.findByIdAndUpdate(
       userId,
       { $inc: { creditBalance: amount } },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -113,7 +113,7 @@ router.put("/admin/credit-setting", async (req, res) => {
     const setting = await CreditSettingModel.findOneAndUpdate(
       { key: "messageRates" },
       { $set: { authenticationRate, utilityRate, marketingRate } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     ).lean();
 
     res.json({

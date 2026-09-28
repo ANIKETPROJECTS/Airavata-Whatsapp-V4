@@ -128,7 +128,7 @@ router.post("/conversations/:contactId/read", authenticate, async (req: AuthRequ
     const contact = await ContactModel.findOneAndUpdate(
       { _id: contactId, userId },
       { $set: { lastReadAt: new Date() } },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!contact) return res.status(404).json({ error: "Contact not found" });
     res.json({ ok: true, unread: 0 });
@@ -157,7 +157,7 @@ router.put("/conversations/:contactId/status", authenticate, async (req: AuthReq
           ...(requestedStatus === "Resolved" ? { lastReadAt: new Date() } : {}),
         },
       },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!contact) return res.status(404).json({ error: "Contact not found" });
     res.json({

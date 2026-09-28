@@ -36,7 +36,7 @@ router.put("/canned-messages/:id", authenticate, async (req: AuthRequest, res) =
     const doc = await CannedMessageModel.findOneAndUpdate(
       { _id: req.params.id, userId },
       { $set: req.body },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!doc) return res.status(404).json({ error: "Canned message not found" });
     res.json({ message: { ...doc, id: String(doc._id) } });

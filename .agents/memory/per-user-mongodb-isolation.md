@@ -14,3 +14,9 @@ Business-name edits now require a copy-and-verify tenant database move before th
 **Why:** The physical name is user-visible, but changing it must not orphan or partially move workspace data.
 
 **How to apply:** Keep tenant renames server-side and perform them from the control-plane user update flow; never rename based on a client-supplied database name.
+
+Webhook routing uses the control-plane user's `metaPhoneNumberId` as the owner index, while the saved tenant WhatsApp credential is the source for that user's connected phone ID. Authenticated credential repair must reconcile those fields with a conflict check; otherwise Meta can receive HTTP 200 while the handler drops the message before tenant persistence.
+
+**Why:** A live inbound webhook was accepted and parsed, but owner resolution failed because the control-plane phone ID did not match the incoming event.
+
+**How to apply:** Reconcile the current authenticated tenant from its own saved credential during connection repair, and reject collisions rather than assigning a phone number already owned by another user. Do not search all tenant databases to guess ownership.

@@ -83,7 +83,7 @@ export async function withCreditCharge<T>({
       creditBalance: { $gte: amount },
     },
     { $inc: { creditBalance: -amount } },
-    { new: true },
+    { returnDocument: "after" },
   )
     .select("creditBalance")
     .lean();

@@ -28,7 +28,7 @@ async function processDueCampaignRecipientsForTenant(userId: mongoose.Types.Obje
           nextActionAt: { $lte: new Date() },
         },
         { $set: { status: "ACTIVE" } },
-        { new: true, sort: { nextActionAt: 1 } },
+        { returnDocument: "after", sort: { nextActionAt: 1 } },
       ).lean();
       if (!recipient) break;
 
