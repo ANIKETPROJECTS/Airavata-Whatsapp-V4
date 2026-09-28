@@ -524,8 +524,8 @@ router.post(
 
 /**
  * POST /api/integration/facebook/reset
- * Clears only the authenticated user's old WhatsApp connection. Workspace
- * records such as contacts, templates, campaigns, and messages are preserved.
+ * Kept as a compatibility endpoint for older clients. Reconnects must not
+ * delete a working credential before a replacement signup has succeeded.
  */
 router.post(
   "/integration/facebook/reset",
@@ -538,26 +538,195 @@ router.post(
         res.status(409).json({ error: "This protected Master Admin account uses ecosystem WhatsApp credentials" });
         return;
       }
-      await runWithTenant(String(userId), () =>
-        WhatsAppCredentialModel.deleteOne({ userId }),
+      logger.info({ userId: req.user!.userId }, "Ignored legacy WhatsApp reset request; existing credentials were preserved");
+      res.json({ ok: true, preserved: true });
+    } catch (error) {
+      logger.error({ err: error, userId: req.user!.userId }, "WhatsApp connection reset failed");
+      res.status(500).json({ error: "Unable to reset the WhatsApp connection" });
+    }
+  },
+);
+
+/**
+ * GET /api/integration/facebook/recovery-status
+ * Reports whether the authenticated user's old control-plane credential can
+ * be restored. Credential contents and identifiers are never returned.
+ */
+router.get(
+  "/integration/facebook/recovery-status",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user!.userId);
+      const userIdString = String(userId);
+      const user = await UserModel.findById(userId).select("isProtectedMasterAdmin").lean();
+      if (isProtectedMasterAdminUser(user)) {
+        res.json({
+          isProtectedMasterAdmin: true,
+          credentialStored: true,
+          credentialReadable: true,
+          legacyCredentialFound: false,
+          legacyCredentialReadable: false,
+          canRestoreLegacy: false,
+        });
+        return;
+      }
+
+      const controlPlaneDb = mongoose.connection.db;
+      if (!controlPlaneDb) throw new Error("MongoDB is not connected");
+      const legacyCredential = await controlPlaneDb
+        .collection("whatsappcredentials")
+        .findOne(
+          { userId },
+          { projection: { accessTokenEncrypted: 1 } },
+        );
+      const tenantCredential = await runWithTenant(userIdString, () =>
+        WhatsAppCredentialModel.findOne({ userId })
+          .select("accessTokenEncrypted")
+          .lean(),
       );
+
+      const canDecrypt = (encrypted: unknown) => {
+        if (typeof encrypted !== "string" || !encrypted) return false;
+        try {
+          decryptToken(encrypted);
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      const legacyCredentialReadable = canDecrypt(legacyCredential?.accessTokenEncrypted);
+      const credentialReadable = canDecrypt(tenantCredential?.accessTokenEncrypted);
+      const credentialStored = Boolean(tenantCredential);
+
+      res.json({
+        isProtectedMasterAdmin: false,
+        credentialStored,
+        credentialReadable,
+        legacyCredentialFound: Boolean(legacyCredential),
+        legacyCredentialReadable,
+        canRestoreLegacy: !credentialStored && legacyCredentialReadable,
+      });
+    } catch (error) {
+      logger.error({ err: error, userId: req.user!.userId }, "Facebook credential recovery status lookup failed");
+      res.status(500).json({ error: "Unable to check for a saved Facebook connection" });
+    }
+  },
+);
+
+/**
+ * POST /api/integration/facebook/restore-legacy
+ * Restores only the authenticated user's encrypted legacy credential, and
+ * only when their tenant database does not already contain a credential.
+ */
+router.post(
+  "/integration/facebook/restore-legacy",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user!.userId);
+      const userIdString = String(userId);
+      const user = await UserModel.findById(userId).select("isProtectedMasterAdmin").lean();
+      if (isProtectedMasterAdminUser(user)) {
+        res.status(409).json({ error: "This protected Master Admin account uses ecosystem WhatsApp credentials" });
+        return;
+      }
+
+      const existingCredential = await runWithTenant(userIdString, () =>
+        WhatsAppCredentialModel.findOne({ userId }).select("_id").lean(),
+      );
+      if (existingCredential) {
+        res.status(409).json({ error: "A WhatsApp credential already exists. It was not changed." });
+        return;
+      }
+
+      const controlPlaneDb = mongoose.connection.db;
+      if (!controlPlaneDb) throw new Error("MongoDB is not connected");
+      const legacyCredential = await controlPlaneDb
+        .collection("whatsappcredentials")
+        .findOne(
+          { userId },
+          {
+            projection: {
+              wabaId: 1,
+              phoneNumberId: 1,
+              accessTokenEncrypted: 1,
+              metaCatalogId: 1,
+              catalogName: 1,
+              catalogConnected: 1,
+              catalogLastSyncedAt: 1,
+            },
+          },
+        );
+
+      if (
+        !legacyCredential ||
+        typeof legacyCredential.wabaId !== "string" ||
+        typeof legacyCredential.phoneNumberId !== "string" ||
+        typeof legacyCredential.accessTokenEncrypted !== "string"
+      ) {
+        res.status(404).json({ error: "No complete saved Facebook connection was found for this account" });
+        return;
+      }
+
+      try {
+        decryptToken(legacyCredential.accessTokenEncrypted);
+      } catch {
+        res.status(409).json({
+          error: "A saved connection was found but cannot be restored securely. Reconnect through Facebook instead.",
+        });
+        return;
+      }
+
+      try {
+        await runWithTenant(userIdString, async () => {
+          await WhatsAppCredentialModel.create({
+            userId,
+            wabaId: legacyCredential.wabaId,
+            phoneNumberId: legacyCredential.phoneNumberId,
+            accessTokenEncrypted: legacyCredential.accessTokenEncrypted,
+            ...(typeof legacyCredential.metaCatalogId === "string" && {
+              metaCatalogId: legacyCredential.metaCatalogId,
+            }),
+            ...(typeof legacyCredential.catalogName === "string" && {
+              catalogName: legacyCredential.catalogName,
+            }),
+            ...(typeof legacyCredential.catalogConnected === "boolean" && {
+              catalogConnected: legacyCredential.catalogConnected,
+            }),
+            ...(legacyCredential.catalogLastSyncedAt instanceof Date && {
+              catalogLastSyncedAt: legacyCredential.catalogLastSyncedAt,
+            }),
+          });
+        });
+      } catch (error) {
+        if ((error as { code?: number })?.code === 11000) {
+          res.status(409).json({ error: "A WhatsApp credential already exists. It was not changed." });
+          return;
+        }
+        throw error;
+      }
+
       await UserModel.updateOne(
         { _id: userId },
         {
-          $set: { metaWabaConnected: false },
+          $set: {
+            metaWabaConnected: true,
+            metaWabaId: legacyCredential.wabaId,
+            metaPhoneNumberId: legacyCredential.phoneNumberId,
+          },
           $unset: {
-            metaWabaId: 1,
-            metaPhoneNumberId: 1,
             metaWabaAccessToken: 1,
             metaEmbeddedSignupCode: 1,
           },
         },
       );
-      logger.info({ userId: req.user!.userId }, "WhatsApp connection reset for reconnect");
-      res.json({ ok: true });
+
+      logger.info({ userId: userIdString }, "Restored encrypted legacy WhatsApp credential to tenant database");
+      res.json({ ok: true, restored: true, connected: true });
     } catch (error) {
-      logger.error({ err: error, userId: req.user!.userId }, "WhatsApp connection reset failed");
-      res.status(500).json({ error: "Unable to reset the WhatsApp connection" });
+      logger.error({ err: error, userId: req.user!.userId }, "Facebook legacy credential restore failed");
+      res.status(500).json({ error: "Unable to restore the saved Facebook connection" });
     }
   },
 );

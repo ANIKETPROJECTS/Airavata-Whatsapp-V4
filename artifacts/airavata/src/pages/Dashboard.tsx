@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, ArrowRight, BarChart3, Bot, CheckCircle2, ChevronRight,
@@ -100,6 +100,14 @@ interface ChatbotFlow {
     responses?: number;
     completionRate?: number;
   };
+}
+
+interface FacebookRecoveryStatus {
+  credentialStored: boolean;
+  credentialReadable: boolean;
+  legacyCredentialFound: boolean;
+  legacyCredentialReadable: boolean;
+  canRestoreLegacy: boolean;
 }
 
 const fmt = (value: number) => value.toLocaleString();
@@ -221,14 +229,27 @@ function StatusPill({ status, large = false }: { status: string; large?: boolean
 export default function Dashboard() {
   const { user, refreshUser } = useAuth();
   const isMetaDirect = user?.billingMode === 'meta_direct';
-  const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup();
-  const handleReconnectFacebook = async () => {
+  const refreshAfterFacebookSignup = useCallback(() => {
+    void refreshUser();
+  }, [refreshUser]);
+  const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup(refreshAfterFacebookSignup);
+  const [restoringFacebookConnection, setRestoringFacebookConnection] = useState(false);
+  const { data: recoveryStatus } = useQuery<FacebookRecoveryStatus>({
+    queryKey: ['facebook-recovery-status', user?.id],
+    queryFn: () => api.get('/integration/facebook/recovery-status'),
+    enabled: Boolean(user && !user.metaWabaConnected && !user.isProtectedMasterAdmin),
+    refetchOnWindowFocus: true,
+  });
+  const handleRestoreFacebookConnection = async () => {
+    setRestoringFacebookConnection(true);
     try {
-      await api.post('/integration/facebook/reset');
+      await api.post('/integration/facebook/restore-legacy', {});
+      toast.success('Saved Facebook connection restored.');
       await refreshUser();
-      launchFbSignup();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to reset the Facebook connection');
+      toast.error(error instanceof Error ? error.message : 'Unable to restore the saved Facebook connection');
+    } finally {
+      setRestoringFacebookConnection(false);
     }
   };
 
@@ -343,7 +364,7 @@ export default function Dashboard() {
               </div>
             ) : user?.metaWabaConnected ? (
               <button
-                onClick={() => void handleReconnectFacebook()}
+                onClick={() => launchFbSignup()}
                 disabled={fbConnecting}
                 className="inline-flex items-center gap-2.5 border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm hover:bg-blue-50 disabled:opacity-60"
               >
@@ -353,7 +374,7 @@ export default function Dashboard() {
               </button>
             ) : (
               <button
-                onClick={launchFbSignup}
+                onClick={() => launchFbSignup()}
                 disabled={fbConnecting}
                 className="inline-flex items-center gap-2.5 border border-blue-100 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm hover:bg-blue-50 disabled:opacity-60"
               >
@@ -363,6 +384,31 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {!user?.metaWabaConnected &&
+          !user?.isProtectedMasterAdmin &&
+          recoveryStatus?.legacyCredentialFound &&
+          !recoveryStatus.credentialStored && (
+            <div className="flex flex-col justify-between gap-4 border border-blue-200 bg-blue-50 px-5 py-4 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-sm font-semibold text-black">A saved Facebook connection was found</p>
+                <p className="mt-1 text-sm text-gray-700">
+                  {recoveryStatus.canRestoreLegacy
+                    ? 'You can restore it without reconnecting or changing your workspace data.'
+                    : 'It cannot be restored securely. Reconnect through Facebook; the saved connection will stay in place until signup succeeds.'}
+                </p>
+              </div>
+              {recoveryStatus.canRestoreLegacy && (
+                <button
+                  onClick={() => void handleRestoreFacebookConnection()}
+                  disabled={restoringFacebookConnection || fbConnecting}
+                  className="shrink-0 border border-blue-700 bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {restoringFacebookConnection ? 'Restoring…' : 'Restore saved connection'}
+                </button>
+              )}
+            </div>
+          )}
 
         {user?.metaWabaConnected && (
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-none border border-green-200 bg-white px-5 py-4 shadow-sm">
