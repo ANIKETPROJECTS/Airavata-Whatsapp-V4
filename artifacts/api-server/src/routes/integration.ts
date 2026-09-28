@@ -722,11 +722,82 @@ router.post(
         },
       );
 
+      let webhookSubscriptionConfirmed = false;
+      try {
+        await ensureWhatsAppWebhookSubscription(
+          legacyCredential.wabaId,
+          decryptToken(legacyCredential.accessTokenEncrypted),
+        );
+        webhookSubscriptionConfirmed = true;
+      } catch (error) {
+        logger.warn(
+          { err: error, userId: userIdString },
+          "Legacy WhatsApp credential restored, but its webhook subscription could not be confirmed",
+        );
+      }
+
       logger.info({ userId: userIdString }, "Restored encrypted legacy WhatsApp credential to tenant database");
-      res.json({ ok: true, restored: true, connected: true });
+      res.json({
+        ok: true,
+        restored: true,
+        connected: true,
+        webhookSubscriptionConfirmed,
+      });
     } catch (error) {
       logger.error({ err: error, userId: req.user!.userId }, "Facebook legacy credential restore failed");
       res.status(500).json({ error: "Unable to restore the saved Facebook connection" });
+    }
+  },
+);
+
+/**
+ * POST /api/integration/facebook/repair-webhook-subscription
+ * Re-subscribes only the authenticated tenant's stored WABA credential.
+ */
+router.post(
+  "/integration/facebook/repair-webhook-subscription",
+  authenticate,
+  async (req: AuthRequest, res): Promise<void> => {
+    const userIdString = req.user!.userId;
+    try {
+      const userId = new mongoose.Types.ObjectId(userIdString);
+      const user = await UserModel.findById(userId).select("isProtectedMasterAdmin").lean();
+      if (isProtectedMasterAdminUser(user)) {
+        res.status(409).json({ error: "Protected Master Admin credentials are repaired separately" });
+        return;
+      }
+
+      const credential = await runWithTenant(userIdString, () =>
+        WhatsAppCredentialModel.findOne({ userId })
+          .select("wabaId accessTokenEncrypted")
+          .lean(),
+      );
+      if (!credential) {
+        res.status(404).json({ error: "No saved WhatsApp connection was found for this account" });
+        return;
+      }
+
+      let accessToken: string;
+      try {
+        accessToken = decryptToken(credential.accessTokenEncrypted);
+      } catch {
+        res.status(409).json({ error: "The saved WhatsApp connection cannot be read securely" });
+        return;
+      }
+
+      if (typeof credential.wabaId !== "string" || !credential.wabaId) {
+        res.status(409).json({ error: "The saved WhatsApp connection is missing its business account ID" });
+        return;
+      }
+
+      await ensureWhatsAppWebhookSubscription(credential.wabaId, accessToken);
+      res.json({ ok: true, subscribed: true });
+    } catch (error) {
+      logger.error(
+        { err: error, userId: userIdString },
+        "Facebook webhook subscription repair failed",
+      );
+      res.status(500).json({ error: "Unable to confirm the WhatsApp webhook subscription" });
     }
   },
 );

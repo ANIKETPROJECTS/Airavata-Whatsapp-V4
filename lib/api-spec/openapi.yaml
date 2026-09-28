@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: integration
+    description: Connected account operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /integration/facebook/repair-webhook-subscription:
+    post:
+      operationId: repairFacebookWebhookSubscription
+      tags: [integration]
+      summary: Repair the authenticated user's WhatsApp webhook subscription
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Webhook subscription confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacebookWebhookSubscriptionStatus"
+        "401":
+          description: Authentication required
+        "404":
+          description: No tenant WhatsApp credential is available
+        "409":
+          description: The credential cannot be used for tenant repair
+        "500":
+          description: Subscription repair failed
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +62,14 @@ components:
           type: string
       required:
         - status
+    FacebookWebhookSubscriptionStatus:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        subscribed:
+          type: boolean
+      required:
+        - ok
+        - subscribed
 

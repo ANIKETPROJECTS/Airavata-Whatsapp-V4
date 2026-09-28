@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, ArrowRight, BarChart3, Bot, CheckCircle2, ChevronRight,
@@ -112,8 +112,10 @@ interface FacebookRecoveryStatus {
 
 interface FacebookConnectionStatus {
   connected: boolean;
+  wabaId?: string | null;
   credentialStored: boolean;
   credentialReadable: boolean;
+  isProtectedMasterAdmin?: boolean;
 }
 
 const fmt = (value: number) => value.toLocaleString();
@@ -252,6 +254,31 @@ export default function Dashboard() {
     enabled: Boolean(user && !user.isProtectedMasterAdmin),
     refetchOnWindowFocus: true,
   });
+  const webhookRepairAttempted = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (
+      !user?.id ||
+      user.isProtectedMasterAdmin ||
+      !facebookStatus?.credentialReadable
+    ) {
+      return;
+    }
+
+    const repairKey = `${user.id}:${facebookStatus.wabaId ?? 'tenant'}`;
+    if (webhookRepairAttempted.current === repairKey) return;
+    webhookRepairAttempted.current = repairKey;
+
+    void api
+      .post<{ ok: boolean; subscribed: boolean }>(
+        '/integration/facebook/repair-webhook-subscription',
+        {},
+      )
+      .catch(() => {
+        toast.error('Unable to confirm inbound WhatsApp delivery. Please reconnect Facebook if messages are still missing.');
+      });
+  }, [facebookStatus, user?.id, user?.isProtectedMasterAdmin]);
+
   const handleRestoreFacebookConnection = async () => {
     setRestoringFacebookConnection(true);
     try {

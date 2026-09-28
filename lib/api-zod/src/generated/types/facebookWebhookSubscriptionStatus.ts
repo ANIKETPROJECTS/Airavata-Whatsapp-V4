@@ -6,5 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export * from './facebookWebhookSubscriptionStatus';
-export * from './healthStatus';
+export interface FacebookWebhookSubscriptionStatus {
+  ok: boolean;
+  subscribed: boolean;
+}
