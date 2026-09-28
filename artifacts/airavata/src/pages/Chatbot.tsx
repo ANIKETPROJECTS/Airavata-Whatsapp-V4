@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   ReactFlow, Background, Controls, MiniMap, addEdge, useNodesState,
   useEdgesState, useReactFlow, ReactFlowProvider, BackgroundVariant,
@@ -541,6 +541,7 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
   const [flowName, setFlowName] = useState('');
   const [editingName, setEditingName] = useState(false);
@@ -549,11 +550,25 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const history = useHistory({ nodes: [] as Node[], edges: [] as Edge[] });
+  const displayEdges = useMemo(
+    () => edges.map(edge => ({
+      ...edge,
+      selectable: true,
+      interactionWidth: Math.max(edge.interactionWidth ?? 0, 40),
+      style: {
+        ...edge.style,
+        stroke: edge.id === selectedEdgeId ? '#dc2626' : edge.style?.stroke ?? '#6366f1',
+        strokeWidth: edge.id === selectedEdgeId ? 3 : edge.style?.strokeWidth ?? 2,
+      },
+    })),
+    [edges, selectedEdgeId],
+  );
 
   useEffect(() => {
     if (flowData) {
       setNodes(flowData.nodes ?? []);
       setEdges(flowData.edges ?? []);
+      setSelectedEdgeId(null);
       setFlowName(flowData.name);
       setSaveStatus('saved');
       setTimeout(() => fitView({ padding: 0.15 }), 50);
@@ -584,7 +599,9 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
 
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes);
-    setEdges(eds => { scheduleAutoSave(nodes, eds); return eds; });
+    if (changes.some(change => change.type !== 'select')) {
+      setEdges(eds => { scheduleAutoSave(nodes, eds); return eds; });
+    }
   }, [onEdgesChange, nodes, scheduleAutoSave]);
 
   const onConnect = useCallback((connection: Connection) => {
@@ -688,11 +705,38 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
 
   const deleteSelected = useCallback(() => {
     const selectedIds = new Set(nodes.filter(n => n.selected).map(n => n.id));
-    if (!selectedIds.size) return;
-    setNodes(nds => { const next = nds.filter(n => !selectedIds.has(n.id)); scheduleAutoSave(next, edges); return next; });
-    setEdges(eds => { const next = eds.filter(e => !selectedIds.has(e.source) && !selectedIds.has(e.target)); scheduleAutoSave(nodes, next); return next; });
+    const selectedEdgeIds = new Set(
+      edges.filter(edge => edge.selected || edge.id === selectedEdgeId).map(edge => edge.id),
+    );
+    if (!selectedIds.size && !selectedEdgeIds.size) return;
+
+    const nextNodes = nodes.filter(node => !selectedIds.has(node.id));
+    const nextEdges = edges.filter(edge =>
+      !selectedEdgeIds.has(edge.id) &&
+      !selectedIds.has(edge.source) &&
+      !selectedIds.has(edge.target),
+    );
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    scheduleAutoSave(nextNodes, nextEdges);
+    setSelectedEdgeId(null);
     if (selectedNode && selectedIds.has(selectedNode.id)) { setSelectedNode(null); if (rightPanel === 'config') setRightPanel(null); }
-  }, [nodes, edges, selectedNode, rightPanel, scheduleAutoSave]);
+    if (selectedIds.size) toast.success(`Deleted ${selectedIds.size} node${selectedIds.size === 1 ? '' : 's'}`);
+    else toast.success('Connection removed');
+  }, [nodes, edges, selectedNode, rightPanel, scheduleAutoSave, selectedEdgeId]);
+
+  const deleteSelectedConnection = useCallback(() => {
+    if (!selectedEdgeId) return;
+    const nextEdges = edges.filter(edge => edge.id !== selectedEdgeId);
+    if (nextEdges.length === edges.length) {
+      setSelectedEdgeId(null);
+      return;
+    }
+    setEdges(nextEdges);
+    scheduleAutoSave(nodes, nextEdges);
+    setSelectedEdgeId(null);
+    toast.success('Connection removed');
+  }, [edges, nodes, selectedEdgeId, scheduleAutoSave]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -868,15 +912,16 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
       <div className="flex-1 flex overflow-hidden relative">
         <ReactFlow
           nodes={nodes}
-          edges={edges}
+          edges={displayEdges}
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
           onDrop={onDrop}
           onDragOver={onDragOver}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => { setSelectedNode(node); setRightPanel('config'); }}
-          onPaneClick={() => { setSelectedNode(null); if (rightPanel === 'config') setRightPanel(null); }}
+          onNodeClick={(_, node) => { setSelectedEdgeId(null); setSelectedNode(node); setRightPanel('config'); }}
+          onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNode(null); if (rightPanel === 'config') setRightPanel(null); }}
+          onPaneClick={() => { setSelectedNode(null); setSelectedEdgeId(null); if (rightPanel === 'config') setRightPanel(null); }}
           fitView
           fitViewOptions={{ padding: 0.15 }}
           deleteKeyCode={null}
@@ -884,6 +929,8 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
           className="bg-gray-50"
           defaultEdgeOptions={{
             animated: true,
+            selectable: true,
+            interactionWidth: 40,
             markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
             style: { stroke: '#6366f1', strokeWidth: 2 },
           }}
@@ -907,6 +954,19 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
               <span><kbd className="bg-gray-100 px-1 py-0.5 rounded text-[8px] font-mono">Shift</kbd> Multi-select</span>
               <span><kbd className="bg-gray-100 px-1 py-0.5 rounded text-[8px] font-mono">Del</kbd> Delete</span>
               <span><kbd className="bg-gray-100 px-1 py-0.5 rounded text-[8px] font-mono">Esc</kbd> Deselect</span>
+              {selectedEdgeId && (
+                <>
+                  <span className="text-red-600 font-semibold">Connection selected</span>
+                  <button
+                    type="button"
+                    onClick={deleteSelectedConnection}
+                    className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 font-semibold"
+                    aria-label="Remove selected connection"
+                  >
+                    <Trash2 className="w-3 h-3" /> Remove connection
+                  </button>
+                </>
+              )}
             </div>
           </Panel>
         </ReactFlow>
