@@ -621,10 +621,13 @@ router.get("/contacts/export", async (req: AuthRequest, res) => {
       ]),
     ];
 
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
-    res.setHeader("Content-Type", "text/csv");
+    const csvCell = (value: unknown) =>
+      `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const csv = rows.map(row => row.map(csvCell).join(",")).join("\r\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=contacts.csv");
-    res.send(csv);
+    // Excel and WPS need the UTF-8 BOM to recognize emoji and non-Latin names.
+    res.send(`\uFEFF${csv}`);
   } catch {
     res.status(500).json({ error: "Internal server error" });
   }
