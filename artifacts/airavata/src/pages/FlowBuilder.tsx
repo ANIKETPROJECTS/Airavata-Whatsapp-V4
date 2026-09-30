@@ -610,60 +610,77 @@ function FlowEditorView({
         </button>
       </div>
 
-      {/* Screen settings span the editor so the panels below share one aligned top edge. */}
-      <div className="shrink-0 border-b bg-white px-4 py-2.5">
-        {activeScreen ? (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <div className="flex min-w-[220px] flex-1 items-center gap-2">
-              <span className="shrink-0 text-xs font-medium text-gray-500">Title</span>
-              <input
-                type="text"
-                value={activeScreen.title}
-                onChange={e => updateScreen(activeScreenIdx, { title: e.target.value })}
-                className="w-full max-w-[260px] min-w-0 rounded-lg border border-gray-200 px-2.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500">Next screen</span>
-              {activeScreen.isTerminal ? (
-                <span className="text-xs font-medium text-green-600">Submit (final)</span>
-              ) : (
-                <select
-                  value={activeScreen.nextScreenId ?? ''}
-                  onChange={e => updateScreen(activeScreenIdx, { nextScreenId: e.target.value })}
-                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">Select screen...</option>
-                  {screens.filter((_, i) => i !== activeScreenIdx).map(s => (
-                    <option key={s.id} value={s.id}>{s.title}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <label className="flex cursor-pointer items-center gap-2">
-              <div
-                onClick={() => updateScreen(activeScreenIdx, { isTerminal: !activeScreen.isTerminal, nextScreenId: undefined })}
-                className={`relative h-4 w-8 rounded-full transition-colors ${activeScreen.isTerminal ? 'bg-green-500' : 'bg-gray-200'}`}
-              >
-                <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${activeScreen.isTerminal ? 'translate-x-4' : 'translate-x-0.5'}`} />
-              </div>
-              <span className="text-xs text-gray-600">Final screen</span>
-            </label>
+      {/* Shared header grid mirrors the screen, palette, editor, and preview columns below. */}
+      <div className="shrink-0 border-b bg-white">
+        <div className="grid grid-cols-[13rem_15rem_minmax(0,1fr)] xl:grid-cols-[13rem_15rem_minmax(0,1fr)_360px] 2xl:grid-cols-[13rem_15rem_minmax(0,1fr)_400px]">
+          <div className="flex min-w-0 items-center justify-between border-r px-3 py-1.5">
+            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Screens</h2>
+            <button
+              type="button"
+              onClick={addScreen}
+              aria-label="Add screen"
+              title="Add screen"
+              className="rounded p-1 hover:bg-gray-100"
+            >
+              <PlusCircle className="h-4 w-4 text-primary" />
+            </button>
           </div>
-        ) : (
-          <div className="h-7" />
-        )}
+          <div className="flex min-w-0 items-center border-r px-3 py-1.5">
+            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Add a component</h2>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5">
+            {activeScreen ? (
+              <>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 text-xs font-medium text-gray-500">Title</span>
+                  <input
+                    type="text"
+                    value={activeScreen.title}
+                    onChange={e => updateScreen(activeScreenIdx, { title: e.target.value })}
+                    className="w-[150px] max-w-full rounded-lg border border-gray-200 px-2.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 text-xs font-medium text-gray-500">Next screen</span>
+                  {activeScreen.isTerminal ? (
+                    <span className="text-xs font-medium text-green-600">Submit (final)</span>
+                  ) : (
+                    <select
+                      value={activeScreen.nextScreenId ?? ''}
+                      onChange={e => updateScreen(activeScreenIdx, { nextScreenId: e.target.value })}
+                      className="max-w-[130px] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">Select screen...</option>
+                      {screens.filter((_, i) => i !== activeScreenIdx).map(s => (
+                        <option key={s.id} value={s.id}>{s.title}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <div
+                    onClick={() => updateScreen(activeScreenIdx, { isTerminal: !activeScreen.isTerminal, nextScreenId: undefined })}
+                    className={`relative h-4 w-8 rounded-full transition-colors ${activeScreen.isTerminal ? 'bg-green-500' : 'bg-gray-200'}`}
+                  >
+                    <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${activeScreen.isTerminal ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </div>
+                  <span className="whitespace-nowrap text-xs text-gray-600">Final screen</span>
+                </label>
+              </>
+            ) : (
+              <span className="text-xs text-gray-400">Select a screen to edit</span>
+            )}
+          </div>
+          <div className="hidden min-w-0 items-center justify-between gap-1 border-l px-3 py-1.5 xl:flex">
+            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Preview</h2>
+            <DevicePreviewSelector device={previewDevice} onChange={setPreviewDevice} />
+          </div>
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-1 overflow-hidden">
         {/* Left: Screen list */}
         <div className="w-52 bg-white border-r flex flex-col shrink-0">
-          <div className="p-3 border-b flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Screens</span>
-            <button onClick={addScreen} className="p-1 rounded hover:bg-gray-100">
-              <PlusCircle className="w-4 h-4 text-primary" />
-            </button>
-          </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {screens.map((screen, idx) => (
               <div
@@ -706,9 +723,6 @@ function FlowEditorView({
               <div className="flex min-w-0 flex-1 overflow-hidden">
                 {/* Component palette */}
                 <div className="w-60 bg-white border-r flex flex-col shrink-0">
-                  <div className="p-3 border-b">
-                    <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Add a component</span>
-                  </div>
                   <div className="flex-1 overflow-y-auto p-2">
                     {COMPONENT_CATEGORIES.map(category => (
                       <section key={category.id} className="mb-4 last:mb-1">
@@ -783,10 +797,6 @@ function FlowEditorView({
 
         {/* Right: Phone preview */}
         <div className="hidden shrink-0 flex-col border-l bg-gray-50 xl:flex xl:w-[360px] 2xl:w-[400px]">
-          <div className="px-3 py-2 border-b bg-white flex items-center justify-between gap-1">
-            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</span>
-            <DevicePreviewSelector device={previewDevice} onChange={setPreviewDevice} />
-          </div>
           <PhonePreview screen={activeScreen} flowName={flow.name} device={previewDevice} />
         </div>
       </div>
