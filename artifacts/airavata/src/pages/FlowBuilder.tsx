@@ -610,7 +610,7 @@ function FlowEditorView({
         </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-w-0 flex-1 overflow-hidden">
         {/* Left: Screen list */}
         <div className="w-52 bg-white border-r flex flex-col shrink-0">
           <div className="p-3 border-b flex items-center justify-between">
@@ -655,7 +655,7 @@ function FlowEditorView({
         </div>
 
         {/* Center: Screen editor */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+        <div className="min-w-0 flex-1 flex flex-col overflow-hidden bg-gray-50">
           {activeScreen ? (
             <>
               {/* Screen settings bar */}
@@ -697,7 +697,7 @@ function FlowEditorView({
                 </label>
               </div>
 
-              <div className="flex flex-1 overflow-hidden">
+              <div className="flex min-w-0 flex-1 overflow-hidden">
                 {/* Component palette */}
                 <div className="w-60 bg-white border-r flex flex-col shrink-0">
                   <div className="p-3 border-b">
@@ -739,7 +739,7 @@ function FlowEditorView({
                 </div>
 
                 {/* Components list */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="min-w-0 flex-1 overflow-y-auto p-4 space-y-2">
                   {activeScreen.components.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-48 text-gray-300 gap-2">
                       <PlusCircle className="w-8 h-8" />
@@ -776,7 +776,7 @@ function FlowEditorView({
         </div>
 
         {/* Right: Phone preview */}
-        <div className="w-72 border-l bg-gray-50 shrink-0 hidden xl:flex flex-col">
+        <div className="hidden shrink-0 flex-col border-l bg-gray-50 xl:flex xl:w-[360px] 2xl:w-[400px]">
           <div className="px-3 py-2 border-b bg-white flex items-center justify-between gap-1">
             <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</span>
             <DevicePreviewSelector device={previewDevice} onChange={setPreviewDevice} />

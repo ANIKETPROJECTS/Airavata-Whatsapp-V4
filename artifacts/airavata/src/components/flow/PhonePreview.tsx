@@ -13,7 +13,7 @@ export default function PhonePreview({ screen, flowName, device }: Props) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gray-100 p-3">
       <div className="my-auto flex shrink-0 flex-col items-center">
-        <DevicePreviewFrame device={device} screenWidth={230}>
+        <DevicePreviewFrame device={device} screenWidth={300}>
           <div className="flex h-full min-h-0 w-full flex-col bg-[#efeae2]">
             {/* WhatsApp-style header */}
             <div className="flex h-14 shrink-0 items-center gap-3 bg-[#075E54] px-3 shadow-sm">
