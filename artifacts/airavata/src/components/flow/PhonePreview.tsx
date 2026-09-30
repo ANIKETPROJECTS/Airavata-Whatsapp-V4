@@ -1,69 +1,66 @@
 /** Phone mockup preview of a WhatsApp Flow screen */
 
 import type { FlowScreen, FlowComponent } from '../../types/flow';
+import { DevicePreviewFrame, type PreviewDevice } from '../DevicePreview';
 
 interface Props {
   screen: FlowScreen | null;
   flowName: string;
+  device: PreviewDevice;
 }
 
-export default function PhonePreview({ screen, flowName }: Props) {
+export default function PhonePreview({ screen, flowName, device }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gray-100 p-6">
-      {/* Phone shell */}
-      <div className="relative w-[280px] bg-white rounded-[2.5rem] shadow-2xl border-4 border-gray-800 overflow-hidden">
-        {/* Notch */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-5 bg-gray-800 rounded-b-xl z-10" />
-
-        {/* WhatsApp-style header */}
-        <div className="bg-[#075E54] pt-7 pb-3 px-4 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">
-            A
-          </div>
-          <div>
-            <p className="text-white text-xs font-semibold">{flowName || 'Airavata'}</p>
-            <p className="text-green-200 text-[10px]">Business Account</p>
-          </div>
-          <button className="ml-auto text-white opacity-70">✕</button>
-        </div>
-
-        {/* Flow screen content */}
-        <div className="bg-white min-h-[420px] flex flex-col">
-          {/* Screen title bar */}
-          <div className="bg-[#f0f2f5] px-4 py-2 border-b border-gray-200">
-            <p className="text-xs font-semibold text-gray-700 truncate">
-              {screen?.title || 'Screen'}
-            </p>
-          </div>
-
-          {/* Components */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {!screen || screen.components.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-gray-300">
-                <p className="text-xs text-center">Add components to see the preview</p>
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gray-100 p-3">
+      <div className="my-auto flex shrink-0 flex-col items-center">
+        <DevicePreviewFrame device={device} screenWidth={230}>
+          <div className="flex h-full min-h-0 w-full flex-col bg-[#efeae2]">
+            {/* WhatsApp-style header */}
+            <div className="flex h-14 shrink-0 items-center gap-3 bg-[#075E54] px-3 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">
+                A
               </div>
-            ) : (
-              screen.components.map((comp, i) => (
-                <PreviewComponent key={i} comp={comp} />
-              ))
-            )}
-          </div>
+              <div>
+                <p className="text-white text-xs font-semibold">{flowName || 'Airavata'}</p>
+                <p className="text-green-200 text-[10px]">Business Account</p>
+              </div>
+              <button className="ml-auto text-white opacity-70">✕</button>
+            </div>
 
-          {/* Footer button */}
-          <div className="px-4 pb-4 pt-2 border-t border-gray-100">
-            <button className="w-full py-2.5 bg-[#00a884] text-white text-xs font-semibold rounded-lg">
-              {screen?.isTerminal ? 'Submit' : 'Next'}
-            </button>
-          </div>
-        </div>
+            {/* Flow screen content */}
+            <div className="flex min-h-0 flex-1 flex-col bg-white">
+              {/* Screen title bar */}
+              <div className="bg-[#f0f2f5] px-4 py-2 border-b border-gray-200">
+                <p className="text-xs font-semibold text-gray-700 truncate">
+                  {screen?.title || 'Screen'}
+                </p>
+              </div>
 
-        {/* Home bar */}
-        <div className="h-4 bg-white flex items-center justify-center">
-          <div className="w-20 h-1 bg-gray-300 rounded-full" />
-        </div>
+              {/* Components */}
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                {!screen || screen.components.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 text-gray-300">
+                    <p className="text-xs text-center">Add components to see the preview</p>
+                  </div>
+                ) : (
+                  screen.components.map((comp, i) => (
+                    <PreviewComponent key={i} comp={comp} />
+                  ))
+                )}
+              </div>
+
+              {/* Footer button */}
+              <div className="shrink-0 px-4 pb-4 pt-2 border-t border-gray-100">
+                <button className="w-full py-2.5 bg-[#00a884] text-white text-xs font-semibold rounded-lg">
+                  {screen?.isTerminal ? 'Submit' : 'Next'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </DevicePreviewFrame>
+
+        <p className="mt-3 shrink-0 text-xs text-gray-400">Live preview • WhatsApp Flow</p>
       </div>
-
-      <p className="mt-3 text-xs text-gray-400">Live preview • WhatsApp Flow</p>
     </div>
   );
 }
