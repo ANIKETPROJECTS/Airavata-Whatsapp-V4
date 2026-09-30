@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
+import { DevicePreviewSelector, type PreviewDevice } from '../components/DevicePreview';
 import PhonePreview from '../components/flow/PhonePreview';
 import ComponentEditor from '../components/flow/ComponentEditor';
 import type { Flow, FlowScreen, FlowComponent, ComponentType } from '../types/flow';
@@ -479,6 +480,7 @@ function FlowEditorView({
   );
   const [activeScreenIdx, setActiveScreenIdx] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('ios');
 
   const activeScreen = screens[activeScreenIdx] ?? null;
 
@@ -708,10 +710,11 @@ function FlowEditorView({
 
         {/* Right: Phone preview */}
         <div className="w-72 border-l bg-gray-50 shrink-0 hidden xl:flex flex-col">
-          <div className="px-4 py-3 border-b bg-white">
+          <div className="px-3 py-2 border-b bg-white flex items-center justify-between gap-1">
             <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</span>
+            <DevicePreviewSelector device={previewDevice} onChange={setPreviewDevice} />
           </div>
-          <PhonePreview screen={activeScreen} flowName={flow.name} />
+          <PhonePreview screen={activeScreen} flowName={flow.name} device={previewDevice} />
         </div>
       </div>
     </div>

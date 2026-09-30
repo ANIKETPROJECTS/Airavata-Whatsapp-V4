@@ -7,9 +7,7 @@ import Picker from '@emoji-mart/react';
 import emojiData from '@emoji-mart/data';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { AndroidMockup, IPhoneMockup } from 'react-device-mockup';
-import androidIcon from '@assets/android_1788728822650.png';
-import appleIcon from '@assets/apple-logo_(1)_1788728825558.png';
+import { DevicePreviewFrame, DevicePreviewSelector, type PreviewDevice } from '../components/DevicePreview';
 
 interface Flow {
   id: string;
@@ -111,41 +109,6 @@ function renderMetaPreview(text: string, samples: Record<number, string>): React
   return nodes;
 }
 
-function DevicePreviewFrame({
-  device,
-  children,
-}: {
-  device: 'android' | 'ios';
-  children: ReactNode;
-}) {
-  if (device === 'ios') {
-    return (
-      <IPhoneMockup
-        screenWidth={300}
-        screenType="island"
-        frameColor="#151922"
-        statusbarColor="#f8fafc"
-        hideNavBar={false}
-      >
-        {children}
-      </IPhoneMockup>
-    );
-  }
-
-  return (
-    <AndroidMockup
-      screenWidth={300}
-      frameColor="#151922"
-      statusbarColor="#f8fafc"
-      navBarColor="#f8fafc"
-      navBar="swipe"
-      hideNavBar={false}
-    >
-      {children}
-    </AndroidMockup>
-  );
-}
-
 export default function AddTemplate() {
   const [, navigate] = useLocation();
   const qc = useQueryClient();
@@ -179,7 +142,7 @@ export default function AddTemplate() {
   const [quickReplies, setQuickReplies] = useState(['', '', '']);
   const [ctaUrl, setCtaUrl] = useState({ enabled: false, text: 'Visit Website', url: '' });
   const [ctaPhone, setCtaPhone] = useState({ enabled: false, text: 'Call Us', phone: '' });
-  const [previewDevice, setPreviewDevice] = useState<'android' | 'ios'>('ios');
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('ios');
   const [logoLoadFailed, setLogoLoadFailed] = useState(false);
 
   // ── Flow button fields ─────────────────────────────────────────────────────
@@ -1225,34 +1188,13 @@ export default function AddTemplate() {
         <div className="space-y-4 lg:h-full lg:overflow-hidden">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-semibold text-gray-900">Preview</h3>
-            <div className="flex rounded-lg border bg-white p-0.5 shadow-sm" aria-label="Preview device">
-              {(['android', 'ios'] as const).map(device => (
-                <button
-                  key={device}
-                  type="button"
-                  onClick={() => {
-                    setPreviewDevice(device);
-                    setLogoLoadFailed(false);
-                  }}
-                  title={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
-                  aria-label={`Preview on ${device === 'ios' ? 'iOS' : 'Android'}`}
-                  className={`flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition-colors ${
-                    previewDevice === device
-                      ? 'bg-slate-900 text-white shadow-md ring-1 ring-slate-900/10'
-                      : 'text-gray-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white">
-                    <img
-                      src={device === 'ios' ? appleIcon : androidIcon}
-                      alt=""
-                      className="h-4 w-4 object-contain"
-                    />
-                  </span>
-                  <span>{device === 'ios' ? 'iOS' : 'Android'}</span>
-                </button>
-              ))}
-            </div>
+            <DevicePreviewSelector
+              device={previewDevice}
+              onChange={device => {
+                setPreviewDevice(device);
+                setLogoLoadFailed(false);
+              }}
+            />
           </div>
 
           <div className="mx-auto flex justify-center">
