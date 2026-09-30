@@ -1,0 +1,59 @@
+react-dom_client.js?v=7d41ec87:17987 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+api/chatbot/flows/6abce2ea465b305e4bd25fce:1  Failed to load resource: the server responded with a status of 413 (Request Entity Too Large)
+api.ts:52 [API] PUT /chatbot/flows/6abce2ea465b305e4bd25fce → 413 Object
+request @ api.ts:52
+api/chatbot/flows/6abce2ea465b305e4bd25fce:1  Failed to load resource: the server responded with a status of 413 (Request Entity Too Large)
+api.ts:52 [API] PUT /chatbot/flows/6abce2ea465b305e4bd25fce → 413 Object
+request @ api.ts:52
+api/chatbot/flows/6abce2ea465b305e4bd25fce:1  Failed to load resource: the server responded with a status of 413 (Request Entity Too Large)
+api.ts:52 [API] PUT /chatbot/flows/6abce2ea465b305e4bd25fce → 413 Object
+request @ api.ts:52
+api/chatbot/flows/6abce2ea465b305e4bd25fce:1  Failed to load resource: the server responded with a status of 413 (Request Entity Too Large)
+api.ts:52 [API] PUT /chatbot/flows/6abce2ea465b305e4bd25fce → 413 Object
+request @ api.ts:52
+api/chatbot/flows/6abce2ea465b305e4bd25fce:1  Failed to load resource: the server responded with a status of 413 (Request Entity Too Large)
+api.ts:52 [API] PUT /chatbot/flows/6abce2ea465b305e4bd25fce → 413 Object
+request @ api.ts:52
+api.ts:39  PUT https://2e9d506d-e58c-44c9-8edb-7289b57cf7eb-00-2axs0jiyc1qpg.sisko.replit.dev/api/chatbot/flows/6abce2ea465b305e4bd25fce 413 (Request Entity Too Large)
+request @ api.ts:39
+(anonymous) @ api.ts:90
+saveFlow @ Chatbot.tsx:69
+mutationFn @ Chatbot.tsx:652
+fn @ @tanstack_react-query.js?v=7d41ec87:2056
+run @ @tanstack_react-query.js?v=7d41ec87:848
+start @ @tanstack_react-query.js?v=7d41ec87:890
+execute @ @tanstack_react-query.js?v=7d41ec87:2097
+await in execute
+mutate @ @tanstack_react-query.js?v=7d41ec87:2433
+(anonymous) @ @tanstack_react-query.js?v=7d41ec87:3658
+(anonymous) @ Chatbot.tsx:983
+executeDispatch @ react-dom_client.js?v=7d41ec87:11736
+runWithFiberInDEV @ react-dom_client.js?v=7d41ec87:1485
+processDispatchQueue @ react-dom_client.js?v=7d41ec87:11772
+(anonymous) @ react-dom_client.js?v=7d41ec87:12182
+batchedUpdates$1 @ react-dom_client.js?v=7d41ec87:2628
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=7d41ec87:11877
+dispatchEvent @ react-dom_client.js?v=7d41ec87:14792
+dispatchDiscreteEvent @ react-dom_client.js?v=7d41ec87:14773
+api.ts:52 [API] PUT /chatbot/flows/6abce2ea465b305e4bd25fce → 413 {}
+request @ api.ts:52
+await in request
+(anonymous) @ api.ts:90
+saveFlow @ Chatbot.tsx:69
+mutationFn @ Chatbot.tsx:652
+fn @ @tanstack_react-query.js?v=7d41ec87:2056
+run @ @tanstack_react-query.js?v=7d41ec87:848
+start @ @tanstack_react-query.js?v=7d41ec87:890
+execute @ @tanstack_react-query.js?v=7d41ec87:2097
+await in execute
+mutate @ @tanstack_react-query.js?v=7d41ec87:2433
+(anonymous) @ @tanstack_react-query.js?v=7d41ec87:3658
+(anonymous) @ Chatbot.tsx:983
+executeDispatch @ react-dom_client.js?v=7d41ec87:11736
+runWithFiberInDEV @ react-dom_client.js?v=7d41ec87:1485
+processDispatchQueue @ react-dom_client.js?v=7d41ec87:11772
+(anonymous) @ react-dom_client.js?v=7d41ec87:12182
+batchedUpdates$1 @ react-dom_client.js?v=7d41ec87:2628
+dispatchEventForPluginEventSystem @ react-dom_client.js?v=7d41ec87:11877
+dispatchEvent @ react-dom_client.js?v=7d41ec87:14792
+dispatchDiscreteEvent @ react-dom_client.js?v=7d41ec87:14773
