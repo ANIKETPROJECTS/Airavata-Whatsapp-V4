@@ -14,8 +14,18 @@ const componentSchema = new Schema(
     options: [{ id: String, title: String }],
     // For image
     src: { type: String },
+    altText: { type: String },
+    scaleType: { type: String, enum: ["contain", "cover"], default: "contain" },
     // For TextInput sub-type
     inputType: { type: String, default: "text" },
+    // For links and consent details
+    url: { type: String },
+    // For photo/document pickers
+    description: { type: String },
+    photoSource: { type: String, enum: ["camera_gallery", "camera", "gallery"] },
+    maxFileSizeKb: { type: Number, min: 1, max: 25600 },
+    maxUploadedFiles: { type: Number, min: 1, max: 30 },
+    allowedMimeTypes: [{ type: String }],
   },
   { _id: false },
 );

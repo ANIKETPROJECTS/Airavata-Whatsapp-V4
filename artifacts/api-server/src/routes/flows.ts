@@ -19,6 +19,228 @@ import { normalizeContactPhone } from "../lib/contactPhone";
 const router = Router();
 
 const META_BASE = "https://graph.facebook.com/v21.0";
+const FLOW_FIELD_TYPES = new Set([
+  "TextInput", "TextArea", "Dropdown", "RadioButtonsGroup", "CheckboxGroup",
+  "DatePicker", "OptIn", "PhotoPicker", "DocumentPicker",
+]);
+const IMAGE_DATA_URL = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/;
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
+  "application/gzip",
+  "application/msword",
+  "application/pdf",
+  "application/vnd.ms-excel",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.oasis.opendocument.presentation",
+  "application/vnd.oasis.opendocument.spreadsheet",
+  "application/vnd.oasis.opendocument.text",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/x-7z-compressed",
+  "application/zip",
+  "image/avif",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+  "image/jpeg",
+  "image/png",
+  "image/tiff",
+  "image/webp",
+  "text/plain",
+  "video/mp4",
+  "video/mpeg",
+]);
+
+interface FlowJsonComponent {
+  type: string;
+  text?: string | null;
+  name?: string | null;
+  label?: string | null;
+  required?: boolean | null;
+  options?: ReadonlyArray<{ id?: string | null; title?: string | null }>;
+  inputType?: string | null;
+  url?: string | null;
+  description?: string | null;
+  photoSource?: string | null;
+  maxFileSizeKb?: number | null;
+  maxUploadedFiles?: number | null;
+  allowedMimeTypes?: ReadonlyArray<string> | null;
+  src?: string | null;
+  altText?: string | null;
+  scaleType?: string | null;
+}
+
+interface FlowJsonScreen {
+  id: string;
+  title: string;
+  isTerminal?: boolean | null;
+  nextScreenId?: string | null;
+  components: ReadonlyArray<FlowJsonComponent>;
+}
+
+interface FlowJsonDefinition {
+  screens: ReadonlyArray<FlowJsonScreen>;
+}
+
+function flowFieldDataType(component: FlowJsonComponent): "string" | "number" | "boolean" | "array" {
+  if (["CheckboxGroup", "PhotoPicker", "DocumentPicker"].includes(component.type)) return "array";
+  if (component.type === "OptIn") return "boolean";
+  if (component.type === "TextInput" && component.inputType === "number") return "number";
+  return "string";
+}
+
+function dataFieldDefinition(type: "string" | "number" | "boolean" | "array") {
+  if (type === "array") return { type: "array", __example__: [] };
+  if (type === "boolean") return { type: "boolean", __example__: false };
+  if (type === "number") return { type: "number", __example__: 0 };
+  return { type: "string", __example__: "" };
+}
+
+function estimateInlineImageBytes(source: string) {
+  const match = source.match(IMAGE_DATA_URL);
+  if (!match) return 0;
+  const base64 = match[2];
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor(base64.length * 3 / 4) - padding);
+}
+
+function validateInlineImageAssets(flow: FlowJsonDefinition): string[] {
+  const errors: string[] = [];
+  let totalBytes = 0;
+  for (const screen of flow.screens) {
+    for (const component of screen?.components ?? []) {
+      if (!component) continue;
+      if (component.type !== "Image" || !component.src) continue;
+      if (!IMAGE_DATA_URL.test(component.src)) {
+        errors.push("Images must be uploaded as PNG or JPG files.");
+        continue;
+      }
+      const bytes = estimateInlineImageBytes(component.src);
+      if (bytes > 1_000_000) errors.push("Each flow image must be 1 MB or smaller.");
+      totalBytes += bytes;
+    }
+  }
+  if (totalBytes > 3_000_000) errors.push("Images in this flow must total 3 MB or less. Remove or resize an image.");
+  return errors;
+}
+
+function validateFlowForPublishing(flow: FlowJsonDefinition): string[] {
+  const errors = validateInlineImageAssets(flow);
+  const usedNames = new Set<string>();
+  const totalScreens = flow.screens.length;
+  const hasTerminal = flow.screens.some((screen) => screen.isTerminal);
+
+  for (const [screenIndex, screen] of flow.screens.entries()) {
+    const isEffectiveTerminal = Boolean(screen.isTerminal) || (!hasTerminal && screenIndex === totalScreens - 1);
+    const mediaPickers = screen.components.filter((component) =>
+      component.type === "PhotoPicker" || component.type === "DocumentPicker",
+    );
+    if (mediaPickers.length > 1) {
+      errors.push(`“${screen.title}” has more than one photo or document upload. WhatsApp allows one upload picker per screen.`);
+    }
+    if (mediaPickers.length > 0 && !isEffectiveTerminal) {
+      errors.push(`Move the photo or document upload on “${screen.title}” to a final screen. Uploaded files must be sent with the final answer.`);
+    }
+    if (screen.components.filter((component) => component.type === "OptIn").length > 5) {
+      errors.push(`“${screen.title}” can have at most five consent checkboxes.`);
+    }
+    if (screen.components.filter((component) => component.type === "EmbeddedLink").length > 2) {
+      errors.push(`“${screen.title}” can have at most two embedded links.`);
+    }
+
+    for (const component of screen.components) {
+      if (FLOW_FIELD_TYPES.has(component.type)) {
+        const name = component.name?.trim() ?? "";
+        if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) {
+          errors.push(`Add a valid answer name to “${component.label || component.type}”. Use a letter first, then letters, numbers, or underscores.`);
+        } else if (usedNames.has(name)) {
+          errors.push(`The answer name “${name}” is used more than once. Each answer name must be unique in the flow.`);
+        } else {
+          usedNames.add(name);
+        }
+        if (!component.label?.trim()) {
+          errors.push(`Add a question or label to “${component.type}”.`);
+        }
+      }
+
+      if (["Dropdown", "RadioButtonsGroup", "CheckboxGroup"].includes(component.type)) {
+        const options = component.options ?? [];
+        if (options.length === 0) errors.push(`Add at least one option to “${component.label || component.type}”.`);
+        if (options.some((option) => !option.title?.trim())) {
+          errors.push(`Fill in every option for “${component.label || component.type}”.`);
+        }
+        if (new Set(options.map((option) => option.id)).size !== options.length) {
+          errors.push(`Options for “${component.label || component.type}” need unique IDs. Remove and re-add any duplicated options.`);
+        }
+      }
+
+      if (component.type === "TextInput" && !["text", "number", "email", "phone", "password", "passcode"].includes(component.inputType ?? "text")) {
+        errors.push(`Choose a supported input type for “${component.label || "Text Input"}”.`);
+      }
+
+      const textLimits: Record<string, number> = {
+        TextHeading: 80,
+        TextSubheading: 80,
+        TextBody: 4096,
+        TextCaption: 409,
+      };
+      if (textLimits[component.type] !== undefined) {
+        const limit = textLimits[component.type];
+        if (!component.text?.trim()) errors.push(`Add text to the ${component.type === "TextHeading" ? "heading" : component.type === "TextSubheading" ? "subheading" : component.type === "TextCaption" ? "caption" : "body text"}.`);
+        else if (component.text.length > limit) errors.push(`${component.type} text must be ${limit} characters or fewer.`);
+      }
+
+      if (component.type === "OptIn" && (component.label?.length ?? 0) > 120) {
+        errors.push("Consent statements must be 120 characters or fewer.");
+      }
+
+      if (component.type === "EmbeddedLink") {
+        if (!component.text?.trim()) errors.push("Add text to the embedded link.");
+        else if (component.text.length > 25) errors.push("Embedded link text must be 25 characters or fewer.");
+      }
+
+      if (component.type === "EmbeddedLink" || component.type === "OptIn" && component.url) {
+        try {
+          const url = new URL(component.url ?? "");
+          if (!["http:", "https:"].includes(url.protocol)) throw new Error("unsupported protocol");
+        } catch {
+          errors.push(`Add a complete website address (https://...) to “${component.text || component.label || "link"}”.`);
+        }
+      }
+
+      if (component.type === "PhotoPicker" || component.type === "DocumentPicker") {
+        const count = component.maxUploadedFiles ?? 1;
+        const sizeKb = component.maxFileSizeKb ?? 25600;
+        if ((component.label?.length ?? 0) > 80) {
+          errors.push(`The label for “${component.label || component.type}” must be 80 characters or fewer.`);
+        }
+        if (!Number.isInteger(count) || count < 1 || count > 10) {
+          errors.push(`Set the maximum number of uploads for “${component.label || component.type}” between 1 and 10.`);
+        }
+        if (!Number.isInteger(sizeKb) || sizeKb < 1 || sizeKb > 25600) {
+          errors.push(`Set the maximum file size for “${component.label || component.type}” between 1 KB and 25 MB.`);
+        }
+        if (component.description && component.description.length > 300) {
+          errors.push(`The instructions for “${component.label || component.type}” must be 300 characters or fewer.`);
+        }
+        if (component.type === "PhotoPicker" && component.photoSource && !["camera_gallery", "camera", "gallery"].includes(component.photoSource)) {
+          errors.push(`Choose a supported photo source for “${component.label || "Photo Upload"}”.`);
+        }
+        if (component.type === "DocumentPicker" && (component.allowedMimeTypes ?? []).some((mime) => !ALLOWED_DOCUMENT_MIME_TYPES.has(mime))) {
+          errors.push(`Choose supported file types for “${component.label || "Document Upload"}”.`);
+        }
+      }
+
+      if (component.type === "Image") {
+        if (!component.src) {
+          errors.push("Add a PNG or JPG image before publishing.");
+        }
+      }
+    }
+  }
+
+  return errors.slice(0, 20);
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -34,34 +256,13 @@ function sanitizeScreenId(id: string): string {
 }
 
 /** Compile our internal screen format into Meta's Flow JSON */
-function compileToMetaJson(flow: {
-  screens: Array<{
-    id: string;
-    title: string;
-    isTerminal?: boolean;
-    nextScreenId?: string;
-    components: Array<{
-      type: string;
-      text?: string;
-      name?: string;
-      label?: string;
-      required?: boolean;
-      options?: Array<{ id: string; title: string }>;
-      inputType?: string;
-    }>;
-  }>;
-}) {
+function compileToMetaJson(flow: FlowJsonDefinition) {
   // Component types that collect user input and must be included in the payload
-  const FIELD_TYPES = new Set([
-    "TextInput", "TextArea", "Dropdown",
-    "RadioButtonsGroup", "CheckboxGroup", "DatePicker",
-  ]);
-
   // For each screen: the list of input fields it owns
   const screenFieldDefs = flow.screens.map((screen) =>
     screen.components
-      .filter((c) => FIELD_TYPES.has(c.type) && c.name)
-      .map((c) => ({ name: c.name!, isArray: c.type === "CheckboxGroup" })),
+      .filter((c) => FLOW_FIELD_TYPES.has(c.type) && c.name)
+      .map((c) => ({ name: c.name!, dataType: flowFieldDataType(c) })),
   );
 
   // Safety net: if no screen is explicitly marked terminal, treat the last one as terminal
@@ -85,6 +286,8 @@ function compileToMetaJson(flow: {
             return { type: "TextSubheading", text: comp.text ?? "" };
           case "TextBody":
             return { type: "TextBody", text: comp.text ?? "" };
+          case "TextCaption":
+            return { type: "TextCaption", text: comp.text ?? "" };
           case "TextInput":
             return {
               type: "TextInput",
@@ -106,7 +309,7 @@ function compileToMetaJson(flow: {
               name: comp.name ?? "field",
               label: comp.label ?? "Select",
               required: comp.required ?? false,
-              "data-source": (comp.options ?? []).map((o) => ({ id: o.id, title: o.title })),
+              "data-source": (comp.options ?? []).map((o, i) => ({ id: o.id ?? `option_${i + 1}`, title: o.title ?? "" })),
             };
           case "RadioButtonsGroup":
             return {
@@ -114,7 +317,7 @@ function compileToMetaJson(flow: {
               name: comp.name ?? "field",
               label: comp.label ?? "Select one",
               required: comp.required ?? false,
-              "data-source": (comp.options ?? []).map((o) => ({ id: o.id, title: o.title })),
+              "data-source": (comp.options ?? []).map((o, i) => ({ id: o.id ?? `option_${i + 1}`, title: o.title ?? "" })),
             };
           case "CheckboxGroup":
             return {
@@ -122,7 +325,7 @@ function compileToMetaJson(flow: {
               name: comp.name ?? "field",
               label: comp.label ?? "Select all that apply",
               required: comp.required ?? false,
-              "data-source": (comp.options ?? []).map((o) => ({ id: o.id, title: o.title })),
+              "data-source": (comp.options ?? []).map((o, i) => ({ id: o.id ?? `option_${i + 1}`, title: o.title ?? "" })),
             };
           case "DatePicker":
             return {
@@ -130,6 +333,52 @@ function compileToMetaJson(flow: {
               name: comp.name ?? "field",
               label: comp.label ?? "Select date",
               required: comp.required ?? false,
+            };
+          case "OptIn":
+            return {
+              type: "OptIn",
+              name: comp.name ?? "consent",
+              label: comp.label ?? "I agree",
+              required: comp.required ?? false,
+              ...(comp.url ? { "on-click-action": { name: "open_url", url: comp.url } } : {}),
+            };
+          case "PhotoPicker":
+            return {
+              type: "PhotoPicker",
+              name: comp.name ?? "photo_upload",
+              label: comp.label ?? "Upload a photo",
+              ...(comp.description ? { description: comp.description } : {}),
+              "photo-source": comp.photoSource ?? "camera_gallery",
+              "max-file-size-kb": comp.maxFileSizeKb ?? 25600,
+              "min-uploaded-photos": comp.required ? 1 : 0,
+              "max-uploaded-photos": comp.maxUploadedFiles ?? 1,
+            };
+          case "DocumentPicker":
+            return {
+              type: "DocumentPicker",
+              name: comp.name ?? "document_upload",
+              label: comp.label ?? "Upload a document",
+              ...(comp.description ? { description: comp.description } : {}),
+              "max-file-size-kb": comp.maxFileSizeKb ?? 25600,
+              "min-uploaded-documents": comp.required ? 1 : 0,
+              "max-uploaded-documents": comp.maxUploadedFiles ?? 1,
+              ...(comp.allowedMimeTypes?.length ? { "allowed-mime-types": comp.allowedMimeTypes } : {}),
+            };
+          case "Image": {
+            const match = comp.src?.match(IMAGE_DATA_URL);
+            if (!match) throw new Error("Add a PNG or JPG image before publishing.");
+            return {
+              type: "Image",
+              src: match[2],
+              ...(comp.altText ? { "alt-text": comp.altText } : {}),
+              "scale-type": comp.scaleType ?? "contain",
+            };
+          }
+          case "EmbeddedLink":
+            return {
+              type: "EmbeddedLink",
+              text: comp.text ?? "Read more",
+              "on-click-action": { name: "open_url", url: comp.url ?? "" },
             };
           default:
             return null;
@@ -159,12 +408,8 @@ function compileToMetaJson(flow: {
 
     // Non-first screens must declare a `data` block so Meta knows the shape
     // of values passed in from the previous navigate action.
-    const dataBlock: Record<string, { type: string; __example__: unknown }> = {};
-    for (const { name, isArray } of inheritedFields) {
-      dataBlock[name] = isArray
-        ? { type: "array", __example__: [] }
-        : { type: "string", __example__: "" };
-    }
+    const dataBlock: Record<string, ReturnType<typeof dataFieldDefinition>> = {};
+    for (const { name, dataType } of inheritedFields) dataBlock[name] = dataFieldDefinition(dataType);
 
     return {
       id: sanitizeScreenId(screen.id),
@@ -270,6 +515,9 @@ router.post("/flows", authenticate, async (req: AuthRequest, res) => {
       endpointUri?: string;
     };
 
+    const imageErrors = validateInlineImageAssets({ screens: (screens ?? []) as FlowJsonScreen[] });
+    if (imageErrors.length > 0) return res.status(400).json({ error: imageErrors.join(" ") });
+
     const flow = await FlowModel.create({
       userId,
       name,
@@ -296,6 +544,11 @@ router.put("/flows/:id", authenticate, async (req: AuthRequest, res) => {
       screens?: unknown[];
       endpointUri?: string;
     };
+
+    if (screens !== undefined) {
+      const imageErrors = validateInlineImageAssets({ screens: screens as FlowJsonScreen[] });
+      if (imageErrors.length > 0) return res.status(400).json({ error: imageErrors.join(" ") });
+    }
 
     // Only include fields explicitly provided — omitting undefined prevents
     // $set from clearing fields like endpointUri that weren't part of this update.
@@ -365,6 +618,12 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
     if (!flow) return res.status(404).json({ error: "Flow not found" });
     if (!flow.screens || flow.screens.length === 0) {
       return res.status(400).json({ error: "Flow must have at least one screen before publishing" });
+    }
+    const validationErrors = validateFlowForPublishing(flow);
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        error: `Fix these items before publishing: ${validationErrors.join(" ")}`,
+      });
     }
 
     let metaFlowId = flow.metaFlowId;

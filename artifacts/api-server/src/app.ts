@@ -31,13 +31,22 @@ app.use(
 );
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
+const flowWriteJsonParser = express.json({ limit: "5mb" });
+app.use((req, res, next) => {
+  const isFlowCreate = req.method === "POST" && req.path === "/api/flows";
+  const isFlowUpdate = req.method === "PUT" && /^\/api\/flows\/[^/]+$/.test(req.path);
+  if (!isFlowCreate && !isFlowUpdate) return next();
+  flowWriteJsonParser(req, res, next);
+});
 // Imported chatbot graphs commonly exceed Express's 100 KB JSON default.
 // 512 KB accommodates imported graphs while keeping individual writes bounded.
 app.use(express.json({ limit: "512kb" }));
 app.use(express.urlencoded({ extended: true }));
 const bodyParserErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   if (err?.type === "entity.too.large") {
-    res.status(413).json({ error: "Request body too large. JSON requests are limited to 512 KB." });
+    res.status(413).json({
+      error: "Request body too large. Flow edits are limited to 5 MB; other JSON requests are limited to 512 KB.",
+    });
     return;
   }
   next(err);

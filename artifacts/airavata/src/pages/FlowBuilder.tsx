@@ -10,11 +10,22 @@ import { useConfirmDialog } from '../components/ConfirmDialog';
 import { DevicePreviewSelector, type PreviewDevice } from '../components/DevicePreview';
 import PhonePreview from '../components/flow/PhonePreview';
 import ComponentEditor from '../components/flow/ComponentEditor';
-import type { Flow, FlowScreen, FlowComponent, ComponentType } from '../types/flow';
+import type { Flow, FlowScreen, FlowComponent, ComponentPaletteItem } from '../types/flow';
 import {
-  FLOW_CATEGORIES, COMPONENT_PALETTE,
+  FLOW_CATEGORIES, COMPONENT_CATEGORIES,
   makeDefaultComponent, makeNewScreen
 } from '../types/flow';
+
+const MAX_SCREEN_COMPONENTS = 50;
+const MAX_FLOW_INLINE_IMAGE_BYTES = 3_000_000;
+
+function inlineImageBytes(src?: string) {
+  const match = src?.match(/^data:image\/(?:png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/);
+  if (!match) return 0;
+  const data = match[1];
+  const padding = data.endsWith('==') ? 2 : data.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor(data.length * 3 / 4) - padding);
+}
 
 // ── API calls ─────────────────────────────────────────────────────────────────
 
@@ -483,6 +494,8 @@ function FlowEditorView({
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('ios');
 
   const activeScreen = screens[activeScreenIdx] ?? null;
+  const activeScreenIsTerminal = Boolean(activeScreen?.isTerminal) ||
+    (!screens.some(screen => screen.isTerminal) && activeScreenIdx === screens.length - 1);
 
   function updateScreen(idx: number, patch: Partial<FlowScreen>) {
     setScreens(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
@@ -508,8 +521,38 @@ function FlowEditorView({
     setActiveScreenIdx(Math.min(idx, screens.length - 2));
   }
 
-  function addComponent(type: ComponentType) {
-    const comp = makeDefaultComponent(type);
+  function componentLimitReason(item: ComponentPaletteItem) {
+    const components = activeScreen?.components ?? [];
+    if (!activeScreen) return 'Choose a screen first.';
+    if (components.length >= MAX_SCREEN_COMPONENTS) return `A screen can have up to ${MAX_SCREEN_COMPONENTS} components.`;
+    if (
+      (item.type === 'PhotoPicker' || item.type === 'DocumentPicker') &&
+      components.some(comp => comp.type === 'PhotoPicker' || comp.type === 'DocumentPicker')
+    ) return 'WhatsApp allows only one photo or document upload on each screen.';
+    if (item.type === 'OptIn' && components.filter(comp => comp.type === 'OptIn').length >= 5) {
+      return 'A screen can have up to five consent checkboxes.';
+    }
+    if (item.type === 'EmbeddedLink' && components.filter(comp => comp.type === 'EmbeddedLink').length >= 2) {
+      return 'A screen can have up to two embedded links.';
+    }
+    return null;
+  }
+
+  function addComponent(item: ComponentPaletteItem) {
+    const reason = componentLimitReason(item);
+    if (reason) {
+      toast.error(reason);
+      return;
+    }
+    const comp = makeDefaultComponent(item.type, item.inputType);
+    if (comp.name) {
+      const usedNames = new Set(screens.flatMap(screen => screen.components.map(existing => existing.name).filter(Boolean)));
+      const baseName = comp.name;
+      let candidate = baseName;
+      let suffix = 2;
+      while (usedNames.has(candidate)) candidate = `${baseName}_${suffix++}`;
+      comp.name = candidate;
+    }
     updateScreen(activeScreenIdx, {
       components: [...(activeScreen?.components ?? []), comp],
     });
@@ -656,23 +699,41 @@ function FlowEditorView({
 
               <div className="flex flex-1 overflow-hidden">
                 {/* Component palette */}
-                <div className="w-52 bg-white border-r flex flex-col shrink-0">
+                <div className="w-60 bg-white border-r flex flex-col shrink-0">
                   <div className="p-3 border-b">
-                    <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Add Component</span>
+                    <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Add a component</span>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                    {COMPONENT_PALETTE.map(item => (
-                      <button
-                        key={item.type}
-                        onClick={() => addComponent(item.type)}
-                        className="w-full flex items-start gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-50 text-left transition-colors group"
-                      >
-                        <span className="text-base shrink-0 mt-0.5">{item.emoji}</span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-gray-700 group-hover:text-primary">{item.label}</p>
-                          <p className="text-[10px] text-gray-400 leading-tight">{item.description}</p>
+                  <div className="flex-1 overflow-y-auto p-2">
+                    {COMPONENT_CATEGORIES.map(category => (
+                      <section key={category.id} className="mb-4 last:mb-1">
+                        <div className="px-2 pb-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            <span aria-hidden="true" className="mr-1.5">{category.emoji}</span>{category.title}
+                          </p>
+                          <p className="mt-0.5 text-[9px] leading-snug text-gray-400">{category.description}</p>
                         </div>
-                      </button>
+                        <div className="space-y-0.5">
+                          {category.items.map(item => {
+                            const disabledReason = componentLimitReason(item);
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => addComponent(item)}
+                                disabled={Boolean(disabledReason)}
+                                title={disabledReason ?? item.description}
+                                className="group flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                <span aria-hidden="true" className="mt-0.5 w-5 shrink-0 text-center text-sm">{item.emoji}</span>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-semibold leading-tight text-gray-700 group-hover:text-primary">{item.label}</p>
+                                  <p className="mt-0.5 text-[9px] leading-tight text-gray-400">{item.description}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
                     ))}
                   </div>
                 </div>
@@ -691,6 +752,12 @@ function FlowEditorView({
                         comp={comp}
                         index={compIdx}
                         total={activeScreen.components.length}
+                        screenIsTerminal={activeScreenIsTerminal}
+                        maxImageBytes={Math.max(0, MAX_FLOW_INLINE_IMAGE_BYTES - screens.reduce((totalBytes, screen, screenIdx) => (
+                          totalBytes + screen.components.reduce((screenBytes, other, otherIdx) => (
+                            screenBytes + (screenIdx === activeScreenIdx && otherIdx === compIdx ? 0 : inlineImageBytes(other.src))
+                          ), 0)
+                        ), 0))}
                         onChange={updated => updateComponent(compIdx, updated)}
                         onRemove={() => removeComponent(compIdx)}
                         onMoveUp={() => moveComponent(compIdx, 'up')}
