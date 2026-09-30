@@ -1,6 +1,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
+import { ContactModel } from "../models/Contact";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { resolvePricingLookupForUser } from "../lib/pricing";
 
@@ -147,18 +148,32 @@ router.get("/chatbot/flows/:id", authenticate, async (req: AuthRequest, res) => 
   }
 });
 
+async function clearChatbotFlowSessions(flowId: string, userId: string) {
+  await ContactModel.updateMany(
+    { userId, "chatbotSession.flowId": flowId },
+    { $unset: { chatbotSession: 1 } },
+    { timestamps: false },
+  );
+}
+
 // ── PUT /api/chatbot/flows/:id ───────────────────────────────────────────────
 router.put("/chatbot/flows/:id", authenticate, async (req: AuthRequest, res) => {
   try {
     const { name, nodes, edges, status, variables } = req.body as {
-      name?: string; nodes?: unknown[]; edges?: unknown[]; status?: string; variables?: unknown[];
+      name?: string; nodes?: unknown[]; edges?: unknown[]; status?: unknown; variables?: unknown[];
     };
+
+    if (status !== undefined && status !== "DRAFT" && status !== "PUBLISHED") {
+      res.status(400).json({ error: "status must be DRAFT or PUBLISHED" });
+      return;
+    }
 
     const flow = await ChatbotFlowModel.findOne({
       _id: new mongoose.Types.ObjectId(req.params["id"]),
       userId: req.user!.userId,
     });
     if (!flow) return res.status(404).json({ error: "Flow not found" });
+    const previousStatus = flow.status;
 
     // Snapshot current state into history before overwriting (max 20 versions)
     if (nodes !== undefined) {
@@ -175,6 +190,9 @@ router.put("/chatbot/flows/:id", authenticate, async (req: AuthRequest, res) => 
     if (variables !== undefined) flow.set("variables", variables);
 
     await flow.save();
+    if (status === "DRAFT" || (status === "PUBLISHED" && previousStatus !== "PUBLISHED")) {
+      await clearChatbotFlowSessions(String(flow._id), req.user!.userId);
+    }
     res.json({ flow: { ...flow.toObject(), id: String(flow._id) } });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });

@@ -9,7 +9,7 @@ import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Save, Play, Download, Upload, Undo2, Redo2, Plus, Trash2,
+  Save, Play, Pause, Download, Upload, Undo2, Redo2, Plus, Trash2,
   History, BarChart2, Variable, Copy, Clipboard, Layers,
   Loader2, CheckCircle2, AlertCircle, X, FileJson,
   Terminal, Search, CopyPlus, ChevronDown, GitBranch,
@@ -161,12 +161,14 @@ function useHistory<T>(initial: T) {
 }
 
 // ── Flow list panel ────────────────────────────────────────────────────────────
-function FlowList({ flows, activeId, onSelect, onCreate, onDelete }: {
+function FlowList({ flows, activeId, onSelect, onCreate, onDelete, onStatusChange, isStatusUpdating }: {
   flows: ChatbotFlowSummary[];
   activeId: string | null;
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: 'DRAFT' | 'PUBLISHED') => void;
+  isStatusUpdating: boolean;
 }) {
   const [search, setSearch] = useState('');
   const { confirm, confirmDialog } = useConfirmDialog();
@@ -218,19 +220,41 @@ function FlowList({ flows, activeId, onSelect, onCreate, onDelete }: {
                 <p className="text-[9px] text-gray-600 mt-0.5">{f.analytics.triggered} triggered</p>
               )}
             </div>
-            <button
-              onClick={async e => {
-                e.stopPropagation();
-                if (await confirm({
-                  title: 'Delete this flow?',
-                  description: 'This flow and its configuration will be permanently removed.',
-                  confirmLabel: 'Delete flow',
-                })) onDelete(f.id);
-              }}
-              className="opacity-0 group-hover:opacity-100 text-gray-700 hover:text-red-500 transition-all mt-0.5 shrink-0"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                title={f.status === 'PUBLISHED' ? 'Disable / unpublish chatbot' : 'Enable / publish chatbot'}
+                aria-label={f.status === 'PUBLISHED' ? `Unpublish ${f.name}` : `Publish ${f.name}`}
+                disabled={isStatusUpdating}
+                onClick={e => {
+                  e.stopPropagation();
+                  onStatusChange(f.id, f.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED');
+                }}
+                className={`rounded p-1 transition-colors disabled:opacity-40 ${
+                  f.status === 'PUBLISHED'
+                    ? 'text-emerald-400 hover:bg-amber-900/30 hover:text-amber-300'
+                    : 'text-gray-500 hover:bg-emerald-900/30 hover:text-emerald-300'
+                }`}
+              >
+                {f.status === 'PUBLISHED' ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={async e => {
+                  e.stopPropagation();
+                  if (await confirm({
+                    title: 'Delete this flow?',
+                    description: 'This flow and its configuration will be permanently removed.',
+                    confirmLabel: 'Delete flow',
+                  })) onDelete(f.id);
+                }}
+                aria-label={`Delete ${f.name}`}
+                title="Delete flow"
+                className="opacity-0 group-hover:opacity-100 text-gray-700 hover:text-red-500 transition-all mt-0.5 shrink-0"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -651,8 +675,17 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
     mutationFn: (data: { nodes: Node[]; edges: Edge[]; name?: string; status?: string }) =>
       saveFlow(flowId, data),
     onMutate: () => setSaveStatus('saving'),
-    onSuccess: () => { setSaveStatus('saved'); qc.invalidateQueries({ queryKey: ['chatbot-flows'] }); },
-    onError: () => { setSaveStatus('unsaved'); toast.error('Failed to save'); },
+    onSuccess: (flow, variables) => {
+      setSaveStatus('saved');
+      qc.setQueryData(['chatbot-flow', flowId], flow);
+      qc.invalidateQueries({ queryKey: ['chatbot-flows'] });
+      if (variables.status === 'PUBLISHED') toast.success('Chatbot published and active');
+      if (variables.status === 'DRAFT') toast.success('Chatbot disabled and unpublished');
+    },
+    onError: error => {
+      setSaveStatus('unsaved');
+      toast.error(error instanceof Error ? error.message : 'Failed to save');
+    },
   });
 
   const addCombinedFaqMutation = useMutation({
@@ -996,7 +1029,7 @@ function FlowCanvas({ flowId, addNodeRef }: { flowId: string; addNodeRef?: React
           </button>
         ) : (
           <button
-            onClick={() => { saveMutation.mutate({ nodes, edges, status: 'PUBLISHED' }); toast.success('Flow published!'); }}
+            onClick={() => saveMutation.mutate({ nodes, edges, status: 'PUBLISHED' })}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 shadow-sm transition-colors"
           >
             <Play className="w-3 h-3" /> Publish
@@ -1275,6 +1308,21 @@ export default function Chatbot() {
     },
   });
 
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'DRAFT' | 'PUBLISHED' }) =>
+      saveFlow(id, { status }),
+    onSuccess: (flow, variables) => {
+      qc.setQueryData(['chatbot-flow', flow.id], flow);
+      qc.invalidateQueries({ queryKey: ['chatbot-flows'] });
+      toast.success(variables.status === 'DRAFT' ? 'Chatbot disabled and unpublished' : 'Chatbot published and active');
+    },
+    onError: (error, variables) => {
+      qc.invalidateQueries({ queryKey: ['chatbot-flows'] });
+      qc.invalidateQueries({ queryKey: ['chatbot-flow', variables.id] });
+      toast.error(error instanceof Error ? error.message : 'Could not update chatbot status');
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -1292,6 +1340,8 @@ export default function Chatbot() {
         onSelect={setActiveFlowId}
         onCreate={createMutation.mutate}
         onDelete={id => deleteMutation.mutate(id)}
+        onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+        isStatusUpdating={statusMutation.isPending}
       />
 
       {/* Center: node sidebar + canvas */}

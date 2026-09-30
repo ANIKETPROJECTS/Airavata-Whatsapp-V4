@@ -382,6 +382,19 @@ async function executeFlow(
   while (currentNodeId && steps < MAX_STEPS) {
     steps++;
 
+    // Unpublishing must stop a flow that is already progressing through nodes,
+    // not only prevent the next inbound message from starting it.
+    const stillPublished = await ChatbotFlowModel.exists({
+      _id: flow._id,
+      userId,
+      status: "PUBLISHED",
+    });
+    if (!stillPublished) {
+      await clearSession(contactId);
+      logger.info({ flowId: String(flow._id) }, "Chatbot flow unpublished; stopping execution");
+      return;
+    }
+
     const node = flow.nodes.find((n) => n.id === currentNodeId);
     if (!node) {
       logger.warn({ nodeId: currentNodeId, flowId: String(flow._id) }, "Chatbot node not found");

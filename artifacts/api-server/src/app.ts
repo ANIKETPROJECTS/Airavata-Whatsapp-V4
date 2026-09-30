@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type ErrorRequestHandler, type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
@@ -31,8 +31,18 @@ app.use(
 );
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
-app.use(express.json());
+// Imported chatbot graphs commonly exceed Express's 100 KB JSON default.
+// 512 KB accommodates imported graphs while keeping individual writes bounded.
+app.use(express.json({ limit: "512kb" }));
 app.use(express.urlencoded({ extended: true }));
+const bodyParserErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
+  if (err?.type === "entity.too.large") {
+    res.status(413).json({ error: "Request body too large. JSON requests are limited to 512 KB." });
+    return;
+  }
+  next(err);
+};
+app.use(bodyParserErrorHandler);
 
 // API routes
 app.use("/api", router);

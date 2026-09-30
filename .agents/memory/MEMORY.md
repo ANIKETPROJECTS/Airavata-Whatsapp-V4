@@ -4,6 +4,7 @@
 - [Live Chat unread state](live-chat-unread-state.md) — derive badges from inbound messages after lastReadAt; new inbound activity reopens resolved conversations.
 - [Meta webhook secret name](meta-webhook-secret-name.md) — webhook verification uses WEBHOOK_VERIFY_TOKEN with a WHATSAPP_VERIFY_TOKEN compatibility fallback.
 - [Chatbot condition edge handles](chatbot-condition-edges.md) — condition branch edges must store the matching true/false sourceHandle or runtime execution stops.
+- [Chatbot flow disable semantics](chatbot-flow-disable.md) — unpublish clears tenant-scoped sessions and must stop active execution, not just new triggers.
 - [Service pricing catalog](service-pricing-catalog.md) — workspace-owned MongoDB pricing rows power built-in chatbot lookups and XLSX imports.
 - [Per-user Meta read isolation](per-user-meta-read-isolation.md) — user-specific Meta read routes must use strict credentials with no shared environment fallback.
 - [Meta credential recovery](meta-credential-recovery.md) — keep current credentials until replacement signup succeeds; restore legacy credentials only for the authenticated owner into an empty tenant.
