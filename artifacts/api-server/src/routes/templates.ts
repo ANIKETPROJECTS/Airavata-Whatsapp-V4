@@ -134,7 +134,9 @@ router.get("/templates", authenticate, async (req: AuthRequest, res) => {
           },
         }));
 
-      if (ops.length) await TemplateModel.bulkWrite(ops);
+      // This is a background status refresh, not a template edit. Keep it
+      // from bumping updatedAt every time the Manage Templates page is opened.
+      if (ops.length) await TemplateModel.bulkWrite(ops, { timestamps: false });
     } catch {
       // Sync failure is non-fatal — serve stale status rather than error
     }

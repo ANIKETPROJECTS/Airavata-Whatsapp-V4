@@ -23,7 +23,7 @@ interface TemplateRecord {
   status: string;
   rejectionReason?: string;
   metaTemplateId?: string;
-  updatedAt: string;
+  createdAt?: string;
 }
 
 // ── Send-Test Dialog ───────────────────────────────────────────────────────────
@@ -329,9 +329,9 @@ export default function ManageTemplates() {
                 </div>
 
                 <div className="bg-gray-50 p-3 flex justify-between items-center mt-auto">
-                  <span className="text-xs text-gray-500">
-                    {t.updatedAt ? new Date(t.updatedAt).toLocaleDateString() : '—'}
-                  </span>
+                  <time className="text-xs text-gray-500" dateTime={t.createdAt}>
+                    {t.createdAt ? `Created ${new Date(t.createdAt).toLocaleDateString()}` : 'Creation date unavailable'}
+                  </time>
                   <div className="flex gap-1">
                     {t.status.toUpperCase() === 'APPROVED' && (
                       <button
