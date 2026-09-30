@@ -610,6 +610,51 @@ function FlowEditorView({
         </button>
       </div>
 
+      {/* Screen settings span the editor so the panels below share one aligned top edge. */}
+      <div className="shrink-0 border-b bg-white px-4 py-2.5">
+        {activeScreen ? (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div className="flex min-w-[220px] flex-1 items-center gap-2">
+              <span className="shrink-0 text-xs font-medium text-gray-500">Title</span>
+              <input
+                type="text"
+                value={activeScreen.title}
+                onChange={e => updateScreen(activeScreenIdx, { title: e.target.value })}
+                className="w-full max-w-[260px] min-w-0 rounded-lg border border-gray-200 px-2.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">Next screen</span>
+              {activeScreen.isTerminal ? (
+                <span className="text-xs font-medium text-green-600">Submit (final)</span>
+              ) : (
+                <select
+                  value={activeScreen.nextScreenId ?? ''}
+                  onChange={e => updateScreen(activeScreenIdx, { nextScreenId: e.target.value })}
+                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">Select screen...</option>
+                  {screens.filter((_, i) => i !== activeScreenIdx).map(s => (
+                    <option key={s.id} value={s.id}>{s.title}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <label className="flex cursor-pointer items-center gap-2">
+              <div
+                onClick={() => updateScreen(activeScreenIdx, { isTerminal: !activeScreen.isTerminal, nextScreenId: undefined })}
+                className={`relative h-4 w-8 rounded-full transition-colors ${activeScreen.isTerminal ? 'bg-green-500' : 'bg-gray-200'}`}
+              >
+                <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${activeScreen.isTerminal ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-xs text-gray-600">Final screen</span>
+            </label>
+          </div>
+        ) : (
+          <div className="h-7" />
+        )}
+      </div>
+
       <div className="flex min-w-0 flex-1 overflow-hidden">
         {/* Left: Screen list */}
         <div className="w-52 bg-white border-r flex flex-col shrink-0">
@@ -658,45 +703,6 @@ function FlowEditorView({
         <div className="min-w-0 flex-1 flex flex-col overflow-hidden bg-gray-50">
           {activeScreen ? (
             <>
-              {/* Screen settings bar */}
-              <div className="bg-white border-b px-4 py-3 flex items-center gap-4 shrink-0">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-xs font-medium text-gray-500 shrink-0">Title</span>
-                  <input
-                    type="text"
-                    value={activeScreen.title}
-                    onChange={e => updateScreen(activeScreenIdx, { title: e.target.value })}
-                    className="flex-1 text-sm border border-gray-200 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary max-w-[200px]"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-500">Next screen</span>
-                  {activeScreen.isTerminal ? (
-                    <span className="text-xs text-green-600 font-medium">Submit (final)</span>
-                  ) : (
-                    <select
-                      value={activeScreen.nextScreenId ?? ''}
-                      onChange={e => updateScreen(activeScreenIdx, { nextScreenId: e.target.value })}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary bg-white"
-                    >
-                      <option value="">Select screen...</option>
-                      {screens.filter((_, i) => i !== activeScreenIdx).map(s => (
-                        <option key={s.id} value={s.id}>{s.title}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <div
-                    onClick={() => updateScreen(activeScreenIdx, { isTerminal: !activeScreen.isTerminal, nextScreenId: undefined })}
-                    className={`w-8 h-4 rounded-full transition-colors ${activeScreen.isTerminal ? 'bg-green-500' : 'bg-gray-200'} relative`}
-                  >
-                    <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${activeScreen.isTerminal ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                  </div>
-                  <span className="text-xs text-gray-600">Final screen</span>
-                </label>
-              </div>
-
               <div className="flex min-w-0 flex-1 overflow-hidden">
                 {/* Component palette */}
                 <div className="w-60 bg-white border-r flex flex-col shrink-0">
