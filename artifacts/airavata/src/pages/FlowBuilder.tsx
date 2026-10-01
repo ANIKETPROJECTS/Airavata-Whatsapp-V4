@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Workflow, ArrowLeft, Send, Globe, Trash2, Download, Search,
-  Pencil, Settings, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox, CalendarDays
+  Pencil, Settings, ChevronRight, PlusCircle, X, Check, Inbox, CalendarDays
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -569,20 +569,29 @@ function FlowList({
   return (
     <div className="px-4 py-4 md:px-6 md:py-5">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-left">
+        <table className="w-full min-w-[900px] border-collapse text-left">
           <thead>
             <tr className="border-b border-gray-200">
-              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 md:px-5">
+              <th scope="col" className="min-w-[360px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 md:px-5">
                 Flow Name
               </th>
-              <th scope="col" className="w-24 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-24 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Settings
               </th>
-              <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-24 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Responses
               </th>
-              <th scope="col" className="w-52 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 md:px-5">
-                Actions
+              <th scope="col" className="w-28 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Edit Screens
+              </th>
+              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Publish
+              </th>
+              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Send
+              </th>
+              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Delete
               </th>
             </tr>
           </thead>
@@ -599,18 +608,18 @@ function FlowList({
                       <span className="font-medium text-gray-500">Category:</span>{' '}
                       {flow.categories.map(c => FLOW_CATEGORIES.find(x => x.value === c)?.label ?? c).join(', ')}
                     </span>
-                    <span className="flex items-center gap-1.5">
-                      <LayoutList className="h-4 w-4 text-gray-400" />
-                      {flow.screens.length} screen{flow.screens.length !== 1 ? 's' : ''}
+                    <span>
+                      <span className="font-medium text-gray-500">Screens:</span>{' '}
+                      {flow.screens.length}
                     </span>
                     {flow.metaFlowId && (
-                      <span className="flex items-center gap-1.5 font-medium text-green-700">
-                        <Check className="h-4 w-4" /> Synced with Meta
+                      <span className="font-medium text-green-700">
+                        Synced with Meta
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="px-3 py-4 text-center">
+                <td className="px-2 py-4 text-center">
                   <button
                     type="button"
                     onClick={() => onEditMeta(flow)}
@@ -621,7 +630,7 @@ function FlowList({
                     <Settings className="h-4 w-4" />
                   </button>
                 </td>
-                <td className="px-3 py-4 text-center">
+                <td className="px-2 py-4 text-center">
                   <button
                     type="button"
                     onClick={() => flow.status === 'PUBLISHED' && onViewResponses(flow)}
@@ -633,49 +642,57 @@ function FlowList({
                     <Inbox className="h-4 w-4" />
                   </button>
                 </td>
-                <td className="px-4 py-4 md:px-5">
-                  <div className="flex items-center justify-end gap-2">
+                <td className="px-2 py-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(flow)}
+                    aria-label={`Edit screens for ${flow.name}`}
+                    title="Edit screens"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </td>
+                <td className="px-2 py-4 text-center">
+                  {flow.status === 'DRAFT' ? (
                     <button
                       type="button"
-                      onClick={() => onEdit(flow)}
-                      aria-label={`Edit screens for ${flow.name}`}
-                      title="Edit screens"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      onClick={() => onPublish(flow.id)}
+                      aria-label={`Publish ${flow.name}`}
+                      title="Publish"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-700 transition-colors hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Globe className="h-4 w-4" />
                     </button>
-                    {flow.status === 'DRAFT' && (
-                      <button
-                        type="button"
-                        onClick={() => onPublish(flow.id)}
-                        aria-label={`Publish ${flow.name}`}
-                        title="Publish"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-700 transition-colors hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40"
-                      >
-                        <Globe className="h-4 w-4" />
-                      </button>
-                    )}
-                    {flow.status === 'PUBLISHED' && (
-                      <button
-                        type="button"
-                        onClick={() => onSend(flow)}
-                        aria-label={`Send ${flow.name}`}
-                        title="Send"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                      >
-                        <Send className="h-4 w-4" />
-                      </button>
-                    )}
+                  ) : (
+                    <span aria-hidden="true" className="text-gray-300">—</span>
+                  )}
+                </td>
+                <td className="px-2 py-4 text-center">
+                  {flow.status === 'PUBLISHED' ? (
                     <button
                       type="button"
-                      onClick={() => onDelete(flow.id)}
-                      aria-label={`Delete ${flow.name}`}
-                      title="Delete"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+                      onClick={() => onSend(flow)}
+                      aria-label={`Send ${flow.name}`}
+                      title="Send"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Send className="h-4 w-4" />
                     </button>
-                  </div>
+                  ) : (
+                    <span aria-hidden="true" className="text-gray-300">—</span>
+                  )}
+                </td>
+                <td className="px-2 py-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => onDelete(flow.id)}
+                    aria-label={`Delete ${flow.name}`}
+                    title="Delete"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </td>
               </tr>
             ))}
