@@ -17,6 +17,10 @@ import responsesActionIcon from '../assets/flow-actions/responses.png';
 import editActionIcon from '../assets/flow-actions/edit.png';
 import sendActionIcon from '../assets/flow-actions/send.png';
 import deleteActionIcon from '../assets/flow-actions/delete.png';
+import textInputPaletteIcon from '../assets/flow-input-icons/text-input.png';
+import emailPaletteIcon from '../assets/flow-input-icons/email.png';
+import phonePaletteIcon from '../assets/flow-input-icons/phone.png';
+import passwordPaletteIcon from '../assets/flow-input-icons/password.png';
 import {
   FLOW_CATEGORIES, COMPONENT_CATEGORIES,
   makeDefaultComponent, makeNewScreen
@@ -24,6 +28,12 @@ import {
 
 const MAX_SCREEN_COMPONENTS = 50;
 const MAX_FLOW_INLINE_IMAGE_BYTES = 3_000_000;
+const INPUT_FIELD_ICONS: Record<string, string> = {
+  'text-input': textInputPaletteIcon,
+  email: emailPaletteIcon,
+  phone: phonePaletteIcon,
+  password: passwordPaletteIcon,
+};
 
 function inlineImageBytes(src?: string) {
   const match = src?.match(/^data:image\/(?:png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/);
@@ -1139,23 +1149,33 @@ function FlowEditorView({
                       <section key={category.id} className="mb-5 last:mb-1">
                         <div className="px-2 pb-2">
                           <p className="text-xs font-bold uppercase tracking-wider text-gray-600">{category.title}</p>
-                          <p className="mt-1 text-xs leading-snug text-gray-500">{category.description}</p>
+                          {category.id !== 'input-fields' && (
+                            <p className="mt-1 text-xs leading-snug text-gray-500">{category.description}</p>
+                          )}
                         </div>
                         <div className="space-y-1">
                           {category.items.map(item => {
                             const disabledReason = componentLimitReason(item);
+                            const paletteIcon = category.id === 'input-fields' ? INPUT_FIELD_ICONS[item.id] : undefined;
                             return (
                               <button
                                 key={item.id}
                                 type="button"
                                 onClick={() => addComponent(item)}
                                 disabled={Boolean(disabledReason)}
-                                title={disabledReason ?? item.description}
-                                className="group flex w-full items-start px-2 py-2.5 text-left transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45"
+                                title={disabledReason ?? (category.id === 'input-fields' ? undefined : item.description)}
+                                className="group flex w-full items-center gap-2 px-2 py-2.5 text-left transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45"
                               >
+                                {paletteIcon ? (
+                                  <img src={paletteIcon} alt="" aria-hidden="true" className="h-6 w-6 shrink-0 object-contain" />
+                                ) : (
+                                  <span aria-hidden="true" className="w-6 shrink-0 text-center text-sm">{item.emoji}</span>
+                                )}
                                 <div className="min-w-0">
                                   <p className="text-xs font-semibold leading-snug text-gray-800 group-hover:text-primary">{item.label}</p>
-                                  <p className="mt-1 text-xs leading-snug text-gray-500">{item.description}</p>
+                                  {category.id !== 'input-fields' && (
+                                    <p className="mt-1 text-xs leading-snug text-gray-500">{item.description}</p>
+                                  )}
                                 </div>
                               </button>
                             );

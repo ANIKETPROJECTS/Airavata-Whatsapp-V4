@@ -6,9 +6,19 @@ import { COMPONENT_CATEGORIES, makeDefaultComponent, makeNewScreen } from './flo
 import ComponentEditor from './ComponentEditor';
 import PhonePreview from './PhonePreview';
 import { DevicePreviewSelector, type PreviewDevice } from './DevicePreview';
+import textInputPaletteIcon from '../../../../assets/flow-input-icons/text-input.png';
+import emailPaletteIcon from '../../../../assets/flow-input-icons/email.png';
+import phonePaletteIcon from '../../../../assets/flow-input-icons/phone.png';
+import passwordPaletteIcon from '../../../../assets/flow-input-icons/password.png';
 
 const MAX_SCREEN_COMPONENTS = 50;
 const MAX_FLOW_INLINE_IMAGE_BYTES = 3_000_000;
+const INPUT_FIELD_ICONS: Record<string, string> = {
+  'text-input': textInputPaletteIcon,
+  email: emailPaletteIcon,
+  phone: phonePaletteIcon,
+  password: passwordPaletteIcon,
+};
 
 function inlineImageBytes(src?: string) {
   const match = src?.match(/^data:image\/(?:png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/);
@@ -235,14 +245,26 @@ export function FlowEditorWorkspace({ enhanced = false }: { enhanced?: boolean }
                     <section key={category.id} className="mb-4 last:mb-1">
                       <div className="px-2 pb-1.5">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500"><span aria-hidden="true" className="mr-1.5">{category.emoji}</span>{category.title}</p>
-                        <p className="mt-0.5 text-[9px] leading-snug text-gray-400">{category.description}</p>
+                        {category.id !== 'input-fields' && (
+                          <p className="mt-0.5 text-[9px] leading-snug text-gray-400">{category.description}</p>
+                        )}
                       </div>
                       <div className="space-y-0.5">
                         {category.items.map(item => {
                           const disabledReason = componentLimitReason(item);
-                          return <button key={item.id} type="button" onClick={() => addComponent(item)} disabled={Boolean(disabledReason)} title={disabledReason ?? item.description} className="group flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45">
-                            <span aria-hidden="true" className="mt-0.5 w-5 shrink-0 text-center text-sm">{item.emoji}</span>
-                            <div className="min-w-0"><p className="text-[11px] font-semibold leading-tight text-gray-700 group-hover:text-primary">{item.label}</p><p className="mt-0.5 text-[9px] leading-tight text-gray-400">{item.description}</p></div>
+                          const paletteIcon = category.id === 'input-fields' ? INPUT_FIELD_ICONS[item.id] : undefined;
+                          return <button key={item.id} type="button" onClick={() => addComponent(item)} disabled={Boolean(disabledReason)} title={disabledReason ?? (category.id === 'input-fields' ? undefined : item.description)} className="group flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45">
+                            {paletteIcon ? (
+                              <img src={paletteIcon} alt="" aria-hidden="true" className="h-6 w-6 shrink-0 object-contain" />
+                            ) : (
+                              <span aria-hidden="true" className="w-6 shrink-0 text-center text-sm">{item.emoji}</span>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-semibold leading-tight text-gray-700 group-hover:text-primary">{item.label}</p>
+                              {category.id !== 'input-fields' && (
+                                <p className="mt-0.5 text-[9px] leading-tight text-gray-400">{item.description}</p>
+                              )}
+                            </div>
                           </button>;
                         })}
                       </div>
