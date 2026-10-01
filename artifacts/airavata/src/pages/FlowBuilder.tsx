@@ -646,7 +646,7 @@ function FlowList({
                     title={flow.status === 'PUBLISHED' ? 'View responses' : 'Available after publishing'}
                     className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-opacity hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:opacity-30"
                   >
-                    <img src={responsesActionIcon} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
+                    <img src={responsesActionIcon} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
                   </button>
                 </td>
                 <td className="px-2 py-4 text-center">
