@@ -1457,8 +1457,8 @@ export default function LiveChat() {
                 }`}
               >
                 <span>{tab}</span>
-                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-gray-200 bg-white px-1.5 text-sm font-semibold leading-none text-black tabular-nums">
-                  {conversationTotals[tab]}
+                <span className="text-sm font-semibold tabular-nums">
+                  ({conversationTotals[tab]})
                 </span>
               </button>
             ))}
