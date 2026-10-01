@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Plus, Workflow, ArrowLeft, Send, Download, Search,
+  Plus, ArrowLeft, Send, Download, Search,
   ChevronRight, PlusCircle, X, Check, Inbox
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -79,7 +79,7 @@ function NewFlowDrawer({ onClose, onSave }: {
         type="button"
         aria-label="Close new flow panel"
         onClick={onClose}
-        className="flow-create-backdrop absolute inset-0 cursor-default bg-black/35"
+        className="flow-drawer-backdrop absolute inset-0 cursor-default bg-black/35"
       />
       <aside
         role="dialog"
@@ -89,7 +89,7 @@ function NewFlowDrawer({ onClose, onSave }: {
         onKeyDown={event => {
           if (event.key === 'Escape') onClose();
         }}
-        className="flow-create-drawer relative z-10 flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl"
+        className="flow-drawer-panel relative z-10 flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl"
       >
         <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-col">
           <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-5">
@@ -101,7 +101,7 @@ function NewFlowDrawer({ onClose, onSave }: {
               type="button"
               onClick={onClose}
               aria-label="Close new flow panel"
-              className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <X className="h-5 w-5" />
             </button>
@@ -152,18 +152,18 @@ function NewFlowDrawer({ onClose, onSave }: {
             </div>
           </div>
 
-          <footer className="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-gray-50/70 px-6 py-4">
+          <footer className="grid shrink-0 grid-cols-2 gap-3 border-t border-gray-200 bg-gray-50/70 px-6 py-4">
             <button
               type="button"
               onClick={onClose}
-              className="min-w-28 border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+              className="h-11 w-full border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim()}
-              className="min-w-36 border border-primary bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 w-full border border-primary bg-primary px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Create Flow
             </button>
