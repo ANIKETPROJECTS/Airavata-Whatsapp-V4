@@ -1587,9 +1587,9 @@ export default function LiveChat() {
                 onClick={() => setRightPanelOpen(!rightPanelOpen)}
                 aria-label={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
                 title={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
-                className="inline-flex items-center gap-2 rounded-md bg-[#25d366] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25d366]"
+                className="inline-flex items-center gap-2.5 rounded-md bg-[#25d366] px-4 py-2.5 text-base font-semibold text-white transition-colors hover:bg-[#20bd5a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25d366]"
               >
-                <img src={profileIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain brightness-0 invert" />
+                <img src={profileIcon} alt="" aria-hidden="true" className="h-8 w-8 object-contain brightness-0 invert" />
                 <span>Profile</span>
               </button>
             </div>
