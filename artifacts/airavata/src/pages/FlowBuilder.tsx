@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Workflow, ArrowLeft, Send, Download, Search,
-  ChevronRight, PlusCircle, X, Check, Inbox, CalendarDays
+  ChevronRight, PlusCircle, X, Check, Inbox
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -57,161 +57,189 @@ function StatusBadge({ status }: { status: Flow['status'] }) {
   );
 }
 
-// ── Create / Edit Flow modal ──────────────────────────────────────────────────
+// ── New flow drawer ───────────────────────────────────────────────────────────
 
-function FlowModal({ flow, onClose, onSave }: {
-  flow?: Flow | null;
+function NewFlowDrawer({ onClose, onSave }: {
   onClose: () => void;
-  onSave: (data: { name: string; categories: string[]; endpointUri?: string; screens?: FlowScreen[] }) => void;
+  onSave: (data: { name: string; categories: string[] }) => void;
 }) {
-  const [name, setName] = useState(flow?.name ?? '');
-  const [categories, setCategories] = useState<string[]>(flow?.categories ?? ['OTHER']);
-  const [endpointUri, setEndpointUri] = useState(flow?.endpointUri ?? '');
-  const [isDynamic, setIsDynamic] = useState(!!flow?.endpointUri);
-  const [useAppointmentTemplate, setUseAppointmentTemplate] = useState(false);
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('OTHER');
 
-  function toggleCategory(val: string) {
-    setCategories(prev =>
-      prev.includes(val) ? prev.filter(c => c !== val) : [val]
-    );
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    onSave({ name: trimmedName, categories: [category] });
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="font-semibold text-gray-900">{flow ? 'Edit Flow' : 'Create New Flow'}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
-            <X className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          {/* Name */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Flow Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              placeholder="e.g. Appointment Booking"
-              maxLength={200}
-            />
-            <p className="text-[11px] text-gray-400 mt-1">{name.length}/200</p>
-          </div>
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <button
+        type="button"
+        aria-label="Close new flow panel"
+        onClick={onClose}
+        className="flow-create-backdrop absolute inset-0 cursor-default bg-black/35"
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-flow-title"
+        aria-describedby="create-flow-description"
+        onKeyDown={event => {
+          if (event.key === 'Escape') onClose();
+        }}
+        className="flow-create-drawer relative z-10 flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl"
+      >
+        <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-col">
+          <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">WhatsApp Flows</p>
+              <h2 id="create-flow-title" className="mt-1 text-xl font-semibold text-gray-900">Create new flow</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close new flow panel"
+              className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </header>
 
-          {/* Category */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Category</label>
-            <div className="flex flex-wrap gap-1.5">
-              {FLOW_CATEGORIES.map(c => (
-                <button
-                  key={c.value}
-                  onClick={() => toggleCategory(c.value)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                    categories.includes(c.value)
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+            <p id="create-flow-description" className="mb-7 text-sm text-gray-500">
+              Give your flow a name and choose what it is for. You can build its screens next.
+            </p>
+
+            <div className="space-y-7">
+              <div>
+                <label htmlFor="new-flow-name" className="mb-2 block text-sm font-medium text-gray-800">
+                  Flow name
+                </label>
+                <input
+                  id="new-flow-name"
+                  autoFocus
+                  type="text"
+                  value={name}
+                  onChange={event => setName(event.target.value)}
+                  maxLength={200}
+                  placeholder="e.g. Appointment booking"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow placeholder:text-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+
+              <fieldset>
+                <legend className="mb-3 text-sm font-medium text-gray-800">What is this flow for?</legend>
+                <div className="flex flex-wrap gap-2">
+                  {FLOW_CATEGORIES.map(item => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      aria-pressed={category === item.value}
+                      onClick={() => setCategory(item.value)}
+                      className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                        category === item.value
+                          ? 'border-primary bg-primary text-white'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-gray-900'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
             </div>
           </div>
 
-          {/* Dynamic toggle */}
-          <div>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <div
-                onClick={() => setIsDynamic(!isDynamic)}
-                className={`w-10 h-5 rounded-full transition-colors ${isDynamic ? 'bg-primary' : 'bg-gray-200'} relative`}
-              >
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDynamic ? 'translate-x-5' : 'translate-x-0.5'}`} />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-700">Dynamic Flow (with endpoint)</p>
-                <p className="text-[11px] text-gray-400">Your server is called at each screen transition</p>
-              </div>
-            </label>
-            {isDynamic && (
-              <input
-                type="url"
-                value={endpointUri}
-                onChange={e => setEndpointUri(e.target.value)}
-                className="w-full mt-2 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
-                placeholder="https://your-server.com/api/flows/endpoint"
-              />
-            )}
-          </div>
-
-          {!flow && (
+          <footer className="flex shrink-0 justify-end gap-3 border-t border-gray-200 px-6 py-4">
             <button
               type="button"
-              onClick={() => setUseAppointmentTemplate(value => !value)}
-              className={`w-full flex items-start gap-3 text-left rounded-xl border p-3 transition-colors ${
-                useAppointmentTemplate
-                  ? 'border-primary bg-primary/5'
-                  : 'border-gray-200 hover:border-primary/40'
-              }`}
+              onClick={onClose}
+              className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
             >
-              <div className={`mt-0.5 rounded-lg p-1.5 ${useAppointmentTemplate ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>
-                <CalendarDays className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-800">Start with an appointment form</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Name, mobile, vehicle, date, time, and optional notes on one screen.</p>
-              </div>
+              Cancel
             </button>
-          )}
+            <button
+              type="submit"
+              disabled={!name.trim()}
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Create flow
+            </button>
+          </footer>
+        </form>
+      </aside>
+    </div>
+  );
+}
+
+// ── Edit flow details modal ───────────────────────────────────────────────────
+
+function FlowModal({ flow, onClose, onSave }: {
+  flow: Flow;
+  onClose: () => void;
+  onSave: (data: { name: string; categories: string[] }) => void;
+}) {
+  const [name, setName] = useState(flow.name);
+  const [categories, setCategories] = useState<string[]>(flow.categories ?? ['OTHER']);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="edit-flow-title" className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b px-6 py-4">
+          <h2 id="edit-flow-title" className="font-semibold text-gray-900">Edit flow details</h2>
+          <button onClick={onClose} aria-label="Close edit flow details" className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <div className="px-6 py-4 border-t flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
+        <div className="space-y-5 px-6 py-5">
+          <div>
+            <label htmlFor="edit-flow-name" className="mb-1.5 block text-sm font-medium text-gray-700">Flow name</label>
+            <input
+              id="edit-flow-name"
+              type="text"
+              value={name}
+              onChange={event => setName(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              maxLength={200}
+            />
+          </div>
+
+          <fieldset>
+            <legend className="mb-2 block text-sm font-medium text-gray-700">Category</legend>
+            <div className="flex flex-wrap gap-2">
+              {FLOW_CATEGORIES.map(item => (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={categories.includes(item.value)}
+                  onClick={() => setCategories([item.value])}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    categories.includes(item.value)
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-primary'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+        <div className="flex justify-end gap-2 border-t px-6 py-4">
+          <button onClick={onClose} className="rounded-xl px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">Cancel</button>
           <button
-            onClick={() => name.trim() && onSave({
-              name: name.trim(),
-              categories,
-              endpointUri: isDynamic ? endpointUri : undefined,
-              screens: useAppointmentTemplate ? [makeAppointmentScreen()] : undefined,
-            })}
+            onClick={() => name.trim() && onSave({ name: name.trim(), categories })}
             disabled={!name.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
           >
-            {flow ? 'Save Changes' : 'Create Flow'}
+            Save changes
           </button>
         </div>
       </div>
     </div>
   );
-}
-
-function makeAppointmentScreen(): FlowScreen {
-  return {
-    id: 'SCREEN_APPOINTMENT',
-    title: 'Book Appointment',
-    isTerminal: true,
-    components: [
-      { type: 'TextHeading', text: 'Appointment details' },
-      { type: 'TextBody', text: 'Please fill in the details below and submit once.' },
-      { type: 'TextInput', name: 'full_name', label: 'Full name', required: true, inputType: 'text' },
-      { type: 'TextInput', name: 'phone', label: 'Mobile number', required: true, inputType: 'phone' },
-      { type: 'TextInput', name: 'vehicle_model', label: 'Vehicle model', required: true, inputType: 'text' },
-      { type: 'DatePicker', name: 'appointment_date', label: 'Preferred date', required: true },
-      {
-        type: 'Dropdown',
-        name: 'appointment_time',
-        label: 'Preferred time',
-        required: true,
-        options: [
-          { id: '09_00', title: '09:00 AM' },
-          { id: '12_00', title: '12:00 PM' },
-          { id: '03_00', title: '03:00 PM' },
-          { id: '06_00', title: '06:00 PM' },
-        ],
-      },
-      { type: 'TextArea', name: 'notes', label: 'Additional notes (optional)', required: false },
-    ],
-  };
 }
 
 // ── Send Flow modal ───────────────────────────────────────────────────────────
@@ -1178,7 +1206,7 @@ export default function FlowBuilder() {
 
       {/* Modals */}
       {showCreateModal && (
-        <FlowModal
+        <NewFlowDrawer
           onClose={() => setShowCreateModal(false)}
           onSave={(data) => createMutation.mutate(data)}
         />
