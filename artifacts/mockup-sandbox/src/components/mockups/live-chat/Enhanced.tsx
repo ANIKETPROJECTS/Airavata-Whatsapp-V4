@@ -1514,10 +1514,10 @@ export default function LiveChat() {
                     : 'border-l-2 border-l-transparent'
                 }`}
               >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0.5 origin-left scale-x-0 bg-[#25d366] transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none"
-                />
+                <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 origin-left scale-x-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none" />
+                <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 z-10 h-full w-0.5 origin-top scale-y-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-y-100 group-focus-visible:scale-y-100 group-hover:delay-100 group-focus-visible:delay-100 motion-reduce:transition-none" />
+                <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0.5 origin-right scale-x-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 group-hover:delay-200 group-focus-visible:delay-200 motion-reduce:transition-none" />
+                <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-0.5 origin-bottom scale-y-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-y-100 group-focus-visible:scale-y-100 group-hover:delay-300 group-focus-visible:delay-300 motion-reduce:transition-none" />
                 <div className="relative shrink-0">
                   <ContactAvatar className="h-10 w-10" />
                   {conv.unread > 0 && (
