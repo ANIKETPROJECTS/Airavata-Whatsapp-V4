@@ -1,0 +1,108 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+.live-chat-enhanced {
+  --enhanced-ink: #202a33;
+  --enhanced-muted: #7b8791;
+  --enhanced-line: #e8edf0;
+  font-family: "Poppins", sans-serif;
+  font-size: 15px;
+  color: var(--enhanced-ink);
+  background: #fff;
+}
+
+.live-chat-enhanced,
+.live-chat-enhanced * {
+  font-family: "Poppins", sans-serif;
+}
+
+.live-chat-enhanced .text-sm {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.live-chat-enhanced .conversation-rail {
+  width: 370px;
+  background-color: #fff;
+  border-color: var(--enhanced-line);
+}
+
+.live-chat-enhanced .conversation-rail > div:first-child {
+  padding: 20px 18px 14px;
+}
+
+.live-chat-enhanced .conversation-rail input {
+  background: #f6f8f9;
+}
+
+.live-chat-enhanced .conversation-rail > .flex-1 > button {
+  min-height: 100px;
+  padding: 17px 16px;
+  border-color: #eef1f3;
+}
+
+.live-chat-enhanced .conversation-rail > .flex-1 > button:hover {
+  background: #f9fbfa;
+}
+
+.live-chat-enhanced .conversation-rail > .flex-1 > button.bg-primary\/5 {
+  background: #f0f8f2;
+}
+
+.live-chat-enhanced .chat-message-canvas {
+  background-color: #fff;
+}
+
+.live-chat-enhanced > .flex-1 > .p-4.bg-gray-50 {
+  background: #fff;
+  border-color: var(--enhanced-line);
+}
+
+.live-chat-enhanced .date-range-popover {
+  font-size: 13px;
+  box-shadow: 0 18px 48px rgb(33 48 58 / 14%);
+}
+
+.live-chat-enhanced .calendar-day {
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.live-chat-enhanced button,
+.live-chat-enhanced input,
+.live-chat-enhanced textarea {
+  font-family: "Poppins", sans-serif;
+}
+
+@media (max-width: 760px) {
+  .live-chat-enhanced {
+    height: 100dvh;
+    min-height: 100dvh;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .live-chat-enhanced .conversation-rail {
+    width: 100%;
+    min-height: 275px;
+    max-height: 38dvh;
+    flex-shrink: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--enhanced-line);
+  }
+
+  .live-chat-enhanced > .flex-1 {
+    min-height: 62dvh;
+  }
+
+  .live-chat-enhanced > .flex-1 > .h-16 {
+    padding-left: 14px;
+    padding-right: 12px;
+  }
+
+  .live-chat-enhanced .chat-message-canvas {
+    padding: 16px 12px;
+  }
+
+  .live-chat-enhanced .chat-message-canvas .max-w-3xl {
+    width: 100%;
+  }
+}

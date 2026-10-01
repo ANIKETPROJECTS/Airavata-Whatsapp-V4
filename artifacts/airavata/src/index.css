@@ -194,6 +194,21 @@
   line-height: 1.2rem;
 }
 
+.live-chat-page {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+}
+
+.live-chat-page .text-sm {
+  font-size: 0.9375rem;
+  line-height: 1.45rem;
+}
+
+.live-chat-page .text-xs {
+  font-size: 0.8125rem;
+  line-height: 1.2rem;
+}
+
 .flow-editor-view [class~="text-[9px]"],
 .flow-editor-view [class~="text-[10px]"],
 .flow-editor-view [class~="text-[11px]"] {

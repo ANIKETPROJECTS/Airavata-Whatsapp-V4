@@ -4,8 +4,8 @@
  * Supports emoji picker and media attachments (image, document, video, audio).
  */
 
+import './_group.css';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MessageSquare,
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
@@ -13,14 +13,6 @@ import {
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
   Check, Clock3, CircleAlert, Trash2, BookOpen, CalendarDays,
 } from 'lucide-react';
-import { useLocation } from 'wouter';
-import { toast } from 'sonner';
-import Picker from '@emoji-mart/react';
-import data from '@emoji-mart/data';
-import { api } from '@/lib/api';
-import { Calendar as DatePicker } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { DateRange } from 'react-day-picker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,9 +39,6 @@ interface Message {
   flowId?: string | null;
   status: string;
   createdAt: string;
-  sentAt?: string | null;
-  deliveredAt?: string | null;
-  readAt?: string | null;
 }
 
 interface AttachmentFile {
@@ -110,6 +99,97 @@ interface CannedMessageRecord {
   type: string;
 }
 
+const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+
+const mockConversations: Conversation[] = [
+  { id: 'conv-maya', contactId: 'contact-maya', contactName: 'Maya Patel', contactPhone: '+1 415 555 0184', lastMessage: 'That sounds perfect, thank you!', lastMessageAt: ago(4), unread: 2, status: 'Open', windowOpen: true },
+  { id: 'conv-james', contactId: 'contact-james', contactName: 'James Wilson', contactPhone: '+1 212 555 0137', lastMessage: 'Could you send over the details?', lastMessageAt: ago(27), unread: 1, status: 'Open', windowOpen: true },
+  { id: 'conv-sofia', contactId: 'contact-sofia', contactName: 'Sofia Garcia', contactPhone: '+1 305 555 0162', lastMessage: 'I received the order — looks great.', lastMessageAt: ago(95), unread: 0, status: 'Resolved', windowOpen: true },
+  { id: 'conv-oliver', contactId: 'contact-oliver', contactName: 'Oliver Chen', contactPhone: '+1 206 555 0128', lastMessage: 'Thanks for your help!', lastMessageAt: ago(1_380), unread: 0, status: 'Resolved', windowOpen: false },
+];
+
+const mockMessages: Message[] = [
+  { id: 'maya-1', direction: 'INBOUND', body: 'Hi! I’m interested in the weekend wellness package. Do you have availability?', status: 'READ', createdAt: ago(43) },
+  { id: 'maya-2', direction: 'OUTBOUND', body: 'Hi Maya! We do have a few spots left for this Saturday. Would you like me to save one for you?', status: 'READ', createdAt: ago(38) },
+  { id: 'maya-3', direction: 'INBOUND', body: 'Yes, that would be wonderful. Is there anything I should bring?', status: 'READ', createdAt: ago(12) },
+  { id: 'maya-4', direction: 'OUTBOUND', body: 'Just bring comfortable clothes — we’ll take care of the rest. I’ve reserved your spot for 10:00 AM ✨', status: 'READ', createdAt: ago(8) },
+  { id: 'maya-5', direction: 'INBOUND', body: 'That sounds perfect, thank you!', status: 'READ', createdAt: ago(4) },
+  { id: 'james-1', direction: 'INBOUND', body: 'Hello, I saw your new spring collection and have a question about delivery.', status: 'READ', createdAt: ago(64) },
+  { id: 'james-2', direction: 'OUTBOUND', body: 'Hi James! We offer free delivery on orders over $50, usually arriving in 2–3 business days.', status: 'READ', createdAt: ago(45) },
+  { id: 'james-3', direction: 'INBOUND', body: 'Could you send over the details?', status: 'READ', createdAt: ago(27) },
+  { id: 'sofia-1', direction: 'INBOUND', body: 'I received the order — looks great.', status: 'READ', createdAt: ago(95) },
+  { id: 'oliver-1', direction: 'INBOUND', body: 'Thanks for your help!', status: 'READ', createdAt: ago(1_380) },
+];
+
+const mockContacts: ContactProfile[] = [
+  { id: 'contact-maya', name: 'Maya Patel', phone: '+1 415 555 0184', email: 'maya.patel@example.com', attributes: { preferred_location: 'Downtown', membership: 'Wellness Plus' }, status: 'active', chatState: 'active', tags: [{ id: 'tag-vip', name: 'VIP', color: '#7c3aed' }, { id: 'tag-wellness', name: 'Wellness', color: '#16a34a' }], group: { id: 'group-customers', name: 'Returning customers' }, groups: [{ id: 'group-customers', name: 'Returning customers', memberCount: 128 }] },
+  { id: 'contact-james', name: 'James Wilson', phone: '+1 212 555 0137', email: 'james.wilson@example.com', attributes: { preferred_channel: 'WhatsApp' }, status: 'active', tags: [{ id: 'tag-new', name: 'New lead', color: '#2563eb' }], group: null, groups: [] },
+  { id: 'contact-sofia', name: 'Sofia Garcia', phone: '+1 305 555 0162', email: 'sofia.garcia@example.com', attributes: { city: 'Miami' }, status: 'active', tags: [{ id: 'tag-vip', name: 'VIP', color: '#7c3aed' }], group: { id: 'group-customers', name: 'Returning customers' }, groups: [{ id: 'group-customers', name: 'Returning customers', memberCount: 128 }] },
+  { id: 'contact-oliver', name: 'Oliver Chen', phone: '+1 206 555 0128', email: 'oliver.chen@example.com', attributes: { company: 'Northstar Studio' }, status: 'active', tags: [], group: null, groups: [] },
+];
+
+const mockTags: ProfileTag[] = [
+  { id: 'tag-vip', name: 'VIP', color: '#7c3aed' },
+  { id: 'tag-wellness', name: 'Wellness', color: '#16a34a' },
+  { id: 'tag-new', name: 'New lead', color: '#2563eb' },
+  { id: 'tag-followup', name: 'Follow-up', color: '#ea580c' },
+];
+const mockGroups: ProfileGroup[] = [
+  { id: 'group-customers', name: 'Returning customers', memberCount: 128 },
+  { id: 'group-prospects', name: 'Spring campaign', memberCount: 64 },
+];
+const mockCampaigns: ContactCampaign[] = [
+  { id: 'campaign-spring', name: 'Spring Wellness Offer', templateName: 'spring_wellness_offer', status: 'COMPLETED', recipientStatus: 'READ', sentAt: ago(50_000), deliveredAt: ago(49_990), readAt: ago(49_970), createdAt: ago(50_010) },
+];
+const mockTemplates: TemplateRecord[] = [
+  { id: 'template-followup', name: 'appointment_follow_up', category: 'UTILITY', language: 'en_US', body: 'Hi {{1}}, your appointment is confirmed for {{2}}. Reply if you need to make a change.', status: 'APPROVED' },
+  { id: 'template-offer', name: 'special_offer', category: 'MARKETING', language: 'en_US', body: 'Hi {{1}}, enjoy 15% off your next visit this week.', status: 'APPROVED' },
+];
+const mockCannedMessages: CannedMessageRecord[] = [
+  { id: 'reply-thanks', name: 'Thank you', message: 'Thanks for reaching out! I’m happy to help.', type: 'TEXT' },
+  { id: 'reply-hours', name: 'Business hours', message: 'We’re here Monday–Saturday, 9:00 AM–6:00 PM. How can we help?', type: 'TEXT' },
+  { id: 'reply-followup', name: 'Follow up', message: 'Just checking in to see if you had any other questions. I’m here when you need me!', type: 'TEXT' },
+];
+
+function mockQueryData<T>(queryKey: readonly unknown[]): T {
+  const [key, id] = queryKey;
+  const data = key === 'conversations' ? { conversations: mockConversations }
+    : key === 'messages' ? { messages: mockMessages.filter(message => String(id ?? '').includes('maya') ? message.id.startsWith('maya-') : String(id ?? '').includes('james') ? message.id.startsWith('james-') : String(id ?? '').includes('sofia') ? message.id.startsWith('sofia-') : String(id ?? '').includes('oliver') ? message.id.startsWith('oliver-') : false) }
+      : key === 'contact-profile' ? { contacts: mockContacts }
+        : key === 'tags' ? { tags: mockTags }
+          : key === 'groups' ? { groups: mockGroups }
+            : key === 'contact-campaigns' ? { campaigns: mockCampaigns }
+              : key === 'templates' ? { templates: mockTemplates }
+                : key === 'canned-messages' ? { messages: mockCannedMessages }
+                  : {};
+  return data as T;
+}
+
+function useQuery<T>({ queryKey }: { queryKey: readonly unknown[]; queryFn?: () => unknown; enabled?: boolean; refetchInterval?: number }) {
+  return { data: mockQueryData<T>(queryKey), isLoading: false };
+}
+
+function useQueryClient() {
+  return { invalidateQueries: async (_options?: { queryKey?: readonly unknown[] }) => undefined };
+}
+
+function useMutation<TVariables = void, TResult = unknown>(options: {
+  mutationFn: (variables: TVariables) => TResult | Promise<TResult>;
+  onSuccess?: (result: TResult) => void;
+  onError?: (error: Error) => void;
+}) {
+  const [isPending, setIsPending] = useState(false);
+  const mutate = (variables?: TVariables) => {
+    setIsPending(true);
+    Promise.resolve().then(() => options.mutationFn(variables as TVariables)).then(result => options.onSuccess?.(result)).catch((error: unknown) => {
+      options.onError?.(error instanceof Error ? error : new Error('Mock action failed'));
+    }).finally(() => setIsPending(false));
+  };
+  return { mutate, isPending };
+}
+
+const toast = { success: (_message: string) => undefined, error: (_message: string) => undefined };
+
 function extractTemplateVars(body: string): number[] {
   const matches = [...body.matchAll(/\{\{(\d+)\}\}/g)];
   return [...new Set(matches.map(match => parseInt(match[1]!, 10)))].sort((a, b) => a - b);
@@ -133,7 +213,7 @@ function LiveChatTemplateDialog({
 }) {
   const { data, isLoading } = useQuery<{ templates: TemplateRecord[] }>({
     queryKey: ['templates'],
-    queryFn: () => api.get('/templates'),
+    queryFn: () => Promise.resolve({ templates: mockTemplates }),
   });
   const approvedTemplates = (data?.templates ?? []).filter(
     template => template.status.toUpperCase() === 'APPROVED',
@@ -194,7 +274,7 @@ function LiveChatTemplateDialog({
     setSending(true);
     setError(null);
     try {
-      await api.post('/templates/send-test', {
+      await Promise.resolve({
         templateId: selectedTemplate.id,
         to: contactPhone,
         variables: isAuth ? [otpCode.trim()] : varValues.map(value => value.trim()),
@@ -358,10 +438,8 @@ function MediaBubble({ mediaType, mediaId, filename }: {
   mediaId?: string | null;
   filename?: string;
 }) {
-  // Build the proxy URL when we have a mediaId; fall back to icon-only when we don't.
-  const proxyUrl = mediaId
-    ? `${import.meta.env.BASE_URL}api/media/proxy?mediaId=${encodeURIComponent(mediaId)}`
-    : null;
+  // The isolated mockup has no media proxy, so render the safe icon fallback.
+  const proxyUrl = null;
 
   if (mediaType === 'image') {
     return proxyUrl ? (
@@ -496,25 +574,25 @@ function ContactProfilePanel({
     contacts: ContactProfile[];
   }>({
     queryKey: ['contact-profile', contactId],
-    queryFn: () => api.get(`/contacts?search=${encodeURIComponent(contactPhone)}&limit=100`),
+    queryFn: () => Promise.resolve({ contacts: mockContacts }),
     enabled: Boolean(contactId && contactPhone),
   });
 
   const { data: tagsData } = useQuery<{ tags: ProfileTag[] }>({
     queryKey: ['tags'],
-    queryFn: () => api.get('/tags'),
+    queryFn: () => Promise.resolve({ tags: mockTags }),
   });
 
   const { data: groupsData } = useQuery<{ groups: ProfileGroup[] }>({
     queryKey: ['groups'],
-    queryFn: () => api.get('/groups'),
+    queryFn: () => Promise.resolve({ groups: mockGroups }),
   });
 
   const { data: campaignData, isLoading: campaignsLoading } = useQuery<{
     campaigns: ContactCampaign[];
   }>({
     queryKey: ['contact-campaigns', contactId],
-    queryFn: () => api.get(`/contacts/${contactId}/campaigns`),
+    queryFn: () => Promise.resolve({ campaigns: mockCampaigns }),
     enabled: Boolean(contactId),
   });
 
@@ -536,18 +614,17 @@ function ContactProfilePanel({
   }, [contact?.id, contact?.name, contact?.email, contact?.attributes, contact?.group?.id, contact?.groups, contact?.tags]);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      api.put(`/contacts/${contactId}`, {
-        name: draftName.trim(),
-        email: draftEmail.trim(),
-        attributes: Object.fromEntries(
-          draftAttributes
-            .map(attribute => [attribute.key.trim(), attribute.value.trim()] as const)
-            .filter(([key]) => key),
-        ),
-        tags: draftTags,
-        groupIds: draftGroupIds,
-      }),
+    mutationFn: () => Promise.resolve({
+      name: draftName.trim(),
+      email: draftEmail.trim(),
+      attributes: Object.fromEntries(
+        draftAttributes
+          .map(attribute => [attribute.key.trim(), attribute.value.trim()] as const)
+          .filter(([key]) => key),
+      ),
+      tags: draftTags,
+      groupIds: draftGroupIds,
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contact-profile', contactId] });
       qc.invalidateQueries({ queryKey: ['contacts'] });
@@ -558,10 +635,7 @@ function ContactProfilePanel({
   });
 
   const createTagMutation = useMutation({
-    mutationFn: () => api.post<{ tag: ProfileTag }>('/tags', {
-      name: newTagName.trim(),
-      color: '#16a34a',
-    }),
+    mutationFn: () => Promise.resolve({ tag: { id: `tag-${Date.now()}`, name: newTagName.trim(), color: '#16a34a' } }),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ['tags'] });
       setDraftTags(current => [...current, result.tag.id]);
@@ -976,15 +1050,16 @@ function ContactProfilePanel({
 
 export default function LiveChat() {
   const qc = useQueryClient();
-  const [location] = useLocation();
   const [activeTab, setActiveTab] = useState('All');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [chatDateRange, setChatDateRange] = useState<DateRange>();
+  const [chatDateFrom, setChatDateFrom] = useState('');
+  const [chatDateTo, setChatDateTo] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [dateDraftRange, setDateDraftRange] = useState<DateRange>();
+  const [dateDraftFrom, setDateDraftFrom] = useState('');
+  const [dateDraftTo, setDateDraftTo] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -1017,7 +1092,7 @@ export default function LiveChat() {
 
   const { data: cannedData, isLoading: cannedLoading } = useQuery<{ messages: CannedMessageRecord[] }>({
     queryKey: ['canned-messages'],
-    queryFn: () => api.get('/canned-messages'),
+    queryFn: () => Promise.resolve({ messages: mockCannedMessages }),
   });
   const cannedMessages = (cannedData?.messages ?? [])
     .filter(template => {
@@ -1029,13 +1104,13 @@ export default function LiveChat() {
 
   const { data: convsData, isLoading: convsLoading } = useQuery<{ conversations: Conversation[] }>({
     queryKey: ['conversations'],
-    queryFn: () => api.get('/conversations'),
+    queryFn: () => Promise.resolve({ conversations: mockConversations }),
     refetchInterval: 10_000,
   });
 
   const conversations = convsData?.conversations ?? [];
   const activeConv = conversations.find(c => c.id === activeConvId) ?? null;
-  const requestedConversationId = new URLSearchParams(location.split('?')[1] ?? '').get('conversationId');
+  const requestedConversationId = null;
 
   // Open the conversation requested by the dashboard link, otherwise select the first one.
   useEffect(() => {
@@ -1050,36 +1125,21 @@ export default function LiveChat() {
 
   const { data: msgsData, isLoading: msgsLoading } = useQuery<{ messages: Message[] }>({
     queryKey: ['messages', activeConvId],
-    queryFn: () => api.get(`/conversations/${activeConvId}/messages`),
+    queryFn: () => Promise.resolve({ messages: mockMessages }),
     enabled: !!activeConvId,
     refetchInterval: 5_000,
   });
 
   const messages = msgsData?.messages ?? [];
-  const latestMessageId = messages[messages.length - 1]?.id;
-
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  // Opening a chat marks the inbound messages currently visible in it as read.
-  // The latest-message dependency also keeps an actively viewed chat read when
-  // a new WhatsApp message arrives during polling.
-  useEffect(() => {
-    if (!activeConvId) return;
-    api.post(`/conversations/${activeConvId}/read`)
-      .then(() => qc.invalidateQueries({ queryKey: ['conversations'] }))
-      .catch(() => {
-        // A transient refresh failure should not interrupt the chat UI.
-      });
-  }, [activeConvId, latestMessageId, qc]);
-
   // ── Send text message mutation ────────────────────────────────────────────
 
   const sendMutation = useMutation({
-    mutationFn: (body: string) =>
-      api.post(`/conversations/${activeConvId}/messages`, { body }),
+    mutationFn: (body: string) => Promise.resolve({ body, conversationId: activeConvId }),
     onSuccess: () => {
       setMessageInput('');
       qc.invalidateQueries({ queryKey: ['messages', activeConvId] });
@@ -1092,20 +1152,7 @@ export default function LiveChat() {
 
   const sendMediaMutation = useMutation({
     mutationFn: async ({ file, caption }: { file: File; caption: string }) => {
-      const form = new FormData();
-      form.append('file', file);
-      if (caption) form.append('caption', caption);
-
-      const res = await fetch(`${import.meta.env.BASE_URL}api/conversations/${activeConvId}/media`, {
-        method: 'POST',
-        credentials: 'include',
-        body: form,
-      });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: 'Upload failed' }))) as { error?: string };
-        throw new Error(err.error ?? 'Upload failed');
-      }
-      return res.json();
+      return { filename: file.name, caption, conversationId: activeConvId };
     },
     onSuccess: () => {
       setMessageInput('');
@@ -1121,7 +1168,7 @@ export default function LiveChat() {
 
   const statusMutation = useMutation({
     mutationFn: ({ contactId, status }: { contactId: string; status: 'Open' | 'Resolved' }) =>
-      api.put(`/conversations/${contactId}/status`, { status }),
+      Promise.resolve({ contactId, status }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['conversations'] });
       toast.success('Conversation status updated');
@@ -1204,23 +1251,15 @@ export default function LiveChat() {
   // ── Filter conversations ──────────────────────────────────────────────────
 
   const dateFiltered = conversations.filter(c => {
-    if (!chatDateRange?.from && !chatDateRange?.to) return true;
+    if (!chatDateFrom && !chatDateTo) return true;
     const activityDate = new Date(c.lastMessageAt);
     if (Number.isNaN(activityDate.getTime())) return false;
-    const from = chatDateRange.from;
-    const to = chatDateRange.to ?? from;
-    const start = from ? new Date(from) : null;
-    const end = to ? new Date(to) : null;
-    start?.setHours(0, 0, 0, 0);
-    end?.setHours(23, 59, 59, 999);
-    return (!start || activityDate >= start) && (!end || activityDate <= end);
+    const dateKey = activityDate.toLocaleDateString('en-CA');
+    return (!chatDateFrom || dateKey >= chatDateFrom) && (!chatDateTo || dateKey <= chatDateTo);
   });
-  const dateFilterActive = Boolean(chatDateRange?.from || chatDateRange?.to);
 
   const filtered = dateFiltered.filter(c => {
-    const matchTab =
-      activeTab === 'All' ||
-      (activeTab === 'Closed' ? c.status === 'Resolved' : c.status === activeTab);
+    const matchTab = activeTab === 'All' || c.status === activeTab;
     const matchSearch =
       !search ||
       c.contactName.toLowerCase().includes(search.toLowerCase()) ||
@@ -1233,7 +1272,7 @@ export default function LiveChat() {
     Open: dateFiltered
       .filter(conversation => conversation.status === 'Open')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
-    Closed: dateFiltered
+    Resolved: dateFiltered
       .filter(conversation => conversation.status === 'Resolved')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
   };
@@ -1241,213 +1280,120 @@ export default function LiveChat() {
   const conversationTotals = {
     All: dateFiltered.length,
     Open: dateFiltered.filter(conversation => conversation.status === 'Open').length,
-    Closed: dateFiltered.filter(conversation => conversation.status === 'Resolved').length,
+    Resolved: dateFiltered.filter(conversation => conversation.status === 'Resolved').length,
   };
 
-  const tabs: Array<'All' | 'Open' | 'Closed'> = ['All', 'Open', 'Closed'];
+  const tabs: Array<'All' | 'Open' | 'Resolved'> = ['All', 'Open', 'Resolved'];
 
-  const getLocalDayKey = (value: string | Date) => {
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) return 'invalid';
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  };
-
-  const formatMessageTime = (iso: string) => {
-    const date = new Date(iso);
-    return Number.isNaN(date.getTime())
-      ? '—'
-      : date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
-
-  const formatConversationTime = (iso: string) => {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return '—';
-    if (getLocalDayKey(date) === getLocalDayKey(new Date())) return formatMessageTime(iso);
-    return date.toLocaleDateString([], {
-      month: 'short',
-      day: 'numeric',
-      ...(date.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}),
-    });
-  };
-
-  const getMessageTimestamp = (message: Message) =>
-    message.direction === 'OUTBOUND' ? message.sentAt ?? message.createdAt : message.createdAt;
-
-  const formatMessageDay = (iso: string) => {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return 'Unknown date';
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (getLocalDayKey(date) === getLocalDayKey(today)) return 'Today';
-    if (getLocalDayKey(date) === getLocalDayKey(yesterday)) return 'Yesterday';
-    return date.toLocaleDateString([], {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      ...(date.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {}),
-    });
-  };
-
-  const formatShortDate = (date: Date) =>
-    date.toLocaleDateString([], {
-      month: 'short',
-      day: 'numeric',
-      ...(date.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}),
-    });
-
-  const formatDateRange = (range?: DateRange) => {
-    if (!range?.from) return 'Choose a date or range';
-    if (!range.to || getLocalDayKey(range.from) === getLocalDayKey(range.to)) {
-      return formatShortDate(range.from);
-    }
-    return `${formatShortDate(range.from)} – ${formatShortDate(range.to)}`;
-  };
-
-  const renderMessageStatus = (message: Message) => {
-    const status = message.status?.toUpperCase();
-    const statusAt =
-      status === 'READ' ? message.readAt
-        : status === 'DELIVERED' ? message.deliveredAt
-          : status === 'SENT' ? message.sentAt
-            : null;
-    const statusLabel =
-      status === 'QUEUED' ? 'Queued'
-        : status === 'SENT' ? 'Sent'
-          : status === 'DELIVERED' ? 'Delivered'
-            : status === 'READ' ? 'Read'
-              : status === 'FAILED' ? 'Failed to send'
-                : 'Message status';
-    const title = statusAt ? `${statusLabel} · ${formatMessageTime(statusAt)}` : statusLabel;
-
-    if (status === 'QUEUED') {
-      return (
-        <span title={title} aria-label={title} role="img">
-          <Clock3 className="w-3.5 h-3.5 text-gray-400" />
-        </span>
-      );
-    }
-    if (status === 'FAILED') {
-      return (
-        <span title={title} aria-label={title} role="img">
-          <CircleAlert className="w-3.5 h-3.5 text-red-600" />
-        </span>
-      );
-    }
-    if (status === 'DELIVERED' || status === 'READ') {
-      return (
-        <span title={title} aria-label={title} role="img">
-          <CheckCheck className={`w-3.5 h-3.5 ${status === 'READ' ? 'text-blue-600' : 'text-gray-500'}`} />
-        </span>
-      );
-    }
-    return (
-      <span title={title} aria-label={title} role="img">
-        <Check className="w-3.5 h-3.5 text-gray-500" />
-      </span>
-    );
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    return isToday
+      ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="live-chat-page h-[calc(100vh-3.5rem)] flex bg-white overflow-hidden">
+    <div className="h-screen min-h-screen flex bg-white overflow-hidden">
       {/* Left Panel: Conversation List */}
-      <div className="w-[clamp(20rem,34vw,25rem)] border-r border-gray-200 flex flex-col bg-white shrink-0">
-        <div className="p-5 border-b border-gray-200 space-y-4">
+      <div className="w-80 border-r flex flex-col bg-gray-50/30 shrink-0">
+        <div className="p-4 border-b space-y-3">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search conversations..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-base bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               />
             </div>
-            <Popover
-              open={showDateFilter}
-              onOpenChange={open => {
-                if (open) setDateDraftRange(chatDateRange);
-                setShowDateFilter(open);
-              }}
-            >
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Filter chats by date"
-                  title={dateFilterActive ? formatDateRange(chatDateRange) : 'Filter chats by date'}
-                  className={`relative p-2.5 rounded-xl border transition-colors ${
-                    dateFilterActive
-                      ? 'bg-primary/10 border-primary/30 text-primary'
-                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  <CalendarDays className="w-5 h-5" />
-                  {dateFilterActive && (
-                    <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary" />
-                  )}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-0 border-gray-200 shadow-xl">
-                <div className="border-b border-gray-100 px-4 py-3">
-                  <p className="text-base font-semibold text-gray-900">Filter by date</p>
-                  <p className="mt-1 text-sm text-gray-500">Choose one date or select a start and end date.</p>
-                </div>
-                <DatePicker
-                  mode="range"
-                  selected={dateDraftRange}
-                  onSelect={setDateDraftRange}
-                  numberOfMonths={1}
-                  className="mx-auto"
-                />
-                <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
-                  <span className="min-w-0 truncate text-sm text-gray-500">
-                    {formatDateRange(dateDraftRange)}
-                  </span>
-                  <div className="flex shrink-0 items-center gap-2">
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setDateDraftFrom(chatDateFrom);
+                  setDateDraftTo(chatDateTo);
+                  setShowDateFilter(value => !value);
+                }}
+                className={`p-2 rounded-lg border transition-colors ${
+                  chatDateFrom || chatDateTo
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-gray-100 border-transparent text-gray-500 hover:bg-gray-200'
+                }`}
+                title="Filter chats by date"
+              >
+                <CalendarDays className="w-5 h-5" />
+              </button>
+              {showDateFilter && (
+                <div className="absolute right-0 top-11 z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl">
+                  <p className="text-sm font-semibold text-gray-800">Filter chats by date</p>
+                  <p className="mt-1 text-[11px] text-gray-400">Choose one date or a date range.</p>
+                  <label className="mt-3 block text-xs font-medium text-gray-500" htmlFor="chat-date-from">
+                    From
+                  </label>
+                  <input
+                    id="chat-date-from"
+                    type="date"
+                    value={dateDraftFrom}
+                    onChange={event => setDateDraftFrom(event.target.value)}
+                    className="mt-1 w-full px-2.5 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <label className="mt-2 block text-xs font-medium text-gray-500" htmlFor="chat-date-to">
+                    To
+                  </label>
+                  <input
+                    id="chat-date-to"
+                    type="date"
+                    min={dateDraftFrom || undefined}
+                    value={dateDraftTo}
+                    onChange={event => setDateDraftTo(event.target.value)}
+                    className="mt-1 w-full px-2.5 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <div className="mt-3 flex items-center justify-between gap-2">
                     <button
-                      type="button"
                       onClick={() => {
-                        setDateDraftRange(undefined);
-                        setChatDateRange(undefined);
+                        setDateDraftFrom('');
+                        setDateDraftTo('');
+                        setChatDateFrom('');
+                        setChatDateTo('');
                         setShowDateFilter(false);
                       }}
-                      className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                      className="px-2.5 py-1.5 text-xs text-gray-500 hover:text-gray-800"
                     >
                       Clear
                     </button>
                     <button
-                      type="button"
                       onClick={() => {
-                        setChatDateRange(dateDraftRange?.from
-                          ? { from: dateDraftRange.from, to: dateDraftRange.to ?? dateDraftRange.from }
-                          : undefined);
+                        setChatDateFrom(dateDraftFrom);
+                        setChatDateTo(dateDraftTo || dateDraftFrom);
                         setShowDateFilter(false);
                       }}
-                      disabled={!dateDraftRange?.from}
-                      className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={!dateDraftFrom && !dateDraftTo}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
                     >
                       Apply
                     </button>
                   </div>
                 </div>
-              </PopoverContent>
-            </Popover>
+              )}
+            </div>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {tabs.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3.5 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
                   activeTab === tab ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {tab}
                 <span
-                  className={`ml-1.5 inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-xs font-bold ${
+                  className={`ml-1.5 inline-flex min-w-5 h-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
                     activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
                   }`}
                 >
@@ -1455,7 +1401,7 @@ export default function LiveChat() {
                 </span>
                 {unreadTotals[tab] > 0 && (
                   <span
-                    className={`ml-1.5 inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-xs font-bold ${
+                    className={`ml-1.5 inline-flex min-w-4 h-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
                       activeTab === tab ? 'bg-white text-gray-900' : 'bg-primary text-white'
                     }`}
                   >
@@ -1465,13 +1411,13 @@ export default function LiveChat() {
               </button>
             ))}
           </div>
-          <div className="flex items-center justify-between gap-2 text-sm text-gray-500">
+          <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
             <span>
-              Showing {filtered.length} {filtered.length === 1 ? 'conversation' : 'conversations'}
-              {search || dateFilterActive ? ' matching the current filters' : ' in Live Chat'}
+              Showing {filtered.length} {filtered.length === 1 ? 'number' : 'numbers'}
+              {search || chatDateFrom || chatDateTo ? ' matching the current filters' : ' in Live Chat'}
             </span>
-            {(search || dateFilterActive) && (
-              <span className="shrink-0">{dateFiltered.length} after date filter</span>
+            {(search || chatDateFrom || chatDateTo) && (
+              <span className="shrink-0">{dateFiltered.length} before search</span>
             )}
           </div>
         </div>
@@ -1484,60 +1430,37 @@ export default function LiveChat() {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-gray-400 gap-2">
               <MessageSquare className="w-8 h-8" />
-              <p className="text-base font-medium">
-                {search || dateFilterActive
-                  ? 'No conversations match these filters'
-                  : activeTab === 'Closed'
-                    ? 'No closed chats yet'
-                    : activeTab === 'Open'
-                      ? 'No open chats yet'
-                      : 'No conversations yet'}
-              </p>
-              <p className="text-sm text-center px-4">
-                {search || dateFilterActive
-                  ? 'Try clearing the search or date filter.'
-                  : activeTab === 'Closed'
-                    ? 'Closed chats will appear here after you close a conversation.'
-                    : 'Messages will appear here when customers contact you via WhatsApp.'}
-              </p>
+              <p className="text-sm">No conversations yet</p>
+              <p className="text-xs text-center px-4">Messages will appear here when customers contact you via WhatsApp.</p>
             </div>
           ) : (
             filtered.map(conv => (
               <button
                 key={conv.id}
                 onClick={() => setActiveConvId(conv.id)}
-                className={`w-full text-left p-5 border-b border-gray-100 transition-colors hover:bg-gray-50 flex gap-3.5 ${
+                className={`w-full text-left p-4 border-b transition-colors hover:bg-gray-50 flex gap-3 ${
                   activeConvId === conv.id
                     ? 'bg-primary/5 border-l-2 border-l-primary'
                     : 'border-l-2 border-l-transparent'
                 }`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg font-semibold text-gray-600">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
                     {conv.contactName.charAt(0)}
                   </div>
                   {conv.unread > 0 && (
-                    <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-primary text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white">
-                      {conv.unread > 99 ? '99+' : conv.unread}
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-white">
+                      {conv.unread}
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="font-semibold text-gray-900 text-base truncate">{conv.contactName}</span>
-                    <span className="text-xs text-gray-500 shrink-0">{formatConversationTime(conv.lastMessageAt)}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium text-gray-900 text-sm truncate">{conv.contactName}</span>
+                    <span className="text-xs text-gray-400 shrink-0 ml-1">{formatTime(conv.lastMessageAt)}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-gray-500 truncate">{conv.contactPhone}</p>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                      conv.status === 'Resolved'
-                        ? 'bg-gray-100 text-gray-600'
-                        : 'bg-emerald-50 text-emerald-700'
-                    }`}>
-                      {conv.status === 'Resolved' ? 'Closed' : 'Open'}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-600 truncate">{conv.lastMessage || '—'}</p>
+                    <p className="text-[11px] text-gray-400 truncate">{conv.contactPhone}</p>
+                  <p className="text-sm text-gray-500 truncate">{conv.lastMessage || '—'}</p>
                 </div>
               </button>
             ))
@@ -1556,14 +1479,14 @@ export default function LiveChat() {
             />
           )}
           {/* Chat Header */}
-          <div className="min-h-20 px-6 border-b border-gray-200 flex items-center justify-between gap-4 shrink-0 bg-white">
+          <div className="h-16 px-6 border-b flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg font-semibold text-gray-600">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
                 {activeConv.contactName.charAt(0)}
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">{activeConv.contactName}</h2>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                <h2 className="font-semibold text-gray-900">{activeConv.contactName}</h2>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span>{activeConv.contactPhone}</span>
                   <span>•</span>
                   {activeConv.windowOpen ? (
@@ -1605,25 +1528,25 @@ export default function LiveChat() {
                   status: activeConv.status === 'Resolved' ? 'Open' : 'Resolved',
                 })}
                 disabled={statusMutation.isPending}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-60 ${
                   activeConv.status === 'Resolved'
                     ? 'bg-green-50 text-green-700 hover:bg-green-100'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
-                title={activeConv.status === 'Resolved' ? 'Reopen conversation' : 'Close conversation'}
+                title={activeConv.status === 'Resolved' ? 'Reopen conversation' : 'Resolve conversation'}
               >
                 {statusMutation.isPending
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   : activeConv.status === 'Resolved'
-                    ? <RotateCcw className="w-4 h-4" />
-                    : <CheckCircle2 className="w-4 h-4" />}
-                {activeConv.status === 'Resolved' ? 'Reopen' : 'Close chat'}
+                    ? <RotateCcw className="w-3.5 h-3.5" />
+                    : <CheckCircle2 className="w-3.5 h-3.5" />}
+                {activeConv.status === 'Resolved' ? 'Reopen' : 'Resolve'}
               </button>
             </div>
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-white">
+          <div className="flex-1 overflow-y-auto p-6 bg-[#efeae2]">
             {msgsLoading ? (
               <div className="flex justify-center items-center h-full">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -1633,64 +1556,53 @@ export default function LiveChat() {
                 No messages yet
               </div>
             ) : (
-              <div className="space-y-5 max-w-4xl mx-auto">
-                {messages.map((msg, index) => {
-                  const messageTime = getMessageTimestamp(msg);
-                  const previousMessage = messages[index - 1];
-                  const previousMessageTime = previousMessage
-                    ? getMessageTimestamp(previousMessage)
-                    : undefined;
-                  const showDateDivider =
-                    !previousMessageTime ||
-                    getLocalDayKey(previousMessageTime) !== getLocalDayKey(messageTime);
-                  return (
+              <div className="space-y-4 max-w-3xl mx-auto">
+                {messages.map(msg => (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${msg.direction === 'OUTBOUND' ? 'items-end' : 'items-start'}`}
+                  >
                     <div
-                      key={msg.id}
-                      className={`flex flex-col gap-3 ${msg.direction === 'OUTBOUND' ? 'items-end' : 'items-start'}`}
+                      className={`max-w-[80%] rounded-lg p-3 shadow-sm ${
+                        msg.direction === 'OUTBOUND'
+                          ? 'bg-[#dcf8c6] rounded-tr-none text-gray-900'
+                          : 'bg-white rounded-tl-none text-gray-900'
+                      }`}
                     >
-                      {showDateDivider && (
-                        <div className="flex w-full justify-center">
-                          <span className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-sm font-medium text-gray-600">
-                            {formatMessageDay(messageTime)}
-                          </span>
-                        </div>
+                      {msg.flowData && Object.keys(msg.flowData).length > 0 ? (
+                        <FlowDataBubble data={msg.flowData} />
+                      ) : msg.mediaType ? (
+                        <>
+                          <MediaBubble mediaType={msg.mediaType} mediaId={msg.mediaId} filename={msg.mediaFilename} />
+                          {msg.body && (
+                            <p className="text-sm whitespace-pre-wrap mt-1 text-gray-500 italic">{msg.body}</p>
+                          )}
+                        </>
+                      ) : (
+                        msg.body && (
+                          <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                        )
                       )}
-                      <div
-                        className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-sm ${
-                          msg.direction === 'OUTBOUND'
-                            ? 'bg-[#dcf8c6] rounded-tr-md text-gray-900'
-                            : 'bg-white border border-gray-200 rounded-tl-md text-gray-900'
-                        }`}
-                      >
-                        {msg.flowData && Object.keys(msg.flowData).length > 0 ? (
-                          <FlowDataBubble data={msg.flowData} />
-                        ) : msg.mediaType ? (
-                          <>
-                            <MediaBubble mediaType={msg.mediaType} mediaId={msg.mediaId} filename={msg.mediaFilename} />
-                            {msg.body && (
-                              <p className="text-base whitespace-pre-wrap mt-1 text-gray-600 italic">{msg.body}</p>
-                            )}
-                          </>
-                        ) : (
-                          msg.body && (
-                            <p className="text-base leading-7 whitespace-pre-wrap">{msg.body}</p>
-                          )
+                      <div className="flex items-center justify-end gap-1 mt-1">
+                        <span className="text-[10px] text-gray-400">{formatTime(msg.createdAt)}</span>
+                        {msg.direction === 'OUTBOUND' && (
+                          <CheckCheck
+                            className={`w-3 h-3 ${
+                              msg.status === 'READ' ? 'text-blue-500' : 'text-gray-400'
+                            }`}
+                          />
                         )}
-                        <div className="flex items-center justify-end gap-1.5 mt-1.5">
-                          <span className="text-xs text-gray-500">{formatMessageTime(messageTime)}</span>
-                          {msg.direction === 'OUTBOUND' && renderMessageStatus(msg)}
-                        </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
                 <div ref={messagesEndRef} />
               </div>
             )}
           </div>
 
           {/* Message Input */}
-          <div className="p-4 bg-white border-t border-gray-200 shrink-0">
+          <div className="p-4 bg-gray-50 border-t shrink-0">
             {activeConv.windowOpen ? (
               <div className="max-w-3xl mx-auto space-y-2">
                 {/* Attachment preview strip */}
@@ -1736,13 +1648,19 @@ export default function LiveChat() {
                       </button>
                       {showEmojiPicker && (
                         <div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
-                          <Picker
-                            data={data}
-                            onEmojiSelect={handleEmojiSelect}
-                            theme="light"
-                            previewPosition="none"
-                            skinTonePosition="none"
-                          />
+                          <div className="grid grid-cols-7 gap-1 bg-white p-3">
+                            {['😀', '😊', '✨', '🎉', '❤️', '👍', '🙏', '😄', '🥰', '👏', '☀️', '💚', '🌟', '😉'].map(emoji => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => handleEmojiSelect({ native: emoji })}
+                                className="rounded p-1.5 text-lg hover:bg-gray-100"
+                                aria-label={`Add ${emoji} emoji`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1861,7 +1779,7 @@ export default function LiveChat() {
                     onChange={e => setMessageInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={attachment ? 'Add a caption (optional)...' : 'Type a message...'}
-                    className="flex-1 max-h-32 min-h-[44px] resize-none border-none outline-none py-2 px-2 text-base bg-transparent"
+                    className="flex-1 max-h-32 min-h-[40px] resize-none border-none outline-none py-2 px-2 text-sm bg-transparent"
                     rows={1}
                   />
 
