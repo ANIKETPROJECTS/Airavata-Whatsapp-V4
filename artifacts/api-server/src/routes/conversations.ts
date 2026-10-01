@@ -80,21 +80,70 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
     const now = Date.now();
     const twentyFourHours = 24 * 60 * 60 * 1000;
 
-    // Compute windowOpen: last INBOUND message within 24 hours
-    const windowMap = await MessageModel.aggregate([
-      { $match: { userId, direction: "INBOUND" } },
-      { $sort: { createdAt: -1 } },
-      { $group: { _id: "$contactId", lastInboundAt: { $first: "$createdAt" } } },
+    // Derive the Live Chat tabs from inbound replies and successful template sends.
+    const activityRows = await MessageModel.aggregate([
+      {
+        $match: {
+          userId,
+          $or: [
+            { direction: "INBOUND" },
+            {
+              direction: "OUTBOUND",
+              templateId: { $exists: true, $ne: null },
+              status: { $in: ["SENT", "DELIVERED", "READ"] },
+            },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: "$contactId",
+          lastInboundAt: {
+            $max: {
+              $cond: [{ $eq: ["$direction", "INBOUND"] }, "$createdAt", null],
+            },
+          },
+          lastTemplateSentAt: {
+            $max: {
+              $cond: [
+                { $eq: ["$direction", "OUTBOUND"] },
+                { $ifNull: ["$sentAt", "$createdAt"] },
+                null,
+              ],
+            },
+          },
+        },
+      },
     ]);
-    const windowByContact = new Map(
-      windowMap.map((w) => [String(w._id), w.lastInboundAt as Date]),
+    const activityByContact = new Map(
+      activityRows.map((row) => [
+        String(row._id),
+        {
+          lastInboundAt: row.lastInboundAt as Date | null,
+          lastTemplateSentAt: row.lastTemplateSentAt as Date | null,
+        },
+      ]),
     );
 
     const shaped = convs.map((c) => {
-      const lastInbound = windowByContact.get(String(c._id));
+      const activity = activityByContact.get(String(c._id));
+      const lastInbound = activity?.lastInboundAt ?? null;
+      const lastTemplateSent = activity?.lastTemplateSentAt ?? null;
       const windowOpen = lastInbound
         ? now - new Date(lastInbound).getTime() < twentyFourHours
         : false;
+      const waitingForTemplateReply = Boolean(
+        lastTemplateSent &&
+          (!lastInbound ||
+            new Date(lastTemplateSent).getTime() > new Date(lastInbound).getTime()),
+      );
+      const tabState = lastInbound && windowOpen
+        ? "OPEN"
+        : waitingForTemplateReply
+          ? "SENT"
+          : lastInbound || c.contact.chatState === "CLOSED"
+            ? "CLOSED"
+            : "OTHER";
 
       return {
         id: String(c._id),
@@ -109,6 +158,7 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
         unread: unreadByContact.get(String(c._id)) ?? 0,
         status: c.contact.chatState === "CLOSED" ? "Resolved" : "Open",
         windowOpen,
+        tabState,
       };
     });
 

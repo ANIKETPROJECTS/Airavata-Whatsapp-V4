@@ -11,18 +11,22 @@ import {
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
-  Check, Clock3, CircleAlert, Trash2, BookOpen, CalendarDays,
+  Check, Clock3, CircleAlert, Trash2, BookOpen,
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
+import calendarFilterIcon from '@/assets/calendar-filter-icon.png';
 import { api } from '@/lib/api';
 import { Calendar as DatePicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { DateRange } from 'react-day-picker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+type ConversationTab = 'All' | 'Sent' | 'Open' | 'Closed';
+type ConversationTabState = 'SENT' | 'OPEN' | 'CLOSED' | 'OTHER';
 
 interface Conversation {
   id: string;
@@ -34,6 +38,7 @@ interface Conversation {
   unread: number;
   status: string;
   windowOpen: boolean;
+  tabState: ConversationTabState;
 }
 
 interface Message {
@@ -977,7 +982,7 @@ function ContactProfilePanel({
 export default function LiveChat() {
   const qc = useQueryClient();
   const [location] = useLocation();
-  const [activeTab, setActiveTab] = useState('All');
+  const [activeTab, setActiveTab] = useState<ConversationTab>('All');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -1220,7 +1225,7 @@ export default function LiveChat() {
   const filtered = dateFiltered.filter(c => {
     const matchTab =
       activeTab === 'All' ||
-      (activeTab === 'Closed' ? c.status === 'Resolved' : c.status === activeTab);
+      c.tabState === activeTab.toUpperCase();
     const matchSearch =
       !search ||
       c.contactName.toLowerCase().includes(search.toLowerCase()) ||
@@ -1230,21 +1235,25 @@ export default function LiveChat() {
 
   const unreadTotals = {
     All: dateFiltered.reduce((sum, conversation) => sum + conversation.unread, 0),
+    Sent: dateFiltered
+      .filter(conversation => conversation.tabState === 'SENT')
+      .reduce((sum, conversation) => sum + conversation.unread, 0),
     Open: dateFiltered
-      .filter(conversation => conversation.status === 'Open')
+      .filter(conversation => conversation.tabState === 'OPEN')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
     Closed: dateFiltered
-      .filter(conversation => conversation.status === 'Resolved')
+      .filter(conversation => conversation.tabState === 'CLOSED')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
   };
 
   const conversationTotals = {
     All: dateFiltered.length,
-    Open: dateFiltered.filter(conversation => conversation.status === 'Open').length,
-    Closed: dateFiltered.filter(conversation => conversation.status === 'Resolved').length,
+    Sent: dateFiltered.filter(conversation => conversation.tabState === 'SENT').length,
+    Open: dateFiltered.filter(conversation => conversation.tabState === 'OPEN').length,
+    Closed: dateFiltered.filter(conversation => conversation.tabState === 'CLOSED').length,
   };
 
-  const tabs: Array<'All' | 'Open' | 'Closed'> = ['All', 'Open', 'Closed'];
+  const tabs: ConversationTab[] = ['All', 'Sent', 'Open', 'Closed'];
 
   const getLocalDayKey = (value: string | Date) => {
     const date = value instanceof Date ? value : new Date(value);
@@ -1378,19 +1387,32 @@ export default function LiveChat() {
                   type="button"
                   aria-label="Filter chats by date"
                   title={dateFilterActive ? formatDateRange(chatDateRange) : 'Filter chats by date'}
-                  className={`relative p-2.5 rounded-xl border transition-colors ${
-                    dateFilterActive
-                      ? 'bg-primary/10 border-primary/30 text-primary'
-                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                  }`}
+                  className="relative rounded-md bg-transparent p-2 text-primary transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
-                  <CalendarDays className="w-5 h-5" />
+                  <span
+                    aria-hidden="true"
+                    className="block h-6 w-6 bg-current"
+                    style={{
+                      maskImage: `url(${calendarFilterIcon})`,
+                      WebkitMaskImage: `url(${calendarFilterIcon})`,
+                      maskRepeat: 'no-repeat',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskPosition: 'center',
+                      WebkitMaskPosition: 'center',
+                      maskSize: 'contain',
+                      WebkitMaskSize: 'contain',
+                    }}
+                  />
                   {dateFilterActive && (
-                    <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary" />
+                    <span className="absolute right-1 top-1 h-2 w-2 rounded-full border border-white bg-primary" />
                   )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-0 border-gray-200 shadow-xl">
+              <PopoverContent
+                align="end"
+                collisionPadding={8}
+                className="w-[360px] max-w-[calc(100vw-1rem)] p-0 border-gray-200 shadow-xl"
+              >
                 <div className="border-b border-gray-100 px-4 py-3">
                   <p className="text-base font-semibold text-gray-900">Filter by date</p>
                   <p className="mt-1 text-sm text-gray-500">Choose one date or select a start and end date.</p>
@@ -1400,7 +1422,8 @@ export default function LiveChat() {
                   selected={dateDraftRange}
                   onSelect={setDateDraftRange}
                   numberOfMonths={1}
-                  className="mx-auto"
+                  className="mx-auto w-full [--cell-size:2.5rem]"
+                  style={{ width: '100%' }}
                 />
                 <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
                   <span className="min-w-0 truncate text-sm text-gray-500">
@@ -1436,29 +1459,22 @@ export default function LiveChat() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="grid grid-cols-4 gap-1.5 pb-1">
             {tabs.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3.5 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
-                  activeTab === tab ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                aria-pressed={activeTab === tab}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-md border border-primary px-1 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
+                  activeTab === tab ? 'bg-primary text-white shadow-sm' : 'bg-primary/75 text-white hover:bg-primary/90'
                 }`}
               >
                 {tab}
-                <span
-                  className={`ml-1.5 inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-xs font-bold ${
-                    activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
+                <span className="text-[11px] font-bold text-white/90">
                   {conversationTotals[tab]}
                 </span>
                 {unreadTotals[tab] > 0 && (
-                  <span
-                    className={`ml-1.5 inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-xs font-bold ${
-                      activeTab === tab ? 'bg-white text-gray-900' : 'bg-primary text-white'
-                    }`}
-                  >
+                  <span className="rounded-sm bg-white px-1 py-0.5 text-[10px] font-bold leading-none text-primary">
                     {unreadTotals[tab] > 99 ? '99+' : unreadTotals[tab]}
                   </span>
                 )}
@@ -1487,6 +1503,8 @@ export default function LiveChat() {
               <p className="text-base font-medium">
                 {search || dateFilterActive
                   ? 'No conversations match these filters'
+                  : activeTab === 'Sent'
+                    ? 'No sent templates yet'
                   : activeTab === 'Closed'
                     ? 'No closed chats yet'
                     : activeTab === 'Open'
@@ -1496,8 +1514,10 @@ export default function LiveChat() {
               <p className="text-sm text-center px-4">
                 {search || dateFilterActive
                   ? 'Try clearing the search or date filter.'
+                  : activeTab === 'Sent'
+                    ? 'Sent templates waiting for a reply will appear here.'
                   : activeTab === 'Closed'
-                    ? 'Closed chats will appear here after you close a conversation.'
+                    ? 'Chats with an expired 24-hour window will appear here.'
                     : 'Messages will appear here when customers contact you via WhatsApp.'}
               </p>
             </div>
@@ -1529,13 +1549,6 @@ export default function LiveChat() {
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm text-gray-500 truncate">{conv.contactPhone}</p>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                      conv.status === 'Resolved'
-                        ? 'bg-gray-100 text-gray-600'
-                        : 'bg-emerald-50 text-emerald-700'
-                    }`}>
-                      {conv.status === 'Resolved' ? 'Closed' : 'Open'}
-                    </span>
                   </div>
                   <p className="mt-1 text-sm text-gray-600 truncate">{conv.lastMessage || '—'}</p>
                 </div>

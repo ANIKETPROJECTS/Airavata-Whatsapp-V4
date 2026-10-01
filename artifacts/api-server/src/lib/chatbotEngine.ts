@@ -45,18 +45,18 @@ interface ChatbotEdge {
   sourceHandle?: string | null;
 }
 
-async function resolveTemplateCategory(
+async function resolveTemplateDetails(
   userId: mongoose.Types.ObjectId,
   templateName: string,
-): Promise<MessageCategory> {
+): Promise<{ category: MessageCategory; templateId: mongoose.Types.ObjectId }> {
   const template = await TemplateModel.findOne({ userId, name: templateName })
-    .select("category")
+    .select("_id category")
     .lean();
   const category = String(template?.category ?? "").toUpperCase();
-  if (category !== "AUTHENTICATION" && category !== "UTILITY" && category !== "MARKETING") {
+  if (!template || (category !== "AUTHENTICATION" && category !== "UTILITY" && category !== "MARKETING")) {
     throw new Error(`Template "${templateName}" was not found or has no valid category`);
   }
-  return category;
+  return { category: category as MessageCategory, templateId: template._id };
 }
 
 interface ChatbotFlow {
@@ -603,6 +603,7 @@ async function executeNode(
         const language = String(d["language"] ?? "en_US");
         const vars = (d["variables"] as Array<{ value: string }> | undefined) ?? [];
         if (templateName) {
+          const template = await resolveTemplateDetails(userId, templateName);
           const components =
             vars.length > 0
               ? [
@@ -617,7 +618,7 @@ async function executeNode(
               : undefined;
           await withCreditCharge({
             userId,
-            category: await resolveTemplateCategory(userId, templateName),
+            category: template.category,
             description: `Chatbot template message to ${phone}`,
             send: () =>
               sendTemplateMessage(
@@ -628,7 +629,9 @@ async function executeNode(
                 userId.toString(),
               ),
           });
-          await storeOutbound(userId, contactId, `[template: ${templateName}]`);
+          await storeOutbound(userId, contactId, `[template: ${templateName}]`, {
+            templateId: template.templateId,
+          });
         }
         return {};
       }

@@ -12,7 +12,7 @@ import {
   Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
-  Check, Clock3, CircleAlert, Trash2, BookOpen, CalendarDays, ChevronLeft, ChevronRight,
+  Check, Clock3, CircleAlert, Trash2, BookOpen, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -27,6 +27,7 @@ interface Conversation {
   unread: number;
   status: string;
   windowOpen: boolean;
+  tabState: 'SENT' | 'OPEN' | 'CLOSED' | 'OTHER';
 }
 
 interface Message {
@@ -105,11 +106,11 @@ const daysAgo = (days: number, minutes = 0) =>
   new Date(Date.now() - days * 86_400_000 - minutes * 60_000).toISOString();
 
 const mockConversations: Conversation[] = [
-  { id: 'conv-maya', contactId: 'contact-maya', contactName: 'Maya Patel', contactPhone: '+1 415 555 0184', lastMessage: 'That sounds perfect, thank you!', lastMessageAt: ago(4), unread: 2, status: 'Open', windowOpen: true },
-  { id: 'conv-james', contactId: 'contact-james', contactName: 'James Wilson', contactPhone: '+1 212 555 0137', lastMessage: 'Could you send over the details?', lastMessageAt: ago(27), unread: 1, status: 'Open', windowOpen: true },
-  { id: 'conv-sofia', contactId: 'contact-sofia', contactName: 'Sofia Garcia', contactPhone: '+1 305 555 0162', lastMessage: 'I received the order — looks great.', lastMessageAt: daysAgo(1, 95), unread: 0, status: 'Resolved', windowOpen: true },
-  { id: 'conv-oliver', contactId: 'contact-oliver', contactName: 'Oliver Chen', contactPhone: '+1 206 555 0128', lastMessage: 'Thanks for your help!', lastMessageAt: daysAgo(2, 1_380), unread: 0, status: 'Resolved', windowOpen: false },
-  { id: 'conv-priya', contactId: 'contact-priya', contactName: 'Priya Shah', contactPhone: '+1 646 555 0192', lastMessage: 'I’ll check and get right back to you.', lastMessageAt: daysAgo(4, 210), unread: 0, status: 'Open', windowOpen: false },
+  { id: 'conv-maya', contactId: 'contact-maya', contactName: 'Maya Patel', contactPhone: '+1 415 555 0184', lastMessage: 'That sounds perfect, thank you!', lastMessageAt: ago(4), unread: 2, status: 'Open', windowOpen: true, tabState: 'OPEN' },
+  { id: 'conv-james', contactId: 'contact-james', contactName: 'James Wilson', contactPhone: '+1 212 555 0137', lastMessage: 'Could you send over the details?', lastMessageAt: ago(27), unread: 1, status: 'Open', windowOpen: true, tabState: 'OPEN' },
+  { id: 'conv-sofia', contactId: 'contact-sofia', contactName: 'Sofia Garcia', contactPhone: '+1 305 555 0162', lastMessage: 'I received the order — looks great.', lastMessageAt: daysAgo(1, 95), unread: 0, status: 'Resolved', windowOpen: true, tabState: 'OPEN' },
+  { id: 'conv-oliver', contactId: 'contact-oliver', contactName: 'Oliver Chen', contactPhone: '+1 206 555 0128', lastMessage: 'Thanks for your help!', lastMessageAt: daysAgo(2, 1_380), unread: 0, status: 'Resolved', windowOpen: false, tabState: 'CLOSED' },
+  { id: 'conv-priya', contactId: 'contact-priya', contactName: 'Priya Shah', contactPhone: '+1 646 555 0192', lastMessage: '[template: appointment_follow_up]', lastMessageAt: ago(35), unread: 0, status: 'Open', windowOpen: false, tabState: 'SENT' },
 ];
 
 const mockMessages: Message[] = [
@@ -124,7 +125,7 @@ const mockMessages: Message[] = [
   { id: 'sofia-1', direction: 'INBOUND', body: 'I received the order — looks great.', status: 'READ', createdAt: daysAgo(1, 95) },
   { id: 'oliver-1', direction: 'INBOUND', body: 'Thanks for your help!', status: 'READ', createdAt: daysAgo(2, 1_380) },
   { id: 'priya-1', direction: 'INBOUND', body: 'Do you have a moment to help me with my latest order?', status: 'READ', createdAt: daysAgo(4, 260) },
-  { id: 'priya-2', direction: 'OUTBOUND', body: 'Of course, Priya. I’m checking the order details now.', status: 'FAILED', createdAt: daysAgo(4, 210) },
+  { id: 'priya-2', direction: 'OUTBOUND', body: '[template: appointment_follow_up]', status: 'SENT', createdAt: ago(35) },
 ];
 
 const mockContacts: ContactProfile[] = [
@@ -1057,7 +1058,7 @@ function ContactProfilePanel({
 
 export default function LiveChat() {
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState('All');
+  const [activeTab, setActiveTab] = useState<'All' | 'Sent' | 'Open' | 'Closed'>('All');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -1267,7 +1268,7 @@ export default function LiveChat() {
   });
 
   const filtered = dateFiltered.filter(c => {
-    const matchTab = activeTab === 'All' || c.status === activeTab;
+    const matchTab = activeTab === 'All' || c.tabState === activeTab.toUpperCase();
     const matchSearch =
       !search ||
       c.contactName.toLowerCase().includes(search.toLowerCase()) ||
@@ -1277,21 +1278,25 @@ export default function LiveChat() {
 
   const unreadTotals = {
     All: dateFiltered.reduce((sum, conversation) => sum + conversation.unread, 0),
-    Open: dateFiltered
-      .filter(conversation => conversation.status === 'Open')
+    Sent: dateFiltered
+      .filter(conversation => conversation.tabState === 'SENT')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
-    Resolved: dateFiltered
-      .filter(conversation => conversation.status === 'Resolved')
+    Open: dateFiltered
+      .filter(conversation => conversation.tabState === 'OPEN')
+      .reduce((sum, conversation) => sum + conversation.unread, 0),
+    Closed: dateFiltered
+      .filter(conversation => conversation.tabState === 'CLOSED')
       .reduce((sum, conversation) => sum + conversation.unread, 0),
   };
 
   const conversationTotals = {
     All: dateFiltered.length,
-    Open: dateFiltered.filter(conversation => conversation.status === 'Open').length,
-    Resolved: dateFiltered.filter(conversation => conversation.status === 'Resolved').length,
+    Sent: dateFiltered.filter(conversation => conversation.tabState === 'SENT').length,
+    Open: dateFiltered.filter(conversation => conversation.tabState === 'OPEN').length,
+    Closed: dateFiltered.filter(conversation => conversation.tabState === 'CLOSED').length,
   };
 
-  const tabs: Array<'All' | 'Open' | 'Resolved'> = ['All', 'Open', 'Resolved'];
+  const tabs: Array<'All' | 'Sent' | 'Open' | 'Closed'> = ['All', 'Sent', 'Open', 'Closed'];
 
   const calendarStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
   const calendarDayCount = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
@@ -1364,17 +1369,30 @@ export default function LiveChat() {
                   }
                   setShowDateFilter(value => !value);
                 }}
-                className={`p-2 rounded-lg border transition-colors ${
-                  chatDateFrom || chatDateTo
-                    ? 'bg-primary/10 border-primary/30 text-primary'
-                    : 'bg-gray-100 border-transparent text-gray-500 hover:bg-gray-200'
-                }`}
+                aria-label="Filter chats by date"
+                className="relative rounded-md bg-transparent p-2 text-primary transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 title="Filter chats by date"
               >
-                <CalendarDays className="w-5 h-5" />
+                <span
+                  aria-hidden="true"
+                  className="block h-6 w-6 bg-current"
+                  style={{
+                    maskImage: "url('/__mockup/images/calendar-filter-icon.png')",
+                    WebkitMaskImage: "url('/__mockup/images/calendar-filter-icon.png')",
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskPosition: 'center',
+                    WebkitMaskPosition: 'center',
+                    maskSize: 'contain',
+                    WebkitMaskSize: 'contain',
+                  }}
+                />
+                {(chatDateFrom || chatDateTo) && (
+                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full border border-white bg-primary" />
+                )}
               </button>
               {showDateFilter && (
-                <div className="date-range-popover absolute right-0 top-11 z-40 w-[300px] rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
+                <div className="date-range-popover absolute right-0 top-11 z-40 w-[340px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Filter by date</p>
@@ -1389,13 +1407,13 @@ export default function LiveChat() {
                     {calendarMonth.toLocaleDateString([], { month: 'long', year: 'numeric' })}
                   </div>
                   <div className="mt-3 grid grid-cols-7 gap-y-1 text-center">
-                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <span key={day} className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{day}</span>)}
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => <span key={day} className="pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{day}</span>)}
                     {calendarCells.map((day, index) => {
                       if (!day) return <span key={`blank-${index}`} />;
                       const key = dateKeyForDay(day);
                       const selected = key === dateDraftFrom || key === dateDraftTo;
                       const inRange = !!dateDraftFrom && !!dateDraftTo && key > dateDraftFrom && key < dateDraftTo;
-                      return <button key={key} type="button" onClick={() => chooseCalendarDay(day)} className={`calendar-day relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs ${selected ? 'bg-primary text-white' : inRange ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}>{day}</button>;
+                      return <button key={key} type="button" onClick={() => chooseCalendarDay(day)} className={`calendar-day relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm ${selected ? 'bg-primary text-white' : inRange ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}>{day}</button>;
                     })}
                   </div>
                   <div className="mt-3 rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-600">
@@ -1430,29 +1448,22 @@ export default function LiveChat() {
               )}
             </div>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="grid grid-cols-4 gap-1.5 pb-1">
             {tabs.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
-                  activeTab === tab ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                aria-pressed={activeTab === tab}
+                className={`flex min-w-0 items-center justify-center gap-1 rounded-md border border-primary px-1 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
+                  activeTab === tab ? 'bg-primary text-white shadow-sm' : 'bg-primary/75 text-white hover:bg-primary/90'
                 }`}
               >
-                {tab === 'Resolved' ? 'Closed' : tab}
-                <span
-                  className={`ml-1.5 inline-flex min-w-5 h-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-                    activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
+                {tab}
+                <span className="text-[11px] font-bold text-white/90">
                   {conversationTotals[tab]}
                 </span>
                 {unreadTotals[tab] > 0 && (
-                  <span
-                    className={`ml-1.5 inline-flex min-w-4 h-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-                      activeTab === tab ? 'bg-white text-gray-900' : 'bg-primary text-white'
-                    }`}
-                  >
+                  <span className="rounded-sm bg-white px-1 py-0.5 text-[10px] font-bold leading-none text-primary">
                     {unreadTotals[tab] > 99 ? '99+' : unreadTotals[tab]}
                   </span>
                 )}
@@ -1481,15 +1492,19 @@ export default function LiveChat() {
               <p className="text-sm">
                 {search || chatDateFrom || chatDateTo
                   ? 'No conversations match these filters'
-                  : activeTab === 'Resolved'
+                  : activeTab === 'Sent'
+                    ? 'No sent templates yet'
+                  : activeTab === 'Closed'
                     ? 'No closed chats yet'
                     : 'No conversations yet'}
               </p>
               <p className="text-xs text-center px-4">
                 {search || chatDateFrom || chatDateTo
                   ? 'Try clearing the search or date filter.'
-                  : activeTab === 'Resolved'
-                    ? 'Closed chats will appear here after you close a conversation.'
+                  : activeTab === 'Sent'
+                    ? 'Sent templates waiting for a reply will appear here.'
+                  : activeTab === 'Closed'
+                    ? 'Chats with an expired 24-hour window will appear here.'
                     : 'Messages will appear here when customers contact you via WhatsApp.'}
               </p>
             </div>
@@ -1521,9 +1536,6 @@ export default function LiveChat() {
                   </div>
                     <p className="text-[11px] text-gray-400 truncate">{conv.contactPhone}</p>
                   <p className="text-sm text-gray-500 truncate">{conv.lastMessage || '—'}</p>
-                  <span className={`mt-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${conv.status === 'Open' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {conv.status === 'Resolved' ? 'Closed' : conv.status}
-                  </span>
                 </div>
               </button>
             ))
