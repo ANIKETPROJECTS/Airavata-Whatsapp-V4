@@ -5,6 +5,7 @@ import {
   Plus, Workflow, ArrowLeft, Send, Download, Search,
   ChevronRight, PlusCircle, X, Check, Inbox
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
 import { DevicePreviewSelector, type PreviewDevice } from '../components/DevicePreview';
@@ -1324,20 +1325,11 @@ export default function FlowBuilder() {
       <div className="z-10 shrink-0 border-b border-gray-200 bg-white px-4 py-3">
         <div className="relative flex flex-wrap items-center gap-2 lg:flex-nowrap lg:justify-between">
           <div className="flex min-w-0 items-center gap-2">
-            {!isLoading && (
-              <span
-                aria-label={`Number of Flows: ${flows.length}`}
-                title={`Number of Flows: ${flows.length}`}
-                className="shrink-0 border border-primary bg-primary px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white"
-              >
-                {flows.length}
-              </span>
-            )}
             <h1 className="whitespace-nowrap text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
           </div>
 
           <div className="order-3 flex w-full min-w-0 flex-wrap items-center justify-center gap-1.5 lg:absolute lg:left-1/2 lg:top-1/2 lg:order-none lg:w-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:flex-nowrap">
-            <label className="relative min-w-[180px] w-full sm:w-[190px] lg:w-[190px]">
+            <label className="relative min-w-[144px] w-full sm:w-[150px] lg:w-[150px]">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="search"
@@ -1349,29 +1341,53 @@ export default function FlowBuilder() {
               />
             </label>
 
-            <select
-              value={categoryFilter}
-              onChange={event => setCategoryFilter(event.target.value)}
-              aria-label="Filter flows by category"
-              className="h-10 min-w-[126px] border border-gray-300 bg-white px-2.5 text-sm text-gray-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            <Select
+              value={categoryFilter || '__all__'}
+              onValueChange={value => setCategoryFilter(value === '__all__' ? '' : value)}
             >
-              <option value="">All categories</option>
-              {FLOW_CATEGORIES.map(category => (
-                <option key={category.value} value={category.value}>{category.label}</option>
-              ))}
-            </select>
+              <SelectTrigger
+                aria-label="Filter flows by category"
+                className="h-10 w-[128px] rounded-none border-gray-300 bg-white px-2 text-[13px] text-gray-700 shadow-none transition-colors hover:border-primary/60 focus:ring-2 focus:ring-primary/15 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-70"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                align="start"
+                sideOffset={4}
+                className="min-w-[180px] rounded-none border-gray-200 bg-white p-1 shadow-lg"
+              >
+                <SelectItem value="__all__" className="rounded-none py-2 text-xs focus:bg-primary/10 focus:text-primary">All categories</SelectItem>
+                {FLOW_CATEGORIES.map(category => (
+                  <SelectItem key={category.value} value={category.value} className="rounded-none py-2 text-xs focus:bg-primary/10 focus:text-primary">
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <select
-              value={statusFilter}
-              onChange={event => setStatusFilter(event.target.value as '' | Flow['status'])}
-              aria-label="Filter flows by status"
-              className="h-10 min-w-[112px] border border-gray-300 bg-white px-2.5 text-sm text-gray-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            <Select
+              value={statusFilter || '__all__'}
+              onValueChange={value => setStatusFilter(value === '__all__' ? '' : value as Flow['status'])}
             >
-              <option value="">All statuses</option>
-              <option value="DRAFT">Draft</option>
-              <option value="PUBLISHED">Published</option>
-              <option value="DEPRECATED">Deprecated</option>
-            </select>
+              <SelectTrigger
+                aria-label="Filter flows by status"
+                className="h-10 w-[112px] rounded-none border-gray-300 bg-white px-2 text-[13px] text-gray-700 shadow-none transition-colors hover:border-primary/60 focus:ring-2 focus:ring-primary/15 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:opacity-70"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                align="start"
+                sideOffset={4}
+                className="min-w-[148px] rounded-none border-gray-200 bg-white p-1 shadow-lg"
+              >
+                <SelectItem value="__all__" className="rounded-none py-2 text-xs focus:bg-primary/10 focus:text-primary">All statuses</SelectItem>
+                <SelectItem value="DRAFT" className="rounded-none py-2 text-xs focus:bg-primary/10 focus:text-primary">Draft</SelectItem>
+                <SelectItem value="PUBLISHED" className="rounded-none py-2 text-xs focus:bg-primary/10 focus:text-primary">Published</SelectItem>
+                <SelectItem value="DEPRECATED" className="rounded-none py-2 text-xs focus:bg-primary/10 focus:text-primary">Deprecated</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <button
