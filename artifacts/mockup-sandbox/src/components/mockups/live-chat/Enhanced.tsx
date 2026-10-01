@@ -210,6 +210,17 @@ function fillTemplatePreview(body: string, values: string[]): string {
   });
 }
 
+function ContactAvatar({ className = '' }: { className?: string }) {
+  return (
+    <div className={`flex shrink-0 items-center justify-center rounded-full border-2 border-[#25d366] bg-white ${className}`}>
+      <svg viewBox="0 0 24 24" className="h-[80%] w-[80%] fill-[#25d366]" aria-hidden="true">
+        <circle cx="12" cy="7" r="4.2" />
+        <path d="M3.5 20.5c.4-4.5 3.7-7.4 8.5-7.4s8.1 2.9 8.5 7.4c-2.3 1.8-5.2 2.7-8.5 2.7s-6.2-.9-8.5-2.7Z" />
+      </svg>
+    </div>
+  );
+}
+
 function LiveChatTemplateDialog({
   contactPhone,
   onClose,
@@ -1497,16 +1508,18 @@ export default function LiveChat() {
               <button
                 key={conv.id}
                 onClick={() => setActiveConvId(conv.id)}
-                className={`w-full text-left p-4 border-b transition-colors hover:bg-gray-50 flex gap-3 ${
+                className={`group relative w-full overflow-hidden bg-white text-left p-4 border-b border-gray-100 transition-colors flex gap-3 ${
                   activeConvId === conv.id
-                    ? 'bg-primary/5 border-l-2 border-l-primary'
+                    ? 'border-l-2 border-l-[#25d366]'
                     : 'border-l-2 border-l-transparent'
                 }`}
               >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0.5 origin-left scale-x-0 bg-[#25d366] transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none"
+                />
                 <div className="relative shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-                    {conv.contactName.charAt(0)}
-                  </div>
+                  <ContactAvatar className="h-10 w-10" />
                   {conv.unread > 0 && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-white">
                       {conv.unread}
@@ -1540,9 +1553,7 @@ export default function LiveChat() {
           {/* Chat Header */}
           <div className="h-16 px-6 border-b flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-                {activeConv.contactName.charAt(0)}
-              </div>
+              <ContactAvatar className="h-10 w-10" />
               <div>
                 <h2 className="font-semibold text-gray-900">{activeConv.contactName}</h2>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
