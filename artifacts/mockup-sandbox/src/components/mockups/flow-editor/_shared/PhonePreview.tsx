@@ -12,18 +12,25 @@ interface Props {
 
 export default function PhonePreview({ screen, flowName, device }: Props) {
   const previewAreaRef = useRef<HTMLDivElement>(null);
+  const previewContentRef = useRef<HTMLDivElement>(null);
   const [previewScale, setPreviewScale] = useState(1);
 
   useEffect(() => {
     const previewArea = previewAreaRef.current;
-    if (!previewArea) return;
+    const previewContent = previewContentRef.current;
+    if (!previewArea || !previewContent) return;
 
     const fitPreview = () => {
       const availableHeight = previewArea.clientHeight;
-      setPreviewScale(Math.min(1, Math.max(0.3, availableHeight / 740)));
+      const availableWidth = previewArea.clientWidth;
+      const contentHeight = previewContent.offsetHeight;
+      const contentWidth = previewContent.offsetWidth;
+      if (!availableHeight || !availableWidth || !contentHeight || !contentWidth) return;
+      setPreviewScale(Math.min(1, availableHeight / contentHeight, availableWidth / contentWidth));
     };
     const observer = new ResizeObserver(fitPreview);
     observer.observe(previewArea);
+    observer.observe(previewContent);
     fitPreview();
 
     return () => observer.disconnect();
@@ -34,6 +41,7 @@ export default function PhonePreview({ screen, flowName, device }: Props) {
       <div ref={previewAreaRef} className="relative min-h-0 flex-1 overflow-hidden">
         <div className="absolute inset-x-0 top-0 flex justify-center">
           <div
+            ref={previewContentRef}
             className="flex w-max flex-col items-center"
             style={{ transform: `scale(${previewScale})`, transformOrigin: 'top center' }}
           >
@@ -82,7 +90,6 @@ export default function PhonePreview({ screen, flowName, device }: Props) {
                 </div>
               </div>
             </DevicePreviewFrame>
-            <p className="mt-3 shrink-0 text-xs text-gray-400">Live preview • WhatsApp Flow</p>
           </div>
         </div>
       </div>

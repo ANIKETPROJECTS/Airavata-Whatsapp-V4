@@ -1205,7 +1205,7 @@ function FlowEditorView({
         </div>
 
         {/* Right: Phone preview */}
-          <div className="hidden min-h-0 shrink-0 flex-col border-l border-gray-200 bg-white xl:flex xl:w-[360px] 2xl:w-[400px]">
+          <div className="hidden min-h-0 shrink-0 flex-col overflow-hidden overscroll-none border-l border-gray-200 bg-white xl:flex xl:w-[360px] 2xl:w-[400px]">
           <PhonePreview screen={activeScreen} flowName={flow.name} device={previewDevice} />
         </div>
       </div>

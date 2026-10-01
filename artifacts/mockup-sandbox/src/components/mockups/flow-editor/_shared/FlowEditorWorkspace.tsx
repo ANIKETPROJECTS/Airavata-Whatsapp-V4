@@ -272,7 +272,7 @@ export function FlowEditorWorkspace({ enhanced = false }: { enhanced?: boolean }
           ) : <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Select a screen to edit</div>}
         </div>
 
-        <div className="flow-editor-phone-panel hidden min-h-0 shrink-0 flex-col border-l bg-white xl:flex xl:w-[360px] 2xl:w-[400px]">
+        <div className="flow-editor-phone-panel hidden min-h-0 shrink-0 flex-col overflow-hidden overscroll-none border-l bg-white xl:flex xl:w-[360px] 2xl:w-[400px]">
           <PhonePreview screen={activeScreen} flowName={flow.name} device={previewDevice} />
         </div>
       </div>
