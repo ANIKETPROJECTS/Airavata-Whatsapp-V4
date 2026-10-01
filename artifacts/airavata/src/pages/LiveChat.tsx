@@ -1450,10 +1450,10 @@ export default function LiveChat() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 aria-pressed={activeTab === tab}
-                className={`flex w-full min-w-0 items-center justify-center gap-2 rounded-none px-2 py-1.5 font-sans text-sm leading-5 whitespace-nowrap transition-[background-color,border-width] ${
+                className={`flex w-full min-w-0 items-center justify-center gap-2 border-b-2 px-2 py-1.5 font-sans text-sm leading-5 text-black whitespace-nowrap transition-colors ${
                   activeTab === tab
-                    ? 'border-0 bg-[#25d366] font-semibold text-white'
-                    : 'border border-black bg-white font-medium text-black hover:bg-gray-50'
+                    ? 'border-[#25d366] font-semibold'
+                    : 'border-transparent font-medium'
                 }`}
               >
                 <span>{tab}</span>
