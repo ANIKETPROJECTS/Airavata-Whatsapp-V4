@@ -95,7 +95,7 @@ function NewFlowDrawer({ onClose, onSave }: {
           <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">WhatsApp Flows</p>
-              <h2 id="create-flow-title" className="mt-1 text-xl font-semibold text-gray-900">Create new flow</h2>
+              <h2 id="create-flow-title" className="mt-1 text-xl font-semibold text-gray-900">Create a New Flow</h2>
             </div>
             <button
               type="button"
@@ -125,7 +125,7 @@ function NewFlowDrawer({ onClose, onSave }: {
                   onChange={event => setName(event.target.value)}
                   maxLength={200}
                   placeholder="e.g. Appointment booking"
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow placeholder:text-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                  className="w-full rounded-none border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow placeholder:text-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
                 />
               </div>
 
@@ -138,7 +138,7 @@ function NewFlowDrawer({ onClose, onSave }: {
                       type="button"
                       aria-pressed={category === item.value}
                       onClick={() => setCategory(item.value)}
-                      className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                      className={`rounded-none border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                         category === item.value
                           ? 'border-primary bg-primary text-white'
                           : 'border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-gray-900'
@@ -152,18 +152,18 @@ function NewFlowDrawer({ onClose, onSave }: {
             </div>
           </div>
 
-          <footer className="flex shrink-0 justify-end gap-3 border-t border-gray-200 px-6 py-4">
+          <footer className="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-gray-50/70 px-6 py-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+              className="min-w-28 border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim()}
-              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-w-36 border border-primary bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Create flow
             </button>
@@ -201,7 +201,7 @@ function FlowModal({ flow, onClose, onSave }: {
               type="text"
               value={name}
               onChange={event => setName(event.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-none border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               maxLength={200}
             />
           </div>
@@ -215,7 +215,7 @@ function FlowModal({ flow, onClose, onSave }: {
                   type="button"
                   aria-pressed={categories.includes(item.value)}
                   onClick={() => setCategories([item.value])}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-none border px-3 py-1.5 text-xs font-medium transition-colors ${
                     categories.includes(item.value)
                       ? 'border-primary bg-primary text-white'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-primary'
