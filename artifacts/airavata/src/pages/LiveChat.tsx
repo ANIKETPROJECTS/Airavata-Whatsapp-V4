@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MessageSquare,
-  Send, CheckCheck, Loader2, RefreshCw,
+  CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
   Check, Clock3, CircleAlert, Trash2,
@@ -18,10 +18,11 @@ import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 import calendarFilterIcon from '@/assets/calendar-filter-icon.png';
-import happyFaceIcon from '@assets/happy-face_(1)_1790884902034.png';
+import happinessIcon from '@assets/happiness_1790885485484.png';
 import chatIcon from '@assets/chat_(1)_1790885069320.png';
 import letterIcon from '@assets/letter_1790885182957.png';
 import paperclipIcon from '@assets/attach-paperclip-symbol_(1)_1790885236833.png';
+import sendIcon from '@assets/send_(1)_1790885629920.png';
 import { api } from '@/lib/api';
 import { Calendar as DatePicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1733,17 +1734,17 @@ export default function LiveChat() {
                 )}
 
                 {/* Input row */}
-                <div className="relative flex w-full min-w-0 items-center gap-2 rounded-lg border border-green-300 bg-white p-1 shadow-sm transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                <div className="relative flex w-full min-w-0 items-center gap-2 rounded-lg border border-green-300 bg-white p-2 shadow-sm transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <div className="flex shrink-0 items-center gap-1">
                     {/* Emoji button */}
                     <div className="relative" ref={emojiPickerRef}>
                       <button
                         onClick={() => setShowEmojiPicker(p => !p)}
-                        className={`rounded-lg p-1.5 transition-colors ${showEmojiPicker ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                         title="Emoji"
                         aria-label="Open emoji picker"
                       >
-                        <img src={happyFaceIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+                        <img src={happinessIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
                       </button>
                       {showEmojiPicker && (
                         <div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
@@ -1766,11 +1767,11 @@ export default function LiveChat() {
                           setShowEmojiPicker(false);
                           setShowAttachMenu(false);
                         }}
-                        className={`rounded-lg p-1.5 transition-colors ${showCannedMessages ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                         title="Canned messages"
                         aria-label="Open quick replies"
                       >
-                        <img src={chatIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain opacity-60" />
+                        <img src={chatIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
                       </button>
                       {showCannedMessages && (
                         <div className="absolute bottom-12 left-0 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
@@ -1821,22 +1822,22 @@ export default function LiveChat() {
                         setShowEmojiPicker(false);
                         setShowAttachMenu(false);
                       }}
-                      className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                      className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                       title="Send template"
                       aria-label="Send template"
                     >
-                      <img src={letterIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain opacity-60" />
+                      <img src={letterIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
                     </button>
 
                     {/* Attachment button + popup menu */}
                     <div className="relative" ref={attachMenuRef}>
                       <button
                         onClick={() => setShowAttachMenu(p => !p)}
-                        className={`rounded-lg p-1.5 transition-colors ${attachment ? 'bg-primary/10 text-primary' : showAttachMenu ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                        className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                         title="Attach"
                         aria-label="Attach a file"
                       >
-                        <img src={paperclipIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain opacity-60" />
+                        <img src={paperclipIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
                       </button>
 
                       {showAttachMenu && (
@@ -1875,7 +1876,7 @@ export default function LiveChat() {
                     onChange={e => setMessageInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={attachment ? 'Add a caption (optional)...' : 'Type a message...'}
-                    className="min-h-[34px] min-w-0 max-h-32 flex-1 resize-none border-none outline-none bg-transparent px-2 py-1 text-base"
+                    className="min-h-[40px] min-w-0 max-h-32 flex-1 resize-none border-none outline-none bg-transparent px-2 py-2 text-base"
                     rows={1}
                   />
 
@@ -1883,11 +1884,26 @@ export default function LiveChat() {
                     <button
                       onClick={handleSend}
                       disabled={(!messageInput.trim() && !attachment) || isPending}
-                      className="flex items-center justify-center rounded-md bg-primary p-1.5 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex items-center justify-center rounded-md bg-transparent p-2 text-[#25d366] transition-opacity hover:opacity-75 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                      title="Send message"
+                      aria-label="Send message"
                     >
                       {isPending
                         ? <Loader2 className="w-5 h-5 animate-spin" />
-                        : <Send className="w-5 h-5 ml-0.5" />}
+                        : <span
+                            aria-hidden="true"
+                            className="block h-6 w-6 bg-[#25d366]"
+                            style={{
+                              maskImage: `url(${sendIcon})`,
+                              WebkitMaskImage: `url(${sendIcon})`,
+                              maskRepeat: 'no-repeat',
+                              WebkitMaskRepeat: 'no-repeat',
+                              maskPosition: 'center',
+                              WebkitMaskPosition: 'center',
+                              maskSize: 'contain',
+                              WebkitMaskSize: 'contain',
+                            }}
+                          />}
                     </button>
                   </div>
                 </div>
