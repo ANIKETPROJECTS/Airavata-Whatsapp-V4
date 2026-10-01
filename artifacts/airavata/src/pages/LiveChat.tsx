@@ -1734,17 +1734,17 @@ export default function LiveChat() {
                 )}
 
                 {/* Input row */}
-                <div className="relative flex w-full min-w-0 items-center gap-2 rounded-lg border border-green-300 bg-white p-2 shadow-sm transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                <div className="relative flex w-full min-w-0 items-center gap-3 py-2">
                   <div className="flex shrink-0 items-center gap-1">
                     {/* Emoji button */}
                     <div className="relative" ref={emojiPickerRef}>
                       <button
                         onClick={() => setShowEmojiPicker(p => !p)}
-                        className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                         title="Emoji"
                         aria-label="Open emoji picker"
                       >
-                        <img src={happinessIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
+                        <img src={happinessIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
                       </button>
                       {showEmojiPicker && (
                         <div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
@@ -1767,11 +1767,11 @@ export default function LiveChat() {
                           setShowEmojiPicker(false);
                           setShowAttachMenu(false);
                         }}
-                        className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                         title="Canned messages"
                         aria-label="Open quick replies"
                       >
-                        <img src={chatIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
+                        <img src={chatIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
                       </button>
                       {showCannedMessages && (
                         <div className="absolute bottom-12 left-0 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
@@ -1822,22 +1822,22 @@ export default function LiveChat() {
                         setShowEmojiPicker(false);
                         setShowAttachMenu(false);
                       }}
-                      className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                      className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                       title="Send template"
                       aria-label="Send template"
                     >
-                      <img src={letterIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
+                      <img src={letterIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
                     </button>
 
                     {/* Attachment button + popup menu */}
                     <div className="relative" ref={attachMenuRef}>
                       <button
                         onClick={() => setShowAttachMenu(p => !p)}
-                        className="rounded-md p-2 text-black transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                         title="Attach"
                         aria-label="Attach a file"
                       >
-                        <img src={paperclipIcon} alt="" aria-hidden="true" className="h-5 w-5 object-contain" />
+                        <img src={paperclipIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
                       </button>
 
                       {showAttachMenu && (
@@ -1876,7 +1876,7 @@ export default function LiveChat() {
                     onChange={e => setMessageInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={attachment ? 'Add a caption (optional)...' : 'Type a message...'}
-                    className="min-h-[40px] min-w-0 max-h-32 flex-1 resize-none border-none outline-none bg-transparent px-2 py-2 text-base"
+                    className="min-h-[40px] min-w-0 max-h-32 flex-1 resize-none rounded-none border-x-0 border-t-0 border-b border-gray-300 bg-transparent px-2 py-2 text-base outline-none focus:border-[#25d366] focus:ring-0"
                     rows={1}
                   />
 
@@ -1884,24 +1884,19 @@ export default function LiveChat() {
                     <button
                       onClick={handleSend}
                       disabled={(!messageInput.trim() && !attachment) || isPending}
-                      className="flex items-center justify-center rounded-md bg-transparent p-2 text-[#25d366] transition-opacity hover:opacity-75 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                      className="flex items-center justify-center bg-transparent p-1.5 text-[#25d366] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                       title="Send message"
                       aria-label="Send message"
                     >
                       {isPending
                         ? <Loader2 className="w-5 h-5 animate-spin" />
-                        : <span
+                        : <img
+                            src={sendIcon}
+                            alt=""
                             aria-hidden="true"
-                            className="block h-6 w-6 bg-[#25d366]"
+                            className="h-7 w-7 object-contain"
                             style={{
-                              maskImage: `url(${sendIcon})`,
-                              WebkitMaskImage: `url(${sendIcon})`,
-                              maskRepeat: 'no-repeat',
-                              WebkitMaskRepeat: 'no-repeat',
-                              maskPosition: 'center',
-                              WebkitMaskPosition: 'center',
-                              maskSize: 'contain',
-                              WebkitMaskSize: 'contain',
+                              filter: 'brightness(0) saturate(100%) invert(60%) sepia(93%) saturate(430%) hue-rotate(88deg) brightness(96%) contrast(96%)',
                             }}
                           />}
                     </button>
