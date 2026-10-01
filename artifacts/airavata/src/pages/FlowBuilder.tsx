@@ -51,7 +51,7 @@ function StatusBadge({ status }: { status: Flow['status'] }) {
     DEPRECATED: 'bg-gray-100 text-gray-500',
   };
   return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${map[status]}`}>
+    <span className={`text-xs font-semibold px-2.5 py-1 rounded-none ${map[status]}`}>
       {status.charAt(0) + status.slice(1).toLowerCase()}
     </span>
   );
@@ -165,7 +165,7 @@ function NewFlowDrawer({ onClose, onSave }: {
               disabled={!name.trim()}
               className="min-w-36 border border-primary bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Create flow
+              Create Flow
             </button>
           </footer>
         </form>
@@ -228,11 +228,11 @@ function FlowModal({ flow, onClose, onSave }: {
           </fieldset>
         </div>
         <div className="flex justify-end gap-2 border-t px-6 py-4">
-          <button onClick={onClose} className="rounded-xl px-4 py-2 text-sm text-gray-600 hover:bg-gray-100">Cancel</button>
+          <button onClick={onClose} className="border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
           <button
             onClick={() => name.trim() && onSave({ name: name.trim(), categories })}
             disabled={!name.trim()}
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
+            className="border border-primary bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
           >
             Save changes
           </button>
@@ -576,9 +576,11 @@ function formatResponseDate(value: string, iso = false) {
 // ── Flow List ─────────────────────────────────────────────────────────────────
 
 function FlowList({
-  flows, onEdit, onEditMeta, onDelete, onTogglePublish, onSend, onViewResponses, isStatusUpdating
+  flows, totalFlowCount, onClearFilters, onEdit, onEditMeta, onDelete, onTogglePublish, onSend, onViewResponses, isStatusUpdating
 }: {
   flows: Flow[];
+  totalFlowCount: number;
+  onClearFilters: () => void;
   onEdit: (f: Flow) => void;
   onEditMeta: (f: Flow) => void;
   onDelete: (id: string) => void;
@@ -588,6 +590,24 @@ function FlowList({
   isStatusUpdating: boolean;
 }) {
   if (flows.length === 0) {
+    if (totalFlowCount > 0) {
+      return (
+        <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 px-6 text-center text-gray-500">
+          <Search className="h-9 w-9 text-gray-300" />
+          <div>
+            <p className="text-base font-semibold text-gray-700">No flows match these filters</p>
+            <p className="mt-1 text-sm">Try another search or clear the selected filters.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            Clear filters
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
         <div className="w-16 h-16 rounded-2xl bg-white border-2 border-dashed border-gray-200 flex items-center justify-center shadow-sm">
@@ -595,7 +615,7 @@ function FlowList({
         </div>
         <div className="text-center">
           <p className="text-sm font-medium text-gray-500">No flows yet</p>
-          <p className="text-xs mt-1">Click <span className="font-semibold">New Flow</span> to build your first WhatsApp Flow.</p>
+          <p className="text-xs mt-1">Click <span className="font-semibold">Create a New Flow</span> to build your first WhatsApp Flow.</p>
         </div>
       </div>
     );
@@ -1087,11 +1107,35 @@ export default function FlowBuilder() {
   const [editingFlow, setEditingFlow] = useState<Flow | null>(null);
   const [sendingFlow, setSendingFlow] = useState<Flow | null>(null);
   const [viewingResponses, setViewingResponses] = useState<Flow | null>(null);
+  const [flowSearch, setFlowSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'' | Flow['status']>('');
 
   const { data: flows = [], isLoading } = useQuery({
     queryKey: ['flows'],
     queryFn: fetchFlows,
   });
+
+  const searchTerm = flowSearch.trim().toLowerCase();
+  const filteredFlows = flows.filter(flow => {
+    const categoryLabels = flow.categories.map(category =>
+      FLOW_CATEGORIES.find(item => item.value === category)?.label ?? category
+    );
+    const searchContent = `${flow.name} ${categoryLabels.join(' ')} ${flow.status}`.toLowerCase();
+
+    return (
+      (!searchTerm || searchContent.includes(searchTerm)) &&
+      (!categoryFilter || flow.categories.includes(categoryFilter)) &&
+      (!statusFilter || flow.status === statusFilter)
+    );
+  });
+  const hasFlowFilters = Boolean(searchTerm || categoryFilter || statusFilter);
+
+  function clearFlowFilters() {
+    setFlowSearch('');
+    setCategoryFilter('');
+    setStatusFilter('');
+  }
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<Flow>) => createFlow(data),
@@ -1162,20 +1206,64 @@ export default function FlowBuilder() {
     <div className="flow-list-page h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden bg-white">
       {confirmDialog}
       {/* Toolbar */}
-      <div className="h-14 shrink-0 border-b border-gray-200 bg-white px-6 flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
-          <Workflow className="w-5 h-5 text-primary" />
-          <h1 className="text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
-          {flows.length > 0 && (
-            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{flows.length}</span>
-          )}
+      <div className="z-10 shrink-0 border-b border-gray-200 bg-white px-4 py-3 md:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
+            <Workflow className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
+            {flows.length > 0 && (
+              <span className="border border-gray-200 bg-gray-100 px-2 py-1 text-xs font-semibold tabular-nums text-gray-600">
+                {hasFlowFilters ? `${filteredFlows.length}/${flows.length}` : flows.length}
+              </span>
+            )}
+          </div>
+
+          <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-1.5 lg:ml-auto lg:w-auto lg:flex-1 lg:flex-nowrap">
+            <label className="relative min-w-[140px] flex-1 lg:w-[160px] lg:flex-initial 2xl:w-[200px]">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                value={flowSearch}
+                onChange={event => setFlowSearch(event.target.value)}
+                aria-label="Search flows by name or category"
+                placeholder="Search flows"
+                className="h-10 w-full border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-800 outline-none transition-colors placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
+            </label>
+
+            <select
+              value={categoryFilter}
+              onChange={event => setCategoryFilter(event.target.value)}
+              aria-label="Filter flows by category"
+              className="h-10 min-w-[126px] border border-gray-300 bg-white px-2.5 text-sm text-gray-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            >
+              <option value="">All categories</option>
+              {FLOW_CATEGORIES.map(category => (
+                <option key={category.value} value={category.value}>{category.label}</option>
+              ))}
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={event => setStatusFilter(event.target.value as '' | Flow['status'])}
+              aria-label="Filter flows by status"
+              className="h-10 min-w-[112px] border border-gray-300 bg-white px-2.5 text-sm text-gray-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            >
+              <option value="">All statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="DEPRECATED">Deprecated</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex h-12 shrink-0 items-center gap-1.5 border border-primary bg-primary px-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 sm:px-4"
+            >
+              <Plus className="h-5 w-5" /> Create a New Flow
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-4 py-1.5 font-medium text-sm text-white bg-primary rounded-xl hover:bg-primary/90 flex items-center gap-2 shadow-sm"
-        >
-          <Plus className="w-4 h-4" /> New Flow
-        </button>
       </div>
 
       {/* Content */}
@@ -1184,7 +1272,9 @@ export default function FlowBuilder() {
           <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading flows…</div>
         ) : (
           <FlowList
-            flows={flows}
+            flows={filteredFlows}
+            totalFlowCount={flows.length}
+            onClearFilters={clearFlowFilters}
             onEdit={setEditingFlow}
             onEditMeta={setEditingMeta}
             onDelete={async (id) => {
