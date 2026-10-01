@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Plus, Workflow, ArrowLeft, Send, Globe, Trash2,
+  Plus, Workflow, ArrowLeft, Send, Globe, Trash2, Download, Search,
   Pencil, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox, CalendarDays
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -274,7 +274,7 @@ function SendModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
   );
 }
 
-// ── Responses modal ───────────────────────────────────────────────────────────
+// ── Full-page flow responses ──────────────────────────────────────────────────
 
 interface FlowResponse {
   id: string;
@@ -286,97 +286,257 @@ interface FlowResponse {
 
 const SKIP_KEYS = new Set(['flow_token', 'version', 'source']);
 
-function ResponsesModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
-  const { data, isLoading } = useQuery<{ responses: FlowResponse[]; total: number }>({
+function FlowResponsesPage({ flow, onBack }: { flow: Flow; onBack: () => void }) {
+  const [contactFilter, setContactFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [answerKey, setAnswerKey] = useState('');
+  const [answerFilter, setAnswerFilter] = useState('');
+  const { data, isLoading, isError, error } = useQuery<{ responses: FlowResponse[]; total: number }>({
     queryKey: ['flow-responses', flow.id],
-    queryFn: () => api.get(`/flows/${flow.id}/responses`),
+    queryFn: () => api.get<{ responses: FlowResponse[]; total: number }>(`/flows/${flow.id}/responses`),
   });
 
   const responses = data?.responses ?? [];
-
-  // Collect all unique field keys across responses (excluding internal Meta keys)
   const allKeys = Array.from(
     new Set(responses.flatMap(r => Object.keys(r.flowData).filter(k => !SKIP_KEYS.has(k))))
   );
 
-  function formatKey(k: string) {
-    return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const filteredResponses = responses.filter(response => {
+    const contactNeedle = contactFilter.trim().toLowerCase();
+    const answerNeedle = answerFilter.trim().toLowerCase();
+    const contactText = `${response.contactName} ${response.contactPhone}`.toLowerCase();
+    if (contactNeedle && !contactText.includes(contactNeedle)) return false;
+
+    const submittedAt = new Date(response.submittedAt).getTime();
+    if (dateFrom) {
+      const fromTime = new Date(`${dateFrom}T00:00:00`).getTime();
+      if (!Number.isNaN(submittedAt) && submittedAt < fromTime) return false;
+    }
+    if (dateTo) {
+      const toTime = new Date(`${dateTo}T23:59:59.999`).getTime();
+      if (!Number.isNaN(submittedAt) && submittedAt > toTime) return false;
+    }
+
+    if (answerNeedle) {
+      const values = answerKey
+        ? [formatResponseValue(response.flowData[answerKey])]
+        : allKeys.map(key => formatResponseValue(response.flowData[key]));
+      if (!values.join(' ').toLowerCase().includes(answerNeedle)) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = Boolean(contactFilter || dateFrom || dateTo || answerKey || answerFilter);
+
+  function clearFilters() {
+    setContactFilter('');
+    setDateFrom('');
+    setDateTo('');
+    setAnswerKey('');
+    setAnswerFilter('');
   }
-  function formatVal(v: unknown): string {
-    if (v === null || v === undefined) return '—';
-    if (typeof v === 'object') return JSON.stringify(v);
-    return String(v);
-  }
-  function formatDate(s: string) {
-    return new Date(s).toLocaleString();
+
+  function downloadCsv() {
+    if (filteredResponses.length === 0) {
+      toast.info('There are no matching responses to download.');
+      return;
+    }
+    const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const headers = ['Contact', 'Phone number', ...allKeys.map(formatResponseKey), 'Submitted at'];
+    const rows = filteredResponses.map(response => [
+      response.contactName,
+      response.contactPhone,
+      ...allKeys.map(key => formatResponseValue(response.flowData[key]) === '—' ? '' : formatResponseValue(response.flowData[key])),
+      formatResponseDate(response.submittedAt, true),
+    ]);
+    const csv = [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safeFlowName = flow.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'whatsapp-flow';
+    link.href = url;
+    link.download = `${safeFlowName}-responses-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${filteredResponses.length} response${filteredResponses.length === 1 ? '' : 's'}.`);
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-          <div className="flex items-center gap-3">
-            <Inbox className="w-5 h-5 text-primary" />
-            <div>
-              <h2 className="font-semibold text-gray-900">{flow.name} — Responses</h2>
-              {!isLoading && (
-                <p className="text-xs text-gray-400">{data?.total ?? 0} submission{data?.total !== 1 ? 's' : ''}</p>
-              )}
+    <div className="flow-list-page flex h-[calc(100vh-3.5rem)] min-h-0 flex-col bg-white">
+      <header className="flex shrink-0 flex-col justify-between gap-4 border-b bg-white px-4 py-4 sm:flex-row sm:items-center sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex shrink-0 items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to flows
+          </button>
+          <span aria-hidden="true" className="h-8 w-px shrink-0 bg-gray-200" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Inbox className="h-5 w-5 shrink-0 text-primary" />
+              <h1 className="truncate text-lg font-semibold text-gray-900">{flow.name} — Responses</h1>
             </div>
+            <p className="ml-7 mt-0.5 text-sm text-gray-500" aria-live="polite">
+              {isLoading ? 'Loading submissions…' : `${filteredResponses.length} of ${data?.total ?? responses.length} submissions`}
+            </p>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
-            <X className="w-4 h-4 text-gray-500" />
+        </div>
+        <button
+          type="button"
+          onClick={downloadCsv}
+          disabled={isLoading || filteredResponses.length === 0}
+          title="Downloads the matching submissions as a CSV file"
+          className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download className="h-4 w-4" /> Download CSV
+        </button>
+      </header>
+
+      <section className="shrink-0 border-b bg-white px-4 py-4 sm:px-6">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-[220px] flex-1">
+            <span className="mb-1 block text-xs font-medium text-gray-600">Contact name or phone</span>
+            <span className="relative block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                value={contactFilter}
+                onChange={event => setContactFilter(event.target.value)}
+                placeholder="Search contacts"
+                className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
+            </span>
+          </label>
+          <label className="w-[150px]">
+            <span className="mb-1 block text-xs font-medium text-gray-600">From date</span>
+            <input
+              type="date"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={event => setDateFrom(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
+          </label>
+          <label className="w-[150px]">
+            <span className="mb-1 block text-xs font-medium text-gray-600">To date</span>
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={event => setDateTo(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
+          </label>
+          <label className="min-w-[180px] flex-1">
+            <span className="mb-1 block text-xs font-medium text-gray-600">Answer field</span>
+            <select
+              value={answerKey}
+              onChange={event => setAnswerKey(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            >
+              <option value="">All answer fields</option>
+              {allKeys.map(key => <option key={key} value={key}>{formatResponseKey(key)}</option>)}
+            </select>
+          </label>
+          <label className="min-w-[200px] flex-1">
+            <span className="mb-1 block text-xs font-medium text-gray-600">Answer contains</span>
+            <input
+              type="search"
+              value={answerFilter}
+              onChange={event => setAnswerFilter(event.target.value)}
+              placeholder="Search answers"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={clearFilters}
+            disabled={!hasFilters}
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <X className="h-4 w-4" /> Clear filters
           </button>
         </div>
+      </section>
 
-        {/* Body */}
-        <div className="flex-1 overflow-auto p-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading…</div>
-          ) : responses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 gap-3 text-gray-400">
-              <Inbox className="w-10 h-10 opacity-30" />
-              <p className="text-sm">No responses yet</p>
-              <p className="text-xs">Responses will appear here once users submit the form.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap">Contact</th>
-                    {allKeys.map(k => (
-                      <th key={k} className="text-left px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap">
-                        {formatKey(k)}
-                      </th>
-                    ))}
-                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-gray-500 whitespace-nowrap">Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {responses.map((r, i) => (
-                    <tr key={r.id} className={`border-b ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-primary/5 transition-colors`}>
-                      <td className="px-3 py-3">
-                        <p className="font-medium text-gray-800 text-xs">{r.contactName}</p>
-                        <p className="text-gray-400 text-[11px]">{r.contactPhone}</p>
-                      </td>
-                      {allKeys.map(k => (
-                        <td key={k} className="px-3 py-3 text-gray-700 text-xs max-w-[200px] truncate">
-                          {formatVal(r.flowData[k])}
-                        </td>
-                      ))}
-                      <td className="px-3 py-3 text-gray-400 text-[11px] whitespace-nowrap">{formatDate(r.submittedAt)}</td>
-                    </tr>
+      <main className="min-h-0 flex-1 overflow-auto bg-white">
+        {isLoading ? (
+          <div className="flex h-48 items-center justify-center text-sm text-gray-500">Loading submissions…</div>
+        ) : isError ? (
+          <div className="flex h-48 flex-col items-center justify-center gap-2 text-sm text-red-600">
+            <p>Could not load responses.</p>
+            {error instanceof Error && <p className="text-xs text-gray-500">{error.message}</p>}
+          </div>
+        ) : responses.length === 0 ? (
+          <div className="flex h-48 flex-col items-center justify-center gap-2 text-gray-500">
+            <Inbox className="h-9 w-9 text-gray-300" />
+            <p className="text-base font-medium">No responses yet</p>
+            <p className="text-sm">Submissions will appear here when customers complete this flow.</p>
+          </div>
+        ) : filteredResponses.length === 0 ? (
+          <div className="flex h-48 flex-col items-center justify-center gap-3 text-gray-500">
+            <p className="text-base font-medium">No submissions match these filters.</p>
+            <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary hover:underline">
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-max border-collapse text-left text-sm">
+              <thead className="sticky top-0 z-10 bg-white">
+                <tr className="border-b border-gray-200">
+                  <th className="whitespace-nowrap px-5 py-3 text-sm font-semibold text-gray-600">Contact</th>
+                  <th className="whitespace-nowrap px-5 py-3 text-sm font-semibold text-gray-600">Phone number</th>
+                  {allKeys.map(key => (
+                    <th key={key} className="whitespace-nowrap px-5 py-3 text-sm font-semibold text-gray-600">
+                      {formatResponseKey(key)}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+                  <th className="whitespace-nowrap px-5 py-3 text-sm font-semibold text-gray-600">Submitted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredResponses.map(response => (
+                  <tr key={response.id} className="border-b border-gray-100 align-top transition-colors hover:bg-gray-50/70">
+                    <td className="max-w-[220px] break-words px-5 py-4 font-medium text-gray-800">{response.contactName}</td>
+                    <td className="whitespace-nowrap px-5 py-4 text-gray-600">{response.contactPhone || '—'}</td>
+                    {allKeys.map(key => (
+                      <td key={key} className="max-w-[280px] whitespace-normal break-words px-5 py-4 text-gray-700">
+                        {formatResponseValue(response.flowData[key])}
+                      </td>
+                    ))}
+                    <td className="whitespace-nowrap px-5 py-4 text-gray-500">{formatResponseDate(response.submittedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </div>
   );
+}
+
+function formatResponseKey(key: string) {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, character => character.toUpperCase());
+}
+
+function formatResponseValue(value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function formatResponseDate(value: string, iso = false) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return iso ? date.toISOString() : date.toLocaleString();
 }
 
 // ── Flow List ─────────────────────────────────────────────────────────────────
@@ -408,8 +568,8 @@ function FlowList({
 
   return (
     <div className="px-4 py-4 md:px-6 md:py-5">
-      <ul className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-100">
-      {flows.map(flow => (
+      <ul className="divide-y divide-gray-200 bg-white">
+        {flows.map(flow => (
         <li key={flow.id} className="px-4 py-4 transition-colors hover:bg-gray-50/70 md:px-5 md:py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 flex-1">
@@ -489,7 +649,7 @@ function FlowList({
           </div>
           </div>
         </li>
-      ))}
+        ))}
       </ul>
     </div>
   );
@@ -881,6 +1041,15 @@ export default function FlowBuilder() {
   }
 
   // ── Editor view ──
+  if (viewingResponses) {
+    return (
+      <FlowResponsesPage
+        flow={viewingResponses}
+        onBack={() => setViewingResponses(null)}
+      />
+    );
+  }
+
   if (editingFlow) {
     return (
       <FlowEditorView
@@ -893,10 +1062,10 @@ export default function FlowBuilder() {
 
   // ── List view ──
   return (
-    <div className="flow-list-page h-[calc(100vh-3.5rem)] flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flow-list-page h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden bg-white">
       {confirmDialog}
       {/* Toolbar */}
-      <div className="h-14 bg-white border-b px-6 flex items-center justify-between shrink-0 shadow-sm z-10">
+      <div className="h-14 shrink-0 border-b border-gray-200 bg-white px-6 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
           <Workflow className="w-5 h-5 text-primary" />
           <h1 className="text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
@@ -913,7 +1082,7 @@ export default function FlowBuilder() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-white">
         {isLoading ? (
           <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading flows…</div>
         ) : (
@@ -951,9 +1120,6 @@ export default function FlowBuilder() {
       )}
       {sendingFlow && (
         <SendModal flow={sendingFlow} onClose={() => setSendingFlow(null)} />
-      )}
-      {viewingResponses && (
-        <ResponsesModal flow={viewingResponses} onClose={() => setViewingResponses(null)} />
       )}
     </div>
   );
