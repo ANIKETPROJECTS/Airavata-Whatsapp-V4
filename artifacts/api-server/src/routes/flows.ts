@@ -468,6 +468,37 @@ async function metaRequest(path: string, method: string, accessToken: string, bo
   return data;
 }
 
+async function uploadFlowJsonToMeta(flow: FlowJsonDefinition, metaFlowId: string, accessToken: string) {
+  const formData = new FormData();
+  formData.append("name", "flow.json");
+  formData.append("asset_type", "FLOW_JSON");
+  formData.append(
+    "file",
+    new Blob([JSON.stringify(compileToMetaJson(flow))], { type: "application/json" }),
+    "flow.json",
+  );
+
+  const uploadRes = await fetch(`${META_BASE}/${metaFlowId}/assets`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  });
+  const uploadData = (await uploadRes.json()) as {
+    error?: { message?: string };
+    validation_errors?: Array<{ error: string; message: string }>;
+  };
+  if (!uploadRes.ok) {
+    const detail = uploadData.validation_errors?.length
+      ? ` Validation errors: ${JSON.stringify(uploadData.validation_errors)}`
+      : "";
+    throw new Error((uploadData.error?.message ?? "Failed to upload flow JSON") + detail);
+  }
+  if (uploadData.validation_errors?.length) {
+    const summary = uploadData.validation_errors.map((e) => `${e.error}: ${e.message}`).join("; ");
+    throw new Error(`Flow JSON validation failed: ${summary}`);
+  }
+}
+
 function isWhatsAppDisconnectedError(err: unknown): boolean {
   return err instanceof Error && err.message === "WhatsApp is not connected for this account";
 }
@@ -640,34 +671,7 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
     }
 
     // Step 2: Upload flow JSON asset
-    const flowJson = compileToMetaJson(flow);
-    const formData = new FormData();
-    formData.append("name", "flow.json");
-    formData.append("asset_type", "FLOW_JSON");
-    formData.append(
-      "file",
-      new Blob([JSON.stringify(flowJson)], { type: "application/json" }),
-      "flow.json",
-    );
-
-    const uploadRes = await fetch(`${META_BASE}/${metaFlowId}/assets`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
-      body: formData,
-    });
-    const uploadData = (await uploadRes.json()) as { error?: { message?: string }; validation_errors?: Array<{ error: string; message: string }> };
-    if (!uploadRes.ok) {
-      const detail = uploadData.validation_errors?.length
-        ? ` Validation errors: ${JSON.stringify(uploadData.validation_errors)}`
-        : "";
-      throw new Error((uploadData.error?.message ?? "Failed to upload flow JSON") + detail);
-    }
-    // Meta returns 200 even when there are validation errors — catch them here
-    // so the error surfaces before the publish call fails with a cryptic message.
-    if (uploadData.validation_errors?.length) {
-      const summary = uploadData.validation_errors.map((e) => `${e.error}: ${e.message}`).join("; ");
-      throw new Error(`Flow JSON validation failed: ${summary}`);
-    }
+    await uploadFlowJsonToMeta(flow, metaFlowId, accessToken);
 
     // Step 3: Publish
     await metaRequest(`/${metaFlowId}/publish`, "POST", accessToken);
@@ -683,6 +687,60 @@ router.post("/flows/:id/publish", authenticate, async (req: AuthRequest, res) =>
     if (isWhatsAppDisconnectedError(err)) {
       return res.status(409).json({ error: err.message });
     }
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
+// ── POST /api/flows/:id/unpublish ──────────────────────────────────────────────
+
+router.post("/flows/:id/unpublish", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const flow = await FlowModel.findOne({
+      _id: new mongoose.Types.ObjectId(String(req.params["id"])),
+      userId,
+    }).lean();
+    if (!flow) {
+      res.status(404).json({ error: "Flow not found" });
+      return;
+    }
+    if (flow.status === "DRAFT") {
+      res.json({ flow: shapeFlow(flow as Record<string, unknown> & { _id: unknown }) });
+      return;
+    }
+    if (flow.status === "DEPRECATED") {
+      res.status(409).json({ error: "Deprecated flows cannot be unpublished or published again" });
+      return;
+    }
+    if (!flow.metaFlowId) {
+      res.status(409).json({ error: "Published flow is missing its Meta Flow ID" });
+      return;
+    }
+
+    const { accessToken } = await getCredentials(req.user!.userId, {
+      allowEnvFallback: false,
+    });
+    // Meta transitions a published Flow back to Draft when its Flow JSON asset
+    // is updated. Uploading the current JSON keeps content unchanged while
+    // disabling production sends; the existing Flow ID can then be republished.
+    await uploadFlowJsonToMeta(flow, flow.metaFlowId, accessToken);
+
+    const updated = await FlowModel.findOneAndUpdate(
+      { _id: flow._id, userId },
+      { $set: { status: "DRAFT" } },
+      { returnDocument: "after" },
+    ).lean();
+    if (!updated) {
+      res.status(404).json({ error: "Flow not found" });
+      return;
+    }
+    res.json({ flow: shapeFlow(updated as Record<string, unknown> & { _id: unknown }) });
+  } catch (err: unknown) {
+    if (isWhatsAppDisconnectedError(err)) {
+      res.status(409).json({ error: err instanceof Error ? err.message : "WhatsApp is not connected for this account" });
+      return;
+    }
+    logger.error({ err }, "Failed to unpublish flow from Meta");
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
 });

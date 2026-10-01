@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Plus, Workflow, ArrowLeft, Send, Globe, Trash2, Download, Search,
-  Pencil, Settings, ChevronRight, PlusCircle, X, Check, Inbox, CalendarDays
+  Plus, Workflow, ArrowLeft, Send, Download, Search,
+  ChevronRight, PlusCircle, X, Check, Inbox, CalendarDays
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -11,6 +11,11 @@ import { DevicePreviewSelector, type PreviewDevice } from '../components/DeviceP
 import PhonePreview from '../components/flow/PhonePreview';
 import ComponentEditor from '../components/flow/ComponentEditor';
 import type { Flow, FlowScreen, FlowComponent, ComponentPaletteItem } from '../types/flow';
+import settingsActionIcon from '../assets/flow-actions/settings.png';
+import responsesActionIcon from '../assets/flow-actions/responses.png';
+import editActionIcon from '../assets/flow-actions/edit.png';
+import sendActionIcon from '../assets/flow-actions/send.png';
+import deleteActionIcon from '../assets/flow-actions/delete.png';
 import {
   FLOW_CATEGORIES, COMPONENT_CATEGORIES,
   makeDefaultComponent, makeNewScreen
@@ -34,6 +39,7 @@ const createFlow = (body: Partial<Flow>) => api.post<{ flow: Flow }>('/flows', b
 const updateFlow = (id: string, body: Partial<Flow>) => api.put<{ flow: Flow }>(`/flows/${id}`, body).then(r => r.flow);
 const deleteFlow = (id: string) => api.delete(`/flows/${id}`);
 const publishFlow = (id: string) => api.post<{ flow: Flow }>(`/flows/${id}/publish`).then(r => r.flow);
+const unpublishFlow = (id: string) => api.post<{ flow: Flow }>(`/flows/${id}/unpublish`).then(r => r.flow);
 const sendFlow = (id: string, body: object) => api.post(`/flows/${id}/send`, body);
 
 // ── Status badge ─────────────────────────────────────────────────────────────
@@ -542,15 +548,16 @@ function formatResponseDate(value: string, iso = false) {
 // ── Flow List ─────────────────────────────────────────────────────────────────
 
 function FlowList({
-  flows, onEdit, onEditMeta, onDelete, onPublish, onSend, onViewResponses
+  flows, onEdit, onEditMeta, onDelete, onTogglePublish, onSend, onViewResponses, isStatusUpdating
 }: {
   flows: Flow[];
   onEdit: (f: Flow) => void;
   onEditMeta: (f: Flow) => void;
   onDelete: (id: string) => void;
-  onPublish: (id: string) => void;
+  onTogglePublish: (f: Flow) => void;
   onSend: (f: Flow) => void;
   onViewResponses: (f: Flow) => void;
+  isStatusUpdating: boolean;
 }) {
   if (flows.length === 0) {
     return (
@@ -625,9 +632,9 @@ function FlowList({
                     onClick={() => onEditMeta(flow)}
                     aria-label={`Open settings for ${flow.name}`}
                     title="Settings"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-opacity hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
-                    <Settings className="h-4 w-4" />
+                    <img src={settingsActionIcon} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
                   </button>
                 </td>
                 <td className="px-2 py-4 text-center">
@@ -637,9 +644,9 @@ function FlowList({
                     disabled={flow.status !== 'PUBLISHED'}
                     aria-label={flow.status === 'PUBLISHED' ? `View responses for ${flow.name}` : `Responses available after publishing ${flow.name}`}
                     title={flow.status === 'PUBLISHED' ? 'View responses' : 'Available after publishing'}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:bg-white disabled:hover:text-gray-600"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-opacity hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:opacity-30"
                   >
-                    <Inbox className="h-4 w-4" />
+                    <img src={responsesActionIcon} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
                   </button>
                 </td>
                 <td className="px-2 py-4 text-center">
@@ -648,25 +655,35 @@ function FlowList({
                     onClick={() => onEdit(flow)}
                     aria-label={`Edit screens for ${flow.name}`}
                     title="Edit screens"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-opacity hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <img src={editActionIcon} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
                   </button>
                 </td>
                 <td className="px-2 py-4 text-center">
-                  {flow.status === 'DRAFT' ? (
-                    <button
-                      type="button"
-                      onClick={() => onPublish(flow.id)}
-                      aria-label={`Publish ${flow.name}`}
-                      title="Publish"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-700 transition-colors hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40"
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={flow.status === 'PUBLISHED'}
+                    aria-label={flow.status === 'PUBLISHED' ? `Unpublish ${flow.name}` : `Publish ${flow.name}`}
+                    title={flow.status === 'DEPRECATED' ? 'Deprecated flows cannot be published again' : flow.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                    disabled={isStatusUpdating || flow.status === 'DEPRECATED'}
+                    onClick={() => onTogglePublish(flow)}
+                    className="inline-flex h-11 min-w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        flow.status === 'PUBLISHED' ? 'bg-green-600' : 'bg-gray-300'
+                      }`}
                     >
-                      <Globe className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <span aria-hidden="true" className="text-gray-300">—</span>
-                  )}
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                          flow.status === 'PUBLISHED' ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </span>
+                  </button>
                 </td>
                 <td className="px-2 py-4 text-center">
                   {flow.status === 'PUBLISHED' ? (
@@ -675,9 +692,9 @@ function FlowList({
                       onClick={() => onSend(flow)}
                       aria-label={`Send ${flow.name}`}
                       title="Send"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-opacity hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
-                      <Send className="h-4 w-4" />
+                      <img src={sendActionIcon} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
                     </button>
                   ) : (
                     <span aria-hidden="true" className="text-gray-300">—</span>
@@ -689,9 +706,9 @@ function FlowList({
                     onClick={() => onDelete(flow.id)}
                     aria-label={`Delete ${flow.name}`}
                     title="Delete"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-opacity hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <img src={deleteActionIcon} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
                   </button>
                 </td>
               </tr>
@@ -1075,9 +1092,13 @@ export default function FlowBuilder() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const publishMutation = useMutation({
-    mutationFn: publishFlow,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['flows'] }); toast.success('Flow published to Meta!'); },
+  const publishStatusMutation = useMutation({
+    mutationFn: ({ id, publish }: { id: string; publish: boolean }) =>
+      publish ? publishFlow(id) : unpublishFlow(id),
+    onSuccess: (_updatedFlow, { publish }) => {
+      qc.invalidateQueries({ queryKey: ['flows'] });
+      toast.success(publish ? 'Flow published to Meta!' : 'Flow unpublished and returned to draft.');
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -1145,9 +1166,12 @@ export default function FlowBuilder() {
                 confirmLabel: 'Delete flow',
               })) deleteMutation.mutate(id);
             }}
-            onPublish={(id) => publishMutation.mutate(id)}
+            onTogglePublish={(flow) =>
+              publishStatusMutation.mutate({ id: flow.id, publish: flow.status !== 'PUBLISHED' })
+            }
             onSend={setSendingFlow}
             onViewResponses={setViewingResponses}
+            isStatusUpdating={publishStatusMutation.isPending}
           />
         )}
       </div>
