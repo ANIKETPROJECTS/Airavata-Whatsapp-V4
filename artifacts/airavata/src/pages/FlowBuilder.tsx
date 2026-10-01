@@ -1245,7 +1245,6 @@ export default function FlowBuilder() {
       (!statusFilter || flow.status === statusFilter)
     );
   });
-  const hasFlowFilters = Boolean(searchTerm || categoryFilter || statusFilter);
 
   function clearFlowFilters() {
     setFlowSearch('');
@@ -1323,18 +1322,21 @@ export default function FlowBuilder() {
       {confirmDialog}
       {/* Toolbar */}
       <div className="z-10 shrink-0 border-b border-gray-200 bg-white px-4 py-3">
-        <div className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(180px,1fr)_minmax(0,auto)_minmax(180px,1fr)]">
-          <div className="flex min-w-0 items-center gap-2">
+        <div className="relative flex flex-wrap items-center gap-2 lg:flex-nowrap lg:justify-between">
+          <div className="flex min-w-0 flex-col items-start justify-center gap-0.5">
             <h1 className="whitespace-nowrap text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
-            {flows.length > 0 && (
-              <span className="border border-primary bg-primary px-2.5 py-1 text-xs font-semibold tabular-nums text-white">
-                {hasFlowFilters ? `${filteredFlows.length}/${flows.length}` : flows.length}
-              </span>
+            {!isLoading && (
+              <p className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                Number of Flows:
+                <span className="border border-primary bg-primary px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white">
+                  {flows.length}
+                </span>
+              </p>
             )}
           </div>
 
-          <div className="order-3 flex w-full min-w-0 flex-wrap items-center justify-center gap-1.5 sm:col-span-2 lg:order-none lg:col-span-1 lg:flex-nowrap lg:justify-self-center">
-            <label className="relative min-w-[180px] w-full sm:w-[190px] lg:w-auto lg:flex-1 lg:max-w-[220px]">
+          <div className="order-3 flex w-full min-w-0 flex-wrap items-center justify-center gap-1.5 lg:absolute lg:left-1/2 lg:top-1/2 lg:order-none lg:w-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:flex-nowrap">
+            <label className="relative min-w-[180px] w-full sm:w-[190px] lg:w-[190px]">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="search"
@@ -1369,15 +1371,15 @@ export default function FlowBuilder() {
               <option value="PUBLISHED">Published</option>
               <option value="DEPRECATED">Deprecated</option>
             </select>
-
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-            className="order-2 inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border border-primary bg-primary px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 sm:justify-self-end lg:order-none lg:justify-self-end"
-            >
-            <Plus className="h-4 w-4" /> Create a New Flow
-            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="order-2 ml-auto inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border border-primary bg-primary px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 lg:order-none"
+          >
+            <Plus className="h-4 w-4" /> Create a New Flow
+          </button>
         </div>
       </div>
 
