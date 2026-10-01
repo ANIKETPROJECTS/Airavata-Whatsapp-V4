@@ -596,7 +596,7 @@ function ContactProfilePanel({
 
   if (contactLoading) {
     return (
-      <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
+      <aside className="w-[clamp(22rem,29vw,28rem)] border-l bg-white shrink-0 flex flex-col min-h-0">
         <div className="px-4 py-3 border-b flex justify-end">
           <button
             type="button"
@@ -617,7 +617,7 @@ function ContactProfilePanel({
 
   if (!contact) {
     return (
-      <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
+      <aside className="w-[clamp(22rem,29vw,28rem)] border-l bg-white shrink-0 flex flex-col min-h-0">
         <div className="px-4 py-3 border-b flex justify-end">
           <button
             type="button"
@@ -657,7 +657,7 @@ function ContactProfilePanel({
   };
 
   return (
-    <aside className="w-80 border-l bg-white shrink-0 flex flex-col min-h-0">
+    <aside className="w-[clamp(22rem,29vw,28rem)] border-l bg-white shrink-0 flex flex-col min-h-0">
       <div className="px-5 py-4 border-b flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Chat profile</p>
@@ -678,15 +678,15 @@ function ContactProfilePanel({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-5 py-5 bg-gradient-to-b from-primary/5 to-white border-b text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-primary/15 text-primary flex items-center justify-center text-2xl font-bold">
+        <div className="px-5 py-5 bg-white border-b text-center">
+          <div className="w-16 h-16 mx-auto rounded-full border border-primary/25 bg-white text-primary flex items-center justify-center text-2xl font-bold">
             {contact.name.charAt(0).toUpperCase()}
           </div>
           <h4 className="mt-3 font-semibold text-gray-900 truncate">{displayName || 'Unnamed contact'}</h4>
           <p className="mt-1 text-xs text-gray-500 flex items-center justify-center gap-1">
             <Phone className="w-3 h-3" /> {contact.phone}
           </p>
-          <span className={`inline-flex mt-3 px-2 py-1 rounded-full text-[11px] font-medium ${
+          <span className={`inline-flex mt-3 px-2 py-1 rounded-full text-xs font-medium ${
             contact.status === 'blocked' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
           }`}>
             {contact.status === 'blocked' ? 'Blocked' : 'Active customer'}
@@ -695,21 +695,21 @@ function ContactProfilePanel({
 
         <div className="grid grid-cols-2 gap-3 px-5 py-4 border-b">
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-gray-400">Last active</p>
+            <p className="text-xs uppercase tracking-wide text-gray-400">Last active</p>
             <p className="text-xs font-medium text-gray-700 mt-1">{formatLastActive(lastActiveAt)}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-gray-400">Conversation</p>
+            <p className="text-xs uppercase tracking-wide text-gray-400">Conversation</p>
             <p className="text-xs font-medium text-gray-700 mt-1">{conversationStatus}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-gray-400">Session window</p>
+            <p className="text-xs uppercase tracking-wide text-gray-400">Session window</p>
             <p className={`text-xs font-medium mt-1 ${windowOpen ? 'text-green-600' : 'text-orange-600'}`}>
               {windowOpen ? 'Open' : 'Closed'}
             </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-gray-400">Tags</p>
+            <p className="text-xs uppercase tracking-wide text-gray-400">Tags</p>
             <p className="text-xs font-medium text-gray-700 mt-1">{draftTags.length}</p>
           </div>
         </div>
@@ -757,7 +757,7 @@ function ContactProfilePanel({
                   </button>
                 </div>
                 {draftAttributes.length === 0 ? (
-                  <p className="text-[11px] text-gray-400">Add details such as company, city, plan, or birthday.</p>
+                  <p className="text-xs text-gray-400">Add details such as company, city, plan, or birthday.</p>
                 ) : (
                   <div className="space-y-2">
                     {draftAttributes.map((attribute, index) => (
@@ -803,7 +803,7 @@ function ContactProfilePanel({
             <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
               <Megaphone className="w-4 h-4 text-gray-400" /> Campaigns
               {campaigns.length > 0 && (
-                <span className="text-[10px] rounded-full bg-primary/10 text-primary px-1.5 py-0.5">{campaigns.length}</span>
+                <span className="text-xs rounded-full bg-primary/10 text-primary px-1.5 py-0.5">{campaigns.length}</span>
               )}
             </span>
             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCampaigns ? 'rotate-180' : ''}`} />
@@ -815,23 +815,23 @@ function ContactProfilePanel({
               ) : campaigns.length === 0 ? (
                 <p className="text-xs text-gray-400 py-1">No campaigns have run for this contact.</p>
               ) : (
-                <div className="space-y-2">
+                <div>
                   {campaigns.map(campaign => {
                     const status = recipientStatus(campaign.recipientStatus);
                     return (
-                      <div key={campaign.id} className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+                      <div key={campaign.id} className="border-b border-gray-100 py-3 first:pt-0 last:border-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-gray-800 truncate">{campaign.name}</p>
                             {campaign.templateName && (
-                              <p className="text-[10px] text-gray-400 truncate mt-0.5">{campaign.templateName}</p>
+                              <p className="text-xs text-gray-400 truncate mt-0.5">{campaign.templateName}</p>
                             )}
                           </div>
-                          <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${status.className}`}>
+                          <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-medium ${status.className}`}>
                             {status.icon}{status.label}
                           </span>
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-2">
+                        <p className="text-xs text-gray-400 mt-2">
                           Campaign: {campaign.status.toLowerCase()} · Last update: {formatCampaignDate(campaign.readAt ?? campaign.deliveredAt ?? campaign.sentAt ?? campaign.createdAt)}
                         </p>
                       </div>
@@ -866,7 +866,7 @@ function ContactProfilePanel({
                       <button
                         key={tag.id}
                         onClick={() => toggleTag(tag.id)}
-                        className="px-2 py-1 rounded-full text-[11px] font-medium"
+                        className="px-2 py-1 rounded-full text-xs font-medium"
                         style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
                         title="Remove tag"
                       >
@@ -958,7 +958,7 @@ function ContactProfilePanel({
                       />
                       <span className="flex-1">{group.name}</span>
                       {group.memberCount !== undefined && (
-                        <span className="text-[10px] text-gray-400">{group.memberCount}</span>
+                        <span className="text-xs text-gray-400">{group.memberCount}</span>
                       )}
                     </label>
                   ))}
@@ -967,14 +967,14 @@ function ContactProfilePanel({
                 <p className="text-xs text-gray-400">Create groups from Contacts to organize customers.</p>
               )}
               {draftGroupIds.length > 0 && (
-                <p className="text-[11px] text-gray-400 mt-2">{draftGroupIds.length} group(s) assigned</p>
+                <p className="text-xs text-gray-400 mt-2">{draftGroupIds.length} group(s) assigned</p>
               )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="p-4 border-t bg-gray-50">
+      <div className="p-4 border-t bg-white">
         <button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending || !draftName.trim()}
