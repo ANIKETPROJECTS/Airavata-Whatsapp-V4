@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Plus, ArrowLeft, Send, Download, Search,
+  Plus, Workflow, ArrowLeft, Send, Download, Search,
   ChevronRight, PlusCircle, X, Check, Inbox
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -184,60 +184,105 @@ function FlowModal({ flow, onClose, onSave }: {
   const [name, setName] = useState(flow.name);
   const [categories, setCategories] = useState<string[]>(flow.categories ?? ['OTHER']);
 
+  function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedName = name.trim();
+    if (trimmedName) onSave({ name: trimmedName, categories });
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div role="dialog" aria-modal="true" aria-labelledby="edit-flow-title" className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 id="edit-flow-title" className="font-semibold text-gray-900">Edit flow details</h2>
-          <button onClick={onClose} aria-label="Close edit flow details" className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="space-y-5 px-6 py-5">
-          <div>
-            <label htmlFor="edit-flow-name" className="mb-1.5 block text-sm font-medium text-gray-700">Flow name</label>
-            <input
-              id="edit-flow-name"
-              type="text"
-              value={name}
-              onChange={event => setName(event.target.value)}
-              className="w-full rounded-none border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              maxLength={200}
-            />
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <button
+        type="button"
+        aria-label="Close edit flow details"
+        onClick={onClose}
+        className="flow-drawer-backdrop absolute inset-0 cursor-default bg-black/35"
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-flow-title"
+        aria-describedby="edit-flow-description"
+        onKeyDown={event => {
+          if (event.key === 'Escape') onClose();
+        }}
+        className="flow-drawer-panel relative z-10 flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl"
+      >
+        <form onSubmit={handleSave} className="flex h-full min-h-0 flex-col">
+          <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">WhatsApp Flows</p>
+              <h2 id="edit-flow-title" className="mt-1 text-xl font-semibold text-gray-900">Edit flow details</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close edit flow details"
+              className="p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </header>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+            <p id="edit-flow-description" className="mb-7 text-sm text-gray-500">
+              Update the name and category for this WhatsApp Flow.
+            </p>
+            <div className="space-y-7">
+              <div>
+                <label htmlFor="edit-flow-name" className="mb-2 block text-sm font-medium text-gray-800">Flow name</label>
+                <input
+                  id="edit-flow-name"
+                  autoFocus
+                  type="text"
+                  value={name}
+                  onChange={event => setName(event.target.value)}
+                  className="w-full border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow focus:border-primary focus:ring-4 focus:ring-primary/10"
+                  maxLength={200}
+                />
+              </div>
+
+              <fieldset>
+                <legend className="mb-3 text-sm font-medium text-gray-800">Category</legend>
+                <div className="flex flex-wrap gap-2">
+                  {FLOW_CATEGORIES.map(item => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      aria-pressed={categories.includes(item.value)}
+                      onClick={() => setCategories([item.value])}
+                      className={`border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                        categories.includes(item.value)
+                          ? 'border-primary bg-primary text-white'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-gray-900'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
           </div>
 
-          <fieldset>
-            <legend className="mb-2 block text-sm font-medium text-gray-700">Category</legend>
-            <div className="flex flex-wrap gap-2">
-              {FLOW_CATEGORIES.map(item => (
-                <button
-                  key={item.value}
-                  type="button"
-                  aria-pressed={categories.includes(item.value)}
-                  onClick={() => setCategories([item.value])}
-                  className={`rounded-none border px-3 py-1.5 text-xs font-medium transition-colors ${
-                    categories.includes(item.value)
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-primary'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-        <div className="flex justify-end gap-2 border-t px-6 py-4">
-          <button onClick={onClose} className="border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-          <button
-            onClick={() => name.trim() && onSave({ name: name.trim(), categories })}
-            disabled={!name.trim()}
-            className="border border-primary bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
-          >
-            Save changes
-          </button>
-        </div>
-      </div>
+          <footer className="grid shrink-0 grid-cols-2 gap-3 border-t border-gray-200 bg-gray-50/70 px-6 py-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-11 w-full border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim()}
+              className="h-11 w-full border border-primary bg-primary px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Save changes
+            </button>
+          </footer>
+        </form>
+      </aside>
     </div>
   );
 }
@@ -266,44 +311,115 @@ function SendModal({ flow, onClose }: { flow: Flow; onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="font-semibold text-gray-900">Send Flow</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-500" /></button>
-        </div>
-        <div className="px-6 py-5 space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Recipient Phone</label>
-            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              placeholder="+919876543210 (with country code)" />
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <button
+        type="button"
+        aria-label="Close send flow panel"
+        onClick={onClose}
+        className="flow-drawer-backdrop absolute inset-0 cursor-default bg-black/35"
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="send-flow-title"
+        aria-describedby="send-flow-description"
+        onKeyDown={event => {
+          if (event.key === 'Escape') onClose();
+        }}
+        className="flow-drawer-panel relative z-10 flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl"
+      >
+        <form
+          onSubmit={event => {
+            event.preventDefault();
+            void handleSend();
+          }}
+          className="flex h-full min-h-0 flex-col"
+        >
+          <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">WhatsApp Flows</p>
+              <h2 id="send-flow-title" className="mt-1 text-xl font-semibold text-gray-900">Send Flow</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close send flow panel"
+              className="p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </header>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+            <p id="send-flow-description" className="mb-7 text-sm text-gray-500">
+              Choose a recipient and customize the message that opens this flow.
+            </p>
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="send-flow-phone" className="mb-2 block text-sm font-medium text-gray-800">Recipient phone</label>
+                <input
+                  id="send-flow-phone"
+                  autoFocus
+                  type="tel"
+                  value={phone}
+                  onChange={event => setPhone(event.target.value)}
+                  placeholder="+919876543210 (with country code)"
+                  autoComplete="tel"
+                  className="w-full border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow placeholder:text-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+              <div>
+                <label htmlFor="send-flow-header" className="mb-2 block text-sm font-medium text-gray-800">Message header</label>
+                <input
+                  id="send-flow-header"
+                  type="text"
+                  value={headerText}
+                  onChange={event => setHeaderText(event.target.value)}
+                  className="w-full border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+              <div>
+                <label htmlFor="send-flow-body" className="mb-2 block text-sm font-medium text-gray-800">Message body</label>
+                <textarea
+                  id="send-flow-body"
+                  rows={3}
+                  value={bodyText}
+                  onChange={event => setBodyText(event.target.value)}
+                  className="w-full resize-y border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+              <div>
+                <label htmlFor="send-flow-cta" className="mb-2 block text-sm font-medium text-gray-800">Button label</label>
+                <input
+                  id="send-flow-cta"
+                  type="text"
+                  value={ctaLabel}
+                  onChange={event => setCtaLabel(event.target.value)}
+                  className="w-full border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-shadow focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Message Header</label>
-            <input type="text" value={headerText} onChange={e => setHeaderText(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Message Body</label>
-            <textarea rows={2} value={bodyText} onChange={e => setBodyText(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Button Label</label>
-            <input type="text" value={ctaLabel} onChange={e => setCtaLabel(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          </div>
-        </div>
-        <div className="px-6 py-4 border-t flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
-          <button onClick={handleSend} disabled={sending}
-            className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
-            <Send className="w-3.5 h-3.5" />
-            {sending ? 'Sending...' : 'Send Flow'}
-          </button>
-        </div>
-      </div>
+
+          <footer className="grid shrink-0 grid-cols-2 gap-3 border-t border-gray-200 bg-gray-50/70 px-6 py-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-11 w-full border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={sending}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 border border-primary bg-primary px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" />
+              {sending ? 'Sending…' : 'Send Flow'}
+            </button>
+          </footer>
+        </form>
+      </aside>
     </div>
   );
 }
@@ -1206,20 +1322,19 @@ export default function FlowBuilder() {
     <div className="flow-list-page h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden bg-white">
       {confirmDialog}
       {/* Toolbar */}
-      <div className="z-10 shrink-0 border-b border-gray-200 bg-white px-4 py-3 md:px-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex shrink-0 items-center gap-3">
-            <Workflow className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
+      <div className="z-10 shrink-0 border-b border-gray-200 bg-white px-4 py-3">
+        <div className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(180px,1fr)_minmax(0,auto)_minmax(180px,1fr)]">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="whitespace-nowrap text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
             {flows.length > 0 && (
-              <span className="border border-gray-200 bg-gray-100 px-2 py-1 text-xs font-semibold tabular-nums text-gray-600">
+              <span className="border border-primary bg-primary px-2.5 py-1 text-xs font-semibold tabular-nums text-white">
                 {hasFlowFilters ? `${filteredFlows.length}/${flows.length}` : flows.length}
               </span>
             )}
           </div>
 
-          <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-1.5 lg:ml-auto lg:w-auto lg:flex-1 lg:flex-nowrap">
-            <label className="relative min-w-[140px] flex-1 lg:w-[160px] lg:flex-initial 2xl:w-[200px]">
+          <div className="order-3 flex w-full min-w-0 flex-wrap items-center justify-center gap-1.5 sm:col-span-2 lg:order-none lg:col-span-1 lg:flex-nowrap lg:justify-self-center">
+            <label className="relative min-w-[180px] w-full sm:w-[190px] lg:w-auto lg:flex-1 lg:max-w-[220px]">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="search"
@@ -1258,9 +1373,9 @@ export default function FlowBuilder() {
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex h-12 shrink-0 items-center gap-1.5 border border-primary bg-primary px-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 sm:px-4"
+            className="order-2 inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border border-primary bg-primary px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 sm:justify-self-end lg:order-none lg:justify-self-end"
             >
-              <Plus className="h-5 w-5" /> Create a New Flow
+            <Plus className="h-4 w-4" /> Create a New Flow
             </button>
           </div>
         </div>
