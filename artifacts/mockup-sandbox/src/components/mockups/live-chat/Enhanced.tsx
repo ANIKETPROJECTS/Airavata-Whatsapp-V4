@@ -1341,7 +1341,7 @@ export default function LiveChat() {
                 placeholder="Search conversations..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 border-transparent rounded-none focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               />
             </div>
             <div className="relative">
