@@ -1323,16 +1323,17 @@ export default function FlowBuilder() {
       {/* Toolbar */}
       <div className="z-10 shrink-0 border-b border-gray-200 bg-white px-4 py-3">
         <div className="relative flex flex-wrap items-center gap-2 lg:flex-nowrap lg:justify-between">
-          <div className="flex min-w-0 flex-col items-start justify-center gap-0.5">
-            <h1 className="whitespace-nowrap text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
+          <div className="flex min-w-0 items-center gap-2">
             {!isLoading && (
-              <p className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                Number of Flows:
-                <span className="border border-primary bg-primary px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white">
-                  {flows.length}
-                </span>
-              </p>
+              <span
+                aria-label={`Number of Flows: ${flows.length}`}
+                title={`Number of Flows: ${flows.length}`}
+                className="shrink-0 border border-primary bg-primary px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-white"
+              >
+                {flows.length}
+              </span>
             )}
+            <h1 className="whitespace-nowrap text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
           </div>
 
           <div className="order-3 flex w-full min-w-0 flex-wrap items-center justify-center gap-1.5 lg:absolute lg:left-1/2 lg:top-1/2 lg:order-none lg:w-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:flex-nowrap">
