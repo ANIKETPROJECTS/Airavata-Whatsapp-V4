@@ -1,7 +1,7 @@
 /** Phone mockup preview of a WhatsApp Flow screen */
 
-import type { FlowScreen, FlowComponent } from '../../types/flow';
-import { DevicePreviewFrame, type PreviewDevice } from '../DevicePreview';
+import type { FlowScreen, FlowComponent } from './flow';
+import { DevicePreviewFrame, type PreviewDevice } from './DevicePreview';
 
 interface Props {
   screen: FlowScreen | null;
@@ -11,7 +11,7 @@ interface Props {
 
 export default function PhonePreview({ screen, flowName, device }: Props) {
   return (
-    <div className="flow-phone-preview flex min-h-0 flex-1 flex-col overflow-y-auto bg-white p-3">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white p-3">
       <div className="my-auto flex shrink-0 flex-col items-center">
         <DevicePreviewFrame device={device} screenWidth={300}>
           <div className="flex h-full min-h-0 w-full flex-col bg-[#efeae2]">

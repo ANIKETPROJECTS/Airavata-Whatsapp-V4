@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent } from 'react';
 import { Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
-import type { FlowComponent, FlowOption, TextInputType } from '../../types/flow';
+import type { FlowComponent, FlowOption, TextInputType } from './flow';
 
 interface Props {
   comp: FlowComponent;
@@ -133,41 +133,34 @@ export default function ComponentEditor({
   };
 
   return (
-    <div className="border-b border-gray-200 bg-white pb-5">
+    <div className="border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-gray-100 py-3">
+      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100">
         <GripVertical className="w-4 h-4 text-gray-300 shrink-0" />
-        <span className="flex-1 text-sm font-semibold text-gray-800">{typeLabel[comp.type] ?? comp.type}</span>
+        <span className="text-xs font-semibold text-gray-600 flex-1">{typeLabel[comp.type] ?? comp.type}</span>
         <div className="flex items-center gap-1">
           <button
             onClick={onMoveUp}
             disabled={index === 0}
-            aria-label={`Move ${typeLabel[comp.type] ?? comp.type} up`}
-            className="p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30"
+            className="p-1 rounded hover:bg-gray-200 disabled:opacity-30"
           >
-            <ChevronUp className="w-4 h-4" />
+            <ChevronUp className="w-3 h-3 text-gray-500" />
           </button>
           <button
             onClick={onMoveDown}
             disabled={index === total - 1}
-            aria-label={`Move ${typeLabel[comp.type] ?? comp.type} down`}
-            className="p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30"
+            className="p-1 rounded hover:bg-gray-200 disabled:opacity-30"
           >
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDown className="w-3 h-3 text-gray-500" />
           </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label={`Remove ${typeLabel[comp.type] ?? comp.type}`}
-            className="p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
-          >
-            <Trash2 className="w-4 h-4" />
+          <button onClick={onRemove} className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600">
+            <Trash2 className="w-3 h-3" />
           </button>
         </div>
       </div>
 
       {/* Fields */}
-      <div className="space-y-4 pt-4">
+      <div className="px-3 py-3 space-y-2.5">
         {/* Text shown to the customer */}
         {isTextField && (
           <div>

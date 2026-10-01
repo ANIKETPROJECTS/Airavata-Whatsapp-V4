@@ -194,6 +194,38 @@
   line-height: 1.2rem;
 }
 
+.flow-editor-view [class~="text-[9px]"],
+.flow-editor-view [class~="text-[10px]"],
+.flow-editor-view [class~="text-[11px]"] {
+  font-size: 0.8125rem;
+  line-height: 1.2rem;
+}
+
+.flow-editor-view .flow-phone-preview .text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.flow-editor-view .flow-phone-preview .text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.flow-editor-view .flow-phone-preview [class~="text-[9px]"] {
+  font-size: 0.5625rem;
+  line-height: 0.75rem;
+}
+
+.flow-editor-view .flow-phone-preview [class~="text-[10px]"] {
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+}
+
+.flow-editor-view .flow-phone-preview [class~="text-[11px]"] {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
 .add-template-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
