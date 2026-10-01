@@ -4,9 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   LayoutDashboard, MessageCircle, Users, Megaphone, BarChart3, 
   FileText, Settings, Workflow, Bot, Blocks, UsersRound, ShoppingBag, 
-  CreditCard, ChevronRight, ChevronLeft,
+  CreditCard,
   WalletCards,
-  PanelLeftClose, PanelLeftOpen, ShieldCheck, X,
+  ShieldCheck, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import dashboardIcon from '@assets/dashboard_(2)_1787117667340.png';
@@ -100,10 +100,6 @@ export function Shell({ children }: { children: ReactNode }) {
     setLocation(href);
   };
 
-  const handleSidebarToggle = () => {
-    setCollapsed(value => !value);
-  };
-
   const handleSidebarMouseEnter = () => {
     if (window.matchMedia('(any-hover: hover)').matches) setCollapsed(false);
   };
@@ -190,17 +186,6 @@ export function Shell({ children }: { children: ReactNode }) {
             </ul>
           </nav>
 
-          {/* Collapse toggle button — pinned to right edge */}
-          <button
-            onClick={handleSidebarToggle}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white border border-black rounded-full flex items-center justify-center shadow-sm hover:shadow-md hover:border-black transition-all z-30 text-black hover:text-black"
-          >
-            {collapsed
-              ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
-              : <ChevronLeft className="w-3.5 h-3.5 stroke-[2.5]" />
-            }
-          </button>
         </aside>
 
         {/* Main Content */}
