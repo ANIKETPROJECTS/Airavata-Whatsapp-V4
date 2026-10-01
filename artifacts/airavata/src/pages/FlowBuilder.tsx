@@ -754,25 +754,25 @@ function FlowList({
         <table className="w-full min-w-[900px] border-collapse text-left">
           <thead>
             <tr className="border-b border-gray-200">
-              <th scope="col" className="min-w-[360px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 md:px-5">
+              <th scope="col" className="min-w-[360px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-black md:px-5">
                 Flow Name
               </th>
-              <th scope="col" className="w-24 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-24 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                 Settings
               </th>
-              <th scope="col" className="w-24 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-24 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                 Responses
               </th>
-              <th scope="col" className="w-28 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-28 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                 Edit Screens
               </th>
-              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                 Publish
               </th>
-              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                 Send
               </th>
-              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                 Delete
               </th>
             </tr>
