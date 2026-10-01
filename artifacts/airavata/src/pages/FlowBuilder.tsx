@@ -45,7 +45,7 @@ function StatusBadge({ status }: { status: Flow['status'] }) {
     DEPRECATED: 'bg-gray-100 text-gray-500',
   };
   return (
-    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${map[status]}`}>
+    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${map[status]}`}>
       {status.charAt(0) + status.slice(1).toLowerCase()}
     </span>
   );
@@ -407,70 +407,90 @@ function FlowList({
   }
 
   return (
-    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="px-4 py-4 md:px-6 md:py-5">
+      <ul className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-100">
       {flows.map(flow => (
-        <div key={flow.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col gap-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-sm truncate">{flow.name}</h3>
-              <p className="text-[11px] text-gray-400 mt-0.5">
-                {flow.categories.map(c => FLOW_CATEGORIES.find(x => x.value === c)?.label ?? c).join(', ')}
-              </p>
+        <li key={flow.id} className="px-4 py-4 transition-colors hover:bg-gray-50/70 md:px-5 md:py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h3 className="break-words text-lg font-semibold leading-7 text-gray-900">{flow.name}</h3>
+                <StatusBadge status={flow.status} />
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600">
+                <span>
+                  <span className="font-medium text-gray-500">Category:</span>{' '}
+                  {flow.categories.map(c => FLOW_CATEGORIES.find(x => x.value === c)?.label ?? c).join(', ')}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <LayoutList className="h-4 w-4 text-gray-400" />
+                  {flow.screens.length} screen{flow.screens.length !== 1 ? 's' : ''}
+                </span>
+                {flow.metaFlowId && (
+                  <span className="flex items-center gap-1.5 font-medium text-green-700">
+                    <Check className="h-4 w-4" /> Synced with Meta
+                  </span>
+                )}
+              </div>
             </div>
-            <StatusBadge status={flow.status} />
-          </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-gray-400">
-            <span className="flex items-center gap-1"><LayoutList className="w-3 h-3" />{flow.screens.length} screen{flow.screens.length !== 1 ? 's' : ''}</span>
-            {flow.metaFlowId && <span className="text-green-600">• Synced with Meta</span>}
-          </div>
-
-          <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1 border-t border-gray-50">
+            <div className="flex flex-wrap items-center gap-2 lg:max-w-[520px] lg:justify-end">
             <button
+              type="button"
               onClick={() => onEdit(flow)}
-              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
             >
-              <Pencil className="w-3 h-3" /> Edit Screens
+              <Pencil className="h-4 w-4" /> Edit Screens
             </button>
             <button
+              type="button"
               onClick={() => onEditMeta(flow)}
-              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
             >
-              <Pencil className="w-3 h-3" /> Settings
+              <Pencil className="h-4 w-4" /> Settings
             </button>
             {flow.status === 'DRAFT' && (
               <button
+                type="button"
                 onClick={() => onPublish(flow.id)}
-                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 font-medium"
+                className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
               >
-                <Globe className="w-3 h-3" /> Publish
+                <Globe className="h-4 w-4" /> Publish
               </button>
             )}
             {flow.status === 'PUBLISHED' && (
               <>
                 <button
+                  type="button"
                   onClick={() => onViewResponses(flow)}
-                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
+                  className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                 >
-                  <Inbox className="w-3 h-3" /> Responses
+                  <Inbox className="h-4 w-4" /> Responses
                 </button>
                 <button
+                  type="button"
                   onClick={() => onSend(flow)}
-                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-medium"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
                 >
-                  <Send className="w-3 h-3" /> Send
+                  <Send className="h-4 w-4" /> Send
                 </button>
               </>
             )}
             <button
+              type="button"
               onClick={() => onDelete(flow.id)}
-              className="ml-auto flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"
+              aria-label={`Delete ${flow.name}`}
+              title="Delete flow"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="h-4 w-4" />
+              Delete
             </button>
           </div>
-        </div>
+          </div>
+        </li>
       ))}
+      </ul>
     </div>
   );
 }
@@ -873,13 +893,13 @@ export default function FlowBuilder() {
 
   // ── List view ──
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-gray-50 overflow-hidden">
+    <div className="flow-list-page h-[calc(100vh-3.5rem)] flex flex-col bg-gray-50 overflow-hidden">
       {confirmDialog}
       {/* Toolbar */}
       <div className="h-14 bg-white border-b px-6 flex items-center justify-between shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-3">
           <Workflow className="w-5 h-5 text-primary" />
-          <h1 className="font-semibold text-gray-900">WhatsApp Flows</h1>
+          <h1 className="text-lg font-semibold text-gray-900">WhatsApp Flows</h1>
           {flows.length > 0 && (
             <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{flows.length}</span>
           )}
