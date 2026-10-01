@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -71,10 +71,9 @@ export const SidebarContext = createContext<{ collapsed: boolean }>({ collapsed:
 export const useSidebar = () => useContext(SidebarContext);
 
 export function Shell({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const pendingSidebarCollapse = useRef<number | null>(null);
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -97,32 +96,20 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => () => {
-    if (pendingSidebarCollapse.current !== null) {
-      window.clearTimeout(pendingSidebarCollapse.current);
-    }
-  }, []);
-
   const handleNav = (href: string) => {
     setLocation(href);
-    if (pendingSidebarCollapse.current !== null) {
-      window.clearTimeout(pendingSidebarCollapse.current);
-      pendingSidebarCollapse.current = null;
-    }
-    if (!collapsed) {
-      pendingSidebarCollapse.current = window.setTimeout(() => {
-        setCollapsed(true);
-        pendingSidebarCollapse.current = null;
-      }, 3000);
-    }
   };
 
   const handleSidebarToggle = () => {
-    if (pendingSidebarCollapse.current !== null) {
-      window.clearTimeout(pendingSidebarCollapse.current);
-      pendingSidebarCollapse.current = null;
-    }
     setCollapsed(value => !value);
+  };
+
+  const handleSidebarMouseEnter = () => {
+    if (window.matchMedia('(any-hover: hover)').matches) setCollapsed(false);
+  };
+
+  const handleSidebarMouseLeave = () => {
+    if (window.matchMedia('(any-hover: hover)').matches) setCollapsed(true);
   };
 
   const handleNotificationClick = (notification: NotificationPreview) => {
@@ -145,6 +132,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
         {/* Sidebar */}
         <aside
+          onMouseEnter={handleSidebarMouseEnter}
+          onMouseLeave={handleSidebarMouseLeave}
           className={`
             airavata-sidebar relative flex flex-col bg-[#25d366] text-black
             transition-all duration-200 ease-in-out shrink-0 z-20
