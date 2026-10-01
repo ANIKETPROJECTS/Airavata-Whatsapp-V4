@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Workflow, ArrowLeft, Send, Globe, Trash2, Download, Search,
-  Pencil, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox, CalendarDays
+  Pencil, Settings, ChevronRight, LayoutList, PlusCircle, X, Check, Inbox, CalendarDays
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useConfirmDialog } from '../components/ConfirmDialog';
@@ -568,89 +568,120 @@ function FlowList({
 
   return (
     <div className="px-4 py-4 md:px-6 md:py-5">
-      <ul className="divide-y divide-gray-200 bg-white">
-        {flows.map(flow => (
-        <li key={flow.id} className="px-4 py-4 transition-colors hover:bg-gray-50/70 md:px-5 md:py-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h3 className="break-words text-lg font-semibold leading-7 text-gray-900">{flow.name}</h3>
-                <StatusBadge status={flow.status} />
-              </div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600">
-                <span>
-                  <span className="font-medium text-gray-500">Category:</span>{' '}
-                  {flow.categories.map(c => FLOW_CATEGORIES.find(x => x.value === c)?.label ?? c).join(', ')}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <LayoutList className="h-4 w-4 text-gray-400" />
-                  {flow.screens.length} screen{flow.screens.length !== 1 ? 's' : ''}
-                </span>
-                {flow.metaFlowId && (
-                  <span className="flex items-center gap-1.5 font-medium text-green-700">
-                    <Check className="h-4 w-4" /> Synced with Meta
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 lg:max-w-[520px] lg:justify-end">
-            <button
-              type="button"
-              onClick={() => onEdit(flow)}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-            >
-              <Pencil className="h-4 w-4" /> Edit Screens
-            </button>
-            <button
-              type="button"
-              onClick={() => onEditMeta(flow)}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-            >
-              <Pencil className="h-4 w-4" /> Settings
-            </button>
-            {flow.status === 'DRAFT' && (
-              <button
-                type="button"
-                onClick={() => onPublish(flow.id)}
-                className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
-              >
-                <Globe className="h-4 w-4" /> Publish
-              </button>
-            )}
-            {flow.status === 'PUBLISHED' && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onViewResponses(flow)}
-                  className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  <Inbox className="h-4 w-4" /> Responses
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSend(flow)}
-                  className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
-                >
-                  <Send className="h-4 w-4" /> Send
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => onDelete(flow.id)}
-              aria-label={`Delete ${flow.name}`}
-              title="Delete flow"
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
-          </div>
-          </div>
-        </li>
-        ))}
-      </ul>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] border-collapse text-left">
+          <thead>
+            <tr className="border-b border-gray-200">
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 md:px-5">
+                Flow Name
+              </th>
+              <th scope="col" className="w-24 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Settings
+              </th>
+              <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Responses
+              </th>
+              <th scope="col" className="w-52 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 md:px-5">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {flows.map(flow => (
+              <tr key={flow.id} className="transition-colors hover:bg-gray-50/70">
+                <td className="px-4 py-4 md:px-5">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <h3 className="break-words text-lg font-semibold leading-7 text-gray-900">{flow.name}</h3>
+                    <StatusBadge status={flow.status} />
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600">
+                    <span>
+                      <span className="font-medium text-gray-500">Category:</span>{' '}
+                      {flow.categories.map(c => FLOW_CATEGORIES.find(x => x.value === c)?.label ?? c).join(', ')}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <LayoutList className="h-4 w-4 text-gray-400" />
+                      {flow.screens.length} screen{flow.screens.length !== 1 ? 's' : ''}
+                    </span>
+                    {flow.metaFlowId && (
+                      <span className="flex items-center gap-1.5 font-medium text-green-700">
+                        <Check className="h-4 w-4" /> Synced with Meta
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-3 py-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => onEditMeta(flow)}
+                    aria-label={`Open settings for ${flow.name}`}
+                    title="Settings"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                </td>
+                <td className="px-3 py-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => flow.status === 'PUBLISHED' && onViewResponses(flow)}
+                    disabled={flow.status !== 'PUBLISHED'}
+                    aria-label={flow.status === 'PUBLISHED' ? `View responses for ${flow.name}` : `Responses available after publishing ${flow.name}`}
+                    title={flow.status === 'PUBLISHED' ? 'View responses' : 'Available after publishing'}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:bg-white disabled:hover:text-gray-600"
+                  >
+                    <Inbox className="h-4 w-4" />
+                  </button>
+                </td>
+                <td className="px-4 py-4 md:px-5">
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(flow)}
+                      aria-label={`Edit screens for ${flow.name}`}
+                      title="Edit screens"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    {flow.status === 'DRAFT' && (
+                      <button
+                        type="button"
+                        onClick={() => onPublish(flow.id)}
+                        aria-label={`Publish ${flow.name}`}
+                        title="Publish"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-700 transition-colors hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40"
+                      >
+                        <Globe className="h-4 w-4" />
+                      </button>
+                    )}
+                    {flow.status === 'PUBLISHED' && (
+                      <button
+                        type="button"
+                        onClick={() => onSend(flow)}
+                        aria-label={`Send ${flow.name}`}
+                        title="Send"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      >
+                        <Send className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onDelete(flow.id)}
+                      aria-label={`Delete ${flow.name}`}
+                      title="Delete"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
