@@ -25,7 +25,7 @@ import type { DateRange } from 'react-day-picker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type ConversationTab = 'All' | 'Sent' | 'Open' | 'Closed';
+type ConversationTab = 'Sent' | 'Open' | 'Closed';
 type ConversationTabState = 'SENT' | 'OPEN' | 'CLOSED' | 'OTHER';
 
 interface Conversation {
@@ -982,7 +982,7 @@ function ContactProfilePanel({
 export default function LiveChat() {
   const qc = useQueryClient();
   const [location] = useLocation();
-  const [activeTab, setActiveTab] = useState<ConversationTab>('All');
+  const [activeTab, setActiveTab] = useState<ConversationTab>('Sent');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -1223,9 +1223,7 @@ export default function LiveChat() {
   const dateFilterActive = Boolean(chatDateRange?.from || chatDateRange?.to);
 
   const filtered = dateFiltered.filter(c => {
-    const matchTab =
-      activeTab === 'All' ||
-      c.tabState === activeTab.toUpperCase();
+    const matchTab = c.tabState === activeTab.toUpperCase();
     const matchSearch =
       !search ||
       c.contactName.toLowerCase().includes(search.toLowerCase()) ||
@@ -1234,13 +1232,12 @@ export default function LiveChat() {
   });
 
   const conversationTotals = {
-    All: dateFiltered.length,
     Sent: dateFiltered.filter(conversation => conversation.tabState === 'SENT').length,
     Open: dateFiltered.filter(conversation => conversation.tabState === 'OPEN').length,
     Closed: dateFiltered.filter(conversation => conversation.tabState === 'CLOSED').length,
   };
 
-  const tabs: ConversationTab[] = ['All', 'Sent', 'Open', 'Closed'];
+  const tabs: ConversationTab[] = ['Sent', 'Open', 'Closed'];
 
   const getLocalDayKey = (value: string | Date) => {
     const date = value instanceof Date ? value : new Date(value);
@@ -1446,17 +1443,17 @@ export default function LiveChat() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="grid grid-cols-4 gap-2 pb-1">
+          <div className="grid grid-cols-3 gap-2 pb-1">
             {tabs.map(tab => (
               <button
                 type="button"
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 aria-pressed={activeTab === tab}
-                className={`flex min-w-0 items-center justify-center rounded-none border border-black px-2 py-1.5 font-sans text-[13px] leading-tight whitespace-nowrap transition-[background-color,border-width] ${
+                className={`flex w-full min-w-0 items-center justify-center rounded-none px-2 py-1.5 font-sans text-sm leading-5 whitespace-nowrap transition-[background-color,border-width] ${
                   activeTab === tab
-                    ? 'border-2 bg-[#25d366] font-semibold text-white'
-                    : 'bg-white font-medium text-black hover:bg-gray-50'
+                    ? 'border-0 bg-[#25d366] font-semibold text-white'
+                    : 'border border-black bg-white font-medium text-black hover:bg-gray-50'
                 }`}
               >
                 {tab}: {conversationTotals[tab]}

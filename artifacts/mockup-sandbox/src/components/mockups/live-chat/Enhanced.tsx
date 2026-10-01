@@ -1058,7 +1058,7 @@ function ContactProfilePanel({
 
 export default function LiveChat() {
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'All' | 'Sent' | 'Open' | 'Closed'>('All');
+  const [activeTab, setActiveTab] = useState<'Sent' | 'Open' | 'Closed'>('Sent');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -1268,7 +1268,7 @@ export default function LiveChat() {
   });
 
   const filtered = dateFiltered.filter(c => {
-    const matchTab = activeTab === 'All' || c.tabState === activeTab.toUpperCase();
+    const matchTab = c.tabState === activeTab.toUpperCase();
     const matchSearch =
       !search ||
       c.contactName.toLowerCase().includes(search.toLowerCase()) ||
@@ -1277,13 +1277,12 @@ export default function LiveChat() {
   });
 
   const conversationTotals = {
-    All: dateFiltered.length,
     Sent: dateFiltered.filter(conversation => conversation.tabState === 'SENT').length,
     Open: dateFiltered.filter(conversation => conversation.tabState === 'OPEN').length,
     Closed: dateFiltered.filter(conversation => conversation.tabState === 'CLOSED').length,
   };
 
-  const tabs: Array<'All' | 'Sent' | 'Open' | 'Closed'> = ['All', 'Sent', 'Open', 'Closed'];
+  const tabs: Array<'Sent' | 'Open' | 'Closed'> = ['Sent', 'Open', 'Closed'];
 
   const calendarStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
   const calendarDayCount = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
@@ -1435,17 +1434,17 @@ export default function LiveChat() {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 pb-1">
+          <div className="grid grid-cols-3 gap-2 pb-1">
             {tabs.map(tab => (
               <button
                 type="button"
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 aria-pressed={activeTab === tab}
-                className={`flex min-w-0 items-center justify-center rounded-none border border-black px-2 py-1.5 font-sans text-[13px] leading-tight whitespace-nowrap transition-[background-color,border-width] ${
+                className={`flex w-full min-w-0 items-center justify-center rounded-none px-2 py-1.5 font-sans text-sm leading-5 whitespace-nowrap transition-[background-color,border-width] ${
                   activeTab === tab
-                    ? 'border-2 bg-[#25d366] font-semibold text-white'
-                    : 'bg-white font-medium text-black hover:bg-gray-50'
+                    ? 'border-0 bg-[#25d366] font-semibold text-white'
+                    : 'border border-black bg-white font-medium text-black hover:bg-gray-50'
                 }`}
               >
                 {tab}: {conversationTotals[tab]}
