@@ -1441,13 +1441,16 @@ export default function LiveChat() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 aria-pressed={activeTab === tab}
-                className={`flex w-full min-w-0 items-center justify-center rounded-none px-2 py-1.5 font-sans text-sm leading-5 whitespace-nowrap transition-[background-color,border-width] ${
+                className={`flex w-full min-w-0 items-center justify-center gap-2 rounded-none px-2 py-1.5 font-sans text-sm leading-5 whitespace-nowrap transition-[background-color,border-width] ${
                   activeTab === tab
                     ? 'border-0 bg-[#25d366] font-semibold text-white'
                     : 'border border-black bg-white font-medium text-black hover:bg-gray-50'
                 }`}
               >
-                {tab}: {conversationTotals[tab]}
+                <span>{tab}</span>
+                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-gray-200 bg-white px-1.5 text-sm font-semibold leading-none text-black tabular-nums">
+                  {conversationTotals[tab]}
+                </span>
               </button>
             ))}
           </div>
