@@ -156,18 +156,18 @@ export function FlowEditorWorkspace({ enhanced = false }: { enhanced?: boolean }
 
   return (
     <div className={`flow-editor-workspace h-screen flex flex-col overflow-hidden ${enhanced ? 'flow-editor-enhanced' : ''}`}>
-      <div className="h-14 bg-white border-b px-4 flex items-center justify-between shrink-0 shadow-sm z-10">
-        <div className="flex items-center gap-3">
+      <div className="h-14 bg-white border-b px-4 flex items-center shrink-0 shadow-sm z-10">
+        <div className="flex min-w-0 items-center gap-3">
           <button onClick={() => toast.message('Back to flows')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <ChevronRight className="w-3 h-3 text-gray-300" />
           <span className="font-semibold text-gray-900 text-sm">{flow.name}</span>
           <StatusBadge status={flow.status} />
+          <button onClick={handleSave} disabled={saving} className="ml-1 flex shrink-0 items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 shadow-sm">
+            <Check className="w-3.5 h-3.5" />{saving ? 'Saving…' : 'Save Flow'}
+          </button>
         </div>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 shadow-sm">
-          <Check className="w-3.5 h-3.5" />{saving ? 'Saving…' : 'Save Flow'}
-        </button>
       </div>
 
       <div className="shrink-0 border-b bg-white">
@@ -177,27 +177,27 @@ export function FlowEditorWorkspace({ enhanced = false }: { enhanced?: boolean }
             <button type="button" onClick={addScreen} aria-label="Add screen" title="Add screen" className="rounded p-1 hover:bg-gray-100"><PlusCircle className="h-4 w-4 text-primary" /></button>
           </div>
           <div className="flex min-w-0 items-start border-r px-3 py-1.5"><h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Add a component</h2></div>
-          <div className="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1 px-3 py-1.5">
+          <div className="flex min-w-0 flex-nowrap items-center justify-center gap-x-2 px-2 py-1.5">
             {activeScreen ? (
               <>
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <span className="shrink-0 text-xs font-medium text-gray-500">Title</span>
-                  <input type="text" value={activeScreen.title} onChange={e => updateScreen(activeScreenIdx, { title: e.target.value })} className="w-[150px] max-w-full rounded-lg border border-gray-200 px-2.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <input type="text" value={activeScreen.title} onChange={e => updateScreen(activeScreenIdx, { title: e.target.value })} className="w-32 min-w-0 max-w-full rounded-lg border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <span className="shrink-0 text-xs font-medium text-gray-500">Next screen</span>
-                  {activeScreen.isTerminal ? <span className="text-xs font-medium text-green-600">Submit (final)</span> : (
-                    <select value={activeScreen.nextScreenId ?? ''} onChange={e => updateScreen(activeScreenIdx, { nextScreenId: e.target.value })} className="max-w-[130px] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+                  {activeScreen.isTerminal ? <span className="whitespace-nowrap text-xs font-medium text-green-600">Submit (final)</span> : (
+                    <select value={activeScreen.nextScreenId ?? ''} onChange={e => updateScreen(activeScreenIdx, { nextScreenId: e.target.value })} className="w-32 min-w-0 max-w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
                       <option value="">Select screen...</option>
                       {screens.filter((_, i) => i !== activeScreenIdx).map(screen => <option key={screen.id} value={screen.id}>{screen.title}</option>)}
                     </select>
                   )}
                 </div>
-                <label className="flex cursor-pointer items-center gap-2">
+                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap">
                   <div onClick={() => updateScreen(activeScreenIdx, { isTerminal: !activeScreen.isTerminal, nextScreenId: undefined })} className={`relative h-4 w-8 rounded-full transition-colors ${activeScreen.isTerminal ? 'bg-green-500' : 'bg-gray-200'}`}>
                     <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${activeScreen.isTerminal ? 'translate-x-4' : 'translate-x-0.5'}`} />
                   </div>
-                  <span className="whitespace-nowrap text-xs text-gray-600">Final screen</span>
+                  <span className="text-xs text-gray-600">Final screen</span>
                 </label>
               </>
             ) : <span className="text-xs text-gray-400">Select a screen to edit</span>}
@@ -272,7 +272,7 @@ export function FlowEditorWorkspace({ enhanced = false }: { enhanced?: boolean }
           ) : <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Select a screen to edit</div>}
         </div>
 
-        <div className="flow-editor-phone-panel hidden shrink-0 flex-col border-l bg-gray-50 xl:flex xl:w-[360px] 2xl:w-[400px]">
+        <div className="flow-editor-phone-panel hidden min-h-0 shrink-0 flex-col border-l bg-white xl:flex xl:w-[360px] 2xl:w-[400px]">
           <PhonePreview screen={activeScreen} flowName={flow.name} device={previewDevice} />
         </div>
       </div>

@@ -1001,29 +1001,29 @@ function FlowEditorView({
   return (
     <div className="flow-list-page flow-editor-view flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden bg-white">
       {/* Top bar */}
-      <div className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-5">
-        <div className="flex items-center gap-3">
+      <div className="z-10 flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-5">
+        <div className="flex min-w-0 items-center gap-3">
           <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <ChevronRight className="w-3 h-3 text-gray-300" />
           <span className="font-semibold text-gray-900 text-sm">{flow.name}</span>
           <StatusBadge status={flow.status} />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="ml-1 flex shrink-0 items-center gap-2 border border-primary bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Check className="w-3.5 h-3.5" />
+            {saving ? 'Saving…' : 'Save Flow'}
+          </button>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 border border-primary bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
-        >
-          <Check className="w-3.5 h-3.5" />
-          {saving ? 'Saving…' : 'Save Flow'}
-        </button>
       </div>
 
       {/* Shared header grid mirrors the screen, palette, editor, and preview columns below. */}
       <div className="shrink-0 border-b border-gray-200 bg-white">
         <div className="grid grid-cols-[13rem_15rem_minmax(0,1fr)] xl:grid-cols-[13rem_15rem_minmax(0,1fr)_360px] 2xl:grid-cols-[13rem_15rem_minmax(0,1fr)_400px]">
-          <div className="flex min-w-0 items-start justify-between border-r border-gray-200 px-4 py-3">
+          <div className="flex min-w-0 items-start justify-between border-r border-gray-200 px-4 py-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-800">Screens</h2>
             <button
               type="button"
@@ -1035,30 +1035,30 @@ function FlowEditorView({
               <PlusCircle className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex min-w-0 items-start border-r border-gray-200 px-4 py-3">
+          <div className="flex min-w-0 items-start border-r border-gray-200 px-4 py-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-800">Add a component</h2>
           </div>
-          <div className="flex min-w-0 flex-wrap items-start justify-center gap-x-4 gap-y-2 px-4 py-3">
+          <div className="flex min-w-0 flex-nowrap items-center justify-center gap-x-2 px-3 py-2">
             {activeScreen ? (
               <>
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <span className="shrink-0 text-xs font-medium text-gray-500">Title</span>
                   <input
                     type="text"
                     value={activeScreen.title}
                     onChange={e => updateScreen(activeScreenIdx, { title: e.target.value })}
-                    className="w-[180px] max-w-full border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-32 min-w-0 max-w-full border border-gray-300 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <span className="shrink-0 text-xs font-medium text-gray-500">Next screen</span>
                   {activeScreen.isTerminal ? (
-                    <span className="text-sm font-medium text-green-700">Submit (final)</span>
+                    <span className="whitespace-nowrap text-xs font-medium text-green-700">Submit (final)</span>
                   ) : (
                     <select
                       value={activeScreen.nextScreenId ?? ''}
                       onChange={e => updateScreen(activeScreenIdx, { nextScreenId: e.target.value })}
-                      className="max-w-[170px] border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="w-32 min-w-0 max-w-full border border-gray-300 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
                       <option value="">Select screen...</option>
                       {screens.filter((_, i) => i !== activeScreenIdx).map(s => (
@@ -1067,21 +1067,21 @@ function FlowEditorView({
                     </select>
                   )}
                 </div>
-                <label className="flex cursor-pointer items-center gap-2">
+                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap">
                   <div
                     onClick={() => updateScreen(activeScreenIdx, { isTerminal: !activeScreen.isTerminal, nextScreenId: undefined })}
                     className={`relative h-4 w-8 rounded-full transition-colors ${activeScreen.isTerminal ? 'bg-green-500' : 'bg-gray-200'}`}
                   >
                     <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${activeScreen.isTerminal ? 'translate-x-4' : 'translate-x-0.5'}`} />
                   </div>
-                  <span className="whitespace-nowrap text-sm text-gray-700">Final screen</span>
+                  <span className="text-xs text-gray-700">Final screen</span>
                 </label>
               </>
             ) : (
               <span className="text-sm text-gray-500">Select a screen to edit</span>
             )}
           </div>
-          <div className="hidden min-w-0 items-start justify-between gap-2 border-l border-gray-200 px-4 py-3 xl:flex">
+          <div className="hidden min-w-0 items-start justify-between gap-2 border-l border-gray-200 px-4 py-2 xl:flex">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-800">Preview</h2>
             <DevicePreviewSelector device={previewDevice} onChange={setPreviewDevice} />
           </div>
@@ -1205,7 +1205,7 @@ function FlowEditorView({
         </div>
 
         {/* Right: Phone preview */}
-        <div className="hidden shrink-0 flex-col border-l border-gray-200 bg-white xl:flex xl:w-[360px] 2xl:w-[400px]">
+          <div className="hidden min-h-0 shrink-0 flex-col border-l border-gray-200 bg-white xl:flex xl:w-[360px] 2xl:w-[400px]">
           <PhonePreview screen={activeScreen} flowName={flow.name} device={previewDevice} />
         </div>
       </div>
