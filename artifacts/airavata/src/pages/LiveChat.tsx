@@ -8,16 +8,20 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MessageSquare,
-  Send, Paperclip, Smile, CheckCheck, Loader2, RefreshCw,
+  Send, CheckCheck, Loader2, RefreshCw,
   FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
-  Check, Clock3, CircleAlert, Trash2, BookOpen,
+  Check, Clock3, CircleAlert, Trash2,
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 import calendarFilterIcon from '@/assets/calendar-filter-icon.png';
+import happyFaceIcon from '@assets/happy-face_(1)_1790884902034.png';
+import chatIcon from '@assets/chat_(1)_1790885069320.png';
+import letterIcon from '@assets/letter_1790885182957.png';
+import paperclipIcon from '@assets/attach-paperclip-symbol_(1)_1790885236833.png';
 import { api } from '@/lib/api';
 import { Calendar as DatePicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1698,7 +1702,7 @@ export default function LiveChat() {
           {/* Message Input */}
           <div className="p-4 bg-white border-t border-gray-200 shrink-0">
             {activeConv.windowOpen ? (
-              <div className="max-w-3xl mx-auto space-y-2">
+              <div className="w-full max-w-none min-w-0 mx-auto space-y-2">
                 {/* Attachment preview strip */}
                 {attachment && (
                   <div className="flex items-center gap-3 bg-white border rounded-lg px-3 py-2 shadow-sm">
@@ -1729,16 +1733,17 @@ export default function LiveChat() {
                 )}
 
                 {/* Input row */}
-                <div className="relative flex items-end gap-2 bg-white border rounded-xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-                  <div className="flex gap-1 pb-1">
+                <div className="relative flex w-full min-w-0 items-center gap-2 rounded-lg border border-green-300 bg-white p-1 shadow-sm transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                  <div className="flex shrink-0 items-center gap-1">
                     {/* Emoji button */}
                     <div className="relative" ref={emojiPickerRef}>
                       <button
                         onClick={() => setShowEmojiPicker(p => !p)}
-                        className={`p-2 rounded-lg transition-colors ${showEmojiPicker ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className={`rounded-lg p-1.5 transition-colors ${showEmojiPicker ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                         title="Emoji"
+                        aria-label="Open emoji picker"
                       >
-                        <Smile className="w-5 h-5" />
+                        <img src={happyFaceIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
                       </button>
                       {showEmojiPicker && (
                         <div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
@@ -1761,10 +1766,11 @@ export default function LiveChat() {
                           setShowEmojiPicker(false);
                           setShowAttachMenu(false);
                         }}
-                        className={`p-2 rounded-lg transition-colors ${showCannedMessages ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className={`rounded-lg p-1.5 transition-colors ${showCannedMessages ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                         title="Canned messages"
+                        aria-label="Open quick replies"
                       >
-                        <BookOpen className="w-5 h-5" />
+                        <img src={chatIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain opacity-60" />
                       </button>
                       {showCannedMessages && (
                         <div className="absolute bottom-12 left-0 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
@@ -1815,20 +1821,22 @@ export default function LiveChat() {
                         setShowEmojiPicker(false);
                         setShowAttachMenu(false);
                       }}
-                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                       title="Send template"
+                      aria-label="Send template"
                     >
-                      <FileText className="w-5 h-5" />
+                      <img src={letterIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain opacity-60" />
                     </button>
 
                     {/* Attachment button + popup menu */}
                     <div className="relative" ref={attachMenuRef}>
                       <button
                         onClick={() => setShowAttachMenu(p => !p)}
-                        className={`p-2 rounded-lg transition-colors ${attachment ? 'bg-primary/10 text-primary' : showAttachMenu ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className={`rounded-lg p-1.5 transition-colors ${attachment ? 'bg-primary/10 text-primary' : showAttachMenu ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
                         title="Attach"
+                        aria-label="Attach a file"
                       >
-                        <Paperclip className="w-5 h-5" />
+                        <img src={paperclipIcon} alt="" aria-hidden="true" className="h-4 w-4 object-contain opacity-60" />
                       </button>
 
                       {showAttachMenu && (
@@ -1867,15 +1875,15 @@ export default function LiveChat() {
                     onChange={e => setMessageInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={attachment ? 'Add a caption (optional)...' : 'Type a message...'}
-                    className="flex-1 max-h-32 min-h-[44px] resize-none border-none outline-none py-2 px-2 text-base bg-transparent"
+                    className="min-h-[34px] min-w-0 max-h-32 flex-1 resize-none border-none outline-none bg-transparent px-2 py-1 text-base"
                     rows={1}
                   />
 
-                  <div className="pb-1">
+                  <div className="shrink-0">
                     <button
                       onClick={handleSend}
                       disabled={(!messageInput.trim() && !attachment) || isPending}
-                      className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                      className="flex items-center justify-center rounded-md bg-primary p-1.5 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isPending
                         ? <Loader2 className="w-5 h-5 animate-spin" />
