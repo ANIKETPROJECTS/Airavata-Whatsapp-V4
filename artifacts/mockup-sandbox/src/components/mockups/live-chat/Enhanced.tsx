@@ -1276,19 +1276,6 @@ export default function LiveChat() {
     return matchTab && matchSearch;
   });
 
-  const unreadTotals = {
-    All: dateFiltered.reduce((sum, conversation) => sum + conversation.unread, 0),
-    Sent: dateFiltered
-      .filter(conversation => conversation.tabState === 'SENT')
-      .reduce((sum, conversation) => sum + conversation.unread, 0),
-    Open: dateFiltered
-      .filter(conversation => conversation.tabState === 'OPEN')
-      .reduce((sum, conversation) => sum + conversation.unread, 0),
-    Closed: dateFiltered
-      .filter(conversation => conversation.tabState === 'CLOSED')
-      .reduce((sum, conversation) => sum + conversation.unread, 0),
-  };
-
   const conversationTotals = {
     All: dateFiltered.length,
     Sent: dateFiltered.filter(conversation => conversation.tabState === 'SENT').length,
@@ -1448,25 +1435,18 @@ export default function LiveChat() {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-1.5 pb-1">
+          <div className="grid grid-cols-4 gap-2 pb-1">
             {tabs.map(tab => (
               <button
+                type="button"
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 aria-pressed={activeTab === tab}
-                className={`flex min-w-0 items-center justify-center gap-1 rounded-md border border-primary px-1 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
-                  activeTab === tab ? 'bg-primary text-white shadow-sm' : 'bg-primary/75 text-white hover:bg-primary/90'
+                className={`flex min-w-0 items-center justify-center rounded-none border border-black bg-[#25d366] px-2 py-1.5 font-sans text-[13px] leading-tight text-black whitespace-nowrap transition-[filter,border-width] hover:brightness-95 ${
+                  activeTab === tab ? 'border-2 font-semibold' : 'font-medium'
                 }`}
               >
-                {tab}
-                <span className="text-[11px] font-bold text-white/90">
-                  {conversationTotals[tab]}
-                </span>
-                {unreadTotals[tab] > 0 && (
-                  <span className="rounded-sm bg-white px-1 py-0.5 text-[10px] font-bold leading-none text-primary">
-                    {unreadTotals[tab] > 99 ? '99+' : unreadTotals[tab]}
-                  </span>
-                )}
+                {tab}: {conversationTotals[tab]}
               </button>
             ))}
           </div>
