@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -74,6 +74,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const pendingSidebarCollapse = useRef<number | null>(null);
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -96,8 +97,32 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => () => {
+    if (pendingSidebarCollapse.current !== null) {
+      window.clearTimeout(pendingSidebarCollapse.current);
+    }
+  }, []);
+
   const handleNav = (href: string) => {
     setLocation(href);
+    if (pendingSidebarCollapse.current !== null) {
+      window.clearTimeout(pendingSidebarCollapse.current);
+      pendingSidebarCollapse.current = null;
+    }
+    if (!collapsed) {
+      pendingSidebarCollapse.current = window.setTimeout(() => {
+        setCollapsed(true);
+        pendingSidebarCollapse.current = null;
+      }, 3000);
+    }
+  };
+
+  const handleSidebarToggle = () => {
+    if (pendingSidebarCollapse.current !== null) {
+      window.clearTimeout(pendingSidebarCollapse.current);
+      pendingSidebarCollapse.current = null;
+    }
+    setCollapsed(value => !value);
   };
 
   const handleNotificationClick = (notification: NotificationPreview) => {
@@ -178,7 +203,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
           {/* Collapse toggle button — pinned to right edge */}
           <button
-            onClick={() => setCollapsed(v => !v)}
+            onClick={handleSidebarToggle}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white border border-black rounded-full flex items-center justify-center shadow-sm hover:shadow-md hover:border-black transition-all z-30 text-black hover:text-black"
           >
