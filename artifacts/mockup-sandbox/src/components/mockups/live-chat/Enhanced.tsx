@@ -1476,7 +1476,7 @@ export default function LiveChat() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {convsLoading ? (
             <div className="flex items-center justify-center h-32 text-gray-400">
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -1508,10 +1508,10 @@ export default function LiveChat() {
               <button
                 key={conv.id}
                 onClick={() => setActiveConvId(conv.id)}
-                className={`group relative w-full overflow-hidden bg-white text-left p-4 border-b border-gray-100 transition-colors flex gap-3 ${
+                className={`group relative mx-2 mb-1 w-[calc(100%-1rem)] overflow-hidden rounded-lg border-2 bg-white text-left p-4 transition-colors flex gap-3 ${
                   activeConvId === conv.id
-                    ? 'border-l-2 border-l-[#25d366]'
-                    : 'border-l-2 border-l-transparent'
+                    ? 'border-[#25d366]'
+                    : 'border-transparent'
                 }`}
               >
                 <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 origin-left scale-x-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none" />
