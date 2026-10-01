@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MessageSquare,
   Send, CheckCheck, Loader2, RefreshCw,
-  FileText, Image, Film, Music, X, FileImage, Mic, CheckCircle2, RotateCcw,
+  FileText, Image, Film, Music, X, FileImage, Mic,
   UserRound, Phone, Mail, Tag, UsersRound, Save, ChevronDown, Plus, Megaphone,
   Check, Clock3, CircleAlert, Trash2,
 } from 'lucide-react';
@@ -23,6 +23,7 @@ import chatIcon from '@assets/chat_(1)_1790885069320.png';
 import letterIcon from '@assets/letter_1790885182957.png';
 import paperclipIcon from '@assets/attach-paperclip-symbol_(1)_1790885236833.png';
 import sendIcon from '@assets/send_(1)_1790885629920.png';
+import profileIcon from '@assets/user_1790886242440.png';
 import { api } from '@/lib/api';
 import { Calendar as DatePicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1140,16 +1141,6 @@ export default function LiveChat() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const statusMutation = useMutation({
-    mutationFn: ({ contactId, status }: { contactId: string; status: 'Open' | 'Resolved' }) =>
-      api.put(`/conversations/${contactId}/status`, { status }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['conversations'] });
-      toast.success('Conversation status updated');
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
   const isPending = sendMutation.isPending || sendMediaMutation.isPending;
 
   const handleTemplateSent = async () => {
@@ -1345,14 +1336,14 @@ export default function LiveChat() {
     }
     if (status === 'DELIVERED' || status === 'READ') {
       return (
-        <span title={title} aria-label={title} role="img">
-          <CheckCheck className={`w-3.5 h-3.5 ${status === 'READ' ? 'text-blue-600' : 'text-gray-500'}`} />
+        <span title={title} aria-label={title} role="img" className="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-visible leading-none">
+          <CheckCheck className={`h-5 w-5 shrink-0 ${status === 'READ' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={2.6} />
         </span>
       );
     }
     return (
-      <span title={title} aria-label={title} role="img">
-        <Check className="w-3.5 h-3.5 text-gray-500" />
+      <span title={title} aria-label={title} role="img" className="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-visible leading-none">
+        <Check className="h-5 w-5 shrink-0 text-gray-500" strokeWidth={2.6} />
       </span>
     );
   };
@@ -1606,29 +1597,10 @@ export default function LiveChat() {
                 onClick={() => setRightPanelOpen(!rightPanelOpen)}
                 aria-label={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
                 title={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
-                className={`p-2 rounded-lg transition-colors ${rightPanelOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${rightPanelOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-100'}`}
               >
-                <UserRound className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => statusMutation.mutate({
-                  contactId: activeConv.id,
-                  status: activeConv.status === 'Resolved' ? 'Open' : 'Resolved',
-                })}
-                disabled={statusMutation.isPending}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${
-                  activeConv.status === 'Resolved'
-                    ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                title={activeConv.status === 'Resolved' ? 'Reopen conversation' : 'Close conversation'}
-              >
-                {statusMutation.isPending
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : activeConv.status === 'Resolved'
-                    ? <RotateCcw className="w-4 h-4" />
-                    : <CheckCircle2 className="w-4 h-4" />}
-                {activeConv.status === 'Resolved' ? 'Reopen' : 'Close chat'}
+                <img src={profileIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
+                <span>Profile</span>
               </button>
             </div>
           </div>
@@ -1687,7 +1659,7 @@ export default function LiveChat() {
                             <p className="text-base leading-7 whitespace-pre-wrap">{msg.body}</p>
                           )
                         )}
-                        <div className="flex items-center justify-end gap-1.5 mt-1.5">
+                        <div className="flex min-h-5 items-center justify-end gap-1.5 whitespace-nowrap mt-1.5">
                           <span className="text-xs text-gray-500">{formatMessageTime(messageTime)}</span>
                           {msg.direction === 'OUTBOUND' && renderMessageStatus(msg)}
                         </div>
