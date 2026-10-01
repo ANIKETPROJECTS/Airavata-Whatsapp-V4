@@ -1023,7 +1023,7 @@ function FlowEditorView({
       {/* Shared header grid mirrors the screen, palette, editor, and preview columns below. */}
       <div className="shrink-0 border-b border-gray-200 bg-white">
         <div className="grid grid-cols-[13rem_15rem_minmax(0,1fr)] xl:grid-cols-[13rem_15rem_minmax(0,1fr)_360px] 2xl:grid-cols-[13rem_15rem_minmax(0,1fr)_400px]">
-          <div className="flex min-w-0 items-center justify-between border-r border-gray-200 px-4 py-3">
+          <div className="flex min-w-0 items-start justify-between border-r border-gray-200 px-4 py-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-800">Screens</h2>
             <button
               type="button"
@@ -1035,10 +1035,10 @@ function FlowEditorView({
               <PlusCircle className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex min-w-0 items-center border-r border-gray-200 px-4 py-3">
+          <div className="flex min-w-0 items-start border-r border-gray-200 px-4 py-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-800">Add a component</h2>
           </div>
-          <div className="flex min-w-0 flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-3">
+          <div className="flex min-w-0 flex-wrap items-start justify-center gap-x-4 gap-y-2 px-4 py-3">
             {activeScreen ? (
               <>
                 <div className="flex min-w-0 items-center gap-2">
@@ -1081,7 +1081,7 @@ function FlowEditorView({
               <span className="text-sm text-gray-500">Select a screen to edit</span>
             )}
           </div>
-          <div className="hidden min-w-0 items-center justify-between gap-2 border-l border-gray-200 px-4 py-3 xl:flex">
+          <div className="hidden min-w-0 items-start justify-between gap-2 border-l border-gray-200 px-4 py-3 xl:flex">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-800">Preview</h2>
             <DevicePreviewSelector device={previewDevice} onChange={setPreviewDevice} />
           </div>

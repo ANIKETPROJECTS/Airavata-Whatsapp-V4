@@ -172,12 +172,12 @@ export function FlowEditorWorkspace({ enhanced = false }: { enhanced?: boolean }
 
       <div className="shrink-0 border-b bg-white">
         <div className="grid grid-cols-[13rem_15rem_minmax(0,1fr)] xl:grid-cols-[13rem_15rem_minmax(0,1fr)_360px] 2xl:grid-cols-[13rem_15rem_minmax(0,1fr)_400px]">
-          <div className="flex min-w-0 items-center justify-between border-r px-3 py-1.5">
+          <div className="flex min-w-0 items-start justify-between border-r px-3 py-1.5">
             <h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Screens</h2>
             <button type="button" onClick={addScreen} aria-label="Add screen" title="Add screen" className="rounded p-1 hover:bg-gray-100"><PlusCircle className="h-4 w-4 text-primary" /></button>
           </div>
-          <div className="flex min-w-0 items-center border-r px-3 py-1.5"><h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Add a component</h2></div>
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5">
+          <div className="flex min-w-0 items-start border-r px-3 py-1.5"><h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Add a component</h2></div>
+          <div className="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1 px-3 py-1.5">
             {activeScreen ? (
               <>
                 <div className="flex min-w-0 items-center gap-2">
@@ -202,7 +202,7 @@ export function FlowEditorWorkspace({ enhanced = false }: { enhanced?: boolean }
               </>
             ) : <span className="text-xs text-gray-400">Select a screen to edit</span>}
           </div>
-          <div className="hidden min-w-0 items-center justify-between gap-1 border-l px-3 py-1.5 xl:flex">
+          <div className="hidden min-w-0 items-start justify-between gap-1 border-l px-3 py-1.5 xl:flex">
             <h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-700">Preview</h2>
             <DevicePreviewSelector device={previewDevice} onChange={setPreviewDevice} />
           </div>
