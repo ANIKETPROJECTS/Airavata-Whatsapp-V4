@@ -77,6 +77,106 @@ export interface AutoGammaOutboundMessageResult {
   whatsappMessageId: string;
 }
 
+export interface PublicWhatsAppTextMessageInput {
+  /**
+     * The connected Meta phone number ID shown in Airavata.
+     * @pattern ^[0-9]+$
+     */
+  phoneNumberId: string;
+  /**
+     * Recipient phone number in international format, such as +919876543210.
+     * @minLength 7
+     * @maxLength 32
+     */
+  to: string;
+  /**
+     * @minLength 1
+     * @maxLength 4096
+     */
+  text: string;
+  /**
+     * Unique ID from your system. Reusing it prevents a retry from sending twice.
+     * @minLength 1
+     * @maxLength 128
+     */
+  clientMessageId: string;
+}
+
+export type PublicWhatsAppTemplateMessageInputComponentsItem = { [key: string]: unknown };
+
+export interface PublicWhatsAppTemplateMessageInput {
+  /** @pattern ^[0-9]+$ */
+  phoneNumberId: string;
+  /**
+     * Recipient phone number in international format, such as +919876543210.
+     * @minLength 7
+     * @maxLength 32
+     */
+  to: string;
+  /**
+     * @minLength 1
+     * @maxLength 512
+     */
+  templateName: string;
+  /**
+     * @minLength 1
+     * @maxLength 32
+     */
+  languageCode: string;
+  /**
+     * Unique ID from your system. Reusing it prevents a retry from sending twice.
+     * @minLength 1
+     * @maxLength 128
+     */
+  clientMessageId: string;
+  /** WhatsApp template components in Meta's send-message format. */
+  components?: PublicWhatsAppTemplateMessageInputComponentsItem[];
+}
+
+export type PublicWhatsAppMessageResultStatus = typeof PublicWhatsAppMessageResultStatus[keyof typeof PublicWhatsAppMessageResultStatus];
+
+
+export const PublicWhatsAppMessageResultStatus = {
+  QUEUED: 'QUEUED',
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  READ: 'READ',
+  FAILED: 'FAILED',
+} as const;
+
+export interface PublicWhatsAppMessageResult {
+  ok: boolean;
+  duplicate: boolean;
+  messageId: string;
+  contactId: string;
+  /** @nullable */
+  whatsappMessageId: string | null;
+  status: PublicWhatsAppMessageResultStatus;
+}
+
+export type PublicWhatsAppTemplateCategory = typeof PublicWhatsAppTemplateCategory[keyof typeof PublicWhatsAppTemplateCategory];
+
+
+export const PublicWhatsAppTemplateCategory = {
+  AUTHENTICATION: 'AUTHENTICATION',
+  UTILITY: 'UTILITY',
+  MARKETING: 'MARKETING',
+} as const;
+
+export type PublicWhatsAppTemplateComponentsItem = { [key: string]: unknown };
+
+export interface PublicWhatsAppTemplate {
+  name: string;
+  language: string;
+  category: PublicWhatsAppTemplateCategory;
+  body: string;
+  components: PublicWhatsAppTemplateComponentsItem[];
+}
+
+export interface PublicWhatsAppTemplatesResponse {
+  templates: PublicWhatsAppTemplate[];
+}
+
 export type ChatbotExecutionTriggerType = typeof ChatbotExecutionTriggerType[keyof typeof ChatbotExecutionTriggerType];
 
 
@@ -175,4 +275,11 @@ export interface ChatbotExecutionQuery {
   /** Exclusive end timestamp for filtering by run start time. */
   startedAtBefore?: string;
 }
+
+export type ListPublicWhatsAppTemplatesParams = {
+/**
+ * @pattern ^[0-9]+$
+ */
+phoneNumberId: string;
+};
 

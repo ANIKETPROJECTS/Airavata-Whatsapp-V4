@@ -644,6 +644,27 @@ async function handleStatusUpdate(
     return;
   }
 
+  if (msg && (status.status === "delivered" || status.status === "read" || status.status === "failed")) {
+    const event =
+      status.status === "delivered"
+        ? "message_delivered"
+        : status.status === "read"
+          ? "message_read"
+          : "message_failed";
+    void emitClientWebhookEvent(tenantUserId, event, {
+      message: {
+        id: String(msg._id),
+        whatsappMessageId: status.id,
+        contactId: String(msg.contactId),
+        status: status.status.toUpperCase(),
+        deliveredAt: msg.deliveredAt ?? null,
+        readAt: msg.readAt ?? null,
+        failureReason: msg.failureReason ?? null,
+        metaErrorCode: msg.metaErrorCode ?? null,
+      },
+    });
+  }
+
   // A campaign send is the report source of truth. Legacy messages without a
   // CampaignSend row still update their Message record and cached campaign
   // counter for compatibility.

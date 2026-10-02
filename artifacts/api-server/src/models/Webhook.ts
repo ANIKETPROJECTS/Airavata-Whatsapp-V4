@@ -5,6 +5,8 @@ export const CLIENT_WEBHOOK_EVENTS = [
   "contact_created",
   "message_received",
   "message_delivered",
+  "message_read",
+  "message_failed",
   "campaign_completed",
 ] as const;
 

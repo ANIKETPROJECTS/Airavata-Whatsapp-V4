@@ -15,6 +15,7 @@ const messageSchema = new Schema(
     templateId: { type: Schema.Types.ObjectId, ref: "Template" },
     whatsappMessageId: { type: String, index: true },
     externalMessageId: { type: String },
+    externalRequestHash: { type: String },
     status: {
       type: String,
       enum: ["QUEUED", "SENT", "DELIVERED", "READ", "FAILED", "RECEIVED"],

@@ -88,6 +88,122 @@ paths:
           description: The tenant's stored WhatsApp credential does not match this phone number
         "500":
           description: Message ingestion failed
+  /integrations/v1/whatsapp/templates:
+    get:
+      operationId: listPublicWhatsAppTemplates
+      tags: [integration]
+      summary: List approved WhatsApp templates for an API-key authenticated tenant
+      security:
+        - airavataApiKey: []
+      parameters:
+        - in: query
+          name: phoneNumberId
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]+$"
+      responses:
+        "200":
+          description: Approved templates available to send
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicWhatsAppTemplatesResponse"
+        "400":
+          description: Invalid or missing phone number ID
+        "401":
+          description: Invalid API key
+        "409":
+          description: Phone number ID does not match the tenant's WhatsApp account
+        "500":
+          description: Template listing failed
+  /integrations/v1/whatsapp/messages/text:
+    post:
+      operationId: sendPublicWhatsAppTextMessage
+      tags: [integration]
+      summary: Send a WhatsApp free-text reply within the 24-hour service window
+      description: >
+        Requires an active contact and an inbound WhatsApp message within the
+        previous 24 hours. Use an approved template outside that window.
+      security:
+        - airavataApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicWhatsAppTextMessageInput"
+      responses:
+        "201":
+          description: WhatsApp accepted the message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicWhatsAppMessageResult"
+        "200":
+          description: Idempotent retry; the client message ID was already processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicWhatsAppMessageResult"
+        "400":
+          description: Invalid request body or phone number
+        "401":
+          description: Invalid API key
+        "409":
+          description: Phone number mapping conflict or client message ID already used
+        "422":
+          description: Contact is inactive or the 24-hour service window is closed
+        "502":
+          description: WhatsApp rejected the send
+        "500":
+          description: Integration request failed before sending
+  /integrations/v1/whatsapp/messages/template:
+    post:
+      operationId: sendPublicWhatsAppTemplateMessage
+      tags: [integration]
+      summary: Send an approved WhatsApp template
+      description: >
+        Sends a template owned by the tenant and records the message in Live
+        Chat. Template sends use the tenant's configured category-based credit
+        rates unless billing is managed directly by Meta.
+      security:
+        - airavataApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicWhatsAppTemplateMessageInput"
+      responses:
+        "201":
+          description: WhatsApp accepted the message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicWhatsAppMessageResult"
+        "200":
+          description: Idempotent retry; the client message ID was already processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicWhatsAppMessageResult"
+        "400":
+          description: Invalid request body or phone number
+        "401":
+          description: Invalid API key
+        "402":
+          description: Insufficient credits for this template category
+        "404":
+          description: Approved template not found
+        "409":
+          description: Phone number mapping conflict or client message ID already used
+        "422":
+          description: Contact is inactive
+        "502":
+          description: WhatsApp rejected the send
+        "500":
+          description: Integration request failed before sending
   /chatbot/flows/{id}/executions/query:
     post:
       operationId: searchChatbotFlowExecutions
@@ -133,6 +249,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: Airavata API key
+      description: Create an API key in Airavata's Integrations page and store it on your server.
   schemas:
     HealthStatus:
       type: object
@@ -222,6 +339,102 @@ components:
           type: string
         whatsappMessageId:
           type: string
+    PublicWhatsAppTextMessageInput:
+      type: object
+      required: [phoneNumberId, to, text, clientMessageId]
+      properties:
+        phoneNumberId:
+          type: string
+          pattern: "^[0-9]+$"
+          description: The connected Meta phone number ID shown in Airavata.
+        to:
+          type: string
+          minLength: 7
+          maxLength: 32
+          description: Recipient phone number in international format, such as +919876543210.
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        clientMessageId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Unique ID from your system. Reusing it prevents a retry from sending twice.
+    PublicWhatsAppTemplateMessageInput:
+      type: object
+      required: [phoneNumberId, to, templateName, languageCode, clientMessageId]
+      properties:
+        phoneNumberId:
+          type: string
+          pattern: "^[0-9]+$"
+        to:
+          type: string
+          minLength: 7
+          maxLength: 32
+          description: Recipient phone number in international format, such as +919876543210.
+        templateName:
+          type: string
+          minLength: 1
+          maxLength: 512
+        languageCode:
+          type: string
+          minLength: 1
+          maxLength: 32
+        clientMessageId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Unique ID from your system. Reusing it prevents a retry from sending twice.
+        components:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          description: WhatsApp template components in Meta's send-message format.
+    PublicWhatsAppMessageResult:
+      type: object
+      required: [ok, duplicate, messageId, contactId, whatsappMessageId, status]
+      properties:
+        ok:
+          type: boolean
+        duplicate:
+          type: boolean
+        messageId:
+          type: string
+        contactId:
+          type: string
+        whatsappMessageId:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [QUEUED, SENT, DELIVERED, READ, FAILED]
+    PublicWhatsAppTemplatesResponse:
+      type: object
+      required: [templates]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicWhatsAppTemplate"
+    PublicWhatsAppTemplate:
+      type: object
+      required: [name, language, category, body, components]
+      properties:
+        name:
+          type: string
+        language:
+          type: string
+        category:
+          type: string
+          enum: [AUTHENTICATION, UTILITY, MARKETING]
+        body:
+          type: string
+        components:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
     ChatbotExecution:
       type: object
       required:

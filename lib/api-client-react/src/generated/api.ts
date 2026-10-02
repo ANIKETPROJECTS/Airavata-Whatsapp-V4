@@ -25,7 +25,12 @@ import type {
   ChatbotExecutionPage,
   ChatbotExecutionQuery,
   FacebookWebhookSubscriptionStatus,
-  HealthStatus
+  HealthStatus,
+  ListPublicWhatsAppTemplatesParams,
+  PublicWhatsAppMessageResult,
+  PublicWhatsAppTemplateMessageInput,
+  PublicWhatsAppTemplatesResponse,
+  PublicWhatsAppTextMessageInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -274,6 +279,234 @@ export const useIngestAutoGammaOutboundMessage = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getIngestAutoGammaOutboundMessageMutationOptions(options));
+    }
+
+export const getListPublicWhatsAppTemplatesUrl = (params: ListPublicWhatsAppTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/integrations/v1/whatsapp/templates?${stringifiedParams}` : `/api/integrations/v1/whatsapp/templates`
+}
+
+/**
+ * @summary List approved WhatsApp templates for an API-key authenticated tenant
+ */
+export const listPublicWhatsAppTemplates = async (params: ListPublicWhatsAppTemplatesParams, options?: RequestInit): Promise<PublicWhatsAppTemplatesResponse> => {
+
+  return customFetch<PublicWhatsAppTemplatesResponse>(getListPublicWhatsAppTemplatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPublicWhatsAppTemplatesQueryKey = (params?: ListPublicWhatsAppTemplatesParams,) => {
+    return [
+    `/api/integrations/v1/whatsapp/templates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPublicWhatsAppTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listPublicWhatsAppTemplates>>, TError = ErrorType<void>>(params: ListPublicWhatsAppTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicWhatsAppTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPublicWhatsAppTemplatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPublicWhatsAppTemplates>>> = ({ signal }) => listPublicWhatsAppTemplates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPublicWhatsAppTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPublicWhatsAppTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listPublicWhatsAppTemplates>>>
+export type ListPublicWhatsAppTemplatesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List approved WhatsApp templates for an API-key authenticated tenant
+ */
+
+export function useListPublicWhatsAppTemplates<TData = Awaited<ReturnType<typeof listPublicWhatsAppTemplates>>, TError = ErrorType<void>>(
+ params: ListPublicWhatsAppTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicWhatsAppTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPublicWhatsAppTemplatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendPublicWhatsAppTextMessageUrl = () => {
+
+
+
+
+  return `/api/integrations/v1/whatsapp/messages/text`
+}
+
+/**
+ * Requires an active contact and an inbound WhatsApp message within the previous 24 hours. Use an approved template outside that window.
+ * @summary Send a WhatsApp free-text reply within the 24-hour service window
+ */
+export const sendPublicWhatsAppTextMessage = async (publicWhatsAppTextMessageInput: PublicWhatsAppTextMessageInput, options?: RequestInit): Promise<PublicWhatsAppMessageResult> => {
+
+  return customFetch<PublicWhatsAppMessageResult>(getSendPublicWhatsAppTextMessageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(publicWhatsAppTextMessageInput)
+  }
+);}
+
+
+
+
+
+export const getSendPublicWhatsAppTextMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPublicWhatsAppTextMessage>>, TError,{data: BodyType<PublicWhatsAppTextMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendPublicWhatsAppTextMessage>>, TError,{data: BodyType<PublicWhatsAppTextMessageInput>}, TContext> => {
+
+const mutationKey = ['sendPublicWhatsAppTextMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendPublicWhatsAppTextMessage>>, {data: BodyType<PublicWhatsAppTextMessageInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendPublicWhatsAppTextMessage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendPublicWhatsAppTextMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendPublicWhatsAppTextMessage>>>
+    export type SendPublicWhatsAppTextMessageMutationBody = BodyType<PublicWhatsAppTextMessageInput>
+    export type SendPublicWhatsAppTextMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a WhatsApp free-text reply within the 24-hour service window
+ */
+export const useSendPublicWhatsAppTextMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPublicWhatsAppTextMessage>>, TError,{data: BodyType<PublicWhatsAppTextMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendPublicWhatsAppTextMessage>>,
+        TError,
+        {data: BodyType<PublicWhatsAppTextMessageInput>},
+        TContext
+      > => {
+      return useMutation(getSendPublicWhatsAppTextMessageMutationOptions(options));
+    }
+
+export const getSendPublicWhatsAppTemplateMessageUrl = () => {
+
+
+
+
+  return `/api/integrations/v1/whatsapp/messages/template`
+}
+
+/**
+ * Sends a template owned by the tenant and records the message in Live Chat. Template sends use the tenant's configured category-based credit rates unless billing is managed directly by Meta.
+ * @summary Send an approved WhatsApp template
+ */
+export const sendPublicWhatsAppTemplateMessage = async (publicWhatsAppTemplateMessageInput: PublicWhatsAppTemplateMessageInput, options?: RequestInit): Promise<PublicWhatsAppMessageResult> => {
+
+  return customFetch<PublicWhatsAppMessageResult>(getSendPublicWhatsAppTemplateMessageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(publicWhatsAppTemplateMessageInput)
+  }
+);}
+
+
+
+
+
+export const getSendPublicWhatsAppTemplateMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPublicWhatsAppTemplateMessage>>, TError,{data: BodyType<PublicWhatsAppTemplateMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendPublicWhatsAppTemplateMessage>>, TError,{data: BodyType<PublicWhatsAppTemplateMessageInput>}, TContext> => {
+
+const mutationKey = ['sendPublicWhatsAppTemplateMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendPublicWhatsAppTemplateMessage>>, {data: BodyType<PublicWhatsAppTemplateMessageInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendPublicWhatsAppTemplateMessage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendPublicWhatsAppTemplateMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendPublicWhatsAppTemplateMessage>>>
+    export type SendPublicWhatsAppTemplateMessageMutationBody = BodyType<PublicWhatsAppTemplateMessageInput>
+    export type SendPublicWhatsAppTemplateMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Send an approved WhatsApp template
+ */
+export const useSendPublicWhatsAppTemplateMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPublicWhatsAppTemplateMessage>>, TError,{data: BodyType<PublicWhatsAppTemplateMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendPublicWhatsAppTemplateMessage>>,
+        TError,
+        {data: BodyType<PublicWhatsAppTemplateMessageInput>},
+        TContext
+      > => {
+      return useMutation(getSendPublicWhatsAppTemplateMessageMutationOptions(options));
     }
 
 export const getSearchChatbotFlowExecutionsUrl = (id: string,) => {

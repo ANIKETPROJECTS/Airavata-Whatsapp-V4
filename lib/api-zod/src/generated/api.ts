@@ -70,6 +70,93 @@ export const IngestAutoGammaOutboundMessageResponse = zod.object({
 
 
 /**
+ * @summary List approved WhatsApp templates for an API-key authenticated tenant
+ */
+export const listPublicWhatsAppTemplatesQueryPhoneNumberIdRegExp = new RegExp('^[0-9]+$');
+
+
+export const ListPublicWhatsAppTemplatesQueryParams = zod.object({
+  "phoneNumberId": zod.coerce.string().regex(listPublicWhatsAppTemplatesQueryPhoneNumberIdRegExp)
+})
+
+export const ListPublicWhatsAppTemplatesResponse = zod.object({
+  "templates": zod.array(zod.object({
+  "name": zod.string(),
+  "language": zod.string(),
+  "category": zod.enum(['AUTHENTICATION', 'UTILITY', 'MARKETING']),
+  "body": zod.string(),
+  "components": zod.array(zod.record(zod.string(), zod.unknown()))
+}))
+})
+
+
+/**
+ * Requires an active contact and an inbound WhatsApp message within the previous 24 hours. Use an approved template outside that window.
+ * @summary Send a WhatsApp free-text reply within the 24-hour service window
+ */
+export const sendPublicWhatsAppTextMessageBodyPhoneNumberIdRegExp = new RegExp('^[0-9]+$');
+export const sendPublicWhatsAppTextMessageBodyToMin = 7;
+export const sendPublicWhatsAppTextMessageBodyToMax = 32;
+
+export const sendPublicWhatsAppTextMessageBodyTextMax = 4096;
+
+export const sendPublicWhatsAppTextMessageBodyClientMessageIdMax = 128;
+
+
+
+export const SendPublicWhatsAppTextMessageBody = zod.object({
+  "phoneNumberId": zod.string().regex(sendPublicWhatsAppTextMessageBodyPhoneNumberIdRegExp).describe('The connected Meta phone number ID shown in Airavata.'),
+  "to": zod.string().min(sendPublicWhatsAppTextMessageBodyToMin).max(sendPublicWhatsAppTextMessageBodyToMax).describe('Recipient phone number in international format, such as +919876543210.'),
+  "text": zod.string().min(1).max(sendPublicWhatsAppTextMessageBodyTextMax),
+  "clientMessageId": zod.string().min(1).max(sendPublicWhatsAppTextMessageBodyClientMessageIdMax).describe('Unique ID from your system. Reusing it prevents a retry from sending twice.')
+})
+
+export const SendPublicWhatsAppTextMessageResponse = zod.object({
+  "ok": zod.boolean(),
+  "duplicate": zod.boolean(),
+  "messageId": zod.string(),
+  "contactId": zod.string(),
+  "whatsappMessageId": zod.string().nullable(),
+  "status": zod.enum(['QUEUED', 'SENT', 'DELIVERED', 'READ', 'FAILED'])
+})
+
+
+/**
+ * Sends a template owned by the tenant and records the message in Live Chat. Template sends use the tenant's configured category-based credit rates unless billing is managed directly by Meta.
+ * @summary Send an approved WhatsApp template
+ */
+export const sendPublicWhatsAppTemplateMessageBodyPhoneNumberIdRegExp = new RegExp('^[0-9]+$');
+export const sendPublicWhatsAppTemplateMessageBodyToMin = 7;
+export const sendPublicWhatsAppTemplateMessageBodyToMax = 32;
+
+export const sendPublicWhatsAppTemplateMessageBodyTemplateNameMax = 512;
+
+export const sendPublicWhatsAppTemplateMessageBodyLanguageCodeMax = 32;
+
+export const sendPublicWhatsAppTemplateMessageBodyClientMessageIdMax = 128;
+
+
+
+export const SendPublicWhatsAppTemplateMessageBody = zod.object({
+  "phoneNumberId": zod.string().regex(sendPublicWhatsAppTemplateMessageBodyPhoneNumberIdRegExp),
+  "to": zod.string().min(sendPublicWhatsAppTemplateMessageBodyToMin).max(sendPublicWhatsAppTemplateMessageBodyToMax).describe('Recipient phone number in international format, such as +919876543210.'),
+  "templateName": zod.string().min(1).max(sendPublicWhatsAppTemplateMessageBodyTemplateNameMax),
+  "languageCode": zod.string().min(1).max(sendPublicWhatsAppTemplateMessageBodyLanguageCodeMax),
+  "clientMessageId": zod.string().min(1).max(sendPublicWhatsAppTemplateMessageBodyClientMessageIdMax).describe('Unique ID from your system. Reusing it prevents a retry from sending twice.'),
+  "components": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('WhatsApp template components in Meta\'s send-message format.')
+})
+
+export const SendPublicWhatsAppTemplateMessageResponse = zod.object({
+  "ok": zod.boolean(),
+  "duplicate": zod.boolean(),
+  "messageId": zod.string(),
+  "contactId": zod.string(),
+  "whatsappMessageId": zod.string().nullable(),
+  "status": zod.enum(['QUEUED', 'SENT', 'DELIVERED', 'READ', 'FAILED'])
+})
+
+
+/**
  * @summary Search recent executions for a chatbot
  */
 export const searchChatbotFlowExecutionsPathIdRegExp = new RegExp('^[a-fA-F0-9]{24}$');
