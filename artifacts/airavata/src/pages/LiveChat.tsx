@@ -17,7 +17,7 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
-import calendarFilterIcon from '@assets/calendar_(2)_1790919821876.png';
+import calendarFilterIcon from '@assets/calendar_(3)_1790920047278.png';
 import happinessIcon from '@assets/happiness_1790885485484.png';
 import chatIcon from '@assets/chat_(1)_1790885069320.png';
 import letterIcon from '@assets/letter_1790885182957.png';
@@ -1378,9 +1378,22 @@ export default function LiveChat() {
                   type="button"
                   aria-label="Filter chats by date"
                   title={dateFilterActive ? formatDateRange(chatDateRange) : 'Filter chats by date'}
-                  className="relative rounded-md bg-transparent p-2 text-black transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                  className="relative rounded-md bg-transparent p-2 text-primary transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
-                  <img src={calendarFilterIcon} alt="" aria-hidden="true" className="block h-7 w-7 object-contain" />
+                  <span
+                    aria-hidden="true"
+                    className="block h-7 w-7 bg-current"
+                    style={{
+                      maskImage: `url("${calendarFilterIcon}")`,
+                      WebkitMaskImage: `url("${calendarFilterIcon}")`,
+                      maskRepeat: 'no-repeat',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskPosition: 'center',
+                      WebkitMaskPosition: 'center',
+                      maskSize: 'contain',
+                      WebkitMaskSize: 'contain',
+                    }}
+                  />
                   {dateFilterActive && (
                     <span className="absolute right-1 top-1 h-2 w-2 rounded-full border border-white bg-primary" />
                   )}
