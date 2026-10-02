@@ -154,3 +154,17 @@ mtime_ms = 1790580214127
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/6ca5196b-b718-4c22-ab20-5b9f4386c002/070e93f6-34e1-4a85-bc14-3619d0107c2f"
 storage_version_token = "1790580291407586"
 content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+[[outputs]]
+id = "9EgMwQJAuWfI-rrORco8L"
+uri = "file://artifacts/api-server/docs/autogamma-message-ingestion.md"
+type = "text"
+title = "AutoGamma message-ingestion endpoint guide"
+description = "Download this Markdown file and upload it in the AutoGamma setup form."
+logical_id = "c9280021-f6d5-4b4b-875c-42337e6b49a3"
+content_hash = "sha256:c9b129b345a38ec88fcda920e847b456fe5d10a8874dc2e9c09f3deaa4fbcd4e"
+size = 2970
+mtime_ms = 1790921286505
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/c9280021-f6d5-4b4b-875c-42337e6b49a3/5c8674b1-a3e6-49f1-9ee5-faecdf19fa00"
+storage_version_token = "1790921870508591"
+content_type = "text/markdown"
