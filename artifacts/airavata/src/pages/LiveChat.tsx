@@ -1515,16 +1515,12 @@ export default function LiveChat() {
               <button
                 key={conv.id}
                 onClick={() => setActiveConvId(conv.id)}
-                className={`group relative mx-2 mb-1 w-[calc(100%-1rem)] overflow-hidden rounded-lg border-2 bg-white text-left p-5 transition-colors flex gap-3.5 ${
+                className={`mx-2 mb-1 w-[calc(100%-1rem)] rounded-lg border border-transparent border-l-2 bg-white p-5 text-left transition-colors duration-150 flex gap-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25d366] ${
                   activeConvId === conv.id
-                    ? 'border-[#25d366]'
+                    ? 'border-l-[#25d366] bg-[#f4fbf6]'
                     : 'border-transparent'
                 }`}
               >
-                <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-10 h-0.5 origin-left scale-x-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none" />
-                <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 z-10 h-full w-0.5 origin-top scale-y-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-y-100 group-focus-visible:scale-y-100 group-hover:delay-100 group-focus-visible:delay-100 motion-reduce:transition-none" />
-                <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0.5 origin-right scale-x-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 group-hover:delay-200 group-focus-visible:delay-200 motion-reduce:transition-none" />
-                <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-0.5 origin-bottom scale-y-0 bg-[#25d366] transition-transform duration-200 ease-out group-hover:scale-y-100 group-focus-visible:scale-y-100 group-hover:delay-300 group-focus-visible:delay-300 motion-reduce:transition-none" />
                 <div className="relative shrink-0">
                   <ContactAvatar className="h-12 w-12" />
                   {conv.unread > 0 && (
