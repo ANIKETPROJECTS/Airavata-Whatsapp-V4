@@ -13,6 +13,7 @@ import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { withCreditCharge } from "../lib/creditDeduction";
 import { deriveConversationTabState } from "../lib/conversationTabState";
+import { buildConversationActivityMatch } from "../lib/conversationActivityQuery";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -83,19 +84,7 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
 
     // Derive the Live Chat tabs from inbound replies and successful template sends.
     const activityRows = await MessageModel.aggregate([
-      {
-        $match: {
-          userId,
-          $or: [
-            { direction: "INBOUND" },
-            {
-              direction: "OUTBOUND",
-              templateId: { $exists: true, $ne: null },
-              status: { $in: ["SENT", "DELIVERED", "READ"] },
-            },
-          ],
-        },
-      },
+      { $match: buildConversationActivityMatch(userId) },
       {
         $group: {
           _id: "$contactId",

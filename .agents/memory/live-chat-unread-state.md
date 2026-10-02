@@ -9,4 +9,8 @@ The Live Chat tabs mean: **Sent** is a successful template send awaiting a reply
 
 **Why:** Counting all inbound messages permanently inflated unread badges, and an unbounded unanswered-template state kept old chats in Sent indefinitely. These tab meanings were explicitly defined by the user.
 
+AutoGamma's accepted outbound records use `externalMessageId` rather than Airavata's local `templateId`; count those records as template activity in the Live Chat lifecycle.
+
+**Why:** Without that marker, a recent AutoGamma template send is omitted from the Sent timer and can leave the conversation Closed immediately.
+
 **How to apply:** Derive tab state from each tenant's latest inbound and successful template timestamps, using outbound `sentAt` when available. Refresh the list periodically so a conversation changes tabs when its 24-hour period expires; keep unread markers tied to the authenticated user's contact and `lastReadAt`.
