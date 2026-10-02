@@ -27,6 +27,89 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'FAILED', label: 'Failed' },
 ];
 
+const previewMinutesAgo = (minutes: number) =>
+  new Date(Date.now() - minutes * 60_000).toISOString();
+
+const PREVIEW_ACTIVITY_DATA: NonNullable<ReturnType<typeof useSearchChatbotFlowExecutions>['data']> = {
+  executions: [
+    {
+      id: 'preview-run-001',
+      contactId: 'preview-contact-001',
+      contactName: 'Preview Contact 01',
+      contactPhone: '+91 00000 00101',
+      triggerType: 'KEYWORD',
+      status: 'ACTIVE',
+      startedAt: previewMinutesAgo(14),
+      lastActivityAt: previewMinutesAgo(2),
+      endedAt: null,
+    },
+    {
+      id: 'preview-run-002',
+      contactId: 'preview-contact-002',
+      contactName: 'Preview Contact 02',
+      contactPhone: '+91 00000 00102',
+      triggerType: 'DEFAULT',
+      status: 'COMPLETED',
+      startedAt: previewMinutesAgo(92),
+      lastActivityAt: previewMinutesAgo(87),
+      endedAt: previewMinutesAgo(86),
+    },
+    {
+      id: 'preview-run-003',
+      contactId: 'preview-contact-003',
+      contactName: 'Preview Contact 03',
+      contactPhone: '+91 00000 00103',
+      triggerType: 'TEMPLATE_LINK',
+      status: 'COMPLETED',
+      startedAt: previewMinutesAgo(1_440),
+      lastActivityAt: previewMinutesAgo(1_420),
+      endedAt: previewMinutesAgo(1_418),
+    },
+    {
+      id: 'preview-run-004',
+      contactId: 'preview-contact-004',
+      contactName: 'Preview Contact 04',
+      contactPhone: '+91 00000 00104',
+      triggerType: 'KEYWORD',
+      status: 'INTERRUPTED',
+      startedAt: previewMinutesAgo(2_880),
+      lastActivityAt: previewMinutesAgo(2_870),
+      endedAt: previewMinutesAgo(2_868),
+    },
+    {
+      id: 'preview-run-005',
+      contactId: 'preview-contact-005',
+      contactName: 'Preview Contact 05',
+      contactPhone: '+91 00000 00105',
+      triggerType: 'LEGACY_SESSION',
+      status: 'STOPPED',
+      startedAt: previewMinutesAgo(4_320),
+      lastActivityAt: previewMinutesAgo(4_310),
+      endedAt: previewMinutesAgo(4_309),
+    },
+    {
+      id: 'preview-run-006',
+      contactId: 'preview-contact-006',
+      contactName: 'Preview Contact 06',
+      contactPhone: '+91 00000 00106',
+      triggerType: 'DEFAULT',
+      status: 'FAILED',
+      startedAt: previewMinutesAgo(5_760),
+      lastActivityAt: previewMinutesAgo(5_755),
+      endedAt: previewMinutesAgo(5_754),
+    },
+  ],
+  stats: {
+    triggered: 6,
+    completed: 2,
+    active: 1,
+    interrupted: 1,
+    stopped: 1,
+    failed: 1,
+  },
+  nextCursor: null,
+};
+
 function formatDateTime(value: string | null | undefined) {
   if (!value) return '—';
   const date = new Date(value);
@@ -79,7 +162,29 @@ function ContactName({ name, phone }: { name: string | null; phone: string | nul
   );
 }
 
-function TranscriptLink({ contactId, executionId }: { contactId: string | null; executionId: string }) {
+function TranscriptLink({
+  contactId,
+  executionId,
+  preview = false,
+}: {
+  contactId: string | null;
+  executionId: string;
+  preview?: boolean;
+}) {
+  if (preview) {
+    return (
+      <span
+        title="Sample data only; no transcript is linked"
+        aria-label="Sample transcript link disabled"
+        data-testid={`link-chatbot-execution-chat-${executionId}`}
+        className="inline-flex h-9 items-center gap-1.5 border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-400"
+      >
+        <MessageCircle className="h-4 w-4" />
+        Open chat
+      </span>
+    );
+  }
+
   return contactId ? (
     <Link
       href={`/live-chat?conversationId=${encodeURIComponent(contactId)}`}
@@ -104,6 +209,8 @@ export default function ChatbotActivity({
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
+  const [samplePreviewEnabled, setSamplePreviewEnabled] = useState(false);
+  const isPreview = import.meta.env.DEV && samplePreviewEnabled;
   const cursor = cursors[cursors.length - 1];
   const query = useMemo<ChatbotExecutionQuery>(() => ({
     limit: 20,
@@ -114,13 +221,14 @@ export default function ChatbotActivity({
   const { mutate, reset } = executionsQuery;
 
   useEffect(() => {
+    if (isPreview) return;
     mutate({ id: flow.id, data: query });
-  }, [flow.id, mutate, query]);
+  }, [flow.id, isPreview, mutate, query]);
 
-  const isLoading = executionsQuery.isPending || executionsQuery.isIdle;
-  const isError = executionsQuery.isError;
-  const data = executionsQuery.data;
-  const error = executionsQuery.error;
+  const isLoading = !isPreview && (executionsQuery.isPending || executionsQuery.isIdle);
+  const isError = !isPreview && executionsQuery.isError;
+  const data = isPreview ? PREVIEW_ACTIVITY_DATA : executionsQuery.data;
+  const error = isPreview ? undefined : executionsQuery.error;
   const executions = data?.executions ?? [];
   const hasLegacyOnlyHistory =
     statusFilter === 'ALL' &&
@@ -135,6 +243,12 @@ export default function ChatbotActivity({
   };
 
   const retry = () => mutate({ id: flow.id, data: query });
+  const toggleSamplePreview = () => {
+    reset();
+    setStatusFilter('ALL');
+    setCursors([undefined]);
+    setSamplePreviewEnabled(enabled => !enabled);
+  };
 
   return (
     <div className="chatbot-page flex h-full min-h-0 flex-col overflow-hidden bg-white">
@@ -171,21 +285,47 @@ export default function ChatbotActivity({
                 Flow ID · {flow.id}
               </p>
             </div>
-            <label className="flex shrink-0 flex-col gap-1 text-xs font-medium text-gray-600">
-              Filter activity
-              <select
-                value={statusFilter}
-                onChange={event => changeFilter(event.target.value as StatusFilter)}
-                aria-label="Filter chatbot activity by status"
-                data-testid="select-chatbot-activity-status"
-                className="h-10 min-w-[180px] border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-              >
-                {STATUS_FILTERS.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              {import.meta.env.DEV && (
+                <button
+                  type="button"
+                  onClick={toggleSamplePreview}
+                  data-testid="button-toggle-chatbot-activity-preview"
+                  aria-pressed={isPreview}
+                  className="h-10 border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {isPreview ? 'Exit sample preview' : 'Preview sample activity'}
+                </button>
+              )}
+              <label className="flex shrink-0 flex-col gap-1 text-xs font-medium text-gray-600">
+                Filter activity
+                <select
+                  value={statusFilter}
+                  onChange={event => changeFilter(event.target.value as StatusFilter)}
+                  aria-label="Filter chatbot activity by status"
+                  data-testid="select-chatbot-activity-status"
+                  className="h-10 min-w-[180px] border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                >
+                  {STATUS_FILTERS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
+
+          {isPreview && (
+            <div
+              role="status"
+              data-testid="notice-chatbot-activity-preview"
+              className="mb-4 border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+            >
+              <p className="font-semibold">Sample preview only</p>
+              <p className="mt-0.5 text-sky-800">
+                These example runs are shown in your browser and are not saved. Transcript links are disabled.
+              </p>
+            </div>
+          )}
 
           <section aria-label="Chatbot activity totals" className="grid grid-cols-2 border-t border-gray-200 md:grid-cols-6">
             <StatCell label="Triggered" value={data?.stats.triggered} />
@@ -270,7 +410,9 @@ export default function ChatbotActivity({
                         {statusLabel(run.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 text-right"><TranscriptLink contactId={run.contactId} executionId={run.id} /></td>
+                    <td className="px-4 py-3.5 text-right">
+                      <TranscriptLink contactId={run.contactId} executionId={run.id} preview={isPreview} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
