@@ -30,6 +30,7 @@ import clientWebhooksRouter from "./client-webhooks";
 import metaInsightsRouter from "./meta-insights";
 import autoGammaMessagesRouter from "./autogamma-messages";
 import publicIntegrationsRouter from "./public-integrations";
+import waPayRouter from "./wa-pay";
 
 const router: IRouter = Router();
 
@@ -68,5 +69,6 @@ router.use(chatbotRouter);
 router.use(servicePricingRouter);
 router.use(adminRouter);
 router.use(audienceSegmentsRouter);
+router.use(waPayRouter);
 
 export default router;

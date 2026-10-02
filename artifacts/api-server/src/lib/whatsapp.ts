@@ -14,6 +14,12 @@ import {
   getEcosystemWhatsAppCredentials,
   isProtectedMasterAdminUser,
 } from "./protectedMasterAdmin";
+import {
+  buildOrderDetailsParameters,
+  INR_OFFSET,
+  type WaPayCreateOrderInput,
+  type WaPayOrderAmounts,
+} from "./whatsappPayments";
 
 const GRAPH_BASE = "https://graph.facebook.com/v22.0";
 const ANALYTICS_GRAPH_BASE = "https://graph.facebook.com/v23.0";
@@ -1354,4 +1360,158 @@ export async function sendWhatsAppFlowMessage(
     throw new Error("Meta accepted the Flow request but did not return a message ID");
   }
   return { ...result, flowToken, _metaRequest: { method: "POST", path, body } };
+}
+
+type WaPayOrderStatus = "pending" | "captured" | "failed";
+
+function assertPaymentPhoneNumber(
+  actualPhoneNumberId: string,
+  expectedPhoneNumberId: string,
+): void {
+  if (actualPhoneNumberId !== expectedPhoneNumberId) {
+    throw new Error(
+      "The currently connected WhatsApp number does not match the number used for this payment order",
+    );
+  }
+}
+
+export async function sendWhatsAppOrderDetails(input: {
+  userId: string;
+  expectedPhoneNumberId: string;
+  recipientPhone: string;
+  referenceId: string;
+  configurationName: string;
+  messageBody: string;
+  messageFooter?: string;
+  orderInput: WaPayCreateOrderInput;
+  amounts: WaPayOrderAmounts;
+}): Promise<{ messageId: string }> {
+  const { phoneNumberId, accessToken } = await getCredentials(input.userId, {
+    allowEnvFallback: false,
+  });
+  assertPaymentPhoneNumber(phoneNumberId, input.expectedPhoneNumberId);
+
+  const path = `/${encodeURIComponent(phoneNumberId)}/messages`;
+  const body = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: normalizeWhatsAppPhone(input.recipientPhone),
+    type: "interactive",
+    interactive: {
+      type: "order_details",
+      body: { text: input.messageBody },
+      ...(input.messageFooter ? { footer: { text: input.messageFooter } } : {}),
+      action: {
+        name: "review_and_pay",
+        parameters: buildOrderDetailsParameters(
+          input.orderInput,
+          input.amounts,
+          input.referenceId,
+          input.configurationName,
+        ),
+      },
+    },
+  };
+  const result = await graphFetchWithCreds<{ messages?: Array<{ id?: string }> }>(
+    path,
+    accessToken,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+  const messageId = result.messages?.[0]?.id;
+  if (!messageId) {
+    throw new Error("Meta accepted the payment request but did not return a message ID");
+  }
+  return { messageId };
+}
+
+export async function lookupWhatsAppPayment(
+  userId: string,
+  expectedPhoneNumberId: string,
+  configurationName: string,
+  referenceId: string,
+): Promise<Record<string, unknown>> {
+  const { phoneNumberId, accessToken } = await getCredentials(userId, {
+    allowEnvFallback: false,
+  });
+  assertPaymentPhoneNumber(phoneNumberId, expectedPhoneNumberId);
+  const path =
+    `/${encodeURIComponent(phoneNumberId)}/payments/` +
+    `${encodeURIComponent(configurationName)}/${encodeURIComponent(referenceId)}`;
+  return graphFetchWithCreds<Record<string, unknown>>(path, accessToken);
+}
+
+export async function refundWhatsAppPayment(input: {
+  userId: string;
+  expectedPhoneNumberId: string;
+  paymentConfigId: string;
+  referenceId: string;
+  amountValue: number;
+  speed: "instant" | "normal";
+}): Promise<Record<string, unknown>> {
+  const { phoneNumberId, accessToken } = await getCredentials(input.userId, {
+    allowEnvFallback: false,
+  });
+  assertPaymentPhoneNumber(phoneNumberId, input.expectedPhoneNumberId);
+  const path = `/${encodeURIComponent(phoneNumberId)}/payments_refund`;
+  const body = {
+    messaging_product: "whatsapp",
+    payment_config_id: input.paymentConfigId,
+    reference_id: input.referenceId,
+    amount: {
+      currency: "INR",
+      value: String(input.amountValue),
+      offset: String(INR_OFFSET),
+    },
+    speed: input.speed,
+  };
+  return graphFetchWithCreds<Record<string, unknown>>(path, accessToken, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function sendWhatsAppOrderStatus(input: {
+  userId: string;
+  expectedPhoneNumberId: string;
+  recipientPhone: string;
+  referenceId: string;
+  status: WaPayOrderStatus;
+  description?: string;
+}): Promise<{ messageId: string }> {
+  const { phoneNumberId, accessToken } = await getCredentials(input.userId, {
+    allowEnvFallback: false,
+  });
+  assertPaymentPhoneNumber(phoneNumberId, input.expectedPhoneNumberId);
+
+  const path = `/${encodeURIComponent(phoneNumberId)}/messages`;
+  const body = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: normalizeWhatsAppPhone(input.recipientPhone),
+    type: "interactive",
+    interactive: {
+      type: "order_status",
+      body: { text: input.description ?? "Payment status updated." },
+      action: {
+        name: "review_order",
+        parameters: {
+          reference_id: input.referenceId,
+          order: {
+            status: input.status,
+            ...(input.description ? { description: input.description } : {}),
+          },
+        },
+      },
+    },
+  };
+  const result = await graphFetchWithCreds<{ messages?: Array<{ id?: string }> }>(
+    path,
+    accessToken,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+  const messageId = result.messages?.[0]?.id;
+  if (!messageId) {
+    throw new Error("Meta accepted the order-status update but did not return a message ID");
+  }
+  return { messageId };
 }

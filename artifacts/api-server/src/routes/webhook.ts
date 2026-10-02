@@ -12,6 +12,7 @@ import { UserModel } from "../models/User";
 import { CampaignModel } from "../models/Campaign";
 import { CampaignSendModel } from "../models/CampaignSend";
 import { CampaignRecipientModel } from "../models/CampaignRecipient";
+import { WaPayOrderModel } from "../models/WaPayOrder";
 import { FlowModel } from "../models/Flow";
 import { TemplateModel } from "../models/Template";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
@@ -27,6 +28,8 @@ import { sendInquiryCreated } from "../lib/airavataIntegration";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitClientWebhookEvent, emitContactCreatedEvent } from "../lib/clientWebhooks";
 import { normalizeContactPhone } from "../lib/contactPhone";
+import { lookupWhatsAppPayment } from "../lib/whatsapp";
+import { reconcileMetaPaymentLookup } from "../lib/whatsappPayments";
 import {
   getEcosystemWhatsAppCredentialIds,
   PROTECTED_MASTER_ADMIN_EMAIL,
@@ -571,6 +574,81 @@ async function handleStatusUpdate(
     );
   }
 
+  if (status.type === "payment") {
+    const referenceId = status.payment?.reference_id;
+    if (!referenceId) {
+      logger.warn({ phoneNumberId }, "Payment status webhook has no reference_id");
+      return;
+    }
+    const userId = new mongoose.Types.ObjectId(tenantUserId);
+    const order = await WaPayOrderModel.findOne({
+      userId,
+      phoneNumberId,
+      referenceId,
+    });
+    if (!order) {
+      logger.info(
+        { phoneNumberId, referenceId },
+        "Payment status webhook did not match a local WhatsApp Pay order",
+      );
+      return;
+    }
+
+    // Payment webhooks are signals only. Confirm against Meta's payment
+    // lookup before changing any local payment state.
+    const lookup = await lookupWhatsAppPayment(
+      tenantUserId,
+      phoneNumberId,
+      order.configurationName,
+      order.referenceId,
+    );
+    const result = reconcileMetaPaymentLookup(lookup, {
+      referenceId: order.referenceId,
+      amountValue: order.amountValue,
+    });
+    if (!result.ok) {
+      await WaPayOrderModel.updateOne(
+        { _id: order._id, userId },
+        {
+          $set: {
+            verificationState: "mismatch",
+            verificationWarning: result.reason,
+            lastVerifiedAt: new Date(),
+          },
+        },
+      );
+      logger.warn(
+        { orderId: String(order._id), reason: result.reason },
+        "Meta payment webhook failed direct payment verification",
+      );
+      return;
+    }
+
+    const paymentStatus =
+      order.paymentStatus === "captured" || result.paymentStatus === "captured"
+        ? "captured"
+        : "pending";
+    await WaPayOrderModel.updateOne(
+      { _id: order._id, userId },
+      {
+        $set: {
+          paymentStatus,
+          orderStatus: paymentStatus === "captured" ? "captured" : order.orderStatus,
+          verificationState: "verified",
+          verificationWarning: null,
+          transactions: result.transactions,
+          refunds: result.refunds,
+          lastVerifiedAt: new Date(),
+        },
+      },
+    );
+    logger.info(
+      { orderId: String(order._id), paymentStatus },
+      "WhatsApp Pay webhook confirmed through Meta payment lookup",
+    );
+    return;
+  }
+
   const update: Record<string, unknown> = { status: status.status.toUpperCase() };
 
   if (status.status === "delivered") update.deliveredAt = new Date(Number(status.timestamp) * 1000);
@@ -771,6 +849,11 @@ interface WebhookStatus {
   status: string;
   timestamp: string;
   recipient_id: string;
+  type?: string;
+  payment?: {
+    reference_id?: string;
+    status?: string;
+  };
   errors?: Array<{
     code?: number;
     title?: string;

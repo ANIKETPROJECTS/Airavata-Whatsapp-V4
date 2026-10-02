@@ -177,6 +177,350 @@ export interface PublicWhatsAppTemplatesResponse {
   templates: PublicWhatsAppTemplate[];
 }
 
+export interface WaPaySettingsInput {
+  /**
+     * Exact Razorpay payment-configuration name linked in WhatsApp Manager.
+     * @minLength 1
+     * @maxLength 60
+     */
+  configurationName: string;
+  /**
+     * Meta payment configuration ID, used when initiating refunds.
+     * @maxLength 128
+     * @nullable
+     */
+  paymentConfigId?: string | null;
+}
+
+export type WaPaySettingsGateway = typeof WaPaySettingsGateway[keyof typeof WaPaySettingsGateway];
+
+
+export const WaPaySettingsGateway = {
+  razorpay: 'razorpay',
+} as const;
+
+export interface WaPaySettings {
+  gateway: WaPaySettingsGateway;
+  /** @nullable */
+  configurationName: string | null;
+  /** @nullable */
+  paymentConfigId: string | null;
+}
+
+export interface WaPayEligibleContact {
+  id: string;
+  name: string;
+  phone: string;
+  lastInboundAt: string;
+  windowExpiresAt: string;
+}
+
+export type WaPayOrderGoodsType = typeof WaPayOrderGoodsType[keyof typeof WaPayOrderGoodsType];
+
+
+export const WaPayOrderGoodsType = {
+  'digital-goods': 'digital-goods',
+  'physical-goods': 'physical-goods',
+} as const;
+
+export interface WaPayOrderItem {
+  name: string;
+  quantity: number;
+  unitAmountValue: number;
+}
+
+export type WaPayOrderCurrency = typeof WaPayOrderCurrency[keyof typeof WaPayOrderCurrency];
+
+
+export const WaPayOrderCurrency = {
+  INR: 'INR',
+} as const;
+
+export type WaPayOrderSendStatus = typeof WaPayOrderSendStatus[keyof typeof WaPayOrderSendStatus];
+
+
+export const WaPayOrderSendStatus = {
+  sending: 'sending',
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
+export type WaPayOrderPaymentStatus = typeof WaPayOrderPaymentStatus[keyof typeof WaPayOrderPaymentStatus];
+
+
+export const WaPayOrderPaymentStatus = {
+  pending: 'pending',
+  captured: 'captured',
+} as const;
+
+export type WaPayOrderVerificationState = typeof WaPayOrderVerificationState[keyof typeof WaPayOrderVerificationState];
+
+
+export const WaPayOrderVerificationState = {
+  unverified: 'unverified',
+  verified: 'verified',
+  mismatch: 'mismatch',
+} as const;
+
+export type WaPayOrderOrderStatus = typeof WaPayOrderOrderStatus[keyof typeof WaPayOrderOrderStatus];
+
+
+export const WaPayOrderOrderStatus = {
+  pending: 'pending',
+  captured: 'captured',
+  failed: 'failed',
+} as const;
+
+export type WaPayTransactionStatus = typeof WaPayTransactionStatus[keyof typeof WaPayTransactionStatus];
+
+
+export const WaPayTransactionStatus = {
+  pending: 'pending',
+  success: 'success',
+  failed: 'failed',
+} as const;
+
+export interface WaPayTransaction {
+  id: string;
+  /** @nullable */
+  gatewayPaymentId: string | null;
+  status: WaPayTransactionStatus;
+  /** @nullable */
+  amountValue: number | null;
+  /** @nullable */
+  method: string | null;
+  /** @nullable */
+  errorCode: string | null;
+  /** @nullable */
+  errorReason: string | null;
+  /** @nullable */
+  updatedAt: string | null;
+}
+
+export type WaPayRefundStatus = typeof WaPayRefundStatus[keyof typeof WaPayRefundStatus];
+
+
+export const WaPayRefundStatus = {
+  pending: 'pending',
+  success: 'success',
+  failed: 'failed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type WaPayRefundSpeedProcessed = typeof WaPayRefundSpeedProcessed[keyof typeof WaPayRefundSpeedProcessed] | null;
+
+
+export const WaPayRefundSpeedProcessed = {
+  instant: 'instant',
+  normal: 'normal',
+} as const;
+
+export interface WaPayRefund {
+  id: string;
+  amountValue: number;
+  status: WaPayRefundStatus;
+  /** @nullable */
+  speedProcessed: WaPayRefundSpeedProcessed;
+  /** @nullable */
+  createdAt: string | null;
+}
+
+export interface WaPayOrder {
+  id: string;
+  referenceId: string;
+  contactId: string;
+  contactName: string;
+  recipientPhone: string;
+  goodsType: WaPayOrderGoodsType;
+  items: WaPayOrderItem[];
+  amountValue: number;
+  currency: WaPayOrderCurrency;
+  sendStatus: WaPayOrderSendStatus;
+  paymentStatus: WaPayOrderPaymentStatus;
+  verificationState: WaPayOrderVerificationState;
+  orderStatus: WaPayOrderOrderStatus;
+  transactions: WaPayTransaction[];
+  refunds: WaPayRefund[];
+  /** @nullable */
+  metaMessageId: string | null;
+  /** @nullable */
+  sendError: string | null;
+  /** @nullable */
+  lastVerifiedAt: string | null;
+  createdAt: string;
+}
+
+export interface WaPayDashboard {
+  settings: WaPaySettings;
+  whatsappConnected: boolean;
+  eligibleContacts: WaPayEligibleContact[];
+  orders: WaPayOrder[];
+}
+
+export type WaPayOrderInputGoodsType = typeof WaPayOrderInputGoodsType[keyof typeof WaPayOrderInputGoodsType];
+
+
+export const WaPayOrderInputGoodsType = {
+  'digital-goods': 'digital-goods',
+  'physical-goods': 'physical-goods',
+} as const;
+
+export interface WaPayImporterAddressInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  addressLine1: string;
+  /** @maxLength 100 */
+  addressLine2?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  city: string;
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  zoneCode: string;
+  /**
+     * @minLength 1
+     * @maxLength 20
+     */
+  postalCode: string;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     */
+  countryCode: string;
+}
+
+export interface WaPayOrderItemInput {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  quantity: number;
+  /**
+     * Per-item amount in INR paise.
+     * @minimum 1
+     */
+  unitAmountValue: number;
+  /**
+     * Required for physical goods when no catalog is attached.
+     * @maxLength 80
+     */
+  countryOfOrigin?: string;
+  /**
+     * Required for physical goods when no catalog is attached.
+     * @maxLength 200
+     */
+  importerName?: string;
+  importerAddress?: WaPayImporterAddressInput;
+}
+
+export interface WaPayBeneficiaryInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  addressLine1: string;
+  /** @maxLength 100 */
+  addressLine2?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  city: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  state: string;
+  /** @pattern ^\d{6}$ */
+  postalCode: string;
+}
+
+export interface WaPayOrderInput {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  contactId: string;
+  goodsType: WaPayOrderInputGoodsType;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  items: WaPayOrderItemInput[];
+  /**
+     * Tax in INR paise.
+     * @minimum 0
+     */
+  taxValue?: number;
+  /**
+     * Shipping amount in INR paise.
+     * @minimum 0
+     */
+  shippingValue?: number;
+  /**
+     * Discount in INR paise.
+     * @minimum 0
+     */
+  discountValue?: number;
+  /**
+     * Required for physical goods; shipping recipients are sent to Meta for compliance.
+     * @minItems 1
+     * @maxItems 10
+     */
+  beneficiaries?: WaPayBeneficiaryInput[];
+  /** @maxLength 1024 */
+  body?: string;
+  /** @maxLength 60 */
+  footer?: string;
+}
+
+export type WaPayRefundInputSpeed = typeof WaPayRefundInputSpeed[keyof typeof WaPayRefundInputSpeed];
+
+
+export const WaPayRefundInputSpeed = {
+  instant: 'instant',
+  normal: 'normal',
+} as const;
+
+export interface WaPayRefundInput {
+  /**
+     * Refund amount in INR paise.
+     * @minimum 1
+     */
+  amountValue: number;
+  speed?: WaPayRefundInputSpeed;
+}
+
+export type WaPayOrderStatusInputStatus = typeof WaPayOrderStatusInputStatus[keyof typeof WaPayOrderStatusInputStatus];
+
+
+export const WaPayOrderStatusInputStatus = {
+  pending: 'pending',
+  captured: 'captured',
+  failed: 'failed',
+} as const;
+
+export interface WaPayOrderStatusInput {
+  status: WaPayOrderStatusInputStatus;
+  /** @maxLength 120 */
+  description?: string;
+}
+
 export type ChatbotExecutionTriggerType = typeof ChatbotExecutionTriggerType[keyof typeof ChatbotExecutionTriggerType];
 
 

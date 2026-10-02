@@ -14,6 +14,8 @@ tags:
     description: Connected account operations
   - name: chatbot
     description: Chatbot execution activity
+  - name: waPay
+    description: Native WhatsApp Payments for India
 paths:
   /healthz:
     get:
@@ -204,6 +206,193 @@ paths:
           description: WhatsApp rejected the send
         "500":
           description: Integration request failed before sending
+  /wa-pay:
+    get:
+      operationId: getWaPayDashboard
+      tags: [waPay]
+      summary: Get WhatsApp Pay settings, eligible contacts, and recent orders
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: WhatsApp Pay dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaPayDashboard"
+        "401":
+          description: Authentication required
+        "500":
+          description: Could not load WhatsApp Pay data
+  /wa-pay/settings:
+    put:
+      operationId: saveWaPaySettings
+      tags: [waPay]
+      summary: Save the linked Razorpay payment configuration details
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaPaySettingsInput"
+      responses:
+        "200":
+          description: Settings saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaPaySettings"
+        "400":
+          description: Invalid payment configuration
+        "401":
+          description: Authentication required
+        "500":
+          description: Could not save WhatsApp Pay settings
+  /wa-pay/orders:
+    post:
+      operationId: createWaPayOrder
+      tags: [waPay]
+      summary: Send a native Razorpay order-details payment request
+      description: >
+        Requires a linked Razorpay payment configuration and an active WhatsApp
+        customer-service window for the selected contact.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaPayOrderInput"
+      responses:
+        "201":
+          description: Payment request accepted by WhatsApp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaPayOrder"
+        "400":
+          description: Invalid order
+        "401":
+          description: Authentication required
+        "404":
+          description: Contact not found
+        "409":
+          description: WhatsApp Pay configuration is missing or the contact window is closed
+        "502":
+          description: WhatsApp rejected the payment request
+        "500":
+          description: Could not create the payment request
+  /wa-pay/orders/{id}/verify:
+    post:
+      operationId: verifyWaPayOrder
+      tags: [waPay]
+      summary: Verify an order payment directly with Meta
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-fA-F0-9]{24}$"
+      responses:
+        "200":
+          description: Verified payment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaPayOrder"
+        "401":
+          description: Authentication required
+        "404":
+          description: Payment order not found
+        "409":
+          description: Meta payment details do not match the local order
+        "502":
+          description: Meta payment lookup failed
+        "500":
+          description: Could not verify the payment
+  /wa-pay/orders/{id}/refund:
+    post:
+      operationId: refundWaPayOrder
+      tags: [waPay]
+      summary: Request a full or partial refund through Meta
+      description: Requires a successful Meta payment lookup and a payment configuration ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-fA-F0-9]{24}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaPayRefundInput"
+      responses:
+        "200":
+          description: Refund request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaPayOrder"
+        "400":
+          description: Invalid refund amount or speed
+        "401":
+          description: Authentication required
+        "404":
+          description: Payment order not found
+        "409":
+          description: Payment is not captured, the configuration ID is missing, or the refundable balance is insufficient
+        "502":
+          description: Meta could not accept the refund
+        "500":
+          description: Could not create the refund
+  /wa-pay/orders/{id}/status:
+    post:
+      operationId: updateWaPayOrderStatus
+      tags: [waPay]
+      summary: Send an order-status update to the customer
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-fA-F0-9]{24}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaPayOrderStatusInput"
+      responses:
+        "200":
+          description: Order status sent to WhatsApp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaPayOrder"
+        "400":
+          description: Invalid order status or transition
+        "401":
+          description: Authentication required
+        "404":
+          description: Payment order not found
+        "502":
+          description: WhatsApp rejected the order status
+        "500":
+          description: Could not update the order status
   /chatbot/flows/{id}/executions/query:
     post:
       operationId: searchChatbotFlowExecutions
@@ -435,6 +624,331 @@ components:
           items:
             type: object
             additionalProperties: true
+    WaPaySettingsInput:
+      type: object
+      required: [configurationName]
+      properties:
+        configurationName:
+          type: string
+          minLength: 1
+          maxLength: 60
+          description: Exact Razorpay payment-configuration name linked in WhatsApp Manager.
+        paymentConfigId:
+          type: ["string", "null"]
+          maxLength: 128
+          description: Meta payment configuration ID, used when initiating refunds.
+    WaPaySettings:
+      type: object
+      required: [gateway, configurationName, paymentConfigId]
+      properties:
+        gateway:
+          type: string
+          enum: [razorpay]
+        configurationName:
+          type: ["string", "null"]
+        paymentConfigId:
+          type: ["string", "null"]
+    WaPayDashboard:
+      type: object
+      required: [settings, whatsappConnected, eligibleContacts, orders]
+      properties:
+        settings:
+          $ref: "#/components/schemas/WaPaySettings"
+        whatsappConnected:
+          type: boolean
+        eligibleContacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaPayEligibleContact"
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaPayOrder"
+    WaPayEligibleContact:
+      type: object
+      required: [id, name, phone, lastInboundAt, windowExpiresAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        lastInboundAt:
+          type: string
+          format: date-time
+        windowExpiresAt:
+          type: string
+          format: date-time
+    WaPayOrderInput:
+      type: object
+      required: [contactId, goodsType, items]
+      properties:
+        contactId:
+          type: string
+          pattern: "^[a-fA-F0-9]{24}$"
+        goodsType:
+          type: string
+          enum: [digital-goods, physical-goods]
+        items:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/WaPayOrderItemInput"
+        taxValue:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Tax in INR paise.
+        shippingValue:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Shipping amount in INR paise.
+        discountValue:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Discount in INR paise.
+        beneficiaries:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/WaPayBeneficiaryInput"
+          description: Required for physical goods; shipping recipients are sent to Meta for compliance.
+        body:
+          type: string
+          maxLength: 1024
+        footer:
+          type: string
+          maxLength: 60
+    WaPayOrderItemInput:
+      type: object
+      required: [name, quantity, unitAmountValue]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100
+        unitAmountValue:
+          type: integer
+          minimum: 1
+          description: Per-item amount in INR paise.
+        countryOfOrigin:
+          type: string
+          maxLength: 80
+          description: Required for physical goods when no catalog is attached.
+        importerName:
+          type: string
+          maxLength: 200
+          description: Required for physical goods when no catalog is attached.
+        importerAddress:
+          $ref: "#/components/schemas/WaPayImporterAddressInput"
+    WaPayBeneficiaryInput:
+      type: object
+      required: [name, addressLine1, city, state, postalCode]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        addressLine1:
+          type: string
+          minLength: 1
+          maxLength: 100
+        addressLine2:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        state:
+          type: string
+          minLength: 1
+          maxLength: 100
+        postalCode:
+          type: string
+          pattern: "^\\d{6}$"
+    WaPayImporterAddressInput:
+      type: object
+      required: [addressLine1, city, zoneCode, postalCode, countryCode]
+      properties:
+        addressLine1:
+          type: string
+          minLength: 1
+          maxLength: 100
+        addressLine2:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        zoneCode:
+          type: string
+          minLength: 1
+          maxLength: 60
+        postalCode:
+          type: string
+          minLength: 1
+          maxLength: 20
+        countryCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+    WaPayOrder:
+      type: object
+      required:
+        - id
+        - referenceId
+        - contactId
+        - contactName
+        - recipientPhone
+        - goodsType
+        - items
+        - amountValue
+        - currency
+        - sendStatus
+        - paymentStatus
+        - verificationState
+        - orderStatus
+        - transactions
+        - refunds
+        - metaMessageId
+        - sendError
+        - lastVerifiedAt
+        - createdAt
+      properties:
+        id:
+          type: string
+        referenceId:
+          type: string
+        contactId:
+          type: string
+        contactName:
+          type: string
+        recipientPhone:
+          type: string
+        goodsType:
+          type: string
+          enum: [digital-goods, physical-goods]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaPayOrderItem"
+        amountValue:
+          type: integer
+        currency:
+          type: string
+          enum: [INR]
+        sendStatus:
+          type: string
+          enum: [sending, sent, failed]
+        paymentStatus:
+          type: string
+          enum: [pending, captured]
+        verificationState:
+          type: string
+          enum: [unverified, verified, mismatch]
+        orderStatus:
+          type: string
+          enum: [pending, captured, failed]
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaPayTransaction"
+        refunds:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaPayRefund"
+        metaMessageId:
+          type: ["string", "null"]
+        sendError:
+          type: ["string", "null"]
+        lastVerifiedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    WaPayOrderItem:
+      type: object
+      required: [name, quantity, unitAmountValue]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: integer
+        unitAmountValue:
+          type: integer
+    WaPayTransaction:
+      type: object
+      required: [id, gatewayPaymentId, status, amountValue, method, errorCode, errorReason, updatedAt]
+      properties:
+        id:
+          type: string
+        gatewayPaymentId:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, success, failed]
+        amountValue:
+          type: ["integer", "null"]
+        method:
+          type: ["string", "null"]
+        errorCode:
+          type: ["string", "null"]
+        errorReason:
+          type: ["string", "null"]
+        updatedAt:
+          type: ["string", "null"]
+          format: date-time
+    WaPayRefund:
+      type: object
+      required: [id, amountValue, status, speedProcessed, createdAt]
+      properties:
+        id:
+          type: string
+        amountValue:
+          type: integer
+        status:
+          type: string
+          enum: [pending, success, failed]
+        speedProcessed:
+          type: ["string", "null"]
+          enum: [instant, normal, null]
+        createdAt:
+          type: ["string", "null"]
+          format: date-time
+    WaPayRefundInput:
+      type: object
+      required: [amountValue]
+      properties:
+        amountValue:
+          type: integer
+          minimum: 1
+          description: Refund amount in INR paise.
+        speed:
+          type: string
+          enum: [instant, normal]
+          default: normal
+    WaPayOrderStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, captured, failed]
+        description:
+          type: string
+          maxLength: 120
     ChatbotExecution:
       type: object
       required:

@@ -157,6 +157,393 @@ export const SendPublicWhatsAppTemplateMessageResponse = zod.object({
 
 
 /**
+ * @summary Get WhatsApp Pay settings, eligible contacts, and recent orders
+ */
+export const GetWaPayDashboardResponse = zod.object({
+  "settings": zod.object({
+  "gateway": zod.enum(['razorpay']),
+  "configurationName": zod.string().nullable(),
+  "paymentConfigId": zod.string().nullable()
+}),
+  "whatsappConnected": zod.boolean(),
+  "eligibleContacts": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "lastInboundAt": zod.coerce.date(),
+  "windowExpiresAt": zod.coerce.date()
+})),
+  "orders": zod.array(zod.object({
+  "id": zod.string(),
+  "referenceId": zod.string(),
+  "contactId": zod.string(),
+  "contactName": zod.string(),
+  "recipientPhone": zod.string(),
+  "goodsType": zod.enum(['digital-goods', 'physical-goods']),
+  "items": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unitAmountValue": zod.number()
+})),
+  "amountValue": zod.number(),
+  "currency": zod.enum(['INR']),
+  "sendStatus": zod.enum(['sending', 'sent', 'failed']),
+  "paymentStatus": zod.enum(['pending', 'captured']),
+  "verificationState": zod.enum(['unverified', 'verified', 'mismatch']),
+  "orderStatus": zod.enum(['pending', 'captured', 'failed']),
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "gatewayPaymentId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "amountValue": zod.number().nullable(),
+  "method": zod.string().nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date().nullable()
+})),
+  "refunds": zod.array(zod.object({
+  "id": zod.string(),
+  "amountValue": zod.number(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "speedProcessed": zod.union([zod.literal('instant'),zod.literal('normal'),zod.literal(null)]).nullable(),
+  "createdAt": zod.coerce.date().nullable()
+})),
+  "metaMessageId": zod.string().nullable(),
+  "sendError": zod.string().nullable(),
+  "lastVerifiedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Save the linked Razorpay payment configuration details
+ */
+export const saveWaPaySettingsBodyConfigurationNameMax = 60;
+
+export const saveWaPaySettingsBodyPaymentConfigIdMax = 128;
+
+
+
+export const SaveWaPaySettingsBody = zod.object({
+  "configurationName": zod.string().min(1).max(saveWaPaySettingsBodyConfigurationNameMax).describe('Exact Razorpay payment-configuration name linked in WhatsApp Manager.'),
+  "paymentConfigId": zod.string().max(saveWaPaySettingsBodyPaymentConfigIdMax).nullish().describe('Meta payment configuration ID, used when initiating refunds.')
+})
+
+export const SaveWaPaySettingsResponse = zod.object({
+  "gateway": zod.enum(['razorpay']),
+  "configurationName": zod.string().nullable(),
+  "paymentConfigId": zod.string().nullable()
+})
+
+
+/**
+ * Requires a linked Razorpay payment configuration and an active WhatsApp customer-service window for the selected contact.
+ * @summary Send a native Razorpay order-details payment request
+ */
+export const createWaPayOrderBodyContactIdRegExp = new RegExp('^[a-fA-F0-9]{24}$');
+export const createWaPayOrderBodyItemsItemNameMax = 60;
+
+export const createWaPayOrderBodyItemsItemQuantityMax = 100;
+
+
+export const createWaPayOrderBodyItemsItemCountryOfOriginMax = 80;
+
+export const createWaPayOrderBodyItemsItemImporterNameMax = 200;
+
+export const createWaPayOrderBodyItemsItemImporterAddressAddressLine1Max = 100;
+
+export const createWaPayOrderBodyItemsItemImporterAddressAddressLine2Max = 100;
+
+export const createWaPayOrderBodyItemsItemImporterAddressCityMax = 100;
+
+export const createWaPayOrderBodyItemsItemImporterAddressZoneCodeMax = 60;
+
+export const createWaPayOrderBodyItemsItemImporterAddressPostalCodeMax = 20;
+
+export const createWaPayOrderBodyItemsItemImporterAddressCountryCodeMin = 2;
+export const createWaPayOrderBodyItemsItemImporterAddressCountryCodeMax = 2;
+
+export const createWaPayOrderBodyItemsMax = 20;
+
+export const createWaPayOrderBodyTaxValueDefault = 0;
+export const createWaPayOrderBodyTaxValueMin = 0;
+
+export const createWaPayOrderBodyShippingValueDefault = 0;
+export const createWaPayOrderBodyShippingValueMin = 0;
+
+export const createWaPayOrderBodyDiscountValueDefault = 0;
+export const createWaPayOrderBodyDiscountValueMin = 0;
+
+export const createWaPayOrderBodyBeneficiariesItemNameMax = 200;
+
+export const createWaPayOrderBodyBeneficiariesItemAddressLine1Max = 100;
+
+export const createWaPayOrderBodyBeneficiariesItemAddressLine2Max = 100;
+
+export const createWaPayOrderBodyBeneficiariesItemCityMax = 100;
+
+export const createWaPayOrderBodyBeneficiariesItemStateMax = 100;
+
+export const createWaPayOrderBodyBeneficiariesItemPostalCodeRegExp = new RegExp('^\\d{6}$');
+export const createWaPayOrderBodyBeneficiariesMax = 10;
+
+export const createWaPayOrderBodyBodyMax = 1024;
+
+export const createWaPayOrderBodyFooterMax = 60;
+
+
+
+export const CreateWaPayOrderBody = zod.object({
+  "contactId": zod.string().regex(createWaPayOrderBodyContactIdRegExp),
+  "goodsType": zod.enum(['digital-goods', 'physical-goods']),
+  "items": zod.array(zod.object({
+  "name": zod.string().min(1).max(createWaPayOrderBodyItemsItemNameMax),
+  "quantity": zod.number().min(1).max(createWaPayOrderBodyItemsItemQuantityMax),
+  "unitAmountValue": zod.number().min(1).describe('Per-item amount in INR paise.'),
+  "countryOfOrigin": zod.string().max(createWaPayOrderBodyItemsItemCountryOfOriginMax).optional().describe('Required for physical goods when no catalog is attached.'),
+  "importerName": zod.string().max(createWaPayOrderBodyItemsItemImporterNameMax).optional().describe('Required for physical goods when no catalog is attached.'),
+  "importerAddress": zod.object({
+  "addressLine1": zod.string().min(1).max(createWaPayOrderBodyItemsItemImporterAddressAddressLine1Max),
+  "addressLine2": zod.string().max(createWaPayOrderBodyItemsItemImporterAddressAddressLine2Max).optional(),
+  "city": zod.string().min(1).max(createWaPayOrderBodyItemsItemImporterAddressCityMax),
+  "zoneCode": zod.string().min(1).max(createWaPayOrderBodyItemsItemImporterAddressZoneCodeMax),
+  "postalCode": zod.string().min(1).max(createWaPayOrderBodyItemsItemImporterAddressPostalCodeMax),
+  "countryCode": zod.string().min(createWaPayOrderBodyItemsItemImporterAddressCountryCodeMin).max(createWaPayOrderBodyItemsItemImporterAddressCountryCodeMax)
+}).optional()
+})).min(1).max(createWaPayOrderBodyItemsMax),
+  "taxValue": zod.number().min(createWaPayOrderBodyTaxValueMin).default(createWaPayOrderBodyTaxValueDefault).describe('Tax in INR paise.'),
+  "shippingValue": zod.number().min(createWaPayOrderBodyShippingValueMin).default(createWaPayOrderBodyShippingValueDefault).describe('Shipping amount in INR paise.'),
+  "discountValue": zod.number().min(createWaPayOrderBodyDiscountValueMin).default(createWaPayOrderBodyDiscountValueDefault).describe('Discount in INR paise.'),
+  "beneficiaries": zod.array(zod.object({
+  "name": zod.string().min(1).max(createWaPayOrderBodyBeneficiariesItemNameMax),
+  "addressLine1": zod.string().min(1).max(createWaPayOrderBodyBeneficiariesItemAddressLine1Max),
+  "addressLine2": zod.string().max(createWaPayOrderBodyBeneficiariesItemAddressLine2Max).optional(),
+  "city": zod.string().min(1).max(createWaPayOrderBodyBeneficiariesItemCityMax),
+  "state": zod.string().min(1).max(createWaPayOrderBodyBeneficiariesItemStateMax),
+  "postalCode": zod.string().regex(createWaPayOrderBodyBeneficiariesItemPostalCodeRegExp)
+})).min(1).max(createWaPayOrderBodyBeneficiariesMax).optional().describe('Required for physical goods; shipping recipients are sent to Meta for compliance.'),
+  "body": zod.string().max(createWaPayOrderBodyBodyMax).optional(),
+  "footer": zod.string().max(createWaPayOrderBodyFooterMax).optional()
+})
+
+export const CreateWaPayOrderResponse = zod.object({
+  "id": zod.string(),
+  "referenceId": zod.string(),
+  "contactId": zod.string(),
+  "contactName": zod.string(),
+  "recipientPhone": zod.string(),
+  "goodsType": zod.enum(['digital-goods', 'physical-goods']),
+  "items": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unitAmountValue": zod.number()
+})),
+  "amountValue": zod.number(),
+  "currency": zod.enum(['INR']),
+  "sendStatus": zod.enum(['sending', 'sent', 'failed']),
+  "paymentStatus": zod.enum(['pending', 'captured']),
+  "verificationState": zod.enum(['unverified', 'verified', 'mismatch']),
+  "orderStatus": zod.enum(['pending', 'captured', 'failed']),
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "gatewayPaymentId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "amountValue": zod.number().nullable(),
+  "method": zod.string().nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date().nullable()
+})),
+  "refunds": zod.array(zod.object({
+  "id": zod.string(),
+  "amountValue": zod.number(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "speedProcessed": zod.union([zod.literal('instant'),zod.literal('normal'),zod.literal(null)]).nullable(),
+  "createdAt": zod.coerce.date().nullable()
+})),
+  "metaMessageId": zod.string().nullable(),
+  "sendError": zod.string().nullable(),
+  "lastVerifiedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Verify an order payment directly with Meta
+ */
+export const verifyWaPayOrderPathIdRegExp = new RegExp('^[a-fA-F0-9]{24}$');
+
+
+export const VerifyWaPayOrderParams = zod.object({
+  "id": zod.coerce.string().regex(verifyWaPayOrderPathIdRegExp)
+})
+
+export const VerifyWaPayOrderResponse = zod.object({
+  "id": zod.string(),
+  "referenceId": zod.string(),
+  "contactId": zod.string(),
+  "contactName": zod.string(),
+  "recipientPhone": zod.string(),
+  "goodsType": zod.enum(['digital-goods', 'physical-goods']),
+  "items": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unitAmountValue": zod.number()
+})),
+  "amountValue": zod.number(),
+  "currency": zod.enum(['INR']),
+  "sendStatus": zod.enum(['sending', 'sent', 'failed']),
+  "paymentStatus": zod.enum(['pending', 'captured']),
+  "verificationState": zod.enum(['unverified', 'verified', 'mismatch']),
+  "orderStatus": zod.enum(['pending', 'captured', 'failed']),
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "gatewayPaymentId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "amountValue": zod.number().nullable(),
+  "method": zod.string().nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date().nullable()
+})),
+  "refunds": zod.array(zod.object({
+  "id": zod.string(),
+  "amountValue": zod.number(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "speedProcessed": zod.union([zod.literal('instant'),zod.literal('normal'),zod.literal(null)]).nullable(),
+  "createdAt": zod.coerce.date().nullable()
+})),
+  "metaMessageId": zod.string().nullable(),
+  "sendError": zod.string().nullable(),
+  "lastVerifiedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Requires a successful Meta payment lookup and a payment configuration ID.
+ * @summary Request a full or partial refund through Meta
+ */
+export const refundWaPayOrderPathIdRegExp = new RegExp('^[a-fA-F0-9]{24}$');
+
+
+export const RefundWaPayOrderParams = zod.object({
+  "id": zod.coerce.string().regex(refundWaPayOrderPathIdRegExp)
+})
+
+
+export const refundWaPayOrderBodySpeedDefault = `normal`;
+
+export const RefundWaPayOrderBody = zod.object({
+  "amountValue": zod.number().min(1).describe('Refund amount in INR paise.'),
+  "speed": zod.enum(['instant', 'normal']).default(refundWaPayOrderBodySpeedDefault)
+})
+
+export const RefundWaPayOrderResponse = zod.object({
+  "id": zod.string(),
+  "referenceId": zod.string(),
+  "contactId": zod.string(),
+  "contactName": zod.string(),
+  "recipientPhone": zod.string(),
+  "goodsType": zod.enum(['digital-goods', 'physical-goods']),
+  "items": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unitAmountValue": zod.number()
+})),
+  "amountValue": zod.number(),
+  "currency": zod.enum(['INR']),
+  "sendStatus": zod.enum(['sending', 'sent', 'failed']),
+  "paymentStatus": zod.enum(['pending', 'captured']),
+  "verificationState": zod.enum(['unverified', 'verified', 'mismatch']),
+  "orderStatus": zod.enum(['pending', 'captured', 'failed']),
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "gatewayPaymentId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "amountValue": zod.number().nullable(),
+  "method": zod.string().nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date().nullable()
+})),
+  "refunds": zod.array(zod.object({
+  "id": zod.string(),
+  "amountValue": zod.number(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "speedProcessed": zod.union([zod.literal('instant'),zod.literal('normal'),zod.literal(null)]).nullable(),
+  "createdAt": zod.coerce.date().nullable()
+})),
+  "metaMessageId": zod.string().nullable(),
+  "sendError": zod.string().nullable(),
+  "lastVerifiedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Send an order-status update to the customer
+ */
+export const updateWaPayOrderStatusPathIdRegExp = new RegExp('^[a-fA-F0-9]{24}$');
+
+
+export const UpdateWaPayOrderStatusParams = zod.object({
+  "id": zod.coerce.string().regex(updateWaPayOrderStatusPathIdRegExp)
+})
+
+export const updateWaPayOrderStatusBodyDescriptionMax = 120;
+
+
+
+export const UpdateWaPayOrderStatusBody = zod.object({
+  "status": zod.enum(['pending', 'captured', 'failed']),
+  "description": zod.string().max(updateWaPayOrderStatusBodyDescriptionMax).optional()
+})
+
+export const UpdateWaPayOrderStatusResponse = zod.object({
+  "id": zod.string(),
+  "referenceId": zod.string(),
+  "contactId": zod.string(),
+  "contactName": zod.string(),
+  "recipientPhone": zod.string(),
+  "goodsType": zod.enum(['digital-goods', 'physical-goods']),
+  "items": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unitAmountValue": zod.number()
+})),
+  "amountValue": zod.number(),
+  "currency": zod.enum(['INR']),
+  "sendStatus": zod.enum(['sending', 'sent', 'failed']),
+  "paymentStatus": zod.enum(['pending', 'captured']),
+  "verificationState": zod.enum(['unverified', 'verified', 'mismatch']),
+  "orderStatus": zod.enum(['pending', 'captured', 'failed']),
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "gatewayPaymentId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "amountValue": zod.number().nullable(),
+  "method": zod.string().nullable(),
+  "errorCode": zod.string().nullable(),
+  "errorReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date().nullable()
+})),
+  "refunds": zod.array(zod.object({
+  "id": zod.string(),
+  "amountValue": zod.number(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "speedProcessed": zod.union([zod.literal('instant'),zod.literal('normal'),zod.literal(null)]).nullable(),
+  "createdAt": zod.coerce.date().nullable()
+})),
+  "metaMessageId": zod.string().nullable(),
+  "sendError": zod.string().nullable(),
+  "lastVerifiedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Search recent executions for a chatbot
  */
 export const searchChatbotFlowExecutionsPathIdRegExp = new RegExp('^[a-fA-F0-9]{24}$');

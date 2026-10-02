@@ -30,7 +30,14 @@ import type {
   PublicWhatsAppMessageResult,
   PublicWhatsAppTemplateMessageInput,
   PublicWhatsAppTemplatesResponse,
-  PublicWhatsAppTextMessageInput
+  PublicWhatsAppTextMessageInput,
+  WaPayDashboard,
+  WaPayOrder,
+  WaPayOrderInput,
+  WaPayOrderStatusInput,
+  WaPayRefundInput,
+  WaPaySettings,
+  WaPaySettingsInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -507,6 +514,442 @@ export const useSendPublicWhatsAppTemplateMessage = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSendPublicWhatsAppTemplateMessageMutationOptions(options));
+    }
+
+export const getGetWaPayDashboardUrl = () => {
+
+
+
+
+  return `/api/wa-pay`
+}
+
+/**
+ * @summary Get WhatsApp Pay settings, eligible contacts, and recent orders
+ */
+export const getWaPayDashboard = async ( options?: RequestInit): Promise<WaPayDashboard> => {
+
+  return customFetch<WaPayDashboard>(getGetWaPayDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWaPayDashboardQueryKey = () => {
+    return [
+    `/api/wa-pay`
+    ] as const;
+    }
+
+
+export const getGetWaPayDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getWaPayDashboard>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWaPayDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWaPayDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWaPayDashboard>>> = ({ signal }) => getWaPayDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWaPayDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWaPayDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getWaPayDashboard>>>
+export type GetWaPayDashboardQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get WhatsApp Pay settings, eligible contacts, and recent orders
+ */
+
+export function useGetWaPayDashboard<TData = Awaited<ReturnType<typeof getWaPayDashboard>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWaPayDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWaPayDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveWaPaySettingsUrl = () => {
+
+
+
+
+  return `/api/wa-pay/settings`
+}
+
+/**
+ * @summary Save the linked Razorpay payment configuration details
+ */
+export const saveWaPaySettings = async (waPaySettingsInput: WaPaySettingsInput, options?: RequestInit): Promise<WaPaySettings> => {
+
+  return customFetch<WaPaySettings>(getSaveWaPaySettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(waPaySettingsInput)
+  }
+);}
+
+
+
+
+
+export const getSaveWaPaySettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveWaPaySettings>>, TError,{data: BodyType<WaPaySettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveWaPaySettings>>, TError,{data: BodyType<WaPaySettingsInput>}, TContext> => {
+
+const mutationKey = ['saveWaPaySettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveWaPaySettings>>, {data: BodyType<WaPaySettingsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveWaPaySettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveWaPaySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof saveWaPaySettings>>>
+    export type SaveWaPaySettingsMutationBody = BodyType<WaPaySettingsInput>
+    export type SaveWaPaySettingsMutationError = ErrorType<void>
+
+    /**
+ * @summary Save the linked Razorpay payment configuration details
+ */
+export const useSaveWaPaySettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveWaPaySettings>>, TError,{data: BodyType<WaPaySettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveWaPaySettings>>,
+        TError,
+        {data: BodyType<WaPaySettingsInput>},
+        TContext
+      > => {
+      return useMutation(getSaveWaPaySettingsMutationOptions(options));
+    }
+
+export const getCreateWaPayOrderUrl = () => {
+
+
+
+
+  return `/api/wa-pay/orders`
+}
+
+/**
+ * Requires a linked Razorpay payment configuration and an active WhatsApp customer-service window for the selected contact.
+ * @summary Send a native Razorpay order-details payment request
+ */
+export const createWaPayOrder = async (waPayOrderInput: WaPayOrderInput, options?: RequestInit): Promise<WaPayOrder> => {
+
+  return customFetch<WaPayOrder>(getCreateWaPayOrderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(waPayOrderInput)
+  }
+);}
+
+
+
+
+
+export const getCreateWaPayOrderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWaPayOrder>>, TError,{data: BodyType<WaPayOrderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWaPayOrder>>, TError,{data: BodyType<WaPayOrderInput>}, TContext> => {
+
+const mutationKey = ['createWaPayOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWaPayOrder>>, {data: BodyType<WaPayOrderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWaPayOrder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWaPayOrderMutationResult = NonNullable<Awaited<ReturnType<typeof createWaPayOrder>>>
+    export type CreateWaPayOrderMutationBody = BodyType<WaPayOrderInput>
+    export type CreateWaPayOrderMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a native Razorpay order-details payment request
+ */
+export const useCreateWaPayOrder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWaPayOrder>>, TError,{data: BodyType<WaPayOrderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWaPayOrder>>,
+        TError,
+        {data: BodyType<WaPayOrderInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWaPayOrderMutationOptions(options));
+    }
+
+export const getVerifyWaPayOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/wa-pay/orders/${id}/verify`
+}
+
+/**
+ * @summary Verify an order payment directly with Meta
+ */
+export const verifyWaPayOrder = async (id: string, options?: RequestInit): Promise<WaPayOrder> => {
+
+  return customFetch<WaPayOrder>(getVerifyWaPayOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getVerifyWaPayOrderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyWaPayOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyWaPayOrder>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['verifyWaPayOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyWaPayOrder>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  verifyWaPayOrder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyWaPayOrderMutationResult = NonNullable<Awaited<ReturnType<typeof verifyWaPayOrder>>>
+
+    export type VerifyWaPayOrderMutationError = ErrorType<void>
+
+    /**
+ * @summary Verify an order payment directly with Meta
+ */
+export const useVerifyWaPayOrder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyWaPayOrder>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyWaPayOrder>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getVerifyWaPayOrderMutationOptions(options));
+    }
+
+export const getRefundWaPayOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/wa-pay/orders/${id}/refund`
+}
+
+/**
+ * Requires a successful Meta payment lookup and a payment configuration ID.
+ * @summary Request a full or partial refund through Meta
+ */
+export const refundWaPayOrder = async (id: string,
+    waPayRefundInput: WaPayRefundInput, options?: RequestInit): Promise<WaPayOrder> => {
+
+  return customFetch<WaPayOrder>(getRefundWaPayOrderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(waPayRefundInput)
+  }
+);}
+
+
+
+
+
+export const getRefundWaPayOrderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundWaPayOrder>>, TError,{id: string;data: BodyType<WaPayRefundInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundWaPayOrder>>, TError,{id: string;data: BodyType<WaPayRefundInput>}, TContext> => {
+
+const mutationKey = ['refundWaPayOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundWaPayOrder>>, {id: string;data: BodyType<WaPayRefundInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  refundWaPayOrder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundWaPayOrderMutationResult = NonNullable<Awaited<ReturnType<typeof refundWaPayOrder>>>
+    export type RefundWaPayOrderMutationBody = BodyType<WaPayRefundInput>
+    export type RefundWaPayOrderMutationError = ErrorType<void>
+
+    /**
+ * @summary Request a full or partial refund through Meta
+ */
+export const useRefundWaPayOrder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundWaPayOrder>>, TError,{id: string;data: BodyType<WaPayRefundInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refundWaPayOrder>>,
+        TError,
+        {id: string;data: BodyType<WaPayRefundInput>},
+        TContext
+      > => {
+      return useMutation(getRefundWaPayOrderMutationOptions(options));
+    }
+
+export const getUpdateWaPayOrderStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/wa-pay/orders/${id}/status`
+}
+
+/**
+ * @summary Send an order-status update to the customer
+ */
+export const updateWaPayOrderStatus = async (id: string,
+    waPayOrderStatusInput: WaPayOrderStatusInput, options?: RequestInit): Promise<WaPayOrder> => {
+
+  return customFetch<WaPayOrder>(getUpdateWaPayOrderStatusUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(waPayOrderStatusInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateWaPayOrderStatusMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWaPayOrderStatus>>, TError,{id: string;data: BodyType<WaPayOrderStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWaPayOrderStatus>>, TError,{id: string;data: BodyType<WaPayOrderStatusInput>}, TContext> => {
+
+const mutationKey = ['updateWaPayOrderStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWaPayOrderStatus>>, {id: string;data: BodyType<WaPayOrderStatusInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateWaPayOrderStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWaPayOrderStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateWaPayOrderStatus>>>
+    export type UpdateWaPayOrderStatusMutationBody = BodyType<WaPayOrderStatusInput>
+    export type UpdateWaPayOrderStatusMutationError = ErrorType<void>
+
+    /**
+ * @summary Send an order-status update to the customer
+ */
+export const useUpdateWaPayOrderStatus = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWaPayOrderStatus>>, TError,{id: string;data: BodyType<WaPayOrderStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWaPayOrderStatus>>,
+        TError,
+        {id: string;data: BodyType<WaPayOrderStatusInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateWaPayOrderStatusMutationOptions(options));
     }
 
 export const getSearchChatbotFlowExecutionsUrl = (id: string,) => {

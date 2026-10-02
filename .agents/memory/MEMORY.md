@@ -10,6 +10,7 @@
 - [Per-user Meta read isolation](per-user-meta-read-isolation.md) — user-specific Meta read routes must use strict credentials with no shared environment fallback.
 - [Meta credential recovery](meta-credential-recovery.md) — keep current credentials until replacement signup succeeds; restore legacy credentials only for the authenticated owner into an empty tenant.
 - [Credit category policy](credit-category-policy.md) — template sends use category rates; non-template session messages remain free.
+- [Native WhatsApp payments](whatsapp-native-payments.md) — keep Meta payment lookup authoritative and block refund retries until uncertain outcomes are reconciled.
 - [Tenant notifications](notifications.md) — use persisted, deduplicated tenant events for the bell and notification center; never seed placeholder records.
 - [Campaign execution architecture](campaign-engine.md) — enroll audiences once, recheck eligibility at send time, and claim campaign/contact/step work before calling Meta.
 - [Failed campaign deletion](campaign-deletion-policy.md) — failed campaign cleanup removes campaign artifacts but preserves tenant contacts and blocks deletion while work is queued.
