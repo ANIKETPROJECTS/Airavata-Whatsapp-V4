@@ -27,6 +27,263 @@ export const RepairFacebookWebhookSubscriptionResponse = zod.object({
 
 
 /**
+ * @summary Get the authenticated tenant's connected WhatsApp catalog
+ */
+export const GetWhatsAppCatalogSettingsResponse = zod.object({
+  "settings": zod.object({
+  "metaCatalogId": zod.string().nullable(),
+  "catalogName": zod.string().nullable(),
+  "catalogConnected": zod.boolean(),
+  "catalogLastSyncedAt": zod.coerce.date().nullable()
+})
+})
+
+
+/**
+ * @summary Get the tenant's Meta business and pages eligible for catalog creation
+ */
+export const GetWhatsAppCatalogContextResponse = zod.object({
+  "businessId": zod.string(),
+  "businessName": zod.string().nullable(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}))
+})
+
+
+/**
+ * @summary List catalogs available to the authenticated tenant
+ */
+export const ListWhatsAppCatalogsResponse = zod.object({
+  "catalogs": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string().nullable(),
+  "vertical": zod.string().nullable()
+}))
+})
+
+
+/**
+ * @summary Create a catalog in the tenant's Meta business and attach it to WhatsApp
+ */
+export const createWhatsAppCatalogBodyNameMax = 100;
+
+export const createWhatsAppCatalogBodyPageIdMax = 64;
+
+
+
+export const CreateWhatsAppCatalogBody = zod.object({
+  "name": zod.string().min(1).max(createWhatsAppCatalogBodyNameMax),
+  "pageId": zod.string().min(1).max(createWhatsAppCatalogBodyPageIdMax)
+})
+
+export const CreateWhatsAppCatalogResponse = zod.object({
+  "settings": zod.object({
+  "metaCatalogId": zod.string().nullable(),
+  "catalogName": zod.string().nullable(),
+  "catalogConnected": zod.boolean(),
+  "catalogLastSyncedAt": zod.coerce.date().nullable()
+})
+})
+
+
+/**
+ * @summary Attach an existing catalog to the tenant's WhatsApp business account
+ */
+export const connectWhatsAppCatalogBodyCatalogIdMax = 64;
+
+
+
+export const ConnectWhatsAppCatalogBody = zod.object({
+  "catalogId": zod.string().min(1).max(connectWhatsAppCatalogBodyCatalogIdMax)
+})
+
+export const ConnectWhatsAppCatalogResponse = zod.object({
+  "settings": zod.object({
+  "metaCatalogId": zod.string().nullable(),
+  "catalogName": zod.string().nullable(),
+  "catalogConnected": zod.boolean(),
+  "catalogLastSyncedAt": zod.coerce.date().nullable()
+})
+})
+
+
+/**
+ * @summary Get storefront visibility and cart settings for the tenant's WhatsApp number
+ */
+export const GetWhatsAppCatalogVisibilityResponse = zod.object({
+  "isCatalogVisible": zod.boolean(),
+  "isCartEnabled": zod.boolean()
+})
+
+
+/**
+ * @summary Update catalog visibility and cart settings for the tenant's WhatsApp number
+ */
+export const UpdateWhatsAppCatalogVisibilityBody = zod.object({
+  "isCatalogVisible": zod.boolean(),
+  "isCartEnabled": zod.boolean()
+})
+
+export const UpdateWhatsAppCatalogVisibilityResponse = zod.object({
+  "isCatalogVisible": zod.boolean(),
+  "isCartEnabled": zod.boolean()
+})
+
+
+/**
+ * @summary List a page of products in the tenant's connected catalog
+ */
+export const listWhatsAppCatalogProductsQueryAfterMax = 512;
+
+export const listWhatsAppCatalogProductsQueryLimitDefault = 100;
+export const listWhatsAppCatalogProductsQueryLimitMax = 100;
+
+
+
+export const ListWhatsAppCatalogProductsQueryParams = zod.object({
+  "after": zod.coerce.string().max(listWhatsAppCatalogProductsQueryAfterMax).optional(),
+  "limit": zod.coerce.number().min(1).max(listWhatsAppCatalogProductsQueryLimitMax).default(listWhatsAppCatalogProductsQueryLimitDefault)
+})
+
+export const listWhatsAppCatalogProductsResponseProductsItemImageUrlRegExp = new RegExp('^https?:/');
+
+
+export const ListWhatsAppCatalogProductsResponse = zod.object({
+  "products": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "price": zod.number(),
+  "currency": zod.string(),
+  "image_url": zod.string().regex(listWhatsAppCatalogProductsResponseProductsItemImageUrlRegExp).nullable(),
+  "retailer_id": zod.string(),
+  "availability": zod.string(),
+  "product_type": zod.string().nullable()
+})),
+  "nextCursor": zod.string().nullable(),
+  "hasMore": zod.boolean()
+})
+
+
+/**
+ * @summary Add a product to the tenant's connected catalog
+ */
+export const createWhatsAppCatalogProductBodyNameMax = 200;
+
+export const createWhatsAppCatalogProductBodyDescriptionMax = 5000;
+
+export const createWhatsAppCatalogProductBodyPriceExclusiveMin = 0;
+
+export const createWhatsAppCatalogProductBodyCurrencyRegExp = new RegExp('^[A-Za-z]{3}$');
+export const createWhatsAppCatalogProductBodyImageUrlRegExp = new RegExp('^https:/');
+export const createWhatsAppCatalogProductBodyRetailerIdMax = 100;
+
+export const createWhatsAppCatalogProductBodyProductTypeMax = 200;
+
+
+
+export const CreateWhatsAppCatalogProductBody = zod.object({
+  "name": zod.string().min(1).max(createWhatsAppCatalogProductBodyNameMax),
+  "description": zod.string().min(1).max(createWhatsAppCatalogProductBodyDescriptionMax),
+  "price": zod.number().gt(createWhatsAppCatalogProductBodyPriceExclusiveMin),
+  "currency": zod.string().regex(createWhatsAppCatalogProductBodyCurrencyRegExp),
+  "imageUrl": zod.string().regex(createWhatsAppCatalogProductBodyImageUrlRegExp),
+  "retailerId": zod.string().min(1).max(createWhatsAppCatalogProductBodyRetailerIdMax),
+  "availability": zod.enum(['in stock', 'out of stock']),
+  "productType": zod.string().max(createWhatsAppCatalogProductBodyProductTypeMax).optional()
+})
+
+export const createWhatsAppCatalogProductResponseProductImageUrlRegExp = new RegExp('^https?:/');
+
+
+export const CreateWhatsAppCatalogProductResponse = zod.object({
+  "product": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "price": zod.number(),
+  "currency": zod.string(),
+  "image_url": zod.string().regex(createWhatsAppCatalogProductResponseProductImageUrlRegExp).nullable(),
+  "retailer_id": zod.string(),
+  "availability": zod.string(),
+  "product_type": zod.string().nullable()
+})
+})
+
+
+/**
+ * @summary Update a product in the tenant's connected catalog
+ */
+export const updateWhatsAppCatalogProductPathProductIdMax = 100;
+
+
+
+export const UpdateWhatsAppCatalogProductParams = zod.object({
+  "productId": zod.coerce.string().min(1).max(updateWhatsAppCatalogProductPathProductIdMax)
+})
+
+export const updateWhatsAppCatalogProductBodyNameMax = 200;
+
+export const updateWhatsAppCatalogProductBodyDescriptionMax = 5000;
+
+export const updateWhatsAppCatalogProductBodyPriceExclusiveMin = 0;
+
+export const updateWhatsAppCatalogProductBodyCurrencyRegExp = new RegExp('^[A-Za-z]{3}$');
+export const updateWhatsAppCatalogProductBodyImageUrlRegExp = new RegExp('^https:/');
+export const updateWhatsAppCatalogProductBodyRetailerIdMax = 100;
+
+export const updateWhatsAppCatalogProductBodyProductTypeMax = 200;
+
+
+
+export const UpdateWhatsAppCatalogProductBody = zod.object({
+  "name": zod.string().min(1).max(updateWhatsAppCatalogProductBodyNameMax),
+  "description": zod.string().min(1).max(updateWhatsAppCatalogProductBodyDescriptionMax),
+  "price": zod.number().gt(updateWhatsAppCatalogProductBodyPriceExclusiveMin),
+  "currency": zod.string().regex(updateWhatsAppCatalogProductBodyCurrencyRegExp),
+  "imageUrl": zod.string().regex(updateWhatsAppCatalogProductBodyImageUrlRegExp),
+  "retailerId": zod.string().min(1).max(updateWhatsAppCatalogProductBodyRetailerIdMax),
+  "availability": zod.enum(['in stock', 'out of stock']),
+  "productType": zod.string().max(updateWhatsAppCatalogProductBodyProductTypeMax).optional()
+})
+
+export const updateWhatsAppCatalogProductResponseProductImageUrlRegExp = new RegExp('^https?:/');
+
+
+export const UpdateWhatsAppCatalogProductResponse = zod.object({
+  "product": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "price": zod.number(),
+  "currency": zod.string(),
+  "image_url": zod.string().regex(updateWhatsAppCatalogProductResponseProductImageUrlRegExp).nullable(),
+  "retailer_id": zod.string(),
+  "availability": zod.string(),
+  "product_type": zod.string().nullable()
+})
+})
+
+
+/**
+ * @summary Delete a product from the tenant's connected catalog
+ */
+export const deleteWhatsAppCatalogProductPathProductIdMax = 100;
+
+
+
+export const DeleteWhatsAppCatalogProductParams = zod.object({
+  "productId": zod.coerce.string().min(1).max(deleteWhatsAppCatalogProductPathProductIdMax)
+})
+
+export const DeleteWhatsAppCatalogProductResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
  * Called by AutoGamma after Meta accepts an outbound message. The sender must provide the rendered body and Meta WhatsApp message ID. This endpoint does not send messages, trigger campaigns, or retry WhatsApp messages.
  * @summary Record an externally sent WhatsApp message in Live Chat
  */

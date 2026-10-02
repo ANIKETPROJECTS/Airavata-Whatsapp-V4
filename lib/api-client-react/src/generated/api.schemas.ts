@@ -649,6 +649,153 @@ export interface ChatbotExecutionQuery {
   startedAtBefore?: string;
 }
 
+export interface WhatsAppCatalogSettings {
+  /** @nullable */
+  metaCatalogId: string | null;
+  /** @nullable */
+  catalogName: string | null;
+  catalogConnected: boolean;
+  /** @nullable */
+  catalogLastSyncedAt: string | null;
+}
+
+export interface WhatsAppCatalogSettingsResponse {
+  settings: WhatsAppCatalogSettings;
+}
+
+export interface WhatsAppCatalog {
+  id: string;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  vertical: string | null;
+}
+
+export interface WhatsAppCatalogListResponse {
+  catalogs: WhatsAppCatalog[];
+}
+
+export interface WhatsAppCatalogPage {
+  id: string;
+  name: string;
+}
+
+export interface WhatsAppCatalogContext {
+  businessId: string;
+  /** @nullable */
+  businessName: string | null;
+  pages: WhatsAppCatalogPage[];
+}
+
+export interface WhatsAppCatalogCreateInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  pageId: string;
+}
+
+export interface WhatsAppCatalogConnectInput {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  catalogId: string;
+}
+
+export interface WhatsAppCatalogVisibility {
+  isCatalogVisible: boolean;
+  isCartEnabled: boolean;
+}
+
+export type WhatsAppCatalogVisibilityResponse = WhatsAppCatalogVisibility;
+
+export type WhatsAppCatalogVisibilityInput = WhatsAppCatalogVisibility;
+
+export interface WhatsAppCatalogProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  /**
+     * @nullable
+     * @pattern ^https?://
+     */
+  image_url: string | null;
+  retailer_id: string;
+  availability: string;
+  /** @nullable */
+  product_type: string | null;
+}
+
+export interface WhatsAppCatalogProductsResponse {
+  products: WhatsAppCatalogProduct[];
+  /** @nullable */
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export type WhatsAppCatalogProductInputAvailability = typeof WhatsAppCatalogProductInputAvailability[keyof typeof WhatsAppCatalogProductInputAvailability];
+
+
+export const WhatsAppCatalogProductInputAvailability = {
+  in_stock: 'in stock',
+  out_of_stock: 'out of stock',
+} as const;
+
+export interface WhatsAppCatalogProductInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  description: string;
+  /** @exclusiveMinimum 0 */
+  price: number;
+  /** @pattern ^[A-Za-z]{3}$ */
+  currency: string;
+  /** @pattern ^https:// */
+  imageUrl: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  retailerId: string;
+  availability: WhatsAppCatalogProductInputAvailability;
+  /** @maxLength 200 */
+  productType?: string;
+}
+
+export interface WhatsAppCatalogProductResponse {
+  product: WhatsAppCatalogProduct;
+}
+
+export interface WhatsAppCatalogProductDeleteResponse {
+  ok: boolean;
+}
+
+export type ListWhatsAppCatalogProductsParams = {
+/**
+ * @maxLength 512
+ */
+after?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
 export type ListPublicWhatsAppTemplatesParams = {
 /**
  * @pattern ^[0-9]+$

@@ -27,6 +27,7 @@ import type {
   FacebookWebhookSubscriptionStatus,
   HealthStatus,
   ListPublicWhatsAppTemplatesParams,
+  ListWhatsAppCatalogProductsParams,
   PublicWhatsAppMessageResult,
   PublicWhatsAppTemplateMessageInput,
   PublicWhatsAppTemplatesResponse,
@@ -37,7 +38,18 @@ import type {
   WaPayOrderStatusInput,
   WaPayRefundInput,
   WaPaySetupInput,
-  WaPaySetupResult
+  WaPaySetupResult,
+  WhatsAppCatalogConnectInput,
+  WhatsAppCatalogContext,
+  WhatsAppCatalogCreateInput,
+  WhatsAppCatalogListResponse,
+  WhatsAppCatalogProductDeleteResponse,
+  WhatsAppCatalogProductInput,
+  WhatsAppCatalogProductResponse,
+  WhatsAppCatalogProductsResponse,
+  WhatsAppCatalogSettingsResponse,
+  WhatsAppCatalogVisibilityInput,
+  WhatsAppCatalogVisibilityResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -214,6 +226,825 @@ export const useRepairFacebookWebhookSubscription = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRepairFacebookWebhookSubscriptionMutationOptions(options));
+    }
+
+export const getGetWhatsAppCatalogSettingsUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalog-settings`
+}
+
+/**
+ * @summary Get the authenticated tenant's connected WhatsApp catalog
+ */
+export const getWhatsAppCatalogSettings = async ( options?: RequestInit): Promise<WhatsAppCatalogSettingsResponse> => {
+
+  return customFetch<WhatsAppCatalogSettingsResponse>(getGetWhatsAppCatalogSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWhatsAppCatalogSettingsQueryKey = () => {
+    return [
+    `/api/integration/whatsapp/catalog-settings`
+    ] as const;
+    }
+
+
+export const getGetWhatsAppCatalogSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getWhatsAppCatalogSettings>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWhatsAppCatalogSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWhatsAppCatalogSettings>>> = ({ signal }) => getWhatsAppCatalogSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWhatsAppCatalogSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getWhatsAppCatalogSettings>>>
+export type GetWhatsAppCatalogSettingsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the authenticated tenant's connected WhatsApp catalog
+ */
+
+export function useGetWhatsAppCatalogSettings<TData = Awaited<ReturnType<typeof getWhatsAppCatalogSettings>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWhatsAppCatalogSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWhatsAppCatalogContextUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalog-context`
+}
+
+/**
+ * @summary Get the tenant's Meta business and pages eligible for catalog creation
+ */
+export const getWhatsAppCatalogContext = async ( options?: RequestInit): Promise<WhatsAppCatalogContext> => {
+
+  return customFetch<WhatsAppCatalogContext>(getGetWhatsAppCatalogContextUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWhatsAppCatalogContextQueryKey = () => {
+    return [
+    `/api/integration/whatsapp/catalog-context`
+    ] as const;
+    }
+
+
+export const getGetWhatsAppCatalogContextQueryOptions = <TData = Awaited<ReturnType<typeof getWhatsAppCatalogContext>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWhatsAppCatalogContextQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWhatsAppCatalogContext>>> = ({ signal }) => getWhatsAppCatalogContext({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogContext>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWhatsAppCatalogContextQueryResult = NonNullable<Awaited<ReturnType<typeof getWhatsAppCatalogContext>>>
+export type GetWhatsAppCatalogContextQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the tenant's Meta business and pages eligible for catalog creation
+ */
+
+export function useGetWhatsAppCatalogContext<TData = Awaited<ReturnType<typeof getWhatsAppCatalogContext>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWhatsAppCatalogContextQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListWhatsAppCatalogsUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalogs`
+}
+
+/**
+ * @summary List catalogs available to the authenticated tenant
+ */
+export const listWhatsAppCatalogs = async ( options?: RequestInit): Promise<WhatsAppCatalogListResponse> => {
+
+  return customFetch<WhatsAppCatalogListResponse>(getListWhatsAppCatalogsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWhatsAppCatalogsQueryKey = () => {
+    return [
+    `/api/integration/whatsapp/catalogs`
+    ] as const;
+    }
+
+
+export const getListWhatsAppCatalogsQueryOptions = <TData = Awaited<ReturnType<typeof listWhatsAppCatalogs>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhatsAppCatalogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWhatsAppCatalogsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWhatsAppCatalogs>>> = ({ signal }) => listWhatsAppCatalogs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWhatsAppCatalogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWhatsAppCatalogsQueryResult = NonNullable<Awaited<ReturnType<typeof listWhatsAppCatalogs>>>
+export type ListWhatsAppCatalogsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List catalogs available to the authenticated tenant
+ */
+
+export function useListWhatsAppCatalogs<TData = Awaited<ReturnType<typeof listWhatsAppCatalogs>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhatsAppCatalogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWhatsAppCatalogsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateWhatsAppCatalogUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalogs`
+}
+
+/**
+ * @summary Create a catalog in the tenant's Meta business and attach it to WhatsApp
+ */
+export const createWhatsAppCatalog = async (whatsAppCatalogCreateInput: WhatsAppCatalogCreateInput, options?: RequestInit): Promise<WhatsAppCatalogSettingsResponse> => {
+
+  return customFetch<WhatsAppCatalogSettingsResponse>(getCreateWhatsAppCatalogUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(whatsAppCatalogCreateInput)
+  }
+);}
+
+
+
+
+
+export const getCreateWhatsAppCatalogMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWhatsAppCatalog>>, TError,{data: BodyType<WhatsAppCatalogCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWhatsAppCatalog>>, TError,{data: BodyType<WhatsAppCatalogCreateInput>}, TContext> => {
+
+const mutationKey = ['createWhatsAppCatalog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWhatsAppCatalog>>, {data: BodyType<WhatsAppCatalogCreateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWhatsAppCatalog(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWhatsAppCatalogMutationResult = NonNullable<Awaited<ReturnType<typeof createWhatsAppCatalog>>>
+    export type CreateWhatsAppCatalogMutationBody = BodyType<WhatsAppCatalogCreateInput>
+    export type CreateWhatsAppCatalogMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a catalog in the tenant's Meta business and attach it to WhatsApp
+ */
+export const useCreateWhatsAppCatalog = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWhatsAppCatalog>>, TError,{data: BodyType<WhatsAppCatalogCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWhatsAppCatalog>>,
+        TError,
+        {data: BodyType<WhatsAppCatalogCreateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWhatsAppCatalogMutationOptions(options));
+    }
+
+export const getConnectWhatsAppCatalogUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalogs/connect`
+}
+
+/**
+ * @summary Attach an existing catalog to the tenant's WhatsApp business account
+ */
+export const connectWhatsAppCatalog = async (whatsAppCatalogConnectInput: WhatsAppCatalogConnectInput, options?: RequestInit): Promise<WhatsAppCatalogSettingsResponse> => {
+
+  return customFetch<WhatsAppCatalogSettingsResponse>(getConnectWhatsAppCatalogUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(whatsAppCatalogConnectInput)
+  }
+);}
+
+
+
+
+
+export const getConnectWhatsAppCatalogMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectWhatsAppCatalog>>, TError,{data: BodyType<WhatsAppCatalogConnectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof connectWhatsAppCatalog>>, TError,{data: BodyType<WhatsAppCatalogConnectInput>}, TContext> => {
+
+const mutationKey = ['connectWhatsAppCatalog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof connectWhatsAppCatalog>>, {data: BodyType<WhatsAppCatalogConnectInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  connectWhatsAppCatalog(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConnectWhatsAppCatalogMutationResult = NonNullable<Awaited<ReturnType<typeof connectWhatsAppCatalog>>>
+    export type ConnectWhatsAppCatalogMutationBody = BodyType<WhatsAppCatalogConnectInput>
+    export type ConnectWhatsAppCatalogMutationError = ErrorType<void>
+
+    /**
+ * @summary Attach an existing catalog to the tenant's WhatsApp business account
+ */
+export const useConnectWhatsAppCatalog = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectWhatsAppCatalog>>, TError,{data: BodyType<WhatsAppCatalogConnectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof connectWhatsAppCatalog>>,
+        TError,
+        {data: BodyType<WhatsAppCatalogConnectInput>},
+        TContext
+      > => {
+      return useMutation(getConnectWhatsAppCatalogMutationOptions(options));
+    }
+
+export const getGetWhatsAppCatalogVisibilityUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalog/visibility`
+}
+
+/**
+ * @summary Get storefront visibility and cart settings for the tenant's WhatsApp number
+ */
+export const getWhatsAppCatalogVisibility = async ( options?: RequestInit): Promise<WhatsAppCatalogVisibilityResponse> => {
+
+  return customFetch<WhatsAppCatalogVisibilityResponse>(getGetWhatsAppCatalogVisibilityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWhatsAppCatalogVisibilityQueryKey = () => {
+    return [
+    `/api/integration/whatsapp/catalog/visibility`
+    ] as const;
+    }
+
+
+export const getGetWhatsAppCatalogVisibilityQueryOptions = <TData = Awaited<ReturnType<typeof getWhatsAppCatalogVisibility>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogVisibility>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWhatsAppCatalogVisibilityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWhatsAppCatalogVisibility>>> = ({ signal }) => getWhatsAppCatalogVisibility({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogVisibility>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWhatsAppCatalogVisibilityQueryResult = NonNullable<Awaited<ReturnType<typeof getWhatsAppCatalogVisibility>>>
+export type GetWhatsAppCatalogVisibilityQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get storefront visibility and cart settings for the tenant's WhatsApp number
+ */
+
+export function useGetWhatsAppCatalogVisibility<TData = Awaited<ReturnType<typeof getWhatsAppCatalogVisibility>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWhatsAppCatalogVisibility>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWhatsAppCatalogVisibilityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateWhatsAppCatalogVisibilityUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalog/visibility`
+}
+
+/**
+ * @summary Update catalog visibility and cart settings for the tenant's WhatsApp number
+ */
+export const updateWhatsAppCatalogVisibility = async (whatsAppCatalogVisibilityInput: WhatsAppCatalogVisibilityInput, options?: RequestInit): Promise<WhatsAppCatalogVisibilityResponse> => {
+
+  return customFetch<WhatsAppCatalogVisibilityResponse>(getUpdateWhatsAppCatalogVisibilityUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(whatsAppCatalogVisibilityInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateWhatsAppCatalogVisibilityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWhatsAppCatalogVisibility>>, TError,{data: BodyType<WhatsAppCatalogVisibilityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWhatsAppCatalogVisibility>>, TError,{data: BodyType<WhatsAppCatalogVisibilityInput>}, TContext> => {
+
+const mutationKey = ['updateWhatsAppCatalogVisibility'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWhatsAppCatalogVisibility>>, {data: BodyType<WhatsAppCatalogVisibilityInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateWhatsAppCatalogVisibility(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWhatsAppCatalogVisibilityMutationResult = NonNullable<Awaited<ReturnType<typeof updateWhatsAppCatalogVisibility>>>
+    export type UpdateWhatsAppCatalogVisibilityMutationBody = BodyType<WhatsAppCatalogVisibilityInput>
+    export type UpdateWhatsAppCatalogVisibilityMutationError = ErrorType<void>
+
+    /**
+ * @summary Update catalog visibility and cart settings for the tenant's WhatsApp number
+ */
+export const useUpdateWhatsAppCatalogVisibility = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWhatsAppCatalogVisibility>>, TError,{data: BodyType<WhatsAppCatalogVisibilityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWhatsAppCatalogVisibility>>,
+        TError,
+        {data: BodyType<WhatsAppCatalogVisibilityInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateWhatsAppCatalogVisibilityMutationOptions(options));
+    }
+
+export const getListWhatsAppCatalogProductsUrl = (params?: ListWhatsAppCatalogProductsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/integration/whatsapp/catalog/products?${stringifiedParams}` : `/api/integration/whatsapp/catalog/products`
+}
+
+/**
+ * @summary List a page of products in the tenant's connected catalog
+ */
+export const listWhatsAppCatalogProducts = async (params?: ListWhatsAppCatalogProductsParams, options?: RequestInit): Promise<WhatsAppCatalogProductsResponse> => {
+
+  return customFetch<WhatsAppCatalogProductsResponse>(getListWhatsAppCatalogProductsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWhatsAppCatalogProductsQueryKey = (params?: ListWhatsAppCatalogProductsParams,) => {
+    return [
+    `/api/integration/whatsapp/catalog/products`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListWhatsAppCatalogProductsQueryOptions = <TData = Awaited<ReturnType<typeof listWhatsAppCatalogProducts>>, TError = ErrorType<void>>(params?: ListWhatsAppCatalogProductsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhatsAppCatalogProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWhatsAppCatalogProductsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWhatsAppCatalogProducts>>> = ({ signal }) => listWhatsAppCatalogProducts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWhatsAppCatalogProducts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWhatsAppCatalogProductsQueryResult = NonNullable<Awaited<ReturnType<typeof listWhatsAppCatalogProducts>>>
+export type ListWhatsAppCatalogProductsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List a page of products in the tenant's connected catalog
+ */
+
+export function useListWhatsAppCatalogProducts<TData = Awaited<ReturnType<typeof listWhatsAppCatalogProducts>>, TError = ErrorType<void>>(
+ params?: ListWhatsAppCatalogProductsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWhatsAppCatalogProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWhatsAppCatalogProductsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateWhatsAppCatalogProductUrl = () => {
+
+
+
+
+  return `/api/integration/whatsapp/catalog/products`
+}
+
+/**
+ * @summary Add a product to the tenant's connected catalog
+ */
+export const createWhatsAppCatalogProduct = async (whatsAppCatalogProductInput: WhatsAppCatalogProductInput, options?: RequestInit): Promise<WhatsAppCatalogProductResponse> => {
+
+  return customFetch<WhatsAppCatalogProductResponse>(getCreateWhatsAppCatalogProductUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(whatsAppCatalogProductInput)
+  }
+);}
+
+
+
+
+
+export const getCreateWhatsAppCatalogProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWhatsAppCatalogProduct>>, TError,{data: BodyType<WhatsAppCatalogProductInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWhatsAppCatalogProduct>>, TError,{data: BodyType<WhatsAppCatalogProductInput>}, TContext> => {
+
+const mutationKey = ['createWhatsAppCatalogProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWhatsAppCatalogProduct>>, {data: BodyType<WhatsAppCatalogProductInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWhatsAppCatalogProduct(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWhatsAppCatalogProductMutationResult = NonNullable<Awaited<ReturnType<typeof createWhatsAppCatalogProduct>>>
+    export type CreateWhatsAppCatalogProductMutationBody = BodyType<WhatsAppCatalogProductInput>
+    export type CreateWhatsAppCatalogProductMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a product to the tenant's connected catalog
+ */
+export const useCreateWhatsAppCatalogProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWhatsAppCatalogProduct>>, TError,{data: BodyType<WhatsAppCatalogProductInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWhatsAppCatalogProduct>>,
+        TError,
+        {data: BodyType<WhatsAppCatalogProductInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWhatsAppCatalogProductMutationOptions(options));
+    }
+
+export const getUpdateWhatsAppCatalogProductUrl = (productId: string,) => {
+
+
+
+
+  return `/api/integration/whatsapp/catalog/products/${productId}`
+}
+
+/**
+ * @summary Update a product in the tenant's connected catalog
+ */
+export const updateWhatsAppCatalogProduct = async (productId: string,
+    whatsAppCatalogProductInput: WhatsAppCatalogProductInput, options?: RequestInit): Promise<WhatsAppCatalogProductResponse> => {
+
+  return customFetch<WhatsAppCatalogProductResponse>(getUpdateWhatsAppCatalogProductUrl(productId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(whatsAppCatalogProductInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateWhatsAppCatalogProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWhatsAppCatalogProduct>>, TError,{productId: string;data: BodyType<WhatsAppCatalogProductInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWhatsAppCatalogProduct>>, TError,{productId: string;data: BodyType<WhatsAppCatalogProductInput>}, TContext> => {
+
+const mutationKey = ['updateWhatsAppCatalogProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWhatsAppCatalogProduct>>, {productId: string;data: BodyType<WhatsAppCatalogProductInput>}> = (props) => {
+          const {productId,data} = props ?? {};
+
+          return  updateWhatsAppCatalogProduct(productId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWhatsAppCatalogProductMutationResult = NonNullable<Awaited<ReturnType<typeof updateWhatsAppCatalogProduct>>>
+    export type UpdateWhatsAppCatalogProductMutationBody = BodyType<WhatsAppCatalogProductInput>
+    export type UpdateWhatsAppCatalogProductMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a product in the tenant's connected catalog
+ */
+export const useUpdateWhatsAppCatalogProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWhatsAppCatalogProduct>>, TError,{productId: string;data: BodyType<WhatsAppCatalogProductInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWhatsAppCatalogProduct>>,
+        TError,
+        {productId: string;data: BodyType<WhatsAppCatalogProductInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateWhatsAppCatalogProductMutationOptions(options));
+    }
+
+export const getDeleteWhatsAppCatalogProductUrl = (productId: string,) => {
+
+
+
+
+  return `/api/integration/whatsapp/catalog/products/${productId}`
+}
+
+/**
+ * @summary Delete a product from the tenant's connected catalog
+ */
+export const deleteWhatsAppCatalogProduct = async (productId: string, options?: RequestInit): Promise<WhatsAppCatalogProductDeleteResponse> => {
+
+  return customFetch<WhatsAppCatalogProductDeleteResponse>(getDeleteWhatsAppCatalogProductUrl(productId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteWhatsAppCatalogProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhatsAppCatalogProduct>>, TError,{productId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWhatsAppCatalogProduct>>, TError,{productId: string}, TContext> => {
+
+const mutationKey = ['deleteWhatsAppCatalogProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWhatsAppCatalogProduct>>, {productId: string}> = (props) => {
+          const {productId} = props ?? {};
+
+          return  deleteWhatsAppCatalogProduct(productId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWhatsAppCatalogProductMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWhatsAppCatalogProduct>>>
+
+    export type DeleteWhatsAppCatalogProductMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a product from the tenant's connected catalog
+ */
+export const useDeleteWhatsAppCatalogProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWhatsAppCatalogProduct>>, TError,{productId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWhatsAppCatalogProduct>>,
+        TError,
+        {productId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteWhatsAppCatalogProductMutationOptions(options));
     }
 
 export const getIngestAutoGammaOutboundMessageUrl = () => {

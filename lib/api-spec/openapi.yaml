@@ -52,6 +52,291 @@ paths:
           description: The credential cannot be used for tenant repair
         "500":
           description: Subscription repair failed
+  /integration/whatsapp/catalog-settings:
+    get:
+      operationId: getWhatsAppCatalogSettings
+      tags: [integration]
+      summary: Get the authenticated tenant's connected WhatsApp catalog
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Catalog connection settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogSettingsResponse"
+        "401":
+          description: Authentication required
+        "500":
+          description: Could not load catalog settings
+  /integration/whatsapp/catalog-context:
+    get:
+      operationId: getWhatsAppCatalogContext
+      tags: [integration]
+      summary: Get the tenant's Meta business and pages eligible for catalog creation
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Meta business and owned pages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogContext"
+        "401":
+          description: Authentication required
+        "409":
+          description: No WhatsApp business account is connected
+        "502":
+          description: Meta business or page lookup failed
+  /integration/whatsapp/catalogs:
+    get:
+      operationId: listWhatsAppCatalogs
+      tags: [integration]
+      summary: List catalogs available to the authenticated tenant
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Catalogs owned by the tenant's Meta business or connected to its WABA
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogListResponse"
+        "401":
+          description: Authentication required
+        "502":
+          description: Meta catalog lookup failed
+    post:
+      operationId: createWhatsAppCatalog
+      tags: [integration]
+      summary: Create a catalog in the tenant's Meta business and attach it to WhatsApp
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppCatalogCreateInput"
+      responses:
+        "201":
+          description: Catalog created and attached to the tenant's WABA
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogSettingsResponse"
+        "400":
+          description: Invalid catalog name or page
+        "401":
+          description: Authentication required
+        "409":
+          description: WhatsApp is not connected or this is a protected operator account
+        "502":
+          description: Meta could not create or attach the catalog; required permissions may be missing
+  /integration/whatsapp/catalogs/connect:
+    post:
+      operationId: connectWhatsAppCatalog
+      tags: [integration]
+      summary: Attach an existing catalog to the tenant's WhatsApp business account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppCatalogConnectInput"
+      responses:
+        "200":
+          description: Catalog attached and saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogSettingsResponse"
+        "400":
+          description: Invalid catalog ID
+        "401":
+          description: Authentication required
+        "409":
+          description: WhatsApp is not connected or this is a protected operator account
+        "502":
+          description: Meta could not verify or attach the catalog
+  /integration/whatsapp/catalog/visibility:
+    get:
+      operationId: getWhatsAppCatalogVisibility
+      tags: [integration]
+      summary: Get storefront visibility and cart settings for the tenant's WhatsApp number
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: WhatsApp commerce settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogVisibilityResponse"
+        "401":
+          description: Authentication required
+        "502":
+          description: Meta commerce settings lookup failed
+    patch:
+      operationId: updateWhatsAppCatalogVisibility
+      tags: [integration]
+      summary: Update catalog visibility and cart settings for the tenant's WhatsApp number
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppCatalogVisibilityInput"
+      responses:
+        "200":
+          description: WhatsApp commerce settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogVisibilityResponse"
+        "400":
+          description: Invalid visibility settings
+        "401":
+          description: Authentication required
+        "409":
+          description: Connect a catalog before making it visible
+        "502":
+          description: Meta commerce settings update failed
+  /integration/whatsapp/catalog/products:
+    get:
+      operationId: listWhatsAppCatalogProducts
+      tags: [integration]
+      summary: List a page of products in the tenant's connected catalog
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: after
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 100
+      responses:
+        "200":
+          description: Catalog products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogProductsResponse"
+        "401":
+          description: Authentication required
+        "409":
+          description: No catalog is connected
+        "502":
+          description: Meta product lookup failed
+    post:
+      operationId: createWhatsAppCatalogProduct
+      tags: [integration]
+      summary: Add a product to the tenant's connected catalog
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppCatalogProductInput"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogProductResponse"
+        "400":
+          description: Invalid product data
+        "401":
+          description: Authentication required
+        "409":
+          description: No catalog is connected
+        "502":
+          description: Meta product creation failed
+  /integration/whatsapp/catalog/products/{productId}:
+    patch:
+      operationId: updateWhatsAppCatalogProduct
+      tags: [integration]
+      summary: Update a product in the tenant's connected catalog
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppCatalogProductInput"
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogProductResponse"
+        "400":
+          description: Invalid product data
+        "401":
+          description: Authentication required
+        "404":
+          description: Product not found in this catalog
+        "409":
+          description: No catalog is connected
+        "502":
+          description: Meta product update failed
+    delete:
+      operationId: deleteWhatsAppCatalogProduct
+      tags: [integration]
+      summary: Delete a product from the tenant's connected catalog
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      responses:
+        "200":
+          description: Product deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppCatalogProductDeleteResponse"
+        "401":
+          description: Authentication required
+        "404":
+          description: Product not found in this catalog
+        "409":
+          description: No catalog is connected
+        "502":
+          description: Meta product deletion failed
   /integrations/autogamma/outbound-messages:
     post:
       operationId: ingestAutoGammaOutboundMessage
@@ -1069,4 +1354,177 @@ components:
           type: string
           format: date-time
           description: Exclusive end timestamp for filtering by run start time.
+    WhatsAppCatalogSettings:
+      type: object
+      required:
+        - metaCatalogId
+        - catalogName
+        - catalogConnected
+        - catalogLastSyncedAt
+      properties:
+        metaCatalogId:
+          type: ["string", "null"]
+        catalogName:
+          type: ["string", "null"]
+        catalogConnected:
+          type: boolean
+        catalogLastSyncedAt:
+          type: ["string", "null"]
+          format: date-time
+    WhatsAppCatalogSettingsResponse:
+      type: object
+      required: [settings]
+      properties:
+        settings:
+          $ref: "#/components/schemas/WhatsAppCatalogSettings"
+    WhatsAppCatalog:
+      type: object
+      required: [id, name, vertical]
+      properties:
+        id:
+          type: string
+        name:
+          type: ["string", "null"]
+        vertical:
+          type: ["string", "null"]
+    WhatsAppCatalogListResponse:
+      type: object
+      required: [catalogs]
+      properties:
+        catalogs:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppCatalog"
+    WhatsAppCatalogPage:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    WhatsAppCatalogContext:
+      type: object
+      required: [businessId, businessName, pages]
+      properties:
+        businessId:
+          type: string
+        businessName:
+          type: ["string", "null"]
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppCatalogPage"
+    WhatsAppCatalogCreateInput:
+      type: object
+      required: [name, pageId]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        pageId:
+          type: string
+          minLength: 1
+          maxLength: 64
+    WhatsAppCatalogConnectInput:
+      type: object
+      required: [catalogId]
+      properties:
+        catalogId:
+          type: string
+          minLength: 1
+          maxLength: 64
+    WhatsAppCatalogVisibility:
+      type: object
+      required: [isCatalogVisible, isCartEnabled]
+      properties:
+        isCatalogVisible:
+          type: boolean
+        isCartEnabled:
+          type: boolean
+    WhatsAppCatalogVisibilityResponse:
+      allOf:
+        - $ref: "#/components/schemas/WhatsAppCatalogVisibility"
+    WhatsAppCatalogVisibilityInput:
+      allOf:
+        - $ref: "#/components/schemas/WhatsAppCatalogVisibility"
+    WhatsAppCatalogProduct:
+      type: object
+      required: [id, name, description, price, currency, image_url, retailer_id, availability, product_type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        image_url:
+          type: ["string", "null"]
+          pattern: "^https?://"
+        retailer_id:
+          type: string
+        availability:
+          type: string
+        product_type:
+          type: ["string", "null"]
+    WhatsAppCatalogProductsResponse:
+      type: object
+      required: [products, nextCursor, hasMore]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppCatalogProduct"
+        nextCursor:
+          type: ["string", "null"]
+        hasMore:
+          type: boolean
+    WhatsAppCatalogProductInput:
+      type: object
+      required: [name, description, price, currency, imageUrl, retailerId, availability]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        price:
+          type: number
+          exclusiveMinimum: 0
+        currency:
+          type: string
+          pattern: "^[A-Za-z]{3}$"
+        imageUrl:
+          type: string
+          pattern: "^https://"
+        retailerId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        availability:
+          type: string
+          enum: [in stock, out of stock]
+        productType:
+          type: string
+          maxLength: 200
+    WhatsAppCatalogProductResponse:
+      type: object
+      required: [product]
+      properties:
+        product:
+          $ref: "#/components/schemas/WhatsAppCatalogProduct"
+    WhatsAppCatalogProductDeleteResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
 
