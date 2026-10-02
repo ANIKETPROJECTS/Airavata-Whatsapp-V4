@@ -1,7 +1,7 @@
 - [Airavata: MongoDB alongside existing Postgres scaffold](airavata-mongodb-setup.md) — when a project's default `@workspace/db` is Postgres/Drizzle but the user requires MongoDB-only, add mongoose directly to the API server package instead of touching the shared db lib.
 - [Airavata: Mongoose aggregation ObjectId casting](airavata-mongodb-aggregation.md) — aggregation $match does NOT auto-cast string IDs; wrap with `new mongoose.Types.ObjectId(str)` explicitly.
 - [Pricing label normalization](pricing-label-normalization.md) — normalize punctuation and dash variants in both WhatsApp labels and configured pricing keys before matching.
-- [Live Chat unread state](live-chat-unread-state.md) — derive badges from inbound messages after lastReadAt; new inbound activity reopens resolved conversations.
+- [Live Chat unread and lifecycle state](live-chat-unread-state.md) — unread derives from inbound activity; Sent/Open/Closed derive from template/reply timestamps and expire after 24 hours.
 - [Meta webhook secret name](meta-webhook-secret-name.md) — webhook verification uses WEBHOOK_VERIFY_TOKEN with a WHATSAPP_VERIFY_TOKEN compatibility fallback.
 - [Chatbot condition edge handles](chatbot-condition-edges.md) — condition branch edges must store the matching true/false sourceHandle or runtime execution stops.
 - [Chatbot flow disable semantics](chatbot-flow-disable.md) — unpublish clears tenant-scoped sessions and must stop active execution, not just new triggers.

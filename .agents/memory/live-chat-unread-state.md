@@ -1,10 +1,12 @@
 ---
 name: Live Chat unread state
-description: Conversation badges are derived from inbound messages after each contact's lastReadAt timestamp.
+description: Live Chat unread badges and Sent/Open/Closed lifecycle rules.
 ---
 
 Live Chat treats a conversation as unread when it has inbound messages newer than the contact's `lastReadAt`; opening the conversation advances that timestamp, while new inbound activity reopens resolved conversations.
 
-**Why:** Counting all inbound messages permanently inflated badges and made Open/Resolved filters meaningless.
+The Live Chat tabs mean: **Sent** is a successful template send awaiting a reply for less than 24 hours; **Open** is a customer reply with less than 24 hours elapsed; **Closed** is reached when 24 hours have elapsed since the latest relevant template send or inbound reply. An unanswered template must expire from Sent into Closed.
 
-**How to apply:** Keep status transitions and read-marker updates scoped to the authenticated user's contact, and invalidate the conversation list after either mutation.
+**Why:** Counting all inbound messages permanently inflated unread badges, and an unbounded unanswered-template state kept old chats in Sent indefinitely. These tab meanings were explicitly defined by the user.
+
+**How to apply:** Derive tab state from each tenant's latest inbound and successful template timestamps, using outbound `sentAt` when available. Refresh the list periodically so a conversation changes tabs when its 24-hour period expires; keep unread markers tied to the authenticated user's contact and `lastReadAt`.

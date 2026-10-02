@@ -12,6 +12,7 @@ import { sendTextMessage, uploadMedia, sendMediaMessage, mediaTypeFromMime } fro
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 import { withCreditCharge } from "../lib/creditDeduction";
+import { deriveConversationTabState } from "../lib/conversationTabState";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -132,18 +133,12 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
       const windowOpen = lastInbound
         ? now - new Date(lastInbound).getTime() < twentyFourHours
         : false;
-      const waitingForTemplateReply = Boolean(
-        lastTemplateSent &&
-          (!lastInbound ||
-            new Date(lastTemplateSent).getTime() > new Date(lastInbound).getTime()),
+      const tabState = deriveConversationTabState(
+        lastInbound ? new Date(lastInbound).getTime() : null,
+        lastTemplateSent ? new Date(lastTemplateSent).getTime() : null,
+        now,
+        c.contact.chatState === "CLOSED",
       );
-      const tabState = lastInbound && windowOpen
-        ? "OPEN"
-        : waitingForTemplateReply
-          ? "SENT"
-          : lastInbound || c.contact.chatState === "CLOSED"
-            ? "CLOSED"
-            : "OTHER";
 
       return {
         id: String(c._id),
@@ -156,7 +151,16 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
         lastMessage: c.lastMessage ?? "",
         lastMessageAt: c.lastMessageAt,
         unread: unreadByContact.get(String(c._id)) ?? 0,
-        status: c.contact.chatState === "CLOSED" ? "Resolved" : "Open",
+        status:
+          tabState === "CLOSED"
+            ? "Closed"
+            : tabState === "SENT"
+              ? "Sent"
+              : tabState === "OPEN"
+                ? "Open"
+                : c.contact.chatState === "CLOSED"
+                  ? "Closed"
+                  : "Open",
         windowOpen,
         tabState,
       };
