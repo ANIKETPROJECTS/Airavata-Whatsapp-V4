@@ -1518,7 +1518,7 @@ export default function LiveChat() {
                 className={`mx-2 mb-1 w-[calc(100%-1rem)] rounded-lg border border-transparent border-l-2 bg-white p-5 text-left transition-colors duration-150 flex gap-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25d366] ${
                   activeConvId === conv.id
                     ? 'border-l-[#25d366] bg-[#f4fbf6]'
-                    : 'border-transparent'
+                    : 'border-transparent hover:bg-gray-50'
                 }`}
               >
                 <div className="relative shrink-0">
