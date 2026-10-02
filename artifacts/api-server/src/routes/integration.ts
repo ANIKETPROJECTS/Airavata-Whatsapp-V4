@@ -193,10 +193,23 @@ function sendCatalogError(
     status?: number;
     meta?: Record<string, unknown>;
   };
-  const status = error instanceof CatalogRouteError ? error.status : 502;
+  const metaMessage =
+    typeof typedError.meta?.message === "string"
+      ? typedError.meta.message
+      : "";
+  const requiresBusinessManagement =
+    /requires business_management permission/i.test(metaMessage) ||
+    /requires business_management permission/i.test(typedError.message ?? "");
+  const status = error instanceof CatalogRouteError
+    ? error.status
+    : requiresBusinessManagement
+      ? 403
+      : 502;
   logger.error({ err: error, userId }, operation);
   res.status(status).json({
-    error: typedError.message || "Catalog operation failed",
+    error: requiresBusinessManagement
+      ? "Meta requires business_management. Add business_management, catalog_management, and dependencies to Airavata’s Facebook Login for Business configuration. Get Advanced Access for clients, then have this client reconnect WhatsApp. If it still fails, verify their business/Page admin access."
+      : typedError.message || "Catalog operation failed",
     ...(typedError.meta ? { meta: typedError.meta } : {}),
   });
 }

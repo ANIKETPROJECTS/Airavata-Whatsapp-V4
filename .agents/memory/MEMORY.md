@@ -41,3 +41,4 @@
 - [Chatbot activity history](chatbot-activity-history.md) — keep runs metadata-only, link to Live Chat, and preserve the chatbot module’s flat list and typography.
 - [OpenAPI search request codegen](openapi-search-request-codegen.md) — use named JSON request schemas when generated query-parameter types collide.
 - [Customer integration direction](customer-integration-direction.md) — favor a tenant-scoped API and signed webhooks for any HTTP-capable system; never imply a native connector without OAuth support.
+- [Meta catalog permissions](meta-catalog-permissions.md) — catalog operations need business/catalog permissions in the Login for Business config and client reauthorization after approval.
