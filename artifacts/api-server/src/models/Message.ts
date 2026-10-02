@@ -14,6 +14,7 @@ const messageSchema = new Schema(
     mediaFilename: { type: String },
     templateId: { type: Schema.Types.ObjectId, ref: "Template" },
     whatsappMessageId: { type: String, index: true },
+    externalMessageId: { type: String },
     status: {
       type: String,
       enum: ["QUEUED", "SENT", "DELIVERED", "READ", "FAILED", "RECEIVED"],
@@ -32,6 +33,10 @@ const messageSchema = new Schema(
   },
   { timestamps: true },
 );
+
+// Only externally ingested messages set this field. Its sparse unique index
+// makes concurrent AutoGamma retries atomic without changing legacy messages.
+messageSchema.index({ externalMessageId: 1 }, { unique: true, sparse: true });
 
 export type Message = InferSchemaType<typeof messageSchema>;
 

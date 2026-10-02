@@ -36,3 +36,4 @@
 - [Tenant migration reconciliation](tenant-migration-unique-docs.md) — one-per-tenant documents must reconcile by logical user ID, not only MongoDB document ID.
 - [Artifact webhook routing](artifact-webhook-routing.md) — route callbacks to the API and resubscribe restored WABAs; stored credentials do not restore Meta subscriptions.
 - [Contact CSV exports](contact-csv-export.md) — include a UTF-8 BOM and standard CSV escaping; preserve phone strings rather than wrapping them in spreadsheet formulas.
+- [AutoGamma sender boundary](autogamma-sender-boundary.md) — Airavata records accepted AutoGamma sends only; it never becomes a second sender or triggers send side effects.

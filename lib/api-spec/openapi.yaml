@@ -48,12 +48,54 @@ paths:
           description: The credential cannot be used for tenant repair
         "500":
           description: Subscription repair failed
+  /integrations/autogamma/outbound-messages:
+    post:
+      operationId: ingestAutoGammaOutboundMessage
+      tags: [integration]
+      summary: Record an externally sent WhatsApp message in Live Chat
+      description: >
+        Called by AutoGamma after Meta accepts an outbound message. The sender
+        must provide the rendered body and Meta WhatsApp message ID. This
+        endpoint does not send messages, trigger campaigns, or retry WhatsApp messages.
+      security:
+        - airavataApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutoGammaOutboundMessageInput"
+      responses:
+        "201":
+          description: Outbound message recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoGammaOutboundMessageResult"
+        "200":
+          description: This Meta message ID was already recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoGammaOutboundMessageResult"
+        "400":
+          description: Invalid request body
+        "401":
+          description: Invalid API key or unrecognized WhatsApp phone-number mapping
+        "409":
+          description: The tenant's stored WhatsApp credential does not match this phone number
+        "500":
+          description: Message ingestion failed
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    airavataApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: Airavata API key
   schemas:
     HealthStatus:
       type: object
@@ -72,4 +114,75 @@ components:
       required:
         - ok
         - subscribed
+    AutoGammaOutboundMessageInput:
+      type: object
+      required:
+        - phoneNumberId
+        - whatsappMessageId
+        - recipientPhone
+        - body
+      properties:
+        phoneNumberId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Meta phone_number_id that sent the message
+        whatsappMessageId:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: The wamid returned by Meta for this send
+        recipientPhone:
+          type: string
+          minLength: 7
+          maxLength: 32
+          description: Recipient phone number in international format
+        body:
+          type: string
+          maxLength: 10000
+          description: Fully rendered message text; an empty string is valid for media-only templates
+        sentAt:
+          type: string
+          format: date-time
+          description: When Meta accepted the send; defaults to receipt time when omitted
+        media:
+          $ref: "#/components/schemas/AutoGammaOutboundMediaInput"
+    AutoGammaOutboundMediaInput:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [image, document, video, audio]
+        url:
+          type: string
+          pattern: "^https://"
+          description: Optional HTTPS URL that Live Chat can display
+        id:
+          type: string
+          maxLength: 255
+          description: Optional Meta media ID
+        filename:
+          type: string
+          maxLength: 255
+    AutoGammaOutboundMessageResult:
+      type: object
+      required:
+        - ok
+        - created
+        - contactId
+        - messageId
+        - whatsappMessageId
+      properties:
+        ok:
+          type: boolean
+        created:
+          type: boolean
+        contactId:
+          type: string
+        messageId:
+          type: string
+        whatsappMessageId:
+          type: string
 

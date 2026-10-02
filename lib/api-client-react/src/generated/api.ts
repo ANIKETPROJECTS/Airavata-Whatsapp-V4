@@ -20,12 +20,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AutoGammaOutboundMessageInput,
+  AutoGammaOutboundMessageResult,
   FacebookWebhookSubscriptionStatus,
   HealthStatus
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -198,5 +200,77 @@ export const useRepairFacebookWebhookSubscription = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRepairFacebookWebhookSubscriptionMutationOptions(options));
+    }
+
+export const getIngestAutoGammaOutboundMessageUrl = () => {
+
+
+
+
+  return `/api/integrations/autogamma/outbound-messages`
+}
+
+/**
+ * Called by AutoGamma after Meta accepts an outbound message. The sender must provide the rendered body and Meta WhatsApp message ID. This endpoint does not send messages, trigger campaigns, or retry WhatsApp messages.
+ * @summary Record an externally sent WhatsApp message in Live Chat
+ */
+export const ingestAutoGammaOutboundMessage = async (autoGammaOutboundMessageInput: AutoGammaOutboundMessageInput, options?: RequestInit): Promise<AutoGammaOutboundMessageResult> => {
+
+  return customFetch<AutoGammaOutboundMessageResult>(getIngestAutoGammaOutboundMessageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(autoGammaOutboundMessageInput)
+  }
+);}
+
+
+
+
+
+export const getIngestAutoGammaOutboundMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAutoGammaOutboundMessage>>, TError,{data: BodyType<AutoGammaOutboundMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestAutoGammaOutboundMessage>>, TError,{data: BodyType<AutoGammaOutboundMessageInput>}, TContext> => {
+
+const mutationKey = ['ingestAutoGammaOutboundMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestAutoGammaOutboundMessage>>, {data: BodyType<AutoGammaOutboundMessageInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestAutoGammaOutboundMessage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestAutoGammaOutboundMessageMutationResult = NonNullable<Awaited<ReturnType<typeof ingestAutoGammaOutboundMessage>>>
+    export type IngestAutoGammaOutboundMessageMutationBody = BodyType<AutoGammaOutboundMessageInput>
+    export type IngestAutoGammaOutboundMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Record an externally sent WhatsApp message in Live Chat
+ */
+export const useIngestAutoGammaOutboundMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestAutoGammaOutboundMessage>>, TError,{data: BodyType<AutoGammaOutboundMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestAutoGammaOutboundMessage>>,
+        TError,
+        {data: BodyType<AutoGammaOutboundMessageInput>},
+        TContext
+      > => {
+      return useMutation(getIngestAutoGammaOutboundMessageMutationOptions(options));
     }
 

@@ -7,6 +7,7 @@
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
+    "test:ingestion": "node ./scripts/test-autogamma-ingestion.mjs",
     "report:contact-duplicates": "node ./scripts/report-contact-duplicates.mjs",
     "merge:duplicate-contacts": "node ./scripts/merge-duplicate-contacts.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

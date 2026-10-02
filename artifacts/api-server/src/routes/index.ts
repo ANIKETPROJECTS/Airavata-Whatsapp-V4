@@ -28,6 +28,7 @@ import masterAdminRouter from "./master-admin";
 import notificationsRouter from "./notifications";
 import clientWebhooksRouter from "./client-webhooks";
 import metaInsightsRouter from "./meta-insights";
+import autoGammaMessagesRouter from "./autogamma-messages";
 
 const router: IRouter = Router();
 
@@ -35,6 +36,9 @@ const router: IRouter = Router();
 router.use(webhookRouter);
 router.use(metaComplianceRouter);
 
+// This integration authenticates with a tenant API key, not the user session.
+// Mount it before any router with router-wide session authentication.
+router.use(autoGammaMessagesRouter);
 router.use(healthRouter);
 router.use(authRouter);
 router.use(masterAdminRouter);

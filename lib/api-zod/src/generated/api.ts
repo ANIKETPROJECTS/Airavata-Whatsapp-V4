@@ -26,3 +26,46 @@ export const RepairFacebookWebhookSubscriptionResponse = zod.object({
 })
 
 
+/**
+ * Called by AutoGamma after Meta accepts an outbound message. The sender must provide the rendered body and Meta WhatsApp message ID. This endpoint does not send messages, trigger campaigns, or retry WhatsApp messages.
+ * @summary Record an externally sent WhatsApp message in Live Chat
+ */
+export const ingestAutoGammaOutboundMessageBodyPhoneNumberIdMax = 64;
+
+export const ingestAutoGammaOutboundMessageBodyWhatsappMessageIdMax = 255;
+
+export const ingestAutoGammaOutboundMessageBodyRecipientPhoneMin = 7;
+export const ingestAutoGammaOutboundMessageBodyRecipientPhoneMax = 32;
+
+export const ingestAutoGammaOutboundMessageBodyBodyMax = 10000;
+
+export const ingestAutoGammaOutboundMessageBodyMediaUrlRegExp = new RegExp('^https:/');
+export const ingestAutoGammaOutboundMessageBodyMediaIdMax = 255;
+
+export const ingestAutoGammaOutboundMessageBodyMediaFilenameMax = 255;
+
+
+
+export const IngestAutoGammaOutboundMessageBody = zod.object({
+  "phoneNumberId": zod.string().min(1).max(ingestAutoGammaOutboundMessageBodyPhoneNumberIdMax).describe('Meta phone_number_id that sent the message'),
+  "whatsappMessageId": zod.string().min(1).max(ingestAutoGammaOutboundMessageBodyWhatsappMessageIdMax).describe('The wamid returned by Meta for this send'),
+  "recipientPhone": zod.string().min(ingestAutoGammaOutboundMessageBodyRecipientPhoneMin).max(ingestAutoGammaOutboundMessageBodyRecipientPhoneMax).describe('Recipient phone number in international format'),
+  "body": zod.string().max(ingestAutoGammaOutboundMessageBodyBodyMax).describe('Fully rendered message text; an empty string is valid for media-only templates'),
+  "sentAt": zod.coerce.date().optional().describe('When Meta accepted the send; defaults to receipt time when omitted'),
+  "media": zod.object({
+  "type": zod.enum(['image', 'document', 'video', 'audio']),
+  "url": zod.string().regex(ingestAutoGammaOutboundMessageBodyMediaUrlRegExp).optional().describe('Optional HTTPS URL that Live Chat can display'),
+  "id": zod.string().max(ingestAutoGammaOutboundMessageBodyMediaIdMax).optional().describe('Optional Meta media ID'),
+  "filename": zod.string().max(ingestAutoGammaOutboundMessageBodyMediaFilenameMax).optional()
+}).optional()
+})
+
+export const IngestAutoGammaOutboundMessageResponse = zod.object({
+  "ok": zod.boolean(),
+  "created": zod.boolean(),
+  "contactId": zod.string(),
+  "messageId": zod.string(),
+  "whatsappMessageId": zod.string()
+})
+
+

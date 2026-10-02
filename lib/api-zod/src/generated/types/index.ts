@@ -6,5 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './autoGammaOutboundMediaInput';
+export * from './autoGammaOutboundMediaInputType';
+export * from './autoGammaOutboundMessageInput';
+export * from './autoGammaOutboundMessageResult';
 export * from './facebookWebhookSubscriptionStatus';
 export * from './healthStatus';

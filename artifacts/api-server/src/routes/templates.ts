@@ -24,9 +24,8 @@ import {
   type TemplateParameterValues,
 } from "../lib/templateComponents";
 import { withCreditCharge } from "../lib/creditDeduction";
-import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
-import { emitContactCreatedEvent } from "../lib/clientWebhooks";
-import { normalizeContactPhone, sameContactPhone } from "../lib/contactPhone";
+import { normalizeContactPhone } from "../lib/contactPhone";
+import { findOrCreateContactForPhone } from "../lib/liveChatPersistence";
 
 const router = Router();
 const headerMediaUpload = multer({
@@ -419,18 +418,7 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
 
     // ── Persist to Live Chat ───────────────────────────────────────────────────
     // Find or create the contact for this phone number
-    let contact = (await ContactModel.find({ userId })).find((candidate) =>
-      sameContactPhone(candidate.phone, phone),
-    );
-    if (!contact) {
-      contact = await ContactModel.create({
-        userId,
-        phone,
-        name: phone, // placeholder name; user can rename in Contacts
-      });
-      await enrollNewContactsInTriggerCampaigns(userId, [contact._id]);
-      void emitContactCreatedEvent(userId, contact._id);
-    }
+    const { contactId } = await findOrCreateContactForPhone(userId, phone);
 
     // Build the rendered body text for live chat display — match what WhatsApp shows.
     // Auth templates store a placeholder body; reconstruct the actual Meta-rendered text.
@@ -450,7 +438,7 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
 
     await MessageModel.create({
       userId,
-      contactId: contact._id,
+      contactId: new mongoose.Types.ObjectId(contactId),
       templateId: template._id,
       direction: "OUTBOUND",
       body: bodyText,
@@ -460,7 +448,10 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
     });
 
     // Keep lastContactedAt fresh
-    await ContactModel.updateOne({ _id: contact._id }, { lastContactedAt: new Date() });
+    await ContactModel.updateOne(
+      { _id: new mongoose.Types.ObjectId(contactId), userId },
+      { lastContactedAt: new Date() },
+    );
 
     res.json({ ok: true, messageId: whatsappMessageId });
   } catch (err: unknown) {

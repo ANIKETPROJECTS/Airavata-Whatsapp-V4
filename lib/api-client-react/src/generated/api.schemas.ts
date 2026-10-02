@@ -14,3 +14,66 @@ export interface FacebookWebhookSubscriptionStatus {
   subscribed: boolean;
 }
 
+export type AutoGammaOutboundMediaInputType = typeof AutoGammaOutboundMediaInputType[keyof typeof AutoGammaOutboundMediaInputType];
+
+
+export const AutoGammaOutboundMediaInputType = {
+  image: 'image',
+  document: 'document',
+  video: 'video',
+  audio: 'audio',
+} as const;
+
+export interface AutoGammaOutboundMediaInput {
+  type: AutoGammaOutboundMediaInputType;
+  /**
+     * Optional HTTPS URL that Live Chat can display
+     * @pattern ^https://
+     */
+  url?: string;
+  /**
+     * Optional Meta media ID
+     * @maxLength 255
+     */
+  id?: string;
+  /** @maxLength 255 */
+  filename?: string;
+}
+
+export interface AutoGammaOutboundMessageInput {
+  /**
+     * Meta phone_number_id that sent the message
+     * @minLength 1
+     * @maxLength 64
+     */
+  phoneNumberId: string;
+  /**
+     * The wamid returned by Meta for this send
+     * @minLength 1
+     * @maxLength 255
+     */
+  whatsappMessageId: string;
+  /**
+     * Recipient phone number in international format
+     * @minLength 7
+     * @maxLength 32
+     */
+  recipientPhone: string;
+  /**
+     * Fully rendered message text; an empty string is valid for media-only templates
+     * @maxLength 10000
+     */
+  body: string;
+  /** When Meta accepted the send; defaults to receipt time when omitted */
+  sentAt?: string;
+  media?: AutoGammaOutboundMediaInput;
+}
+
+export interface AutoGammaOutboundMessageResult {
+  ok: boolean;
+  created: boolean;
+  contactId: string;
+  messageId: string;
+  whatsappMessageId: string;
+}
+

@@ -1,0 +1,74 @@
+# AutoGamma outbound message ingestion
+
+WhatsApp Solution exposes a server-to-server endpoint for AutoGamma to record
+messages after AutoGamma's existing Meta Graph API send has succeeded. This
+endpoint only writes the accepted send into Live Chat; it does not call Meta,
+send messages, trigger campaigns, retry messages, or import historical messages.
+
+## Authentication
+
+Create a dedicated Airavata API key in **Manage → API key** for the tenant whose
+WhatsApp number sent the message. The full `aira_...` key is displayed once.
+Store it in AutoGamma's secret manager and send it as a bearer token over HTTPS.
+Do not put it in source code, request bodies, URLs, or logs. Revoke it from
+Manage → API key if it is exposed or no longer needed.
+
+The endpoint resolves the tenant from `phoneNumberId`, verifies the API key
+against that tenant's active key records, and checks that the tenant's stored
+WhatsApp credential has the same phone-number ID. Do not send a tenant ID or
+database name; neither is accepted.
+
+## Request
+
+`POST /api/integrations/autogamma/outbound-messages`
+
+Headers:
+
+```text
+Authorization: Bearer <dedicated Airavata API key>
+Content-Type: application/json
+```
+
+Example body:
+
+```json
+{
+  "phoneNumberId": "123456789012345",
+  "whatsappMessageId": "wamid.REPLACE_WITH_META_MESSAGE_ID",
+  "recipientPhone": "+919876543210",
+  "body": "Your PPF inspection is complete.",
+  "sentAt": "2026-09-30T12:00:00.000Z",
+  "media": {
+    "type": "document",
+    "url": "https://cdn.example.com/inspection.pdf",
+    "filename": "inspection.pdf"
+  }
+}
+```
+
+Send `phoneNumberId` from the sender's connected Meta number, the `wamid` from
+Meta's successful send response, and the recipient's phone number. `body` must
+contain the fully rendered text that was sent; use an empty string for a
+media-only template. `sentAt` is optional and defaults to when this endpoint
+receives the notification. The optional `media` object maps to Live Chat's
+existing media fields; any supplied URL must use HTTPS.
+
+## Responses and retries
+
+- `201`: a new outbound Live Chat message was recorded.
+- `200`: that Meta message ID was already recorded; no duplicate was created.
+- `400`: invalid message payload.
+- `401`: API key is invalid/revoked or the phone-number ID is not registered.
+- `409`: the tenant's connected WhatsApp credential does not match the supplied
+  phone-number ID.
+- `500`: the message could not be recorded; AutoGamma may retry the same
+  payload and Meta message ID.
+
+The response contains `created`, the Live Chat `contactId` and `messageId`, and
+the `whatsappMessageId`. Retries are deduplicated by Meta's message ID. Meta's
+status webhook uses that same ID to update the saved message's delivery state.
+For status updates to arrive, Meta must have this app subscribed to the WABA
+associated with the supplied phone-number ID.
+
+AutoGamma should call this endpoint immediately after Meta accepts the send.
+This endpoint is not for backfilling old sends.
