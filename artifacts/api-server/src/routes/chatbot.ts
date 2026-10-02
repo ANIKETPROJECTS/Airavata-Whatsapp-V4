@@ -369,12 +369,19 @@ router.post("/chatbot/flows/:id/executions/query", authenticate, async (req: Aut
       : {};
     const limit = body.limit === undefined ? 25 : Number(body.limit);
     const validStatuses = new Set(["ACTIVE", "COMPLETED", "INTERRUPTED", "STOPPED", "FAILED"]);
+    const validTriggerTypes = new Set(["KEYWORD", "DEFAULT", "TEMPLATE_LINK", "LEGACY_SESSION"]);
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
       res.status(400).json({ error: "limit must be an integer from 1 to 50." });
       return;
     }
     if (body.status !== undefined && (typeof body.status !== "string" || !validStatuses.has(body.status))) {
       res.status(400).json({ error: "Invalid execution status filter." });
+      return;
+    }
+    if (body.triggerType !== undefined && (
+      typeof body.triggerType !== "string" || !validTriggerTypes.has(body.triggerType)
+    )) {
+      res.status(400).json({ error: "Invalid execution trigger filter." });
       return;
     }
     if (body.search !== undefined && (typeof body.search !== "string" || body.search.length > 100)) {
@@ -436,6 +443,7 @@ router.post("/chatbot/flows/:id/executions/query", authenticate, async (req: Aut
 
     const filter: Record<string, unknown> = { userId, flowId };
     if (body.status) filter.status = body.status;
+    if (body.triggerType) filter.triggerType = body.triggerType;
     const search = typeof body.search === "string" ? body.search.trim() : "";
     if (search) {
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

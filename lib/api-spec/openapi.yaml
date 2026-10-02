@@ -309,6 +309,10 @@ components:
         status:
           type: string
           enum: [ACTIVE, COMPLETED, INTERRUPTED, STOPPED, FAILED]
+        triggerType:
+          type: string
+          enum: [KEYWORD, DEFAULT, TEMPLATE_LINK, LEGACY_SESSION]
+          description: Filter by how the chatbot run was triggered.
         search:
           type: string
           maxLength: 100

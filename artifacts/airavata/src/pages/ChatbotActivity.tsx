@@ -18,6 +18,7 @@ import {
 import type { ChatbotFlowSummary } from '../components/chatbot/ChatbotFlowLibrary';
 
 type StatusFilter = 'ALL' | ChatbotExecutionStatus;
+type TriggerFilter = 'ALL' | 'KEYWORD' | 'DEFAULT' | 'TEMPLATE_LINK' | 'LEGACY_SESSION';
 
 const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'ALL', label: 'All activity' },
@@ -26,6 +27,14 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'INTERRUPTED', label: 'Interrupted' },
   { value: 'STOPPED', label: 'Stopped' },
   { value: 'FAILED', label: 'Failed' },
+];
+
+const TRIGGER_FILTERS: Array<{ value: TriggerFilter; label: string }> = [
+  { value: 'ALL', label: 'All triggers' },
+  { value: 'KEYWORD', label: 'Keyword' },
+  { value: 'DEFAULT', label: 'Default' },
+  { value: 'TEMPLATE_LINK', label: 'Template link' },
+  { value: 'LEGACY_SESSION', label: 'Legacy session' },
 ];
 
 const previewMinutesAgo = (minutes: number) =>
@@ -231,6 +240,7 @@ export default function ChatbotActivity({
   onBack: () => void;
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [triggerTypeFilter, setTriggerTypeFilter] = useState<TriggerFilter>('ALL');
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
   const [samplePreviewEnabled, setSamplePreviewEnabled] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -243,10 +253,11 @@ export default function ChatbotActivity({
     limit: 25,
     ...(cursor ? { cursor } : {}),
     ...(statusFilter === 'ALL' ? {} : { status: statusFilter }),
+    ...(triggerTypeFilter === 'ALL' ? {} : { triggerType: triggerTypeFilter }),
     ...(searchTerm ? { search: searchTerm } : {}),
     ...(startedAtFromDate ? { startedAtFrom: localDayBoundary(startedAtFromDate) } : {}),
     ...(startedAtToDate ? { startedAtBefore: localDayBoundary(startedAtToDate, 1) } : {}),
-  }), [cursor, searchTerm, startedAtFromDate, startedAtToDate, statusFilter]);
+  }), [cursor, searchTerm, startedAtFromDate, startedAtToDate, statusFilter, triggerTypeFilter]);
   const executionsQuery = useSearchChatbotFlowExecutions();
   const { mutate, reset } = executionsQuery;
 
@@ -289,18 +300,21 @@ export default function ChatbotActivity({
           contactPhone.toLocaleLowerCase().includes(normalizedSearch) ||
           (normalizedPhoneSearch && digitsOnly(contactPhone).includes(normalizedPhoneSearch));
         const matchesStatus = statusFilter === 'ALL' || run.status === statusFilter;
+        const matchesTrigger = triggerTypeFilter === 'ALL' || run.triggerType === triggerTypeFilter;
         const startedAt = new Date(run.startedAt).getTime();
         const matchesFrom = previewFrom === null || startedAt >= previewFrom;
         const matchesTo = previewBeforeTime === null || startedAt < previewBeforeTime;
-        return Boolean(matchesSearch && matchesStatus && matchesFrom && matchesTo);
+        return Boolean(matchesSearch && matchesStatus && matchesTrigger && matchesFrom && matchesTo);
       })
     : allExecutions;
   const hasActiveListFilters =
     statusFilter !== 'ALL' ||
+    triggerTypeFilter !== 'ALL' ||
     Boolean(searchTerm || searchInput.trim() || startedAtFromDate || startedAtToDate);
   const hasLegacyOnlyHistory =
     !isPreview &&
     statusFilter === 'ALL' &&
+    triggerTypeFilter === 'ALL' &&
     cursors.length === 1 &&
     !searchTerm &&
     !startedAtFromDate &&
@@ -314,6 +328,12 @@ export default function ChatbotActivity({
     setCursors([undefined]);
   };
 
+  const changeTriggerFilter = (value: TriggerFilter) => {
+    reset();
+    setTriggerTypeFilter(value);
+    setCursors([undefined]);
+  };
+
   const changeDateFilter = (which: 'from' | 'to', value: string) => {
     reset();
     setCursors([undefined]);
@@ -324,6 +344,7 @@ export default function ChatbotActivity({
   const clearFilters = () => {
     reset();
     setStatusFilter('ALL');
+    setTriggerTypeFilter('ALL');
     setCursors([undefined]);
     setSearchInput('');
     setSearchTerm('');
@@ -335,6 +356,7 @@ export default function ChatbotActivity({
   const toggleSamplePreview = () => {
     reset();
     setStatusFilter('ALL');
+    setTriggerTypeFilter('ALL');
     setCursors([undefined]);
     setSamplePreviewEnabled(enabled => !enabled);
   };
@@ -393,6 +415,20 @@ export default function ChatbotActivity({
                   className="h-10 min-w-[180px] border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
                 >
                   {STATUS_FILTERS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex shrink-0 flex-col gap-1 text-xs font-medium text-gray-600">
+                Triggered by
+                <select
+                  value={triggerTypeFilter}
+                  onChange={event => changeTriggerFilter(event.target.value as TriggerFilter)}
+                  aria-label="Filter chatbot activity by trigger source"
+                  data-testid="select-chatbot-activity-trigger"
+                  className="h-10 min-w-[180px] border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                >
+                  {TRIGGER_FILTERS.map(option => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
@@ -510,7 +546,7 @@ export default function ChatbotActivity({
                         {hasLegacyOnlyHistory
                           ? 'This chatbot has earlier lifetime totals, but individual runs were not recorded. New runs will appear here.'
                           : hasActiveListFilters
-                            ? 'Try changing or clearing the search, date, or status filters.'
+                            ? 'Try changing or clearing the search, date, status, or trigger filters.'
                             : 'New runs will appear here when this chatbot is triggered.'}
                       </p>
                     </td>

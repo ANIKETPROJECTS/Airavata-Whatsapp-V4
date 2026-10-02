@@ -141,6 +141,19 @@ export const ChatbotExecutionQueryStatus = {
   FAILED: 'FAILED',
 } as const;
 
+/**
+ * Filter by how the chatbot run was triggered.
+ */
+export type ChatbotExecutionQueryTriggerType = typeof ChatbotExecutionQueryTriggerType[keyof typeof ChatbotExecutionQueryTriggerType];
+
+
+export const ChatbotExecutionQueryTriggerType = {
+  KEYWORD: 'KEYWORD',
+  DEFAULT: 'DEFAULT',
+  TEMPLATE_LINK: 'TEMPLATE_LINK',
+  LEGACY_SESSION: 'LEGACY_SESSION',
+} as const;
+
 export interface ChatbotExecutionQuery {
   /**
      * @minimum 1
@@ -150,6 +163,8 @@ export interface ChatbotExecutionQuery {
   /** @maxLength 256 */
   cursor?: string;
   status?: ChatbotExecutionQueryStatus;
+  /** Filter by how the chatbot run was triggered. */
+  triggerType?: ChatbotExecutionQueryTriggerType;
   /**
      * Case-insensitive contact name or phone search.
      * @maxLength 100

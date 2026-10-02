@@ -14,6 +14,7 @@ export * from './chatbotExecution';
 export * from './chatbotExecutionPage';
 export * from './chatbotExecutionQuery';
 export * from './chatbotExecutionQueryStatus';
+export * from './chatbotExecutionQueryTriggerType';
 export * from './chatbotExecutionStats';
 export * from './chatbotExecutionStatus';
 export * from './chatbotExecutionTriggerType';

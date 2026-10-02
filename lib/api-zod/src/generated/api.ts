@@ -92,6 +92,7 @@ export const SearchChatbotFlowExecutionsBody = zod.object({
   "limit": zod.number().min(1).max(searchChatbotFlowExecutionsBodyLimitMax).default(searchChatbotFlowExecutionsBodyLimitDefault),
   "cursor": zod.string().max(searchChatbotFlowExecutionsBodyCursorMax).optional(),
   "status": zod.enum(['ACTIVE', 'COMPLETED', 'INTERRUPTED', 'STOPPED', 'FAILED']).optional(),
+  "triggerType": zod.enum(['KEYWORD', 'DEFAULT', 'TEMPLATE_LINK', 'LEGACY_SESSION']).optional().describe('Filter by how the chatbot run was triggered.'),
   "search": zod.string().max(searchChatbotFlowExecutionsBodySearchMax).optional().describe('Case-insensitive contact name or phone search.'),
   "startedAtFrom": zod.coerce.date().optional().describe('Inclusive start timestamp for filtering by run start time.'),
   "startedAtBefore": zod.coerce.date().optional().describe('Exclusive end timestamp for filtering by run start time.')

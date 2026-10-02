@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ChatbotExecutionQueryStatus } from './chatbotExecutionQueryStatus';
+import type { ChatbotExecutionQueryTriggerType } from './chatbotExecutionQueryTriggerType';
 
 export interface ChatbotExecutionQuery {
   /**
@@ -16,6 +17,8 @@ export interface ChatbotExecutionQuery {
   /** @maxLength 256 */
   cursor?: string;
   status?: ChatbotExecutionQueryStatus;
+  /** Filter by how the chatbot run was triggered. */
+  triggerType?: ChatbotExecutionQueryTriggerType;
   /**
      * Case-insensitive contact name or phone search.
      * @maxLength 100
