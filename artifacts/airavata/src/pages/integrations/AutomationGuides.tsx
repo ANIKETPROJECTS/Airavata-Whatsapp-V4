@@ -56,7 +56,7 @@ const tools: AutomationTool[] = [
   },
 ];
 
-const sendEndpoint = 'https://YOUR-AIRAVATA-DOMAIN/api/integrations/v1/whatsapp/messages/text';
+const sendEndpoint = `${window.location.origin}/api/integrations/v1/whatsapp/messages/text`;
 
 export default function AutomationGuides() {
   const [expandedTool, setExpandedTool] = useState<string | null>(null);

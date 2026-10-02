@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Check, Copy, FileCode2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-const textMessageExample = `curl -X POST "https://YOUR-AIRAVATA-DOMAIN/api/integrations/v1/whatsapp/messages/text" \\
+const integrationApiBase = `${window.location.origin}/api/integrations/v1/whatsapp`;
+
+const textMessageExample = `curl -X POST "${integrationApiBase}/messages/text" \\
   -H "Authorization: Bearer YOUR_AIRAVATA_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -12,7 +14,7 @@ const textMessageExample = `curl -X POST "https://YOUR-AIRAVATA-DOMAIN/api/integ
     "clientMessageId": "order-1042-ready"
   }'`;
 
-const templateMessageExample = `curl -X POST "https://YOUR-AIRAVATA-DOMAIN/api/integrations/v1/whatsapp/messages/template" \\
+const templateMessageExample = `curl -X POST "${integrationApiBase}/messages/template" \\
   -H "Authorization: Bearer YOUR_AIRAVATA_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -27,7 +29,7 @@ const templateMessageExample = `curl -X POST "https://YOUR-AIRAVATA-DOMAIN/api/i
     }]
   }'`;
 
-const listTemplatesExample = `curl -G "https://YOUR-AIRAVATA-DOMAIN/api/integrations/v1/whatsapp/templates" \\
+const listTemplatesExample = `curl -G "${integrationApiBase}/templates" \\
   -H "Authorization: Bearer YOUR_AIRAVATA_API_KEY" \\
   --data-urlencode "phoneNumberId=YOUR_PHONE_NUMBER_ID"`;
 
