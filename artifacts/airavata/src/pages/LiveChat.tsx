@@ -1336,14 +1336,14 @@ export default function LiveChat() {
     }
     if (status === 'DELIVERED' || status === 'READ') {
       return (
-        <span title={title} aria-label={title} role="img" className="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-visible leading-none">
-          <CheckCheck className={`h-5 w-5 shrink-0 ${status === 'READ' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={2.6} />
+        <span title={title} aria-label={title} role="img" className="inline-flex h-4 w-4 shrink-0 items-center justify-center overflow-visible leading-none">
+          <CheckCheck className={`h-4 w-4 shrink-0 ${status === 'READ' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.8} />
         </span>
       );
     }
     return (
-      <span title={title} aria-label={title} role="img" className="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-visible leading-none">
-        <Check className="h-5 w-5 shrink-0 text-gray-500" strokeWidth={2.6} />
+      <span title={title} aria-label={title} role="img" className="inline-flex h-4 w-4 shrink-0 items-center justify-center overflow-visible leading-none">
+        <Check className="h-4 w-4 shrink-0 text-gray-500" strokeWidth={1.8} />
       </span>
     );
   };
