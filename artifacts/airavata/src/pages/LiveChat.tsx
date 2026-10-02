@@ -17,7 +17,7 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
-import calendarFilterIcon from '@assets/calendar_(1)_1790919585679.png';
+import calendarFilterIcon from '@assets/calendar_(2)_1790919821876.png';
 import happinessIcon from '@assets/happiness_1790885485484.png';
 import chatIcon from '@assets/chat_(1)_1790885069320.png';
 import letterIcon from '@assets/letter_1790885182957.png';
