@@ -365,9 +365,9 @@ router.post("/chatbot/flows/:id/executions/query", authenticate, async (req: Aut
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const flowId = new mongoose.Types.ObjectId(flowIdParam);
     const body = req.body && typeof req.body === "object" && !Array.isArray(req.body)
-      ? req.body as { limit?: unknown; cursor?: unknown; status?: unknown }
+      ? req.body as Record<string, unknown>
       : {};
-    const limit = body.limit === undefined ? 20 : Number(body.limit);
+    const limit = body.limit === undefined ? 25 : Number(body.limit);
     const validStatuses = new Set(["ACTIVE", "COMPLETED", "INTERRUPTED", "STOPPED", "FAILED"]);
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
       res.status(400).json({ error: "limit must be an integer from 1 to 50." });
@@ -375,6 +375,27 @@ router.post("/chatbot/flows/:id/executions/query", authenticate, async (req: Aut
     }
     if (body.status !== undefined && (typeof body.status !== "string" || !validStatuses.has(body.status))) {
       res.status(400).json({ error: "Invalid execution status filter." });
+      return;
+    }
+    if (body.search !== undefined && (typeof body.search !== "string" || body.search.length > 100)) {
+      res.status(400).json({ error: "search must be a string of at most 100 characters." });
+      return;
+    }
+    const parseDateBound = (value: unknown) => {
+      if (typeof value !== "string" || !value.trim()) return undefined;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? undefined : date;
+    };
+    const hasStartedAtFrom = body.startedAtFrom !== undefined;
+    const hasStartedAtBefore = body.startedAtBefore !== undefined;
+    const startedAtFrom = parseDateBound(body.startedAtFrom);
+    const startedAtBefore = parseDateBound(body.startedAtBefore);
+    if (
+      (hasStartedAtFrom && !startedAtFrom) ||
+      (hasStartedAtBefore && !startedAtBefore) ||
+      (startedAtFrom && startedAtBefore && startedAtFrom.getTime() >= startedAtBefore.getTime())
+    ) {
+      res.status(400).json({ error: "Invalid run start date range." });
       return;
     }
 
@@ -415,6 +436,30 @@ router.post("/chatbot/flows/:id/executions/query", authenticate, async (req: Aut
 
     const filter: Record<string, unknown> = { userId, flowId };
     if (body.status) filter.status = body.status;
+    const search = typeof body.search === "string" ? body.search.trim() : "";
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const nameOrPhone = new RegExp(escapedSearch, "i");
+      const digitsSearch = search.replace(/\D/g, "");
+      const phonePatterns = digitsSearch && digitsSearch !== search
+        ? [new RegExp(digitsSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))]
+        : [];
+      const matchingContactIds = await ContactModel.distinct("_id", {
+        userId,
+        $or: [
+          { name: nameOrPhone },
+          { phone: nameOrPhone },
+          ...phonePatterns.map((pattern) => ({ phone: pattern })),
+        ],
+      });
+      filter.contactId = { $in: matchingContactIds };
+    }
+    if (startedAtFrom || startedAtBefore) {
+      filter.startedAt = {
+        ...(startedAtFrom ? { $gte: startedAtFrom } : {}),
+        ...(startedAtBefore ? { $lt: startedAtBefore } : {}),
+      };
+    }
     if (cursor) {
       filter.$or = [
         { startedAt: { $lt: cursor.startedAt } },

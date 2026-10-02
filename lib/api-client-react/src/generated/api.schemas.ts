@@ -150,5 +150,14 @@ export interface ChatbotExecutionQuery {
   /** @maxLength 256 */
   cursor?: string;
   status?: ChatbotExecutionQueryStatus;
+  /**
+     * Case-insensitive contact name or phone search.
+     * @maxLength 100
+     */
+  search?: string;
+  /** Inclusive start timestamp for filtering by run start time. */
+  startedAtFrom?: string;
+  /** Exclusive end timestamp for filtering by run start time. */
+  startedAtBefore?: string;
 }
 

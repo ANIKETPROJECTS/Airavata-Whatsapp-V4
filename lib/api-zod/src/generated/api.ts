@@ -79,16 +79,22 @@ export const SearchChatbotFlowExecutionsParams = zod.object({
   "id": zod.coerce.string().regex(searchChatbotFlowExecutionsPathIdRegExp)
 })
 
+export const searchChatbotFlowExecutionsBodyLimitDefault = 25;
 export const searchChatbotFlowExecutionsBodyLimitMax = 50;
 
 export const searchChatbotFlowExecutionsBodyCursorMax = 256;
 
+export const searchChatbotFlowExecutionsBodySearchMax = 100;
+
 
 
 export const SearchChatbotFlowExecutionsBody = zod.object({
-  "limit": zod.number().min(1).max(searchChatbotFlowExecutionsBodyLimitMax).optional(),
+  "limit": zod.number().min(1).max(searchChatbotFlowExecutionsBodyLimitMax).default(searchChatbotFlowExecutionsBodyLimitDefault),
   "cursor": zod.string().max(searchChatbotFlowExecutionsBodyCursorMax).optional(),
-  "status": zod.enum(['ACTIVE', 'COMPLETED', 'INTERRUPTED', 'STOPPED', 'FAILED']).optional()
+  "status": zod.enum(['ACTIVE', 'COMPLETED', 'INTERRUPTED', 'STOPPED', 'FAILED']).optional(),
+  "search": zod.string().max(searchChatbotFlowExecutionsBodySearchMax).optional().describe('Case-insensitive contact name or phone search.'),
+  "startedAtFrom": zod.coerce.date().optional().describe('Inclusive start timestamp for filtering by run start time.'),
+  "startedAtBefore": zod.coerce.date().optional().describe('Exclusive end timestamp for filtering by run start time.')
 })
 
 export const SearchChatbotFlowExecutionsResponse = zod.object({

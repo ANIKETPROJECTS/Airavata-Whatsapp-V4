@@ -8,6 +8,7 @@ import {
   CircleAlert,
   MessageCircle,
   RefreshCw,
+  Search,
 } from 'lucide-react';
 import {
   useSearchChatbotFlowExecutions,
@@ -29,6 +30,20 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
 
 const previewMinutesAgo = (minutes: number) =>
   new Date(Date.now() - minutes * 60_000).toISOString();
+
+function localDayStart(value: string) {
+  return new Date(`${value}T00:00:00`);
+}
+
+function localDayBoundary(value: string, offsetDays = 0) {
+  const date = localDayStart(value);
+  date.setDate(date.getDate() + offsetDays);
+  return date.toISOString();
+}
+
+function digitsOnly(value: string | null | undefined) {
+  return value?.replace(/\D/g, '') ?? '';
+}
 
 const PREVIEW_ACTIVITY_DATA: NonNullable<ReturnType<typeof useSearchChatbotFlowExecutions>['data']> = {
   executions: [
@@ -144,7 +159,7 @@ function statusLabel(status: ChatbotExecutionStatus) {
 
 function StatCell({ label, value, tone }: { label: string; value: number | undefined; tone?: string }) {
   return (
-    <div className="border-b border-gray-200 px-4 py-3 md:border-b-0 md:border-l first:md:border-l-0">
+    <div className="border-b border-r border-gray-200 px-4 py-3">
       <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
       <p className={`mt-1 text-lg font-semibold tabular-nums ${tone ?? 'text-gray-900'}`}>
         {value === undefined ? '—' : value.toLocaleString()}
@@ -153,11 +168,21 @@ function StatCell({ label, value, tone }: { label: string; value: number | undef
   );
 }
 
+function contactDisplayName(name: string | null, phone: string | null) {
+  const cleanName = name?.trim() ?? '';
+  const cleanPhone = phone?.trim() ?? '';
+  const nameDigits = digitsOnly(cleanName);
+  const phoneDigits = digitsOnly(cleanPhone);
+  return !cleanName || cleanName === cleanPhone || (phoneDigits && nameDigits === phoneDigits)
+    ? 'NA'
+    : cleanName;
+}
+
 function ContactName({ name, phone }: { name: string | null; phone: string | null }) {
   return (
-    <div className="min-w-0">
-      <p className="max-w-[240px] truncate text-sm font-medium text-gray-900">{name || phone || 'Contact unavailable'}</p>
-      {name && phone && <p className="mt-0.5 text-xs text-gray-500">{phone}</p>}
+    <div className="mx-auto min-w-0 max-w-[240px] text-center">
+      <p className="truncate text-sm font-medium text-gray-900">{contactDisplayName(name, phone)}</p>
+      <p className="mt-0.5 truncate text-xs text-gray-500">{phone?.trim() || 'NA'}</p>
     </div>
   );
 }
@@ -171,13 +196,13 @@ function TranscriptLink({
   executionId: string;
   preview?: boolean;
 }) {
-  if (preview) {
+  if (preview || !contactId) {
     return (
       <span
-        title="Sample data only; no transcript is linked"
-        aria-label="Sample transcript link disabled"
+        title={preview ? 'No transcript is linked in the sample preview' : 'No contact is linked to this run'}
+        aria-label="Open chat unavailable"
         data-testid={`link-chatbot-execution-chat-${executionId}`}
-        className="inline-flex h-9 items-center gap-1.5 border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-400"
+        className="inline-flex h-9 items-center justify-center gap-1.5 px-1 text-sm font-medium text-primary/45"
       >
         <MessageCircle className="h-4 w-4" />
         Open chat
@@ -190,14 +215,12 @@ function TranscriptLink({
       href={`/live-chat?conversationId=${encodeURIComponent(contactId)}`}
       title="Open the contact’s full Live Chat transcript"
       data-testid={`link-chatbot-execution-chat-${executionId}`}
-      className="inline-flex h-9 items-center gap-1.5 border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="inline-flex h-9 items-center justify-center gap-1.5 px-1 text-sm font-medium text-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       <MessageCircle className="h-4 w-4" />
       Open chat
     </Link>
-  ) : (
-    <span className="text-xs text-gray-400">Contact unavailable</span>
-  );
+  ) : null;
 }
 
 export default function ChatbotActivity({
@@ -210,29 +233,78 @@ export default function ChatbotActivity({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
   const [samplePreviewEnabled, setSamplePreviewEnabled] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [startedAtFromDate, setStartedAtFromDate] = useState('');
+  const [startedAtToDate, setStartedAtToDate] = useState('');
   const isPreview = import.meta.env.DEV && samplePreviewEnabled;
   const cursor = cursors[cursors.length - 1];
   const query = useMemo<ChatbotExecutionQuery>(() => ({
-    limit: 20,
+    limit: 25,
     ...(cursor ? { cursor } : {}),
     ...(statusFilter === 'ALL' ? {} : { status: statusFilter }),
-  }), [cursor, statusFilter]);
+    ...(searchTerm ? { search: searchTerm } : {}),
+    ...(startedAtFromDate ? { startedAtFrom: localDayBoundary(startedAtFromDate) } : {}),
+    ...(startedAtToDate ? { startedAtBefore: localDayBoundary(startedAtToDate, 1) } : {}),
+  }), [cursor, searchTerm, startedAtFromDate, startedAtToDate, statusFilter]);
   const executionsQuery = useSearchChatbotFlowExecutions();
   const { mutate, reset } = executionsQuery;
+
+  useEffect(() => {
+    const normalizedSearch = searchInput.trim();
+    if (normalizedSearch === searchTerm) return;
+    const timeout = window.setTimeout(() => {
+      reset();
+      setCursors([undefined]);
+      setSearchTerm(normalizedSearch);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [reset, searchInput, searchTerm]);
 
   useEffect(() => {
     if (isPreview) return;
     mutate({ id: flow.id, data: query });
   }, [flow.id, isPreview, mutate, query]);
 
-  const isLoading = !isPreview && (executionsQuery.isPending || executionsQuery.isIdle);
+  const isLoading = !isPreview && (
+    executionsQuery.isPending ||
+    executionsQuery.isIdle ||
+    searchInput.trim() !== searchTerm
+  );
   const isError = !isPreview && executionsQuery.isError;
   const data = isPreview ? PREVIEW_ACTIVITY_DATA : executionsQuery.data;
   const error = isPreview ? undefined : executionsQuery.error;
-  const executions = data?.executions ?? [];
+  const allExecutions = data?.executions ?? [];
+  const previewFrom = startedAtFromDate ? localDayStart(startedAtFromDate).getTime() : null;
+  const previewBefore = startedAtToDate ? localDayBoundary(startedAtToDate, 1) : null;
+  const previewBeforeTime = previewBefore ? new Date(previewBefore).getTime() : null;
+  const normalizedSearch = searchTerm.toLocaleLowerCase();
+  const normalizedPhoneSearch = digitsOnly(searchTerm);
+  const executions = isPreview
+    ? allExecutions.filter(run => {
+        const contactName = run.contactName?.toLocaleLowerCase() ?? '';
+        const contactPhone = run.contactPhone ?? '';
+        const matchesSearch = !searchTerm ||
+          contactName.includes(normalizedSearch) ||
+          contactPhone.toLocaleLowerCase().includes(normalizedSearch) ||
+          (normalizedPhoneSearch && digitsOnly(contactPhone).includes(normalizedPhoneSearch));
+        const matchesStatus = statusFilter === 'ALL' || run.status === statusFilter;
+        const startedAt = new Date(run.startedAt).getTime();
+        const matchesFrom = previewFrom === null || startedAt >= previewFrom;
+        const matchesTo = previewBeforeTime === null || startedAt < previewBeforeTime;
+        return Boolean(matchesSearch && matchesStatus && matchesFrom && matchesTo);
+      })
+    : allExecutions;
+  const hasActiveListFilters =
+    statusFilter !== 'ALL' ||
+    Boolean(searchTerm || searchInput.trim() || startedAtFromDate || startedAtToDate);
   const hasLegacyOnlyHistory =
+    !isPreview &&
     statusFilter === 'ALL' &&
     cursors.length === 1 &&
+    !searchTerm &&
+    !startedAtFromDate &&
+    !startedAtToDate &&
     executions.length === 0 &&
     (data?.stats.triggered ?? 0) > 0;
 
@@ -240,6 +312,23 @@ export default function ChatbotActivity({
     reset();
     setStatusFilter(value);
     setCursors([undefined]);
+  };
+
+  const changeDateFilter = (which: 'from' | 'to', value: string) => {
+    reset();
+    setCursors([undefined]);
+    if (which === 'from') setStartedAtFromDate(value);
+    else setStartedAtToDate(value);
+  };
+
+  const clearFilters = () => {
+    reset();
+    setStatusFilter('ALL');
+    setCursors([undefined]);
+    setSearchInput('');
+    setSearchTerm('');
+    setStartedAtFromDate('');
+    setStartedAtToDate('');
   };
 
   const retry = () => mutate({ id: flow.id, data: query });
@@ -281,9 +370,6 @@ export default function ChatbotActivity({
               <p className="mt-1 max-w-3xl text-sm text-gray-600">
                 Runs for this chatbot. Open a contact to continue in its existing Live Chat transcript.
               </p>
-              <p className="mt-2 break-all font-mono text-xs text-gray-500" data-testid="text-activity-chatbot-id">
-                Flow ID · {flow.id}
-              </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               {import.meta.env.DEV && (
@@ -314,20 +400,7 @@ export default function ChatbotActivity({
             </div>
           </div>
 
-          {isPreview && (
-            <div
-              role="status"
-              data-testid="notice-chatbot-activity-preview"
-              className="mb-4 border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
-            >
-              <p className="font-semibold">Sample preview only</p>
-              <p className="mt-0.5 text-sky-800">
-                These example runs are shown in your browser and are not saved. Transcript links are disabled.
-              </p>
-            </div>
-          )}
-
-          <section aria-label="Chatbot activity totals" className="grid grid-cols-2 border-t border-gray-200 md:grid-cols-6">
+          <section aria-label="Chatbot activity totals" className="grid grid-cols-2 border-l border-t border-gray-200 md:grid-cols-6">
             <StatCell label="Triggered" value={data?.stats.triggered} />
             <StatCell label="Completed" value={data?.stats.completed} tone="text-emerald-700" />
             <StatCell label="In progress" value={data?.stats.active} tone="text-sky-700" />
@@ -336,17 +409,70 @@ export default function ChatbotActivity({
             <StatCell label="Failed" value={data?.stats.failed} tone="text-rose-700" />
           </section>
 
-          <div className="mt-5 overflow-x-auto border border-gray-200">
-            <table className="w-full min-w-[1120px] border-collapse text-left">
-              <thead className="bg-gray-50">
+          <div className="mt-5 flex flex-wrap items-end gap-3">
+            <label className="min-w-[220px] flex-1 text-xs font-medium text-gray-600">
+              Search contacts
+              <span className="relative mt-1 block">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  value={searchInput}
+                  maxLength={100}
+                  onChange={event => setSearchInput(event.target.value)}
+                  placeholder="Name or contact number"
+                  aria-label="Search activity by contact name or number"
+                  data-testid="input-chatbot-activity-search"
+                  className="h-10 w-full border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                />
+              </span>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+              Started from
+              <input
+                type="date"
+                value={startedAtFromDate}
+                max={startedAtToDate || undefined}
+                onChange={event => changeDateFilter('from', event.target.value)}
+                aria-label="Filter chatbot activity started from date"
+                data-testid="input-chatbot-activity-date-from"
+                className="h-10 border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+              Started to
+              <input
+                type="date"
+                value={startedAtToDate}
+                min={startedAtFromDate || undefined}
+                onChange={event => changeDateFilter('to', event.target.value)}
+                aria-label="Filter chatbot activity started to date"
+                data-testid="input-chatbot-activity-date-to"
+                className="h-10 border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
+            </label>
+            {hasActiveListFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                data-testid="button-clear-chatbot-activity-filters"
+                className="h-10 px-3 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[1120px] border-collapse">
+              <thead>
                 <tr className="border-b border-gray-200">
-                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Contact</th>
-                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Triggered by</th>
-                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Started</th>
-                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Last activity</th>
-                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Ended</th>
-                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Status</th>
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-600">Transcript</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600">Contact</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600">Triggered by</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600">Started</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600">Last activity</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600">Ended</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600">Status</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600">Transcript</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -376,41 +502,35 @@ export default function ChatbotActivity({
                       <p className="text-sm font-semibold text-gray-700">
                         {hasLegacyOnlyHistory
                           ? 'Detailed run history starts with new activity'
-                          : statusFilter === 'ALL'
-                            ? 'No triggered conversations yet'
-                            : 'No conversations match this status'}
+                          : hasActiveListFilters
+                            ? 'No conversations match these filters'
+                            : 'No triggered conversations yet'}
                       </p>
                       <p className="mt-1 text-sm text-gray-500">
                         {hasLegacyOnlyHistory
                           ? 'This chatbot has earlier lifetime totals, but individual runs were not recorded. New runs will appear here.'
-                          : statusFilter === 'ALL'
-                            ? 'New runs will appear here when this chatbot is triggered.'
-                            : 'Choose a different status to see more activity.'}
+                          : hasActiveListFilters
+                            ? 'Try changing or clearing the search, date, or status filters.'
+                            : 'New runs will appear here when this chatbot is triggered.'}
                       </p>
                     </td>
                   </tr>
                 )}
                 {!isLoading && !isError && executions.map(run => (
                   <tr key={run.id} className="transition-colors hover:bg-gray-50/70" data-testid={`row-chatbot-execution-${run.id}`}>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3.5 text-center">
                       <ContactName name={run.contactName} phone={run.contactPhone} />
-                      <p className="mt-1 max-w-[220px] truncate font-mono text-[11px] text-gray-400" title={`Execution ${run.id} · Contact ${run.contactId ?? 'unavailable'}`}>
-                        Run {run.id}
-                      </p>
-                      <p className="max-w-[220px] truncate font-mono text-[11px] text-gray-400">
-                        Contact {run.contactId ?? 'unavailable'}
-                      </p>
                     </td>
-                    <td className="px-4 py-3.5 text-sm text-gray-700">{triggerLabel(run.triggerType)}</td>
-                    <td className="whitespace-nowrap px-4 py-3.5 text-sm text-gray-700">{formatDateTime(run.startedAt)}</td>
-                    <td className="whitespace-nowrap px-4 py-3.5 text-sm text-gray-700">{formatDateTime(run.lastActivityAt)}</td>
-                    <td className="whitespace-nowrap px-4 py-3.5 text-sm text-gray-700">{formatDateTime(run.endedAt)}</td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3.5 text-center text-sm text-gray-700">{triggerLabel(run.triggerType)}</td>
+                    <td className="whitespace-nowrap px-4 py-3.5 text-center text-sm text-gray-700">{formatDateTime(run.startedAt)}</td>
+                    <td className="whitespace-nowrap px-4 py-3.5 text-center text-sm text-gray-700">{formatDateTime(run.lastActivityAt)}</td>
+                    <td className="whitespace-nowrap px-4 py-3.5 text-center text-sm text-gray-700">{formatDateTime(run.endedAt)}</td>
+                    <td className="px-4 py-3.5 text-center">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold ${statusStyle(run.status)}`} data-testid={`status-chatbot-execution-${run.id}`}>
                         {statusLabel(run.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 text-right">
+                    <td className="px-4 py-3.5 text-center">
                       <TranscriptLink contactId={run.contactId} executionId={run.id} preview={isPreview} />
                     </td>
                   </tr>
