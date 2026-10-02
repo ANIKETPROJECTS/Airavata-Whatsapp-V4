@@ -1378,7 +1378,7 @@ export default function LiveChat() {
                   type="button"
                   aria-label="Filter chats by date"
                   title={dateFilterActive ? formatDateRange(chatDateRange) : 'Filter chats by date'}
-                  className="relative rounded-md bg-transparent p-2 text-gray-400 transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                  className="relative rounded-md bg-transparent p-2 text-primary transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
                   <span
                     aria-hidden="true"
