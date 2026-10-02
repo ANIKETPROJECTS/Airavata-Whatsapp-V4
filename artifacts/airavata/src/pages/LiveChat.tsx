@@ -23,7 +23,7 @@ import chatIcon from '@assets/chat_(1)_1790885069320.png';
 import letterIcon from '@assets/letter_1790885182957.png';
 import paperclipIcon from '@assets/attach-paperclip-symbol_(1)_1790885236833.png';
 import sendIcon from '@assets/send_(1)_1790885629920.png';
-import profileIcon from '@assets/user_1790886242440.png';
+import profileIcon from '@assets/user_(1)_1790918538827.png';
 import { api } from '@/lib/api';
 import { Calendar as DatePicker } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1583,7 +1583,7 @@ export default function LiveChat() {
                 onClick={() => setRightPanelOpen(!rightPanelOpen)}
                 aria-label={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
                 title={rightPanelOpen ? 'Hide customer profile' : 'Show customer profile'}
-                className="inline-flex items-center gap-2 rounded-md bg-transparent px-3 py-2 text-[15px] font-semibold text-gray-900 transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+                className="inline-flex items-center gap-2 rounded-md bg-transparent px-3 py-2 text-[15px] font-medium text-gray-900 transition-colors hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
               >
                 <img src={profileIcon} alt="" aria-hidden="true" className="h-7 w-7 object-contain brightness-0" />
                 <span>Profile</span>
