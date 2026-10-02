@@ -23,10 +23,22 @@ router.get("/chatbot/flows", authenticate, async (req: AuthRequest, res) => {
 // ── POST /api/chatbot/flows ──────────────────────────────────────────────────
 router.post("/chatbot/flows", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { name } = req.body as { name?: string };
+    const { name, description } = req.body as { name?: unknown; description?: unknown };
+    const cleanName = name === undefined ? "Untitled Flow" : typeof name === "string" ? name.trim() : "";
+    const cleanDescription = description === undefined ? "" : typeof description === "string" ? description.trim() : "";
+    if (!cleanName || cleanName.length > 100 || typeof name === "object") {
+      return res.status(400).json({ error: "A chatbot name of 1 to 100 characters is required." });
+    }
+    if (typeof description !== "undefined" && typeof description !== "string") {
+      return res.status(400).json({ error: "description must be a string." });
+    }
+    if (cleanDescription.length > 500) {
+      return res.status(400).json({ error: "description must be 500 characters or fewer." });
+    }
     const flow = await ChatbotFlowModel.create({
       userId: req.user!.userId,
-      name: name ?? "Untitled Flow",
+      name: cleanName,
+      description: cleanDescription,
       nodes: [{ id: "start-1", type: "start", position: { x: 300, y: 150 }, data: { label: "Start", description: "" } }],
       edges: [],
     });
@@ -159,10 +171,18 @@ async function clearChatbotFlowSessions(flowId: string, userId: string) {
 // ── PUT /api/chatbot/flows/:id ───────────────────────────────────────────────
 router.put("/chatbot/flows/:id", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { name, nodes, edges, status, variables } = req.body as {
-      name?: string; nodes?: unknown[]; edges?: unknown[]; status?: unknown; variables?: unknown[];
+    const { name, description, nodes, edges, status, variables } = req.body as {
+      name?: unknown; description?: unknown; nodes?: unknown[]; edges?: unknown[]; status?: unknown; variables?: unknown[];
     };
 
+    if (name !== undefined && (typeof name !== "string" || !name.trim() || name.trim().length > 100)) {
+      res.status(400).json({ error: "name must contain 1 to 100 characters" });
+      return;
+    }
+    if (description !== undefined && (typeof description !== "string" || description.trim().length > 500)) {
+      res.status(400).json({ error: "description must be a string of 500 characters or fewer" });
+      return;
+    }
     if (status !== undefined && status !== "DRAFT" && status !== "PUBLISHED") {
       res.status(400).json({ error: "status must be DRAFT or PUBLISHED" });
       return;
@@ -183,7 +203,8 @@ router.put("/chatbot/flows/:id", authenticate, async (req: AuthRequest, res) => 
       flow.set("version", flow.version + 1);
     }
 
-    if (name !== undefined) flow.set("name", name);
+    if (name !== undefined) flow.set("name", (name as string).trim());
+    if (description !== undefined) flow.set("description", (description as string).trim());
     if (nodes !== undefined) flow.set("nodes", nodes);
     if (edges !== undefined) flow.set("edges", edges);
     if (status !== undefined) flow.set("status", status);

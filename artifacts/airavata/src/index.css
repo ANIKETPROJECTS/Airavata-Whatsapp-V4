@@ -181,19 +181,29 @@
 }
 
 .add-template-page,
-.flow-list-page {
+.flow-list-page,
+.chatbot-page {
   font-family: 'Poppins', sans-serif;
   font-size: 15px;
 }
 
 .add-template-page .text-sm,
-.flow-list-page .text-sm {
+.flow-list-page .text-sm,
+.chatbot-page .text-sm {
   font-size: 0.9375rem;
   line-height: 1.45rem;
 }
 
 .add-template-page .text-xs,
-.flow-list-page .text-xs {
+.flow-list-page .text-xs,
+.chatbot-page .text-xs {
+  font-size: 0.8125rem;
+  line-height: 1.2rem;
+}
+
+.chatbot-editor [class~='text-[9px]'],
+.chatbot-editor [class~='text-[10px]'],
+.chatbot-editor [class~='text-[11px]'] {
   font-size: 0.8125rem;
   line-height: 1.2rem;
 }

@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 import {
   Save, Play, Pause, Download, Upload, Undo2, Redo2, Plus, Trash2,
   History, BarChart2, Variable, Copy, Clipboard, Layers,
-  Loader2, CheckCircle2, AlertCircle, X, FileJson,
-  Terminal, Search, CopyPlus, ChevronDown, GitBranch,
+  Loader2, CheckCircle2, AlertCircle, X,
+  Terminal, Search, CopyPlus, ChevronDown, GitBranch, ArrowLeft,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -21,9 +21,13 @@ import NodeSidebar from '../components/chatbot/NodeSidebar';
 import ConfigPanel from '../components/chatbot/ConfigPanel';
 import { nodeTypes } from '../components/chatbot/ChatbotNode';
 import { NODE_DEF_MAP, NODE_DEFS } from '../components/chatbot/nodeConfig';
+import ChatbotFlowLibrary, {
+  ChatbotSetupDrawer,
+  type ChatbotDetailsInput,
+  type ChatbotFlowSummary,
+} from '../components/chatbot/ChatbotFlowLibrary';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-interface ChatbotFlowSummary { id: string; name: string; status: string; updatedAt: string; analytics?: { triggered: number; completed: number } }
 interface ChatbotFlow extends ChatbotFlowSummary { nodes: Node[]; edges: Edge[]; variables?: VarDef[] }
 interface VarDef { name: string; type: string; defaultValue: string }
 interface AnalyticsData { triggered: number; completed: number; dropped: number; completionRate: number; version: number; status: string; updatedAt: string }
@@ -63,7 +67,7 @@ function normalizeImportedNodes(rawNodes: unknown): Node[] {
 // ── API helpers ─────────────────────────────────────────────────────────────
 const fetchFlows = () => api.get<{ flows: ChatbotFlowSummary[] }>('/chatbot/flows').then(r => r.flows);
 const fetchFlow = (id: string) => api.get<{ flow: ChatbotFlow }>(`/chatbot/flows/${id}`).then(r => r.flow);
-const createFlow = (name: string) => api.post<{ flow: ChatbotFlow }>('/chatbot/flows', { name }).then(r => r.flow);
+const createFlow = (details: ChatbotDetailsInput) => api.post<{ flow: ChatbotFlow }>('/chatbot/flows', details).then(r => r.flow);
 const createQuickFaqFlow = (details: { businessName: string; location: string; contact: string }) =>
   api.post<{ flow: ChatbotFlow }>('/chatbot/flows/quick-faq', details).then(r => r.flow);
 const saveFlow = (id: string, data: object) => api.put<{ flow: ChatbotFlow }>(`/chatbot/flows/${id}`, data).then(r => r.flow);
@@ -1242,33 +1246,13 @@ function QuickFAQSetupDialog({
   );
 }
 
-// ── Empty state ─────────────────────────────────────────────────────────────────
-function EmptyState({ onCreate, onQuickSetup }: { onCreate: () => void; onQuickSetup: () => void }) {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 gap-5">
-      <div className="w-24 h-24 rounded-3xl bg-white border-2 border-dashed border-gray-300 flex items-center justify-center shadow-sm">
-        <FileJson className="w-10 h-10 text-gray-300" />
-      </div>
-      <div className="text-center">
-        <p className="text-lg font-bold text-gray-700">No flow selected</p>
-        <p className="text-sm text-gray-400 mt-1.5 max-w-xs">Create a new chatbot flow or select one from the sidebar to start building</p>
-      </div>
-      <button onClick={onCreate} className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-2xl hover:bg-primary/90 shadow-md transition-colors">
-        <Plus className="w-4 h-4" /> Create Your First Flow
-      </button>
-      <button onClick={onQuickSetup} className="rounded-xl border border-emerald-200 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-50">
-        Set up location &amp; contact FAQ bot
-      </button>
-    </div>
-  );
-}
-
 // ── Root ───────────────────────────────────────────────────────────────────────
 export default function Chatbot() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [showQuickFAQ, setShowQuickFAQ] = useState(false);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   // Bridge: FlowCanvas exposes its addNode fn via this ref so NodeSidebar can call it
   const addNodeRef = useRef<((type: string) => void) | null>(null);
 
@@ -1279,13 +1263,25 @@ export default function Chatbot() {
   const flows = flowsData ?? [];
 
   const createMutation = useMutation({
-    mutationFn: () => createFlow('Untitled Flow'),
+    mutationFn: createFlow,
     onSuccess: (flow) => {
+      qc.setQueryData(['chatbot-flow', flow.id], flow);
       qc.invalidateQueries({ queryKey: ['chatbot-flows'] });
       setActiveFlowId(flow.id);
-      toast.success('New flow created');
+      toast.success('Chatbot created. Add triggers and conversation elements next.');
     },
     onError: () => toast.error('Failed to create flow'),
+  });
+
+  const detailsMutation = useMutation({
+    mutationFn: ({ id, details }: { id: string; details: ChatbotDetailsInput }) =>
+      saveFlow(id, details),
+    onSuccess: (flow) => {
+      qc.setQueryData(['chatbot-flow', flow.id], flow);
+      qc.invalidateQueries({ queryKey: ['chatbot-flows'] });
+      toast.success('Chatbot details updated');
+    },
+    onError: () => toast.error('Could not update chatbot details'),
   });
 
   const quickFAQMutation = useMutation({
@@ -1325,34 +1321,83 @@ export default function Chatbot() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="chatbot-page flex h-full min-h-0 flex-1 items-center justify-center bg-white">
         <Loader2 className="w-5 h-5 animate-spin text-primary" />
       </div>
     );
   }
 
-  return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left: flow list */}
-      <FlowList
-        flows={flows}
-        activeId={activeFlowId}
-        onSelect={setActiveFlowId}
-        onCreate={createMutation.mutate}
-        onDelete={id => deleteMutation.mutate(id)}
-        onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
-        isStatusUpdating={statusMutation.isPending}
-      />
+  const activeFlow = flows.find(flow => flow.id === activeFlowId);
 
-      {/* Center: node sidebar + canvas */}
+  return (
+    <>
       {activeFlowId ? (
-        <ReactFlowProvider key={activeFlowId}>
-          <NodeSidebar onAddNode={(type) => addNodeRef.current?.(type)} />
-          <FlowCanvas flowId={activeFlowId} addNodeRef={addNodeRef} />
-        </ReactFlowProvider>
+        <div className="chatbot-page flex h-full min-h-0 flex-col overflow-hidden bg-white">
+          <header className="flex min-h-[68px] shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 md:px-6">
+            <button
+              type="button"
+              onClick={() => setActiveFlowId(null)}
+              data-testid="button-back-to-chatbots"
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">All chatbots</span>
+            </button>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Chatbot builder</p>
+              <h1 className="truncate text-base font-semibold text-gray-900" data-testid="text-active-chatbot-name">
+                {activeFlow?.name ?? 'Loading chatbot'}
+              </h1>
+            </div>
+            {activeFlow?.description && (
+              <p className="ml-2 hidden max-w-[440px] truncate border-l border-gray-200 pl-4 text-sm text-gray-500 lg:block">
+                {activeFlow.description}
+              </p>
+            )}
+          </header>
+
+          <div className="chatbot-editor flex min-h-0 flex-1 overflow-hidden">
+            <FlowList
+              flows={flows}
+              activeId={activeFlowId}
+              onSelect={setActiveFlowId}
+              onCreate={() => setShowCreateDrawer(true)}
+              onDelete={id => deleteMutation.mutate(id)}
+              onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+              isStatusUpdating={statusMutation.isPending}
+            />
+            <ReactFlowProvider key={activeFlowId}>
+              <NodeSidebar onAddNode={(type) => addNodeRef.current?.(type)} />
+              <FlowCanvas flowId={activeFlowId} addNodeRef={addNodeRef} />
+            </ReactFlowProvider>
+          </div>
+        </div>
       ) : (
-        <EmptyState onCreate={createMutation.mutate} onQuickSetup={() => setShowQuickFAQ(true)} />
+        <ChatbotFlowLibrary
+          flows={flows}
+          isStatusUpdating={statusMutation.isPending}
+          isSaving={createMutation.isPending || detailsMutation.isPending}
+          onCreate={async details => { await createMutation.mutateAsync(details); }}
+          onUpdateDetails={async (id, details) => { await detailsMutation.mutateAsync({ id, details }); }}
+          onOpen={setActiveFlowId}
+          onQuickSetup={() => setShowQuickFAQ(true)}
+          onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+          onDelete={id => deleteMutation.mutate(id)}
+        />
       )}
+
+      {showCreateDrawer && activeFlowId && (
+        <ChatbotSetupDrawer
+          mode="create"
+          isSaving={createMutation.isPending}
+          onClose={() => setShowCreateDrawer(false)}
+          onSave={async details => {
+            await createMutation.mutateAsync(details);
+            setShowCreateDrawer(false);
+          }}
+        />
+      )}
+
       {showQuickFAQ && (
         <QuickFAQSetupDialog
           businessName={user?.businessName?.trim() || 'Your Business'}
@@ -1363,6 +1408,6 @@ export default function Chatbot() {
           onActivate={details => quickFAQMutation.mutate(details)}
         />
       )}
-    </div>
+    </>
   );
 }

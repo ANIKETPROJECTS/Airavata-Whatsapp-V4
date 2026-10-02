@@ -39,6 +39,7 @@ const chatbotFlowSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     name: { type: String, required: true, default: "Untitled Flow" },
+    description: { type: String, default: "" },
     status: { type: String, enum: ["DRAFT", "PUBLISHED"], default: "DRAFT" },
     nodes: [nodeSchema],
     edges: [edgeSchema],
