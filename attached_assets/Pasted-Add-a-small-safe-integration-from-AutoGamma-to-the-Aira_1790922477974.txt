@@ -1,0 +1,27 @@
+Add a small, safe integration from AutoGamma to the Airavata WhatsApp Solution API.
+
+Before coding, find AutoGamma’s existing WhatsApp send handler and confirm how it receives Meta’s successful send response. Do not change how AutoGamma sends messages.
+
+After Meta accepts a message:
+1. Read the WhatsApp message ID from Meta’s response (`messages[0].id`).
+2. POST a record to:
+   `${AIRAVATA_API_BASE_URL}/api/integrations/autogamma/outbound-messages`
+3. Send these headers:
+   - `Authorization: Bearer ${AIRAVATA_API_KEY}`
+   - `Content-Type: application/json`
+4. Send this JSON:
+   {
+     "phoneNumberId": "<Meta phone-number ID used to send>",
+     "whatsappMessageId": "<Meta messages[0].id>",
+     "recipientPhone": "<recipient phone in international format>",
+     "body": "<the exact rendered message text>",
+     "sentAt": "<send time as an ISO-8601 timestamp>"
+   }
+
+Use the actual Meta phone-number ID, not the displayed WhatsApp phone number. For media-only messages, send an empty string for `body`; include the optional `media` object only if AutoGamma has the relevant media details.
+
+Read `AIRAVATA_API_BASE_URL` and `AIRAVATA_API_KEY` from secure configuration. Never hardcode, log, or expose the API key. The website URL shown is `https://app.atwassup.com`, but first verify that the API endpoint is deployed and reachable at that host. If it is not, keep the base URL configurable and use the correct API host.
+
+Handle `200` and `201` as success. If the report request has a network error or gets a `5xx`, retry or queue only the report using the same Meta message ID. Never send the WhatsApp message again because reporting failed. Do not backfill historical sends. Do not add a second sender or change existing send behavior.
+
+Add mocked tests to verify that reporting happens only after Meta accepts a send, the Meta message ID and rendered body are passed correctly, duplicate-report responses are accepted, and reporting retries never trigger a second Meta send. Do not make real WhatsApp sends during testing.
