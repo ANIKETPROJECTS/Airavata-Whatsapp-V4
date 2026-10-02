@@ -67,6 +67,10 @@
 }
 
 :root {
+  --whatsapp-chat-bg: #EFEAE2;
+  --whatsapp-outgoing-bg: #D9FDD3;
+  --whatsapp-incoming-bg: #FFFFFF;
+
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
 

@@ -1592,7 +1592,7 @@ export default function LiveChat() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-white">
+          <div className="flex-1 overflow-y-auto p-6 lg:p-8 bg-[var(--whatsapp-chat-bg)]">
             {msgsLoading ? (
               <div className="flex justify-center items-center h-full">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -1627,8 +1627,8 @@ export default function LiveChat() {
                       <div
                         className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-sm ${
                           msg.direction === 'OUTBOUND'
-                            ? 'bg-[#dcf8c6] rounded-tr-md text-gray-900'
-                            : 'bg-white border border-gray-200 rounded-tl-md text-gray-900'
+                            ? 'bg-[var(--whatsapp-outgoing-bg)] rounded-tr-md text-gray-900'
+                            : 'bg-[var(--whatsapp-incoming-bg)] border border-gray-200 rounded-tl-md text-gray-900'
                         }`}
                       >
                         {msg.flowData && Object.keys(msg.flowData).length > 0 ? (
