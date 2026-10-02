@@ -9,10 +9,10 @@ import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Save, Play, Pause, Download, Upload, Undo2, Redo2, Plus, Trash2,
+  Save, Play, Download, Upload, Undo2, Redo2, Plus, Trash2,
   History, BarChart2, Variable, Copy, Clipboard, Layers,
   Loader2, CheckCircle2, AlertCircle, X,
-  Terminal, Search, CopyPlus, ChevronDown, GitBranch, ArrowLeft,
+  Terminal, CopyPlus, ChevronDown, GitBranch, ArrowLeft,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,6 @@ import ConfigPanel from '../components/chatbot/ConfigPanel';
 import { nodeTypes } from '../components/chatbot/ChatbotNode';
 import { NODE_DEF_MAP, NODE_DEFS } from '../components/chatbot/nodeConfig';
 import ChatbotFlowLibrary, {
-  ChatbotSetupDrawer,
   type ChatbotDetailsInput,
   type ChatbotFlowSummary,
 } from '../components/chatbot/ChatbotFlowLibrary';
@@ -162,109 +161,6 @@ function useHistory<T>(initial: T) {
     return history.current[history.current.length - 1];
   }, [index]);
   return { push, undo, redo, canUndo: index > 0, canRedo: index < history.current.length - 1 };
-}
-
-// ── Flow list panel ────────────────────────────────────────────────────────────
-function FlowList({ flows, activeId, onSelect, onCreate, onDelete, onStatusChange, isStatusUpdating }: {
-  flows: ChatbotFlowSummary[];
-  activeId: string | null;
-  onSelect: (id: string) => void;
-  onCreate: () => void;
-  onDelete: (id: string) => void;
-  onStatusChange: (id: string, status: 'DRAFT' | 'PUBLISHED') => void;
-  isStatusUpdating: boolean;
-}) {
-  const [search, setSearch] = useState('');
-  const { confirm, confirmDialog } = useConfirmDialog();
-  const filtered = flows.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
-
-  return (
-    <>
-      {confirmDialog}
-      <div className="w-52 h-full bg-gray-950 flex flex-col shrink-0 border-r border-gray-800">
-      <div className="px-3 pt-3 pb-2.5 border-b border-gray-800 space-y-2">
-        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Chatbot Flows</p>
-        <button
-          onClick={onCreate}
-          className="w-full flex items-center justify-center gap-1.5 py-2 bg-primary text-white text-[11px] font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          <Plus className="w-3.5 h-3.5" /> New Flow
-        </button>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-600" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search flows..."
-            className="w-full pl-7 py-1.5 text-[10px] bg-gray-900 border border-gray-800 rounded-lg outline-none focus:border-primary text-gray-300 placeholder-gray-600"
-          />
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto py-1">
-        {filtered.length === 0 && (
-          <p className="text-[10px] text-gray-600 text-center py-6 px-3">
-            {flows.length === 0 ? 'No flows yet' : 'No matches'}
-          </p>
-        )}
-        {filtered.map(f => (
-          <div
-            key={f.id}
-            onClick={() => onSelect(f.id)}
-            className={`group px-3 py-2.5 cursor-pointer flex items-start justify-between gap-1 transition-colors ${
-              activeId === f.id ? 'bg-primary/20 border-r-2 border-primary' : 'hover:bg-gray-900'
-            }`}
-          >
-            <div className="min-w-0">
-              <p className={`text-[11px] font-semibold truncate leading-tight ${activeId === f.id ? 'text-primary' : 'text-gray-300'}`}>{f.name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className={`inline-block w-1.5 h-1.5 rounded-full ${f.status === 'PUBLISHED' ? 'bg-green-400' : 'bg-yellow-500'}`} />
-                <span className="text-[9px] text-gray-600 capitalize">{f.status.toLowerCase()}</span>
-              </div>
-              {f.analytics && f.analytics.triggered > 0 && (
-                <p className="text-[9px] text-gray-600 mt-0.5">{f.analytics.triggered} triggered</p>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                title={f.status === 'PUBLISHED' ? 'Disable / unpublish chatbot' : 'Enable / publish chatbot'}
-                aria-label={f.status === 'PUBLISHED' ? `Unpublish ${f.name}` : `Publish ${f.name}`}
-                disabled={isStatusUpdating}
-                onClick={e => {
-                  e.stopPropagation();
-                  onStatusChange(f.id, f.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED');
-                }}
-                className={`rounded p-1 transition-colors disabled:opacity-40 ${
-                  f.status === 'PUBLISHED'
-                    ? 'text-emerald-400 hover:bg-amber-900/30 hover:text-amber-300'
-                    : 'text-gray-500 hover:bg-emerald-900/30 hover:text-emerald-300'
-                }`}
-              >
-                {f.status === 'PUBLISHED' ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              </button>
-              <button
-                type="button"
-                onClick={async e => {
-                  e.stopPropagation();
-                  if (await confirm({
-                    title: 'Delete this flow?',
-                    description: 'This flow and its configuration will be permanently removed.',
-                    confirmLabel: 'Delete flow',
-                  })) onDelete(f.id);
-                }}
-                aria-label={`Delete ${f.name}`}
-                title="Delete flow"
-                className="opacity-0 group-hover:opacity-100 text-gray-700 hover:text-red-500 transition-all mt-0.5 shrink-0"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      </div>
-    </>
-  );
 }
 
 // ── Analytics panel ────────────────────────────────────────────────────────────
@@ -1252,7 +1148,6 @@ export default function Chatbot() {
   const { user } = useAuth();
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [showQuickFAQ, setShowQuickFAQ] = useState(false);
-  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   // Bridge: FlowCanvas exposes its addNode fn via this ref so NodeSidebar can call it
   const addNodeRef = useRef<((type: string) => void) | null>(null);
 
@@ -1357,15 +1252,6 @@ export default function Chatbot() {
           </header>
 
           <div className="chatbot-editor flex min-h-0 flex-1 overflow-hidden">
-            <FlowList
-              flows={flows}
-              activeId={activeFlowId}
-              onSelect={setActiveFlowId}
-              onCreate={() => setShowCreateDrawer(true)}
-              onDelete={id => deleteMutation.mutate(id)}
-              onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
-              isStatusUpdating={statusMutation.isPending}
-            />
             <ReactFlowProvider key={activeFlowId}>
               <NodeSidebar onAddNode={(type) => addNodeRef.current?.(type)} />
               <FlowCanvas flowId={activeFlowId} addNodeRef={addNodeRef} />
@@ -1383,18 +1269,6 @@ export default function Chatbot() {
           onQuickSetup={() => setShowQuickFAQ(true)}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onDelete={id => deleteMutation.mutate(id)}
-        />
-      )}
-
-      {showCreateDrawer && activeFlowId && (
-        <ChatbotSetupDrawer
-          mode="create"
-          isSaving={createMutation.isPending}
-          onClose={() => setShowCreateDrawer(false)}
-          onSave={async details => {
-            await createMutation.mutateAsync(details);
-            setShowCreateDrawer(false);
-          }}
         />
       )}
 
