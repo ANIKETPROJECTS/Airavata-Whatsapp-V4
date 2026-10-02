@@ -1,0 +1,14 @@
+Implemented the AutoGamma-to-Live-Chat reporting path in the workspace.
+
+After Meta accepts a PPF inspection send, AutoGamma now uses Meta’s message ID, gets the approved template text and renders the customer’s first name, then posts the record to `https://app.atwassup.com/api/integrations/autogamma/outbound-messages`. Scheduled, manual, and catch-up sends share this path. If reporting fails, AutoGamma retries the report with the same message ID; it does **not** send the customer message again. The existing Meta send request is unchanged, and no old messages are backfilled.
+
+**Verification:** Type check passed; all 7 new mocked tests and 5 existing PPF tests passed. The tests made no real WhatsApp sends. A request to the endpoint without credentials returned 401; I did not attempt an authorized write.
+
+**To activate it on the VPS:**
+1. Create a dedicated key in Airavata WhatsApp Solution under **Manage → API key**, for the tenant connected to the sending phone number.
+2. Add it to the VPS’s secure environment as `AIRAVATA_API_KEY`. The PM2 config now reads that environment variable; the key is not in the code. I set the base URL for this Replit workspace and added the VPS base-URL configuration, but the source changes have **not** been deployed to the VPS.
+3. After deployment, verify using **AutoGamma Admin → Warranty → 5-Day PPF Inspections**. Choose an opted-in test reminder whose due date has arrived and click **Send Now** once. Expected: AutoGamma shows the send as accepted/awaiting Meta status, and Airavata Live Chat shows one outbound message with the rendered template text. Use a test number; this step sends a real WhatsApp message.
+
+I did not restart the running worker because it processes due reminders on startup and could send real messages. I also did not put the API key in Replit Secrets because that would not configure your separate VPS.
+
+**Security note:** An earlier inspection output exposed the existing Meta access token from the VPS config. Treat it as exposed: rotate it in Meta and move the replacement out of the source config into VPS secret storage before the next live send. I haven’t changed that token.
