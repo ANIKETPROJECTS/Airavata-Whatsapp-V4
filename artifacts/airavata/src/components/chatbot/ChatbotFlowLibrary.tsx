@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
+  BarChart2,
   CheckCircle2,
   Loader2,
   Pencil,
@@ -201,6 +202,7 @@ export default function ChatbotFlowLibrary({
   onCreate,
   onUpdateDetails,
   onOpen,
+  onActivity,
   onQuickSetup,
   onStatusChange,
   onDelete,
@@ -211,6 +213,7 @@ export default function ChatbotFlowLibrary({
   onCreate: (values: ChatbotDetailsInput) => Promise<void> | void;
   onUpdateDetails: (id: string, values: ChatbotDetailsInput) => Promise<void> | void;
   onOpen: (id: string) => void;
+  onActivity: (id: string) => void;
   onQuickSetup: () => void;
   onStatusChange: (id: string, status: 'DRAFT' | 'PUBLISHED') => void;
   onDelete: (id: string) => void;
@@ -229,7 +232,7 @@ export default function ChatbotFlowLibrary({
   const handleDelete = async (flow: ChatbotFlowSummary) => {
     if (await confirm({
       title: 'Delete this chatbot?',
-      description: `Delete "${flow.name}" and its conversation setup? This cannot be undone.`,
+      description: `Delete "${flow.name}", its conversation setup, and its activity history? This cannot be undone.`,
       confirmLabel: 'Delete chatbot',
     })) {
       onDelete(flow.id);
@@ -343,7 +346,7 @@ export default function ChatbotFlowLibrary({
         ) : (
           <div className="px-3 py-3 md:px-6 md:py-5">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] border-collapse text-left">
+              <table className="w-full min-w-[980px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th scope="col" className="min-w-[360px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-black md:px-5">
@@ -354,6 +357,9 @@ export default function ChatbotFlowLibrary({
                     </th>
                     <th scope="col" className="w-24 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                       Completed
+                    </th>
+                    <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
+                      Activity
                     </th>
                     <th scope="col" className="w-20 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-black">
                       Settings
@@ -399,6 +405,18 @@ export default function ChatbotFlowLibrary({
                         </td>
                         <td className="px-2 py-4 text-center text-sm tabular-nums text-gray-700">
                           {(flow.analytics?.completed ?? 0).toLocaleString()}
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => onActivity(flow.id)}
+                            aria-label={`View activity for ${flow.name}`}
+                            title="View chatbot activity"
+                            data-testid={`button-chatbot-activity-${flow.id}`}
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-opacity hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                          >
+                            <BarChart2 className="h-6 w-6" />
+                          </button>
                         </td>
                         <td className="px-2 py-4 text-center">
                           <button

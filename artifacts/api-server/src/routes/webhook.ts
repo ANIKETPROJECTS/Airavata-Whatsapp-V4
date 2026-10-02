@@ -487,7 +487,7 @@ async function handleIncomingMessage(
   // A WhatsApp Flow submission continues the paused chatbot at the node
   // connected after Flow Reply. It must not restart keyword matching.
   if (flowData) {
-    resumeChatbotAfterFlowSubmission(contactId, userId, flowData)
+    resumeChatbotAfterFlowSubmission(contactId, userId, flowData, msg.id)
       .then(() => logger.info({ contactId: String(contactId) }, "Chatbot resumed after Flow submission"))
       .catch((err) =>
         logger.error({ err: String(err), contactId: String(contactId) }, "Chatbot resume after Flow submission failed"),
@@ -502,9 +502,9 @@ async function handleIncomingMessage(
     // via runChatbotEngine — not restart the linked flow from scratch.
     const didRunLinked =
       isTemplateQuickReply &&
-      (await tryRunLinkedChatbot(contactId, userId, body, interactiveReplyId));
+      (await tryRunLinkedChatbot(contactId, userId, body, interactiveReplyId, msg.id));
     if (!didRunLinked) {
-      runChatbotEngine(contactId, userId, { text: body, interactiveReplyId }).catch((err) =>
+      runChatbotEngine(contactId, userId, { text: body, interactiveReplyId, sourceMessageId: msg.id }).catch((err) =>
         logger.error({ err: String(err) }, "Chatbot engine error"),
       );
     }
@@ -522,6 +522,7 @@ async function tryRunLinkedChatbot(
   userId: mongoose.Types.ObjectId,
   buttonText: string | undefined,
   interactiveReplyId: string | undefined,
+  sourceMessageId: string,
 ): Promise<boolean> {
   try {
     // Find the most recent outbound template message sent to this contact
@@ -546,7 +547,7 @@ async function tryRunLinkedChatbot(
       String(template.linkedChatbotFlowId),
       contactId,
       userId,
-      { text: buttonText, interactiveReplyId },
+      { text: buttonText, interactiveReplyId, sourceMessageId },
     ).catch((err) => logger.error({ err: String(err) }, "Linked chatbot flow error"));
 
     return true;

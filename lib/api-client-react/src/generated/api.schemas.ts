@@ -77,3 +77,78 @@ export interface AutoGammaOutboundMessageResult {
   whatsappMessageId: string;
 }
 
+export type ChatbotExecutionTriggerType = typeof ChatbotExecutionTriggerType[keyof typeof ChatbotExecutionTriggerType];
+
+
+export const ChatbotExecutionTriggerType = {
+  KEYWORD: 'KEYWORD',
+  DEFAULT: 'DEFAULT',
+  TEMPLATE_LINK: 'TEMPLATE_LINK',
+  LEGACY_SESSION: 'LEGACY_SESSION',
+} as const;
+
+export type ChatbotExecutionStatus = typeof ChatbotExecutionStatus[keyof typeof ChatbotExecutionStatus];
+
+
+export const ChatbotExecutionStatus = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  INTERRUPTED: 'INTERRUPTED',
+  STOPPED: 'STOPPED',
+  FAILED: 'FAILED',
+} as const;
+
+export interface ChatbotExecution {
+  id: string;
+  /** @nullable */
+  contactId: string | null;
+  /** @nullable */
+  contactName: string | null;
+  /** @nullable */
+  contactPhone: string | null;
+  triggerType: ChatbotExecutionTriggerType;
+  status: ChatbotExecutionStatus;
+  startedAt: string;
+  lastActivityAt: string;
+  /** @nullable */
+  endedAt: string | null;
+}
+
+export interface ChatbotExecutionStats {
+  triggered: number;
+  completed: number;
+  active: number;
+  interrupted: number;
+  stopped: number;
+  failed: number;
+}
+
+export interface ChatbotExecutionPage {
+  executions: ChatbotExecution[];
+  stats: ChatbotExecutionStats;
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export type ChatbotExecutionQueryStatus = typeof ChatbotExecutionQueryStatus[keyof typeof ChatbotExecutionQueryStatus];
+
+
+export const ChatbotExecutionQueryStatus = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  INTERRUPTED: 'INTERRUPTED',
+  STOPPED: 'STOPPED',
+  FAILED: 'FAILED',
+} as const;
+
+export interface ChatbotExecutionQuery {
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  limit?: number;
+  /** @maxLength 256 */
+  cursor?: string;
+  status?: ChatbotExecutionQueryStatus;
+}
+

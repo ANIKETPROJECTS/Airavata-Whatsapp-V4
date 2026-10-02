@@ -27,6 +27,7 @@ export const routes = [
   { path: '/add-template', component: AddTemplate },
   { path: '/manage-templates', component: ManageTemplates },
   { path: '/flow-builder', component: FlowBuilder },
+  { path: '/chatbot/:flowId/activity', component: Chatbot },
   { path: '/chatbot', component: Chatbot },
   { path: '/integration', component: Integration },
   { path: '/group', component: Group },

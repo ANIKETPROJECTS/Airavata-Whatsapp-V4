@@ -37,3 +37,5 @@
 - [Artifact webhook routing](artifact-webhook-routing.md) — route callbacks to the API and resubscribe restored WABAs; stored credentials do not restore Meta subscriptions.
 - [Contact CSV exports](contact-csv-export.md) — include a UTF-8 BOM and standard CSV escaping; preserve phone strings rather than wrapping them in spreadsheet formulas.
 - [AutoGamma sender boundary](autogamma-sender-boundary.md) — Airavata records accepted AutoGamma sends only; it never becomes a second sender or triggers send side effects.
+- [Chatbot activity history](chatbot-activity-history.md) — keep runs metadata-only, link to Live Chat, and preserve the chatbot module’s flat list and typography.
+- [OpenAPI search request codegen](openapi-search-request-codegen.md) — use named JSON request schemas when generated query-parameter types collide.

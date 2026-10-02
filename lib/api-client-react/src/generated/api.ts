@@ -22,6 +22,8 @@ import type {
 import type {
   AutoGammaOutboundMessageInput,
   AutoGammaOutboundMessageResult,
+  ChatbotExecutionPage,
+  ChatbotExecutionQuery,
   FacebookWebhookSubscriptionStatus,
   HealthStatus
 } from './api.schemas';
@@ -272,5 +274,77 @@ export const useIngestAutoGammaOutboundMessage = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getIngestAutoGammaOutboundMessageMutationOptions(options));
+    }
+
+export const getSearchChatbotFlowExecutionsUrl = (id: string,) => {
+
+
+
+
+  return `/api/chatbot/flows/${id}/executions/query`
+}
+
+/**
+ * @summary Search recent executions for a chatbot
+ */
+export const searchChatbotFlowExecutions = async (id: string,
+    chatbotExecutionQuery: ChatbotExecutionQuery, options?: RequestInit): Promise<ChatbotExecutionPage> => {
+
+  return customFetch<ChatbotExecutionPage>(getSearchChatbotFlowExecutionsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(chatbotExecutionQuery)
+  }
+);}
+
+
+
+
+
+export const getSearchChatbotFlowExecutionsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchChatbotFlowExecutions>>, TError,{id: string;data: BodyType<ChatbotExecutionQuery>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof searchChatbotFlowExecutions>>, TError,{id: string;data: BodyType<ChatbotExecutionQuery>}, TContext> => {
+
+const mutationKey = ['searchChatbotFlowExecutions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof searchChatbotFlowExecutions>>, {id: string;data: BodyType<ChatbotExecutionQuery>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  searchChatbotFlowExecutions(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SearchChatbotFlowExecutionsMutationResult = NonNullable<Awaited<ReturnType<typeof searchChatbotFlowExecutions>>>
+    export type SearchChatbotFlowExecutionsMutationBody = BodyType<ChatbotExecutionQuery>
+    export type SearchChatbotFlowExecutionsMutationError = ErrorType<void>
+
+    /**
+ * @summary Search recent executions for a chatbot
+ */
+export const useSearchChatbotFlowExecutions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchChatbotFlowExecutions>>, TError,{id: string;data: BodyType<ChatbotExecutionQuery>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof searchChatbotFlowExecutions>>,
+        TError,
+        {id: string;data: BodyType<ChatbotExecutionQuery>},
+        TContext
+      > => {
+      return useMutation(getSearchChatbotFlowExecutionsMutationOptions(options));
     }
 

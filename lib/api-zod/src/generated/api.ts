@@ -69,3 +69,49 @@ export const IngestAutoGammaOutboundMessageResponse = zod.object({
 })
 
 
+/**
+ * @summary Search recent executions for a chatbot
+ */
+export const searchChatbotFlowExecutionsPathIdRegExp = new RegExp('^[a-fA-F0-9]{24}$');
+
+
+export const SearchChatbotFlowExecutionsParams = zod.object({
+  "id": zod.coerce.string().regex(searchChatbotFlowExecutionsPathIdRegExp)
+})
+
+export const searchChatbotFlowExecutionsBodyLimitMax = 50;
+
+export const searchChatbotFlowExecutionsBodyCursorMax = 256;
+
+
+
+export const SearchChatbotFlowExecutionsBody = zod.object({
+  "limit": zod.number().min(1).max(searchChatbotFlowExecutionsBodyLimitMax).optional(),
+  "cursor": zod.string().max(searchChatbotFlowExecutionsBodyCursorMax).optional(),
+  "status": zod.enum(['ACTIVE', 'COMPLETED', 'INTERRUPTED', 'STOPPED', 'FAILED']).optional()
+})
+
+export const SearchChatbotFlowExecutionsResponse = zod.object({
+  "executions": zod.array(zod.object({
+  "id": zod.string(),
+  "contactId": zod.string().nullable(),
+  "contactName": zod.string().nullable(),
+  "contactPhone": zod.string().nullable(),
+  "triggerType": zod.enum(['KEYWORD', 'DEFAULT', 'TEMPLATE_LINK', 'LEGACY_SESSION']),
+  "status": zod.enum(['ACTIVE', 'COMPLETED', 'INTERRUPTED', 'STOPPED', 'FAILED']),
+  "startedAt": zod.coerce.date(),
+  "lastActivityAt": zod.coerce.date(),
+  "endedAt": zod.coerce.date().nullable()
+})),
+  "stats": zod.object({
+  "triggered": zod.number(),
+  "completed": zod.number(),
+  "active": zod.number(),
+  "interrupted": zod.number(),
+  "stopped": zod.number(),
+  "failed": zod.number()
+}),
+  "nextCursor": zod.string().nullable()
+})
+
+

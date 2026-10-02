@@ -7,6 +7,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useParams } from 'wouter';
 import { toast } from 'sonner';
 import {
   Save, Play, Download, Upload, Undo2, Redo2, Plus, Trash2,
@@ -25,6 +26,7 @@ import ChatbotFlowLibrary, {
   type ChatbotDetailsInput,
   type ChatbotFlowSummary,
 } from '../components/chatbot/ChatbotFlowLibrary';
+import ChatbotActivity from './ChatbotActivity';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface ChatbotFlow extends ChatbotFlowSummary { nodes: Node[]; edges: Edge[]; variables?: VarDef[] }
@@ -1146,6 +1148,8 @@ function QuickFAQSetupDialog({
 export default function Chatbot() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const { flowId: activityFlowId } = useParams<{ flowId: string }>();
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [showQuickFAQ, setShowQuickFAQ] = useState(false);
   // Bridge: FlowCanvas exposes its addNode fn via this ref so NodeSidebar can call it
@@ -1223,10 +1227,33 @@ export default function Chatbot() {
   }
 
   const activeFlow = flows.find(flow => flow.id === activeFlowId);
+  const activeActivityFlow = flows.find(flow => flow.id === activityFlowId);
 
   return (
     <>
-      {activeFlowId ? (
+      {activityFlowId ? (
+        activeActivityFlow ? (
+          <ChatbotActivity flow={activeActivityFlow} onBack={() => setLocation('/chatbot')} />
+        ) : (
+          <div className="chatbot-page flex h-full min-h-0 flex-col bg-white">
+            <header className="flex min-h-[68px] shrink-0 items-center gap-3 border-b border-gray-200 px-4 py-3 md:px-6">
+              <button
+                type="button"
+                onClick={() => setLocation('/chatbot')}
+                data-testid="button-back-to-chatbot-list"
+                className="inline-flex h-10 items-center gap-2 border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                All chatbots
+              </button>
+            </header>
+            <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+              <p className="text-base font-semibold text-gray-800">Chatbot unavailable</p>
+              <p className="mt-1 text-sm text-gray-500">This chatbot may have been removed or you may not have access.</p>
+            </div>
+          </div>
+        )
+      ) : activeFlowId ? (
         <div className="chatbot-page flex h-full min-h-0 flex-col overflow-hidden bg-white">
           <header className="flex min-h-[68px] shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 md:px-6">
             <button
@@ -1266,6 +1293,7 @@ export default function Chatbot() {
           onCreate={async details => { await createMutation.mutateAsync(details); }}
           onUpdateDetails={async (id, details) => { await detailsMutation.mutateAsync({ id, details }); }}
           onOpen={setActiveFlowId}
+          onActivity={id => setLocation(`/chatbot/${encodeURIComponent(id)}/activity`)}
           onQuickSetup={() => setShowQuickFAQ(true)}
           onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           onDelete={id => deleteMutation.mutate(id)}

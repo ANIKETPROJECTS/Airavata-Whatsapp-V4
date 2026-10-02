@@ -11,6 +11,7 @@
 
 import mongoose from "mongoose";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
+import { ChatbotExecutionModel } from "../models/ChatbotExecution";
 import { ContactModel } from "../models/Contact";
 import { MessageModel } from "../models/Message";
 import { FlowModel } from "../models/Flow";
@@ -73,13 +74,19 @@ interface Session {
   currentNodeId: string;
   variables: Record<string, unknown>;
   startedAt: Date;
+  executionId?: string;
 }
+
+type ChatbotExecutionStatus = "ACTIVE" | "COMPLETED" | "INTERRUPTED" | "STOPPED" | "FAILED";
+type ChatbotTriggerType = "KEYWORD" | "DEFAULT" | "TEMPLATE_LINK" | "LEGACY_SESSION";
 
 export interface IncomingContext {
   /** Plain text body (for text messages) */
   text?: string;
   /** ID of the button/list row the user tapped — from button_reply / list_reply */
   interactiveReplyId?: string;
+  /** Meta message ID, used to prevent duplicate activity rows on webhook retries */
+  sourceMessageId?: string;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -115,8 +122,8 @@ export async function runChatbotFlowById(
 
   const phone = (contact["phone"] as string).replace(/\s+/g, "");
 
-  // Clear any existing session so the linked flow starts fresh
-  await clearSession(contactId);
+  // Clear any existing session so the linked flow starts fresh.
+  await clearSession(contactId, userId, "INTERRUPTED");
 
   const startNode = flow.nodes.find((n) => n.type === "start");
   const firstEdge = flow.edges.find((e) => e.source === startNode?.id);
@@ -131,7 +138,16 @@ export async function runChatbotFlowById(
   const variables: Record<string, unknown> = {};
   if (ctx.text) variables["intent"] = ctx.text;
 
-  await executeFlow(flow, startNodeId, phone, contact, userId, contactId, variables);
+  const startedAt = new Date();
+  const executionId = await createChatbotExecution(
+    flow,
+    userId,
+    contactId,
+    "TEMPLATE_LINK",
+    ctx.sourceMessageId,
+    startedAt,
+  );
+  await executeFlow(flow, startNodeId, phone, contact, userId, contactId, variables, executionId, startedAt);
 }
 
 /**
@@ -184,8 +200,18 @@ export async function runChatbotEngine(
           flow.edges.find((e) => e.source === session.currentNodeId); // fallback: first edge
 
         if (edge) {
+          const executionId = session.executionId ?? await createChatbotExecution(
+            flow,
+            userId,
+            contactId,
+            "LEGACY_SESSION",
+            ctx.sourceMessageId,
+            new Date(session.startedAt),
+          );
           await executeFlow(
             flow, edge.target, phone, contact, userId, contactId, replyVariables,
+            executionId,
+            new Date(session.startedAt),
           );
           return;
         }
@@ -204,10 +230,22 @@ export async function runChatbotEngine(
               : ctx.text.trim();
         }
         const edge = flow.edges.find((e) => e.source === session.currentNodeId);
+        const executionId = session.executionId ?? await createChatbotExecution(
+          flow,
+          userId,
+          contactId,
+          "LEGACY_SESSION",
+          ctx.sourceMessageId,
+          new Date(session.startedAt),
+        );
         if (edge) {
-          await executeFlow(flow, edge.target, phone, contact, userId, contactId, nextVariables);
+          await executeFlow(
+            flow, edge.target, phone, contact, userId, contactId, nextVariables,
+            executionId,
+            new Date(session.startedAt),
+          );
         } else {
-          await clearSession(contactId);
+          await clearSession(contactId, userId, "COMPLETED", executionId, String(flow._id));
         }
         return;
       }
@@ -216,8 +254,19 @@ export async function runChatbotEngine(
       const published = await ChatbotFlowModel.find({ userId, status: "PUBLISHED" }).lean() as ChatbotFlow[];
       const kw = findKeywordTriggerInFlows(published, ctx.text);
       if (kw) {
-        await clearSession(contactId);
-        await executeFlow(kw.flow, kw.startNodeId, phone, contact, userId, contactId, {});
+        const legacyExecutionId = session.executionId ?? await createChatbotExecution(
+          flow,
+          userId,
+          contactId,
+          "LEGACY_SESSION",
+          undefined,
+          new Date(session.startedAt),
+        );
+        await clearSession(contactId, userId, "INTERRUPTED", legacyExecutionId, String(flow._id));
+        await startTrackedFlow(
+          kw.flow, kw.startNodeId, phone, contact, userId, contactId, {},
+          "KEYWORD", ctx.sourceMessageId,
+        );
         return;
       }
 
@@ -226,7 +275,7 @@ export async function runChatbotEngine(
     }
 
     // Flow no longer published — clear stale session and fall through
-    await clearSession(contactId);
+    await clearSession(contactId, userId, "STOPPED");
   }
 
   // ── Find a matching trigger in all published flows ────────────────────────
@@ -236,14 +285,20 @@ export async function runChatbotEngine(
   // Priority 1 — keyword triggers (specific beats generic)
   const kwMatch = findKeywordTriggerInFlows(publishedFlows, ctx.text);
   if (kwMatch) {
-    await executeFlow(kwMatch.flow, kwMatch.startNodeId, phone, contact, userId, contactId, {});
+    await startTrackedFlow(
+      kwMatch.flow, kwMatch.startNodeId, phone, contact, userId, contactId, {},
+      "KEYWORD", ctx.sourceMessageId,
+    );
     return;
   }
 
   // Priority 2 — start triggers (fire on any message when no session is active)
   const startMatch = findStartTrigger(publishedFlows);
   if (startMatch) {
-    await executeFlow(startMatch.flow, startMatch.startNodeId, phone, contact, userId, contactId, {});
+    await startTrackedFlow(
+      startMatch.flow, startMatch.startNodeId, phone, contact, userId, contactId, {},
+      "DEFAULT", ctx.sourceMessageId,
+    );
     return;
   }
 }
@@ -259,6 +314,7 @@ export async function resumeChatbotAfterFlowSubmission(
   contactId: mongoose.Types.ObjectId,
   userId: mongoose.Types.ObjectId,
   submittedData: Record<string, unknown>,
+  sourceMessageId?: string,
 ): Promise<void> {
   const contact = await ContactModel.findById(contactId).lean() as Record<string, unknown> | null;
   if (!contact) return;
@@ -279,7 +335,7 @@ export async function resumeChatbotAfterFlowSubmission(
   }).lean() as ChatbotFlow | null;
 
   if (!flow) {
-    await clearSession(contactId);
+    await clearSession(contactId, userId, "STOPPED");
     logger.warn({ flowId: session.flowId }, "Cannot resume chatbot after Flow submission");
     return;
   }
@@ -305,7 +361,7 @@ export async function resumeChatbotAfterFlowSubmission(
       currentNodeId: session.currentNodeId,
       submittedKeys: Object.keys(submittedData),
     }, "Flow submission has no outgoing chatbot edge");
-    await clearSession(contactId);
+    await clearSession(contactId, userId, "FAILED", session.executionId, session.flowId);
     return;
   }
 
@@ -316,7 +372,19 @@ export async function resumeChatbotAfterFlowSubmission(
     nextNodeId: nextEdge.target,
     variableKeys: Object.keys(variables),
   }, "Resuming chatbot after WhatsApp Flow submission");
-  await executeFlow(flow, nextEdge.target, phone, contact, userId, contactId, variables);
+  const executionId = session.executionId ?? await createChatbotExecution(
+    flow,
+    userId,
+    contactId,
+    "LEGACY_SESSION",
+    sourceMessageId,
+    new Date(session.startedAt),
+  );
+  await executeFlow(
+    flow, nextEdge.target, phone, contact, userId, contactId, variables,
+    executionId,
+    new Date(session.startedAt),
+  );
 }
 
 // ── Trigger Resolution ─────────────────────────────────────────────────────────
@@ -367,6 +435,105 @@ function findStartTrigger(
 
 // ── Flow Execution Loop ────────────────────────────────────────────────────────
 
+async function startTrackedFlow(
+  flow: ChatbotFlow,
+  startNodeId: string,
+  phone: string,
+  contact: Record<string, unknown>,
+  userId: mongoose.Types.ObjectId,
+  contactId: mongoose.Types.ObjectId,
+  variables: Record<string, unknown>,
+  triggerType: ChatbotTriggerType,
+  sourceMessageId?: string,
+): Promise<void> {
+  const startedAt = new Date();
+  const executionId = await createChatbotExecution(
+    flow,
+    userId,
+    contactId,
+    triggerType,
+    sourceMessageId,
+    startedAt,
+  );
+  await executeFlow(flow, startNodeId, phone, contact, userId, contactId, variables, executionId, startedAt);
+}
+
+async function createChatbotExecution(
+  flow: ChatbotFlow,
+  userId: mongoose.Types.ObjectId,
+  contactId: mongoose.Types.ObjectId,
+  triggerType: ChatbotTriggerType,
+  sourceMessageId: string | undefined,
+  startedAt: Date,
+): Promise<string | undefined> {
+  const run = {
+    userId,
+    flowId: flow._id,
+    contactId,
+    ...(sourceMessageId ? { sourceMessageId } : {}),
+    triggerType,
+    status: "ACTIVE" as const,
+    startedAt,
+    lastActivityAt: startedAt,
+  };
+
+  try {
+    let executionId: string;
+    let inserted = false;
+
+    if (sourceMessageId) {
+      const result = await ChatbotExecutionModel.updateOne(
+        { userId, sourceMessageId },
+        { $setOnInsert: run },
+        { upsert: true, timestamps: false },
+      );
+      inserted = result.upsertedCount > 0;
+      const existing = await ChatbotExecutionModel.findOne({ userId, sourceMessageId })
+        .select("_id")
+        .lean();
+      if (!existing) throw new Error("Chatbot execution record was not available after upsert");
+      executionId = String(existing._id);
+    } else {
+      const created = await ChatbotExecutionModel.create(run);
+      executionId = String(created._id);
+      inserted = true;
+    }
+
+    if (inserted) {
+      try {
+        await ChatbotFlowModel.updateOne(
+          { _id: flow._id, userId },
+          { $inc: { "analytics.triggered": 1 } },
+          { timestamps: false },
+        );
+      } catch (error) {
+        logger.warn(
+          { flowId: String(flow._id), error: String(error) },
+          "Chatbot run saved but lifetime trigger counter could not be updated",
+        );
+      }
+    }
+
+    return executionId;
+  } catch (error) {
+    if (sourceMessageId && (error as { code?: number }).code === 11000) {
+      const existing = await ChatbotExecutionModel.findOne({ userId, sourceMessageId })
+        .select("_id")
+        .lean()
+        .catch(() => null);
+      if (existing) return String(existing._id);
+    }
+
+    // Activity tracking is best-effort so a history write never blocks a
+    // customer-facing WhatsApp reply.
+    logger.error(
+      { flowId: String(flow._id), contactId: String(contactId), error: String(error) },
+      "Could not record chatbot execution; continuing flow",
+    );
+    return undefined;
+  }
+}
+
 async function executeFlow(
   flow: ChatbotFlow,
   startNodeId: string,
@@ -375,9 +542,55 @@ async function executeFlow(
   userId: mongoose.Types.ObjectId,
   contactId: mongoose.Types.ObjectId,
   variables: Record<string, unknown>,
+  executionId?: string,
+  startedAt = new Date(),
+): Promise<void> {
+  if (executionId) {
+    await ChatbotExecutionModel.updateOne(
+      {
+        _id: new mongoose.Types.ObjectId(executionId),
+        userId,
+        status: "ACTIVE",
+      },
+      { $set: { lastActivityAt: new Date() } },
+      { timestamps: false },
+    ).catch((error: unknown) => {
+      logger.warn(
+        { flowId: String(flow._id), executionId, error: String(error) },
+        "Could not refresh chatbot execution activity time",
+      );
+    });
+  }
+
+  try {
+    await executeFlowNodes(
+      flow, startNodeId, phone, contact, userId, contactId, variables, executionId, startedAt,
+    );
+  } catch (error) {
+    await clearSession(contactId, userId, "FAILED", executionId, String(flow._id)).catch((statusError: unknown) => {
+      logger.warn(
+        { flowId: String(flow._id), error: String(statusError) },
+        "Could not finalize failed chatbot execution",
+      );
+    });
+    throw error;
+  }
+}
+
+async function executeFlowNodes(
+  flow: ChatbotFlow,
+  startNodeId: string,
+  phone: string,
+  contact: Record<string, unknown>,
+  userId: mongoose.Types.ObjectId,
+  contactId: mongoose.Types.ObjectId,
+  variables: Record<string, unknown>,
+  executionId?: string,
+  startedAt = new Date(),
 ): Promise<void> {
   let currentNodeId: string | undefined = startNodeId;
   let steps = 0;
+  let terminalStatus: ChatbotExecutionStatus = "COMPLETED";
 
   while (currentNodeId && steps < MAX_STEPS) {
     steps++;
@@ -390,7 +603,7 @@ async function executeFlow(
       status: "PUBLISHED",
     });
     if (!stillPublished) {
-      await clearSession(contactId);
+      await clearSession(contactId, userId, "STOPPED", executionId, String(flow._id));
       logger.info({ flowId: String(flow._id) }, "Chatbot flow unpublished; stopping execution");
       return;
     }
@@ -398,6 +611,7 @@ async function executeFlow(
     const node = flow.nodes.find((n) => n.id === currentNodeId);
     if (!node) {
       logger.warn({ nodeId: currentNodeId, flowId: String(flow._id) }, "Chatbot node not found");
+      terminalStatus = "FAILED";
       break;
     }
 
@@ -406,7 +620,10 @@ async function executeFlow(
     // Re-fetch contact so attribute/tag changes made mid-flow are visible to conditions
     const freshContact =
       (await ContactModel.findById(contactId).lean()) as Record<string, unknown> | null;
-    if (!freshContact) break;
+    if (!freshContact) {
+      terminalStatus = "INTERRUPTED";
+      break;
+    }
 
     const result = await executeNode(
       node, flow, phone, freshContact, userId, contactId, variables,
@@ -422,22 +639,24 @@ async function executeFlow(
       // Keep the session at the failed node. This is especially important for
       // Flow Reply nodes: if Meta rejects the outbound Flow message, a later
       // retry should not force the customer to restart the whole chatbot.
-      await saveSession(contactId, {
+      await saveSession(contactId, userId, {
         flowId: String(flow._id),
         currentNodeId: node.id,
         variables,
-        startedAt: new Date(),
+        startedAt,
+        ...(executionId ? { executionId } : {}),
       });
       return;
     }
 
     if (result.waitForInput) {
       // Save where we stopped so we can resume on the next message
-      await saveSession(contactId, {
+      await saveSession(contactId, userId, {
         flowId: String(flow._id),
         currentNodeId: node.id,
         variables,
-        startedAt: new Date(),
+        startedAt,
+        ...(executionId ? { executionId } : {}),
       });
       return;
     }
@@ -453,12 +672,13 @@ async function executeFlow(
     currentNodeId = outEdge?.target;
   }
 
-  // Flow finished — clear session
-  await clearSession(contactId);
-
   if (steps >= MAX_STEPS) {
+    terminalStatus = "FAILED";
     logger.warn({ flowId: String(flow._id) }, "Chatbot max steps reached");
   }
+
+  // Flow finished — clear the session and finalize its lightweight run record.
+  await clearSession(contactId, userId, terminalStatus, executionId, String(flow._id));
 }
 
 // ── Node Executor ──────────────────────────────────────────────────────────────
@@ -963,12 +1183,109 @@ function sanitizeFlowScreenId(id: string): string {
 
 // ── Session Helpers ────────────────────────────────────────────────────────────
 
-async function saveSession(contactId: mongoose.Types.ObjectId, session: Session) {
-  await ContactModel.findByIdAndUpdate(contactId, { $set: { chatbotSession: session } });
+async function finishChatbotExecution(
+  executionId: string,
+  userId: mongoose.Types.ObjectId,
+  flowId: string,
+  status: ChatbotExecutionStatus,
+) {
+  if (!mongoose.isValidObjectId(executionId) || !mongoose.isValidObjectId(flowId)) return;
+  const now = new Date();
+  const finalized = await ChatbotExecutionModel.findOneAndUpdate(
+    {
+      _id: new mongoose.Types.ObjectId(executionId),
+      userId,
+      flowId: new mongoose.Types.ObjectId(flowId),
+      status: "ACTIVE",
+    },
+    { $set: { status, endedAt: now, lastActivityAt: now } },
+    { new: true, timestamps: false },
+  ).select("_id").lean();
+
+  if (finalized && status === "COMPLETED") {
+    try {
+      await ChatbotFlowModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(flowId), userId },
+        { $inc: { "analytics.completed": 1 } },
+        { timestamps: false },
+      );
+    } catch (error) {
+      logger.warn(
+        { flowId, error: String(error) },
+        "Chatbot run completed but lifetime completion counter could not be updated",
+      );
+    }
+  }
 }
 
-async function clearSession(contactId: mongoose.Types.ObjectId) {
-  await ContactModel.findByIdAndUpdate(contactId, { $unset: { chatbotSession: 1 } });
+async function saveSession(
+  contactId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId,
+  session: Session,
+) {
+  const lastActivityAt = new Date();
+  await ContactModel.findOneAndUpdate(
+    { _id: contactId, userId },
+    { $set: { chatbotSession: session } },
+  );
+
+  if (session.executionId && mongoose.isValidObjectId(session.executionId)) {
+    await ChatbotExecutionModel.updateOne(
+      {
+        _id: new mongoose.Types.ObjectId(session.executionId),
+        userId,
+        status: "ACTIVE",
+      },
+      { $set: { lastActivityAt } },
+      { timestamps: false },
+    ).catch((error: unknown) => {
+      logger.warn(
+        { executionId: session.executionId, error: String(error) },
+        "Could not update chatbot run activity time",
+      );
+    });
+  }
+}
+
+async function clearSession(
+  contactId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId,
+  status: ChatbotExecutionStatus,
+  executionId?: string,
+  flowId?: string,
+) {
+  const contact = await ContactModel.findOne({ _id: contactId, userId })
+    .select("chatbotSession")
+    .lean();
+  const session = contact?.chatbotSession as Session | undefined;
+  const targetExecutionId = executionId ?? session?.executionId;
+  const targetFlowId = flowId ?? session?.flowId;
+
+  if (targetExecutionId && targetFlowId) {
+    try {
+      await finishChatbotExecution(targetExecutionId, userId, targetFlowId, status);
+    } catch (error) {
+      logger.warn(
+        { flowId: targetFlowId, executionId: targetExecutionId, error: String(error) },
+        "Could not finalize chatbot run history",
+      );
+    }
+  }
+
+  if (!session) return;
+  if (executionId && session.executionId && executionId !== session.executionId) return;
+  if (flowId && session.flowId !== flowId) return;
+
+  const filter: Record<string, unknown> = { _id: contactId, userId };
+  if (session.executionId) {
+    filter["chatbotSession.executionId"] = session.executionId;
+  } else {
+    filter["chatbotSession.flowId"] = session.flowId;
+    filter["chatbotSession.currentNodeId"] = session.currentNodeId;
+    filter["chatbotSession.startedAt"] = session.startedAt;
+  }
+
+  await ContactModel.findOneAndUpdate(filter, { $unset: { chatbotSession: 1 } });
 }
 
 // ── Message Persistence ────────────────────────────────────────────────────────

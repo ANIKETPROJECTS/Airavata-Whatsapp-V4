@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: integration
     description: Connected account operations
+  - name: chatbot
+    description: Chatbot execution activity
 paths:
   /healthz:
     get:
@@ -86,6 +88,41 @@ paths:
           description: The tenant's stored WhatsApp credential does not match this phone number
         "500":
           description: Message ingestion failed
+  /chatbot/flows/{id}/executions/query:
+    post:
+      operationId: searchChatbotFlowExecutions
+      tags: [chatbot]
+      summary: Search recent executions for a chatbot
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-fA-F0-9]{24}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatbotExecutionQuery"
+      responses:
+        "200":
+          description: A page of chatbot executions and lifetime summary counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatbotExecutionPage"
+        "400":
+          description: Invalid flow ID or pagination parameters
+        "401":
+          description: Authentication required
+        "404":
+          description: Chatbot not found
+        "500":
+          description: Could not load chatbot activity
 components:
   securitySchemes:
     bearerAuth:
@@ -185,4 +222,90 @@ components:
           type: string
         whatsappMessageId:
           type: string
+    ChatbotExecution:
+      type: object
+      required:
+        - id
+        - contactId
+        - contactName
+        - contactPhone
+        - triggerType
+        - status
+        - startedAt
+        - lastActivityAt
+        - endedAt
+      properties:
+        id:
+          type: string
+        contactId:
+          type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        contactPhone:
+          type: ["string", "null"]
+        triggerType:
+          type: string
+          enum: [KEYWORD, DEFAULT, TEMPLATE_LINK, LEGACY_SESSION]
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, INTERRUPTED, STOPPED, FAILED]
+        startedAt:
+          type: string
+          format: date-time
+        lastActivityAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+    ChatbotExecutionStats:
+      type: object
+      required:
+        - triggered
+        - completed
+        - active
+        - interrupted
+        - stopped
+        - failed
+      properties:
+        triggered:
+          type: integer
+        completed:
+          type: integer
+        active:
+          type: integer
+        interrupted:
+          type: integer
+        stopped:
+          type: integer
+        failed:
+          type: integer
+    ChatbotExecutionPage:
+      type: object
+      required:
+        - executions
+        - stats
+        - nextCursor
+      properties:
+        executions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatbotExecution"
+        stats:
+          $ref: "#/components/schemas/ChatbotExecutionStats"
+        nextCursor:
+          type: ["string", "null"]
+    ChatbotExecutionQuery:
+      type: object
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+        cursor:
+          type: string
+          maxLength: 256
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, INTERRUPTED, STOPPED, FAILED]
 

@@ -39,7 +39,10 @@ function ProtectedRouter() {
     return <Redirect to="/dashboard" />;
   }
 
-  const requestedRoute = routes.find(route => route.path === location);
+  const requestedRoute = routes.find(route => route.path === location) ??
+    (/^\/chatbot\/[^/]+\/activity\/?$/.test(location)
+      ? routes.find(route => route.path === '/chatbot')
+      : undefined);
   const section = requestedRoute?.path === '/notifications'
     ? undefined
     : requestedRoute?.path.slice(1);
