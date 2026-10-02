@@ -16,7 +16,6 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
-  Save,
   Send,
   Settings2,
   ShieldCheck,
@@ -25,10 +24,10 @@ import {
 } from 'lucide-react';
 import {
   getGetWaPayDashboardQueryKey,
+  useConnectWaPayRazorpay,
   useCreateWaPayOrder,
   useGetWaPayDashboard,
   useRefundWaPayOrder,
-  useSaveWaPaySettings,
   useUpdateWaPayOrderStatus,
   useVerifyWaPayOrder,
   type WaPayBeneficiaryInput,
@@ -129,15 +128,12 @@ export default function WAPay() {
     query: { queryKey: getGetWaPayDashboardQueryKey() },
   });
   const dashboard = dashboardQuery.data;
-  const saveSettings = useSaveWaPaySettings();
+  const connectRazorpay = useConnectWaPayRazorpay();
   const createOrder = useCreateWaPayOrder();
   const verifyOrder = useVerifyWaPayOrder();
   const refundOrder = useRefundWaPayOrder();
   const updateStatus = useUpdateWaPayOrderStatus();
 
-  const [configName, setConfigName] = useState('');
-  const [configId, setConfigId] = useState('');
-  const [configTouched, setConfigTouched] = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [contactId, setContactId] = useState('');
   const [goodsType, setGoodsType] = useState<WaPayOrderInput['goodsType']>('physical-goods');
@@ -158,17 +154,62 @@ export default function WAPay() {
   const [statusDrafts, setStatusDrafts] = useState<Record<string, WaPayOrderStatusInput['status']>>({});
   const [statusNotes, setStatusNotes] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!dashboard || configTouched) return;
-    setConfigName(dashboard.settings.configurationName ?? '');
-    setConfigId(dashboard.settings.paymentConfigId ?? '');
-  }, [dashboard?.settings.configurationName, dashboard?.settings.paymentConfigId, configTouched]);
-
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetWaPayDashboardQueryKey() });
-  const settingsReady = Boolean(dashboard?.settings.configurationName?.trim());
+  useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    if (currentUrl.searchParams.get('razorpay_setup') !== 'complete') return;
+    void dashboardQuery.refetch().finally(() => {
+      currentUrl.searchParams.delete('razorpay_setup');
+      const cleanedUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+      window.history.replaceState(window.history.state, '', cleanedUrl);
+    });
+  }, []);
+
+  const configurationStatus = dashboard?.settings.configurationStatus ?? null;
+  const settingsReady = configurationStatus === 'Active';
   const configIdReady = Boolean(dashboard?.settings.paymentConfigId?.trim());
+  const connectionCopy = configurationStatus ? {
+    Active: {
+      label: 'Connected',
+      detail: dashboard?.settings.configurationName
+        ? `Razorpay is active for ${dashboard.settings.configurationName}.`
+        : 'Razorpay is active for WhatsApp checkout.',
+      action: 'Check connection',
+      tone: 'wa-tag-good',
+    },
+    Needs_Connecting: {
+      label: 'Authorization needed',
+      detail: 'Continue to Razorpay to authorize this connection, then return here for a live status check.',
+      action: 'Continue setup',
+      tone: 'wa-tag-warn',
+    },
+    Needs_Testing: {
+      label: 'Testing required',
+      detail: 'The connection exists, but Meta still needs a successful test before payment requests can be sent.',
+      action: 'Continue setup',
+      tone: 'wa-tag-warn',
+    },
+    Not_Found: {
+      label: 'Configuration not found',
+      detail: 'Airavata could not find an active WhatsApp payment configuration. Retry setup to create or reconnect it.',
+      action: 'Retry connection',
+      tone: 'wa-tag-bad',
+    },
+    Unknown: {
+      label: 'Status unavailable',
+      detail: 'The live connection status could not be confirmed. Retry to check the setup with Meta.',
+      action: 'Check connection',
+      tone: 'wa-tag-warn',
+    },
+  }[configurationStatus] : {
+    label: 'Not connected',
+    detail: 'Start Razorpay setup here. Airavata will create or find the WhatsApp payment configuration for you.',
+    action: 'Connect Razorpay',
+    tone: 'wa-tag-warn',
+  };
   const eligibleContacts = dashboard?.eligibleContacts.filter(contact => new Date(contact.windowExpiresAt).getTime() > Date.now()) ?? [];
-  const canRequest = Boolean(dashboard?.whatsappConnected && settingsReady && eligibleContacts.length > 0);
+  const canRequest = Boolean(dashboard?.whatsappConnected && configurationStatus === 'Active' && eligibleContacts.length > 0);
+  const hasChosenEligibleContact = eligibleContacts.some(contact => contact.id === contactId);
   const itemPaise = items.map(item => rupeesToPaise(item.price));
   const subtotal = items.reduce((sum, item, index) => {
     const unit = itemPaise[index] ?? 0;
@@ -181,19 +222,19 @@ export default function WAPay() {
     setItems(current => current.map((entry, row) => row === index ? { ...entry, [field]: value } : entry));
   };
 
-  const saveConfiguration = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setConfigTouched(true);
-    const name = configName.trim();
-    if (!name) return;
-    saveSettings.mutate({
-      data: { configurationName: name, paymentConfigId: configId.trim() || null },
-    }, {
-      onSuccess: () => {
-        toast.success('Razorpay configuration saved');
-        invalidate();
+  const connectConfiguration = () => {
+    const returnUrl = new URL(window.location.pathname, window.location.origin);
+    returnUrl.searchParams.set('razorpay_setup', 'complete');
+    connectRazorpay.mutate({ data: { redirectUrl: returnUrl.toString() } }, {
+      onSuccess: result => {
+        if (result.authorizationUrl) {
+          window.location.assign(result.authorizationUrl);
+          return;
+        }
+        toast.success('Razorpay setup updated', { description: 'Checking the live WhatsApp payment configuration status.' });
+        void dashboardQuery.refetch();
       },
-      onError: error => toast.error('Could not save configuration', { description: friendlyError(error) }),
+      onError: error => toast.error('Razorpay setup could not be started', { description: friendlyError(error) }),
     });
   };
 
@@ -429,40 +470,41 @@ export default function WAPay() {
       </section>
 
       <section className={`wa-setup ${settingsReady ? 'wa-setup-ready' : 'wa-setup-needed'}`} aria-label="Razorpay configuration">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex gap-3">
             <div className="wa-setup-icon"><Settings2 className="h-5 w-5" /></div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base font-semibold text-[#28322b]">Razorpay connection</h2>
-                <span className={`wa-small-tag ${settingsReady ? 'wa-tag-good' : 'wa-tag-warn'}`}>{settingsReady ? 'Configuration saved' : 'Setup required'}</span>
+                <span className={`wa-small-tag ${connectionCopy.tone}`} data-testid="status-wa-pay-razorpay">{connectionCopy.label}</span>
               </div>
-              <p className="mt-1 text-sm text-[#68736a]">
-                {settingsReady ? `Linked configuration: ${dashboard.settings.configurationName}` : 'Link the exact payment configuration name from WhatsApp Manager.'}
-              </p>
+              <p className="mt-1 max-w-2xl text-sm leading-5 text-[#68736a]">{connectionCopy.detail}</p>
+              {dashboard.settings.providerMid && (
+                <p className="mt-2 text-xs text-[#879187]">Merchant account · {dashboard.settings.providerMid}</p>
+              )}
             </div>
           </div>
-          <span className="flex items-center gap-2 text-xs font-medium text-[#68736a]">
-            <CreditCard className="h-4 w-4" /> Meta native checkout · Razorpay
-          </span>
+          <div className="flex flex-col items-start gap-2 md:items-end">
+            <span className="flex items-center gap-2 text-xs font-medium text-[#68736a]">
+              <CreditCard className="h-4 w-4" /> Meta native checkout · Razorpay
+            </span>
+            <button
+              type="button"
+              onClick={connectConfiguration}
+              disabled={connectRazorpay.isPending || !dashboard.whatsappConnected}
+              data-testid="button-connect-wa-pay-razorpay"
+              className="wa-button wa-button-green min-h-10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {connectRazorpay.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
+              {connectRazorpay.isPending ? 'Starting setup…' : connectionCopy.action}
+            </button>
+          </div>
         </div>
-        <form onSubmit={saveConfiguration} className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
-          <label className="wa-field">
-            <span>WhatsApp Manager configuration name <b>*</b></span>
-            <input value={configName} onChange={event => setConfigName(event.target.value)} maxLength={60} placeholder={dashboard.settings.configurationName || 'Exact linked name'} required data-testid="input-wa-pay-config-name" />
-            <small>Must match the name linked in WhatsApp Manager exactly.</small>
-          </label>
-          <label className="wa-field">
-            <span>Payment configuration ID <em>needed for refunds</em></span>
-            <input value={configId} onChange={event => setConfigId(event.target.value)} maxLength={128} placeholder={dashboard.settings.paymentConfigId || 'Meta configuration ID'} data-testid="input-wa-pay-config-id" />
-            <small>Find this in your Meta payment configuration. Never enter Razorpay keys here.</small>
-          </label>
-          <button type="submit" disabled={saveSettings.isPending || !configName.trim()} data-testid="button-save-wa-pay-settings" className="wa-button wa-button-green h-10 disabled:opacity-50">
-            {saveSettings.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save setup
-          </button>
-        </form>
-        {configTouched && !configName.trim() && <p role="alert" className="mt-2 text-xs text-[#b34d3c]">Configuration name is required.</p>}
+        {!dashboard.whatsappConnected && (
+          <p className="mt-4 border-t border-[#e9ece5] pt-3 text-xs text-[#9a5142]">
+            Connect your WhatsApp Business account in Airavata first. Razorpay setup will be available here once it is connected.
+          </p>
+        )}
       </section>
 
       {!dashboard.whatsappConnected && (
@@ -474,7 +516,7 @@ export default function WAPay() {
       {dashboard.whatsappConnected && !settingsReady && (
         <div className="wa-inline-alert wa-inline-warn" role="status">
           <CircleHelp className="h-4 w-4 shrink-0" />
-          <p>Save a Razorpay configuration to enable payment requests.</p>
+          <p>Payment requests are paused until the Razorpay connection is active. Use the setup action above to continue or retry.</p>
         </div>
       )}
 
@@ -582,7 +624,7 @@ export default function WAPay() {
               </div>
               <div className="flex flex-col gap-4 border-t border-[#e1e6dd] pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div><span className="text-xs font-medium uppercase tracking-wider text-[#718076]">Order total</span><p className="text-2xl font-semibold tabular-nums tracking-tight text-[#24352b]">{money(total)}</p></div>
-                <button type="submit" disabled={createOrder.isPending || !contactId || !items.every((item, index) => item.name.trim() && itemPaise[index] && Number(item.quantity) >= 1)} data-testid="button-send-wa-pay-request" className="wa-button wa-button-green min-h-11 disabled:cursor-not-allowed disabled:opacity-45">
+                <button type="submit" disabled={createOrder.isPending || !canRequest || !hasChosenEligibleContact || !items.every((item, index) => item.name.trim() && itemPaise[index] && Number(item.quantity) >= 1)} data-testid="button-send-wa-pay-request" className="wa-button wa-button-green min-h-11 disabled:cursor-not-allowed disabled:opacity-45">
                   {createOrder.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   Send payment request
                 </button>
@@ -690,7 +732,7 @@ export default function WAPay() {
                           <button type="button" onClick={() => verify(order)} disabled={busy || order.sendStatus !== 'sent' || verifiedPaid} data-testid={`button-verify-wa-pay-${order.id}`} className="wa-button wa-button-quiet disabled:cursor-not-allowed disabled:opacity-40" title={verifiedPaid ? 'Already verified' : 'Check payment status directly with Meta'}>
                             {verifyOrder.isPending && verifyOrder.variables?.id === order.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} Verify with Meta
                           </button>
-                          <button type="button" onClick={() => { setRefundTarget(order); setRefundAmount(((order.amountValue - orderRefundTotal) / 100).toFixed(2)); }} disabled={!refundEligible || busy} data-testid={`button-refund-wa-pay-${order.id}`} className="wa-button wa-button-quiet disabled:cursor-not-allowed disabled:opacity-40" title={!configIdReady ? 'Save a payment configuration ID to enable refunds' : !verifiedPaid ? 'Verify the captured payment before refunding' : 'Submit a full or partial refund'}>
+                          <button type="button" onClick={() => { setRefundTarget(order); setRefundAmount(((order.amountValue - orderRefundTotal) / 100).toFixed(2)); }} disabled={!refundEligible || busy} data-testid={`button-refund-wa-pay-${order.id}`} className="wa-button wa-button-quiet disabled:cursor-not-allowed disabled:opacity-40" title={!configIdReady ? 'The linked Meta payment configuration is not available for refunds yet' : !verifiedPaid ? 'Verify the captured payment before refunding' : 'Submit a full or partial refund'}>
                             <RotateCcw className="h-4 w-4" /> Refund
                           </button>
                         </div>
@@ -704,7 +746,7 @@ export default function WAPay() {
                           </button>
                         </div>
                       </div>
-                      {!configIdReady && verifiedPaid && <p className="mt-3 text-xs text-[#8b6a2c]">A payment configuration ID is required before a refund can be requested.</p>}
+                      {!configIdReady && verifiedPaid && <p className="mt-3 text-xs text-[#8b6a2c]">The linked payment configuration is not available for refunds yet. Refresh the connection status or retry Razorpay setup.</p>}
                       {orderRefundTotal > 0 && <p className="mt-2 text-xs text-[#69766c]">Successfully refunded: {money(orderRefundTotal)}</p>}
                     </div>
                   )}
@@ -731,7 +773,7 @@ export default function WAPay() {
             <form onSubmit={submitRefund} className="space-y-4">
               <label className="wa-field"><span>Refund amount <b>*</b></span><div className="wa-currency-input"><span>₹</span><input autoFocus inputMode="decimal" value={refundAmount} onChange={event => setRefundAmount(event.target.value)} required data-testid="input-wa-pay-refund-amount" /></div><small>Enter the full or partial amount in rupees.</small></label>
               <label className="wa-field"><span>Processing speed</span><select value={refundSpeed} onChange={event => setRefundSpeed(event.target.value as 'normal' | 'instant')} data-testid="select-wa-pay-refund-speed"><option value="normal">Normal</option><option value="instant">Instant</option></select></label>
-              <div className="wa-inline-alert wa-inline-warn"><CircleHelp className="h-4 w-4 shrink-0" /><p>This submits the refund through Meta using the saved payment configuration ID.</p></div>
+              <div className="wa-inline-alert wa-inline-warn"><CircleHelp className="h-4 w-4 shrink-0" /><p>This submits the refund through Meta using the connected payment configuration.</p></div>
               <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setRefundTarget(null)} disabled={refundOrder.isPending} data-testid="button-cancel-wa-pay-refund" className="wa-button wa-button-quiet">Cancel</button><button type="submit" disabled={refundOrder.isPending || !configIdReady} data-testid="button-submit-wa-pay-refund" className="wa-button wa-button-dark disabled:opacity-50">{refundOrder.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowDownLeft className="h-4 w-4" />} Submit refund</button></div>
             </form>
           </section>

@@ -224,11 +224,11 @@ paths:
           description: Authentication required
         "500":
           description: Could not load WhatsApp Pay data
-  /wa-pay/settings:
-    put:
-      operationId: saveWaPaySettings
+  /wa-pay/settings/connect:
+    post:
+      operationId: connectWaPayRazorpay
       tags: [waPay]
-      summary: Save the linked Razorpay payment configuration details
+      summary: Create or reuse a WhatsApp payment configuration and start Razorpay authorization
       security:
         - bearerAuth: []
       requestBody:
@@ -236,20 +236,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WaPaySettingsInput"
+              $ref: "#/components/schemas/WaPaySetupInput"
       responses:
         "200":
-          description: Settings saved
+          description: Razorpay setup started or an active configuration was connected
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WaPaySettings"
+                $ref: "#/components/schemas/WaPaySetupResult"
         "400":
-          description: Invalid payment configuration
+          description: Invalid redirect URL
         "401":
           description: Authentication required
+        "409":
+          description: WhatsApp Business Account is not connected
+        "502":
+          description: Meta could not start or verify Razorpay setup
         "500":
-          description: Could not save WhatsApp Pay settings
+          description: Could not start Razorpay setup
   /wa-pay/orders:
     post:
       operationId: createWaPayOrder
@@ -624,22 +628,30 @@ components:
           items:
             type: object
             additionalProperties: true
-    WaPaySettingsInput:
+    WaPaySetupInput:
       type: object
-      required: [configurationName]
+      required: [redirectUrl]
+      properties:
+        redirectUrl:
+          type: string
+          maxLength: 2048
+          description: Airavata return URL after Razorpay authorization.
+    WaPaySetupResult:
+      type: object
+      required: [configurationName, configurationStatus, authorizationUrl, expiresAt]
       properties:
         configurationName:
           type: string
-          minLength: 1
-          maxLength: 60
-          description: Exact Razorpay payment-configuration name linked in WhatsApp Manager.
-        paymentConfigId:
+        configurationStatus:
+          type: string
+          enum: [Active, Needs_Connecting, Needs_Testing]
+        authorizationUrl:
           type: ["string", "null"]
-          maxLength: 128
-          description: Meta payment configuration ID, used when initiating refunds.
+        expiresAt:
+          type: ["integer", "null"]
     WaPaySettings:
       type: object
-      required: [gateway, configurationName, paymentConfigId]
+      required: [gateway, configurationName, paymentConfigId, configurationStatus, providerMid]
       properties:
         gateway:
           type: string
@@ -647,6 +659,11 @@ components:
         configurationName:
           type: ["string", "null"]
         paymentConfigId:
+          type: ["string", "null"]
+        configurationStatus:
+          type: ["string", "null"]
+          enum: [Active, Needs_Connecting, Needs_Testing, Not_Found, Unknown, null]
+        providerMid:
           type: ["string", "null"]
     WaPayDashboard:
       type: object

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { WaPaySettingsConfigurationStatus } from './waPaySettingsConfigurationStatus';
 import type { WaPaySettingsGateway } from './waPaySettingsGateway';
 
 export interface WaPaySettings {
@@ -13,4 +14,8 @@ export interface WaPaySettings {
   configurationName: string | null;
   /** @nullable */
   paymentConfigId: string | null;
+  /** @nullable */
+  configurationStatus: WaPaySettingsConfigurationStatus;
+  /** @nullable */
+  providerMid: string | null;
 }

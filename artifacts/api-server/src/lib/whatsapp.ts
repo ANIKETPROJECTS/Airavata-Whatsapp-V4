@@ -211,6 +211,206 @@ async function graphFetchWithCreds<T>(
   return data;
 }
 
+export type MetaWhatsAppPaymentConfigurationStatus =
+  | "Active"
+  | "Needs_Connecting"
+  | "Needs_Testing";
+
+export interface MetaWhatsAppPaymentConfiguration {
+  configurationName: string;
+  providerName: string | null;
+  status: MetaWhatsAppPaymentConfigurationStatus | null;
+  providerMid: string | null;
+  updatedTimestamp: number | null;
+}
+
+function normalizePaymentConfigurationStatus(
+  value: unknown,
+): MetaWhatsAppPaymentConfigurationStatus | null {
+  const normalized = String(value ?? "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .toLowerCase();
+  if (normalized === "active") return "Active";
+  if (normalized === "needs_connecting") return "Needs_Connecting";
+  if (normalized === "needs_testing") return "Needs_Testing";
+  return null;
+}
+
+function collectPaymentConfigurationRows(
+  value: unknown,
+  rows: Record<string, unknown>[] = [],
+): Record<string, unknown>[] {
+  if (Array.isArray(value)) {
+    for (const item of value) collectPaymentConfigurationRows(item, rows);
+    return rows;
+  }
+  if (!value || typeof value !== "object") return rows;
+
+  const record = value as Record<string, unknown>;
+  if (
+    typeof record.configuration_name === "string" &&
+    record.configuration_name.trim()
+  ) {
+    rows.push(record);
+  }
+  for (const key of ["data", "payment_configurations"]) {
+    if (record[key] !== undefined) {
+      collectPaymentConfigurationRows(record[key], rows);
+    }
+  }
+  return rows;
+}
+
+function toMetaWhatsAppPaymentConfiguration(
+  row: Record<string, unknown>,
+): MetaWhatsAppPaymentConfiguration | null {
+  if (typeof row.configuration_name !== "string" || !row.configuration_name.trim()) {
+    return null;
+  }
+  return {
+    configurationName: row.configuration_name.trim(),
+    providerName: typeof row.provider_name === "string"
+      ? row.provider_name.trim().toLowerCase()
+      : null,
+    status: normalizePaymentConfigurationStatus(row.status),
+    providerMid: typeof row.provider_mid === "string" ? row.provider_mid : null,
+    updatedTimestamp: typeof row.updated_timestamp === "number"
+      && Number.isFinite(row.updated_timestamp)
+      ? row.updated_timestamp
+      : null,
+  };
+}
+
+function normalizeMetaOAuthUrl(value: unknown): string {
+  if (typeof value !== "string") {
+    throw new Error("Meta did not return a Razorpay authorization link");
+  }
+  const url = new URL(value);
+  if (
+    url.protocol !== "https:" ||
+    !(url.hostname === "facebook.com" || url.hostname.endsWith(".facebook.com"))
+  ) {
+    throw new Error("Meta returned an invalid Razorpay authorization link");
+  }
+  return url.toString();
+}
+
+/**
+ * Read payment configurations linked to a tenant WABA. The caller must pass
+ * the authenticated user ID; credentials are always resolved in strict mode.
+ */
+export async function listWhatsAppPaymentConfigurations(
+  userId: string,
+): Promise<MetaWhatsAppPaymentConfiguration[]> {
+  const credentials = await getCredentials(userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) throw new Error("WhatsApp Business Account ID is unavailable");
+
+  const result = await graphFetchWithCreds<{ data?: unknown }>(
+    `/${encodeURIComponent(credentials.wabaId)}/payment_configurations`,
+    credentials.accessToken,
+  );
+  const uniqueRows = new Map<string, MetaWhatsAppPaymentConfiguration>();
+  for (const row of collectPaymentConfigurationRows(result)) {
+    const configuration = toMetaWhatsAppPaymentConfiguration(row);
+    if (configuration) uniqueRows.set(configuration.configurationName, configuration);
+  }
+  return [...uniqueRows.values()];
+}
+
+export async function getWhatsAppPaymentConfiguration(
+  userId: string,
+  configurationName: string,
+): Promise<MetaWhatsAppPaymentConfiguration | null> {
+  const credentials = await getCredentials(userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) throw new Error("WhatsApp Business Account ID is unavailable");
+
+  let result: { data?: unknown };
+  try {
+    result = await graphFetchWithCreds<{ data?: unknown }>(
+      `/${encodeURIComponent(credentials.wabaId)}/payment_configuration/${encodeURIComponent(configurationName)}`,
+      credentials.accessToken,
+    );
+  } catch (error) {
+    // Meta may use HTTP 400, rather than 404, for a configuration name that
+    // does not exist. Treat those lookup misses as absent; other errors remain
+    // visible to the caller.
+    if (error instanceof MetaApiError && [400, 404].includes(error.status)) {
+      return null;
+    }
+    throw error;
+  }
+  const row = collectPaymentConfigurationRows(result).find(
+    (entry) => entry.configuration_name === configurationName,
+  );
+  return row ? toMetaWhatsAppPaymentConfiguration(row) : null;
+}
+
+export async function createWhatsAppRazorpayPaymentConfiguration(input: {
+  userId: string;
+  configurationName: string;
+  redirectUrl: string;
+}): Promise<{ authorizationUrl: string | null; expiresAt: number | null }> {
+  const credentials = await getCredentials(input.userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) throw new Error("WhatsApp Business Account ID is unavailable");
+  const result = await graphFetchWithCreds<{
+    success?: boolean;
+    oauth_url?: string;
+    expiration?: number;
+  }>(
+    `/${encodeURIComponent(credentials.wabaId)}/payment_configuration`,
+    credentials.accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        configuration_name: input.configurationName,
+        provider_name: "razorpay",
+        redirect_url: input.redirectUrl,
+      }),
+    },
+  );
+  if (result.success !== true) {
+    throw new Error("Meta did not create the Razorpay payment configuration");
+  }
+  return {
+    authorizationUrl: result.oauth_url
+      ? normalizeMetaOAuthUrl(result.oauth_url)
+      : null,
+    expiresAt: typeof result.expiration === "number" && Number.isFinite(result.expiration)
+      ? Math.trunc(result.expiration)
+      : null,
+  };
+}
+
+export async function generateWhatsAppRazorpayOAuthLink(input: {
+  userId: string;
+  configurationName: string;
+  redirectUrl: string;
+}): Promise<{ authorizationUrl: string; expiresAt: number | null }> {
+  const credentials = await getCredentials(input.userId, { allowEnvFallback: false });
+  if (!credentials.wabaId) throw new Error("WhatsApp Business Account ID is unavailable");
+  const result = await graphFetchWithCreds<{
+    oauth_url?: string;
+    expiration?: number;
+  }>(
+    `/${encodeURIComponent(credentials.wabaId)}/generate_payment_configuration_oauth_link`,
+    credentials.accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        configuration_name: input.configurationName,
+        redirect_url: input.redirectUrl,
+      }),
+    },
+  );
+  return {
+    authorizationUrl: normalizeMetaOAuthUrl(result.oauth_url),
+    expiresAt: typeof result.expiration === "number" && Number.isFinite(result.expiration)
+      ? Math.trunc(result.expiration)
+      : null,
+  };
+}
+
 /**
  * Fetch per-user WhatsApp credentials from the whatsappcredentials collection.
  * Falls back to the shared env-var token if no record is found, but always logs

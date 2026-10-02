@@ -7,6 +7,12 @@ const waPaySettingsSchema = new Schema(
     gateway: { type: String, enum: ["razorpay"], default: "razorpay", required: true },
     configurationName: { type: String, required: true, trim: true, maxlength: 60 },
     paymentConfigId: { type: String, trim: true, default: null, maxlength: 128 },
+    configurationStatus: {
+      type: String,
+      enum: ["Active", "Needs_Connecting", "Needs_Testing", "Not_Found", "Unknown"],
+      default: "Needs_Connecting",
+    },
+    providerMid: { type: String, trim: true, default: null, maxlength: 128 },
   },
   { timestamps: true },
 );

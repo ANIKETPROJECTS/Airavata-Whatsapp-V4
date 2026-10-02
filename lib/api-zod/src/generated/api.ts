@@ -163,7 +163,9 @@ export const GetWaPayDashboardResponse = zod.object({
   "settings": zod.object({
   "gateway": zod.enum(['razorpay']),
   "configurationName": zod.string().nullable(),
-  "paymentConfigId": zod.string().nullable()
+  "paymentConfigId": zod.string().nullable(),
+  "configurationStatus": zod.union([zod.literal('Active'),zod.literal('Needs_Connecting'),zod.literal('Needs_Testing'),zod.literal('Not_Found'),zod.literal('Unknown'),zod.literal(null)]).nullable(),
+  "providerMid": zod.string().nullable()
 }),
   "whatsappConnected": zod.boolean(),
   "eligibleContacts": zod.array(zod.object({
@@ -217,23 +219,21 @@ export const GetWaPayDashboardResponse = zod.object({
 
 
 /**
- * @summary Save the linked Razorpay payment configuration details
+ * @summary Create or reuse a WhatsApp payment configuration and start Razorpay authorization
  */
-export const saveWaPaySettingsBodyConfigurationNameMax = 60;
-
-export const saveWaPaySettingsBodyPaymentConfigIdMax = 128;
+export const connectWaPayRazorpayBodyRedirectUrlMax = 2048;
 
 
 
-export const SaveWaPaySettingsBody = zod.object({
-  "configurationName": zod.string().min(1).max(saveWaPaySettingsBodyConfigurationNameMax).describe('Exact Razorpay payment-configuration name linked in WhatsApp Manager.'),
-  "paymentConfigId": zod.string().max(saveWaPaySettingsBodyPaymentConfigIdMax).nullish().describe('Meta payment configuration ID, used when initiating refunds.')
+export const ConnectWaPayRazorpayBody = zod.object({
+  "redirectUrl": zod.string().max(connectWaPayRazorpayBodyRedirectUrlMax).describe('Airavata return URL after Razorpay authorization.')
 })
 
-export const SaveWaPaySettingsResponse = zod.object({
-  "gateway": zod.enum(['razorpay']),
-  "configurationName": zod.string().nullable(),
-  "paymentConfigId": zod.string().nullable()
+export const ConnectWaPayRazorpayResponse = zod.object({
+  "configurationName": zod.string(),
+  "configurationStatus": zod.enum(['Active', 'Needs_Connecting', 'Needs_Testing']),
+  "authorizationUrl": zod.string().nullable(),
+  "expiresAt": zod.number().nullable()
 })
 
 

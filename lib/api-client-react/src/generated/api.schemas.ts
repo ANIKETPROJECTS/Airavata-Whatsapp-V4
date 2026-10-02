@@ -177,19 +177,30 @@ export interface PublicWhatsAppTemplatesResponse {
   templates: PublicWhatsAppTemplate[];
 }
 
-export interface WaPaySettingsInput {
+export interface WaPaySetupInput {
   /**
-     * Exact Razorpay payment-configuration name linked in WhatsApp Manager.
-     * @minLength 1
-     * @maxLength 60
+     * Airavata return URL after Razorpay authorization.
+     * @maxLength 2048
      */
+  redirectUrl: string;
+}
+
+export type WaPaySetupResultConfigurationStatus = typeof WaPaySetupResultConfigurationStatus[keyof typeof WaPaySetupResultConfigurationStatus];
+
+
+export const WaPaySetupResultConfigurationStatus = {
+  Active: 'Active',
+  Needs_Connecting: 'Needs_Connecting',
+  Needs_Testing: 'Needs_Testing',
+} as const;
+
+export interface WaPaySetupResult {
   configurationName: string;
-  /**
-     * Meta payment configuration ID, used when initiating refunds.
-     * @maxLength 128
-     * @nullable
-     */
-  paymentConfigId?: string | null;
+  configurationStatus: WaPaySetupResultConfigurationStatus;
+  /** @nullable */
+  authorizationUrl: string | null;
+  /** @nullable */
+  expiresAt: number | null;
 }
 
 export type WaPaySettingsGateway = typeof WaPaySettingsGateway[keyof typeof WaPaySettingsGateway];
@@ -199,12 +210,30 @@ export const WaPaySettingsGateway = {
   razorpay: 'razorpay',
 } as const;
 
+/**
+ * @nullable
+ */
+export type WaPaySettingsConfigurationStatus = typeof WaPaySettingsConfigurationStatus[keyof typeof WaPaySettingsConfigurationStatus] | null;
+
+
+export const WaPaySettingsConfigurationStatus = {
+  Active: 'Active',
+  Needs_Connecting: 'Needs_Connecting',
+  Needs_Testing: 'Needs_Testing',
+  Not_Found: 'Not_Found',
+  Unknown: 'Unknown',
+} as const;
+
 export interface WaPaySettings {
   gateway: WaPaySettingsGateway;
   /** @nullable */
   configurationName: string | null;
   /** @nullable */
   paymentConfigId: string | null;
+  /** @nullable */
+  configurationStatus: WaPaySettingsConfigurationStatus;
+  /** @nullable */
+  providerMid: string | null;
 }
 
 export interface WaPayEligibleContact {

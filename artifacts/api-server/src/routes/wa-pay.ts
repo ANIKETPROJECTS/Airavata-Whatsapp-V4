@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import mongoose from "mongoose";
 import {
+  ConnectWaPayRazorpayBody,
+  ConnectWaPayRazorpayResponse,
   CreateWaPayOrderBody,
   RefundWaPayOrderParams,
   RefundWaPayOrderBody,
-  SaveWaPaySettingsBody,
   UpdateWaPayOrderStatusBody,
   UpdateWaPayOrderStatusParams,
   VerifyWaPayOrderParams,
@@ -16,12 +17,17 @@ import { MessageModel } from "../models/Message";
 import { WaPayOrderModel } from "../models/WaPayOrder";
 import { WaPaySettingsModel } from "../models/WaPaySettings";
 import {
+  createWhatsAppRazorpayPaymentConfiguration,
+  getWhatsAppPaymentConfiguration,
+  generateWhatsAppRazorpayOAuthLink,
   getCredentials,
+  listWhatsAppPaymentConfigurations,
   lookupWhatsAppPayment,
   MetaApiError,
   refundWhatsAppPayment,
   sendWhatsAppOrderDetails,
   sendWhatsAppOrderStatus,
+  type MetaWhatsAppPaymentConfiguration,
 } from "../lib/whatsapp";
 import {
   calculateWaPayAmounts,
@@ -98,6 +104,112 @@ function apiOrder(value: unknown): Record<string, unknown> {
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+type WaPayConfigurationStatus =
+  | "Active"
+  | "Needs_Connecting"
+  | "Needs_Testing"
+  | "Not_Found"
+  | "Unknown";
+
+async function saveWaPayConfiguration(
+  userId: mongoose.Types.ObjectId,
+  configurationName: string,
+  configurationStatus: WaPayConfigurationStatus,
+  providerMid: string | null,
+) {
+  return WaPaySettingsModel.findOneAndUpdate(
+    { userId },
+    {
+      $set: {
+        userId,
+        gateway: "razorpay",
+        configurationName,
+        // Meta's refund API uses the payment configuration used by the order.
+        // The identifier is the same configuration name sent in order_details.
+        paymentConfigId: configurationName,
+        configurationStatus,
+        providerMid,
+      },
+    },
+    { upsert: true, returnDocument: "after", runValidators: true },
+  ).lean();
+}
+
+function isRazorpayConfiguration(
+  configuration: MetaWhatsAppPaymentConfiguration,
+  allowUnspecifiedProvider = false,
+): boolean {
+  return configuration.providerName === "razorpay" ||
+    (allowUnspecifiedProvider && configuration.providerName === null);
+}
+
+function isDuplicateConfigurationError(error: unknown): boolean {
+  if (!(error instanceof MetaApiError)) return false;
+  const response = error.response as {
+    error?: { message?: unknown; error_data?: { details?: unknown } };
+  } | null;
+  const details = response?.error?.error_data?.details;
+  const message = response?.error?.message;
+  return [details, message]
+    .filter((value): value is string => typeof value === "string")
+    .some((value) =>
+      /configuration[_ ]name already exists/i.test(value) ||
+      /payment configuration already exists/i.test(value),
+    );
+}
+
+async function findRazorpayConfigurationByName(
+  userId: string,
+  configurationName: string,
+  listedConfigurations: MetaWhatsAppPaymentConfiguration[],
+): Promise<MetaWhatsAppPaymentConfiguration | null> {
+  const listed = listedConfigurations.find(
+    (entry) => entry.configurationName === configurationName,
+  );
+  if (listed) return isRazorpayConfiguration(listed, true) ? listed : null;
+
+  const direct = await getWhatsAppPaymentConfiguration(userId, configurationName);
+  return direct && isRazorpayConfiguration(direct, true) ? direct : null;
+}
+
+function setupRedirectUrl(value: string, req: AuthRequest): string | null {
+  try {
+    const target = new URL(value);
+    const source = req.get("origin") ?? req.get("referer");
+    if (!source) return null;
+    const sourceOrigin = new URL(source).origin;
+    const isSecureProtocol = target.protocol === "https:";
+    const isLocalDevelopment =
+      target.protocol === "http:" &&
+      ["localhost", "127.0.0.1"].includes(target.hostname);
+    if ((!isSecureProtocol && !isLocalDevelopment) || target.origin !== sourceOrigin) {
+      return null;
+    }
+    if (
+      !target.pathname.endsWith("/wa-pay") ||
+      target.searchParams.get("razorpay_setup") !== "complete"
+    ) {
+      return null;
+    }
+    return target.toString();
+  } catch {
+    return null;
+  }
+}
+
+function metaSetupError(error: unknown): string {
+  if (error instanceof MetaApiError && error.response && typeof error.response === "object") {
+    const response = error.response as {
+      error?: { message?: unknown; error_data?: { details?: unknown } };
+    };
+    const details = response.error?.error_data?.details;
+    if (typeof details === "string" && details.trim()) return details;
+    const message = response.error?.message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return errorText(error);
 }
 
 function generatedReferenceId(): string {
@@ -196,7 +308,7 @@ router.get("/wa-pay", async (req: AuthRequest, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const since = new Date(Date.now() - WINDOW_MS);
-    const [settings, orders, lastInboundRows, whatsappConnected] = await Promise.all([
+    const [settings, orders, lastInboundRows, credentials] = await Promise.all([
       WaPaySettingsModel.findOne({ userId }).lean(),
       WaPayOrderModel.find({ userId }).sort({ createdAt: -1 }).limit(100).lean(),
       MessageModel.aggregate<{ _id: mongoose.Types.ObjectId; lastInboundAt: Date }>([
@@ -213,9 +325,9 @@ router.get("/wa-pay", async (req: AuthRequest, res) => {
         { $limit: 100 },
       ]),
       getCredentials(req.user!.userId, { allowEnvFallback: false })
-        .then((credentials) => Boolean(credentials.phoneNumberId))
-        .catch(() => false),
+        .catch(() => null),
     ]);
+    const whatsappConnected = Boolean(credentials?.phoneNumberId);
 
     const contactIds = lastInboundRows.map((row) => row._id);
     const activeContacts = contactIds.length
@@ -241,11 +353,47 @@ router.get("/wa-pay", async (req: AuthRequest, res) => {
       }];
     });
 
+    let configurationStatus: WaPayConfigurationStatus | null =
+      settings?.configurationStatus ?? null;
+    let providerMid = settings?.providerMid ?? null;
+    if (settings?.configurationName) {
+      if (!credentials?.wabaId) {
+        configurationStatus = "Unknown";
+      } else {
+        try {
+          const configurations = await listWhatsAppPaymentConfigurations(req.user!.userId);
+          const configuration = await findRazorpayConfigurationByName(
+            req.user!.userId,
+            settings.configurationName,
+            configurations,
+          );
+          configurationStatus = configuration
+            ? configuration.status ?? "Unknown"
+            : "Not_Found";
+          providerMid = configuration?.providerMid ?? null;
+          await saveWaPayConfiguration(
+            userId,
+            settings.configurationName,
+            configurationStatus,
+            providerMid,
+          );
+        } catch (error) {
+          configurationStatus = "Unknown";
+          logger.warn(
+            { userId: String(userId), error: errorText(error) },
+            "Could not refresh WhatsApp Pay payment-configuration status",
+          );
+        }
+      }
+    }
+
     res.json({
       settings: {
         gateway: "razorpay",
         configurationName: settings?.configurationName ?? null,
-        paymentConfigId: settings?.paymentConfigId ?? null,
+        paymentConfigId: settings?.configurationName ?? settings?.paymentConfigId ?? null,
+        configurationStatus,
+        providerMid,
       },
       whatsappConnected,
       eligibleContacts,
@@ -257,42 +405,168 @@ router.get("/wa-pay", async (req: AuthRequest, res) => {
   }
 });
 
-router.put("/wa-pay/settings", async (req: AuthRequest, res) => {
-  const parsed = SaveWaPaySettingsBody.safeParse(req.body);
+router.post("/wa-pay/settings/connect", async (req: AuthRequest, res) => {
+  const parsed = ConnectWaPayRazorpayBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid payment configuration" });
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid setup request" });
+    return;
+  }
+  const redirectUrl = setupRedirectUrl(parsed.data.redirectUrl, req);
+  if (!redirectUrl) {
+    res.status(400).json({ error: "Return URL must point to this Airavata WhatsApp Pay page" });
     return;
   }
 
-  const configurationName = parsed.data.configurationName.trim();
-  const paymentConfigId = parsed.data.paymentConfigId?.trim() || null;
-  if (!configurationName) {
-    res.status(400).json({ error: "Enter the exact Razorpay configuration name linked in WhatsApp Manager" });
-    return;
-  }
-
+  const userIdString = req.user!.userId;
+  const userId = new mongoose.Types.ObjectId(userIdString);
   try {
-    const userId = new mongoose.Types.ObjectId(req.user!.userId);
-    const settings = await WaPaySettingsModel.findOneAndUpdate(
-      { userId },
-      {
-        $set: {
-          userId,
-          gateway: "razorpay",
+    let credentials: Awaited<ReturnType<typeof getCredentials>>;
+    try {
+      credentials = await getCredentials(userIdString, { allowEnvFallback: false });
+    } catch {
+      res.status(409).json({ error: "Connect your WhatsApp Business Account before setting up Razorpay" });
+      return;
+    }
+    if (!credentials.wabaId) {
+      res.status(409).json({ error: "Reconnect WhatsApp to finish linking its Business Account" });
+      return;
+    }
+
+    const [configurations, currentSettings] = await Promise.all([
+      listWhatsAppPaymentConfigurations(userIdString),
+      WaPaySettingsModel.findOne({ userId }).lean(),
+    ]);
+    const savedConfiguration = currentSettings?.configurationName
+      ? await findRazorpayConfigurationByName(
+          userIdString,
+          currentSettings.configurationName,
+          configurations,
+        )
+      : null;
+    const candidate = savedConfiguration ?? configurations
+      .filter((entry) => isRazorpayConfiguration(entry))
+      .sort((left, right) => {
+        const priority = (status: MetaWhatsAppPaymentConfiguration["status"]) =>
+          status === "Active" ? 0 : status === "Needs_Connecting" ? 1 : 2;
+        const statusOrder = priority(left.status) - priority(right.status);
+        if (statusOrder !== 0) return statusOrder;
+        return (right.updatedTimestamp ?? 0) - (left.updatedTimestamp ?? 0);
+      })[0];
+
+    const respondWithConfiguration = async (
+      configuration: MetaWhatsAppPaymentConfiguration,
+    ) => {
+      const configurationStatus = configuration.status ?? "Needs_Connecting";
+      const link = configurationStatus === "Active"
+        ? null
+        : await generateWhatsAppRazorpayOAuthLink({
+            userId: userIdString,
+            configurationName: configuration.configurationName,
+            redirectUrl,
+          });
+      await saveWaPayConfiguration(
+        userId,
+        configuration.configurationName,
+        configurationStatus,
+        configuration.providerMid,
+      );
+      res.json(ConnectWaPayRazorpayResponse.parse({
+        configurationName: configuration.configurationName,
+        configurationStatus,
+        authorizationUrl: link?.authorizationUrl ?? null,
+        expiresAt: link?.expiresAt ?? null,
+      }));
+    };
+
+    if (candidate) {
+      await respondWithConfiguration(candidate);
+      return;
+    }
+
+    const occupiedNames = new Set(configurations.map((entry) => entry.configurationName));
+    const existingSavedName = currentSettings?.configurationName;
+    const baseName = existingSavedName && !occupiedNames.has(existingSavedName)
+      ? existingSavedName
+      : `airavata-razorpay-${userIdString.slice(-8).toLowerCase()}`;
+    let configurationName = baseName;
+    let suffix = 2;
+    while (occupiedNames.has(configurationName)) {
+      configurationName = `${baseName.slice(0, 54)}-${suffix}`;
+      suffix += 1;
+    }
+
+    let created: Awaited<ReturnType<typeof createWhatsAppRazorpayPaymentConfiguration>> | null = null;
+    for (let attempt = 0; attempt < 3 && !created; attempt += 1) {
+      try {
+        created = await createWhatsAppRazorpayPaymentConfiguration({
+          userId: userIdString,
           configurationName,
-          paymentConfigId,
-        },
-      },
-      { upsert: true, new: true, runValidators: true },
-    ).lean();
-    res.json({
-      gateway: "razorpay",
-      configurationName: settings?.configurationName ?? configurationName,
-      paymentConfigId: settings?.paymentConfigId ?? paymentConfigId,
-    });
+          redirectUrl,
+        });
+      } catch (error) {
+        if (!isDuplicateConfigurationError(error) || attempt === 2) throw error;
+
+        const latestConfigurations = await listWhatsAppPaymentConfigurations(userIdString);
+        const existingConfiguration = await findRazorpayConfigurationByName(
+          userIdString,
+          configurationName,
+          latestConfigurations,
+        );
+        if (existingConfiguration) {
+          await respondWithConfiguration(existingConfiguration);
+          return;
+        }
+
+        for (const entry of latestConfigurations) {
+          occupiedNames.add(entry.configurationName);
+        }
+        occupiedNames.add(configurationName);
+        configurationName = `${baseName.slice(0, 54)}-${suffix}`;
+        suffix += 1;
+        while (occupiedNames.has(configurationName)) {
+          configurationName = `${baseName.slice(0, 54)}-${suffix}`;
+          suffix += 1;
+        }
+      }
+    }
+    if (!created) {
+      throw new Error("Meta did not create the Razorpay payment configuration");
+    }
+    if (created.authorizationUrl) {
+      await saveWaPayConfiguration(
+        userId,
+        configurationName,
+        "Needs_Connecting",
+        null,
+      );
+      res.json(ConnectWaPayRazorpayResponse.parse({
+        configurationName,
+        configurationStatus: "Needs_Connecting",
+        authorizationUrl: created.authorizationUrl,
+        expiresAt: created.expiresAt,
+      }));
+      return;
+    }
+
+    const refreshedConfigurations = await listWhatsAppPaymentConfigurations(userIdString);
+    const refreshed = await findRazorpayConfigurationByName(
+      userIdString,
+      configurationName,
+      refreshedConfigurations,
+    );
+    if (refreshed) {
+      await respondWithConfiguration(refreshed);
+      return;
+    }
+    throw new Error("Meta created the configuration but did not return an authorization link");
   } catch (error) {
-    logger.error({ error: errorText(error) }, "Could not save WhatsApp Pay settings");
-    res.status(500).json({ error: "Could not save WhatsApp Pay settings" });
+    logger.error(
+      { userId: userIdString, error: errorText(error) },
+      "Could not start WhatsApp Pay Razorpay setup",
+    );
+    res.status(error instanceof MetaApiError ? 502 : 500).json({
+      error: metaSetupError(error),
+    });
   }
 });
 
@@ -310,11 +584,47 @@ router.post("/wa-pay/orders", async (req: AuthRequest, res) => {
   try {
     const settings = await WaPaySettingsModel.findOne({ userId }).lean();
     if (!settings?.configurationName) {
-      res.status(409).json({ error: "Save the Razorpay configuration name before creating an order" });
+      res.status(409).json({ error: "Connect Razorpay before creating a payment request" });
       return;
     }
 
     const credentials = await getCredentials(userIdString, { allowEnvFallback: false });
+    if (!credentials.wabaId) {
+      res.status(409).json({ error: "Reconnect WhatsApp to verify the Razorpay payment configuration" });
+      return;
+    }
+    const paymentConfigurations = await listWhatsAppPaymentConfigurations(userIdString);
+    let paymentConfiguration = paymentConfigurations.find(
+      (entry) =>
+        entry.configurationName === settings.configurationName,
+    );
+    if (!paymentConfiguration) {
+      paymentConfiguration = (await getWhatsAppPaymentConfiguration(
+        userIdString,
+        settings.configurationName,
+      )) ?? undefined;
+    }
+    const isRazorpay = Boolean(
+      paymentConfiguration && isRazorpayConfiguration(paymentConfiguration, true),
+    );
+    const configurationStatus: WaPayConfigurationStatus = isRazorpay && paymentConfiguration
+      ? paymentConfiguration.status ?? "Unknown"
+      : "Not_Found";
+    await saveWaPayConfiguration(
+      userId,
+      settings.configurationName,
+      configurationStatus,
+      isRazorpay ? paymentConfiguration?.providerMid ?? null : null,
+    );
+    if (configurationStatus !== "Active") {
+      res.status(409).json({
+        error: configurationStatus === "Not_Found"
+          ? "Connect Razorpay before creating a payment request"
+          : "Finish Razorpay setup before creating a payment request",
+      });
+      return;
+    }
+
     const contactId = new mongoose.Types.ObjectId(input.contactId);
     const contact = await ContactModel.findOne({
       _id: contactId,
@@ -359,7 +669,7 @@ router.post("/wa-pay/orders", async (req: AuthRequest, res) => {
       recipientPhone: contact.phone,
       phoneNumberId: credentials.phoneNumberId,
       configurationName: settings.configurationName,
-      paymentConfigId: settings.paymentConfigId ?? null,
+      paymentConfigId: settings.configurationName,
       referenceId,
       goodsType: input.goodsType,
       items: input.items,
@@ -498,10 +808,9 @@ router.post("/wa-pay/orders/:id/refund", async (req: AuthRequest, res) => {
       res.status(404).json({ error: "Payment order not found" });
       return;
     }
-    const settings = await WaPaySettingsModel.findOne({ userId }).lean();
-    const paymentConfigId = order.paymentConfigId || settings?.paymentConfigId;
+    const paymentConfigId = order.paymentConfigId || order.configurationName;
     if (!paymentConfigId) {
-      res.status(409).json({ error: "Add the Meta payment configuration ID before requesting a refund" });
+      res.status(409).json({ error: "The payment configuration used by this order is unavailable" });
       return;
     }
 

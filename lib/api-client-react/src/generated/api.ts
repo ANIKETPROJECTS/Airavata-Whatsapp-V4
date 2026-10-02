@@ -36,8 +36,8 @@ import type {
   WaPayOrderInput,
   WaPayOrderStatusInput,
   WaPayRefundInput,
-  WaPaySettings,
-  WaPaySettingsInput
+  WaPaySetupInput,
+  WaPaySetupResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -593,25 +593,25 @@ export function useGetWaPayDashboard<TData = Awaited<ReturnType<typeof getWaPayD
 
 
 
-export const getSaveWaPaySettingsUrl = () => {
+export const getConnectWaPayRazorpayUrl = () => {
 
 
 
 
-  return `/api/wa-pay/settings`
+  return `/api/wa-pay/settings/connect`
 }
 
 /**
- * @summary Save the linked Razorpay payment configuration details
+ * @summary Create or reuse a WhatsApp payment configuration and start Razorpay authorization
  */
-export const saveWaPaySettings = async (waPaySettingsInput: WaPaySettingsInput, options?: RequestInit): Promise<WaPaySettings> => {
+export const connectWaPayRazorpay = async (waPaySetupInput: WaPaySetupInput, options?: RequestInit): Promise<WaPaySetupResult> => {
 
-  return customFetch<WaPaySettings>(getSaveWaPaySettingsUrl(),
+  return customFetch<WaPaySetupResult>(getConnectWaPayRazorpayUrl(),
   {
     ...options,
-    method: 'PUT',
+    method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(waPaySettingsInput)
+    body: JSON.stringify(waPaySetupInput)
   }
 );}
 
@@ -619,11 +619,11 @@ export const saveWaPaySettings = async (waPaySettingsInput: WaPaySettingsInput, 
 
 
 
-export const getSaveWaPaySettingsMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveWaPaySettings>>, TError,{data: BodyType<WaPaySettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof saveWaPaySettings>>, TError,{data: BodyType<WaPaySettingsInput>}, TContext> => {
+export const getConnectWaPayRazorpayMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectWaPayRazorpay>>, TError,{data: BodyType<WaPaySetupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof connectWaPayRazorpay>>, TError,{data: BodyType<WaPaySetupInput>}, TContext> => {
 
-const mutationKey = ['saveWaPaySettings'];
+const mutationKey = ['connectWaPayRazorpay'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -633,10 +633,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveWaPaySettings>>, {data: BodyType<WaPaySettingsInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof connectWaPayRazorpay>>, {data: BodyType<WaPaySetupInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  saveWaPaySettings(data,requestOptions)
+          return  connectWaPayRazorpay(data,requestOptions)
         }
 
 
@@ -646,22 +646,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SaveWaPaySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof saveWaPaySettings>>>
-    export type SaveWaPaySettingsMutationBody = BodyType<WaPaySettingsInput>
-    export type SaveWaPaySettingsMutationError = ErrorType<void>
+    export type ConnectWaPayRazorpayMutationResult = NonNullable<Awaited<ReturnType<typeof connectWaPayRazorpay>>>
+    export type ConnectWaPayRazorpayMutationBody = BodyType<WaPaySetupInput>
+    export type ConnectWaPayRazorpayMutationError = ErrorType<void>
 
     /**
- * @summary Save the linked Razorpay payment configuration details
+ * @summary Create or reuse a WhatsApp payment configuration and start Razorpay authorization
  */
-export const useSaveWaPaySettings = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveWaPaySettings>>, TError,{data: BodyType<WaPaySettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useConnectWaPayRazorpay = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectWaPayRazorpay>>, TError,{data: BodyType<WaPaySetupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof saveWaPaySettings>>,
+        Awaited<ReturnType<typeof connectWaPayRazorpay>>,
         TError,
-        {data: BodyType<WaPaySettingsInput>},
+        {data: BodyType<WaPaySetupInput>},
         TContext
       > => {
-      return useMutation(getSaveWaPaySettingsMutationOptions(options));
+      return useMutation(getConnectWaPayRazorpayMutationOptions(options));
     }
 
 export const getCreateWaPayOrderUrl = () => {
