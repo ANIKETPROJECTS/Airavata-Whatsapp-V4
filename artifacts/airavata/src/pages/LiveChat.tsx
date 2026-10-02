@@ -1378,11 +1378,11 @@ export default function LiveChat() {
                   type="button"
                   aria-label="Filter chats by date"
                   title={dateFilterActive ? formatDateRange(chatDateRange) : 'Filter chats by date'}
-                  className="relative rounded-md bg-transparent p-2 text-primary transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                  className="relative rounded-md bg-transparent p-2 text-black transition-opacity hover:bg-transparent hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
                   <span
                     aria-hidden="true"
-                    className="block h-6 w-6 bg-current"
+                    className="block h-7 w-7 bg-current"
                     style={{
                       maskImage: `url(${calendarFilterIcon})`,
                       WebkitMaskImage: `url(${calendarFilterIcon})`,
