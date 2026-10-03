@@ -42,3 +42,4 @@
 - [OpenAPI search request codegen](openapi-search-request-codegen.md) — use named JSON request schemas when generated query-parameter types collide.
 - [Customer integration direction](customer-integration-direction.md) — favor a tenant-scoped API and signed webhooks for any HTTP-capable system; never imply a native connector without OAuth support.
 - [Meta catalog permissions](meta-catalog-permissions.md) — catalog operations need business/catalog permissions in the Login for Business config and client reauthorization after approval.
+- [Router middleware scope](router-middleware-scope.md) — root-mounted routers must scope access guards to their route prefix or they can block unrelated endpoints.
