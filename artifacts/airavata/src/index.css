@@ -163,7 +163,9 @@
   --sidebar-ring: 142.1 70% 45%;
 }
 
-.airavata-sidebar {
+.airavata-sidebar,
+.airavata-sidebar-nav,
+.airavata-sidebar-nav button {
   font-family: 'Poppins', sans-serif;
 }
 

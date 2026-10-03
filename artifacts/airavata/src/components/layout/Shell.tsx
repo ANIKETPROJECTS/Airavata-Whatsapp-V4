@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   LayoutDashboard, MessageCircle, Users, Megaphone, BarChart3, 
-  FileText, Settings, Workflow, Bot, Blocks, UsersRound, ShoppingBag, 
+  FileText, Settings, Workflow, Bot, Blocks, ShoppingBag,
   CreditCard,
   WalletCards,
   ShieldCheck, X,
@@ -19,7 +19,6 @@ import docsIcon from '@assets/docs_1784814701440.png';
 import flowChartIcon from '@assets/flow-chart_1784814816750.png';
 import botIcon from '@assets/bot_1784814891252.png';
 import skillDevelopmentIcon from '@assets/link_1784832510109.png';
-import multipleUsersIcon from '@assets/people_(1)_1784832278623.png';
 import catalogIcon from '@assets/catalog_1784815184631.png';
 import creditCardIcon from '@assets/credit-card_(1)_1784832045706.png';
 import settingsIcon from '@assets/settings_(1)_1784831863555.png';
@@ -58,7 +57,6 @@ const SIDEBAR_ITEMS = [
   { title: 'Flow Builder', icon: Workflow, iconSrc: flowChartIcon, href: '/flow-builder' },
   { title: 'Chatbot', icon: Bot, iconSrc: botIcon, href: '/chatbot' },
   { title: 'Integration', icon: Blocks, iconSrc: skillDevelopmentIcon, href: '/integration' },
-  { title: 'Group', icon: UsersRound, iconSrc: multipleUsersIcon, href: '/group' },
   { title: 'Catalogue', icon: ShoppingBag, iconSrc: catalogIcon, href: '/catalogue' },
   { title: 'WA Pay', icon: CreditCard, iconSrc: creditCardIcon, href: '/wa-pay' },
   { title: 'Credits', icon: WalletCards, href: '/credits' },
