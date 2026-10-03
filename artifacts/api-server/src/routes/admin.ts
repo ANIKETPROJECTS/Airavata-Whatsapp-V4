@@ -6,7 +6,7 @@ import { CreditTransactionModel } from "../models/CreditTransaction";
 import { CreditSettingModel } from "../models/CreditSetting";
 
 const router = Router();
-router.use(authenticate, requireAdmin);
+router.use("/admin", authenticate, requireAdmin);
 
 router.get("/admin/users", async (_req: AuthRequest, res) => {
   try {
