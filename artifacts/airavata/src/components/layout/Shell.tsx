@@ -16,7 +16,7 @@ import marketingIcon from '@assets/megaphone_1787117798424.png';
 import reportIcon from '@assets/dashboard_(3)_1784831703621.png';
 import widgetIcon from '@assets/table_1784821548409.png';
 import docsIcon from '@assets/docs_1784814701440.png';
-import flowChartIcon from '@assets/flow-chart_1784814816750.png';
+import flowChartIcon from '@assets/flowchart_1791053753250.png';
 import botIcon from '@assets/bot_1784814891252.png';
 import skillDevelopmentIcon from '@assets/link_1784832510109.png';
 import catalogIcon from '@assets/catalog_1784815184631.png';
