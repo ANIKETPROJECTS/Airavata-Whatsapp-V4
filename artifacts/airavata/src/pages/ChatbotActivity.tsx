@@ -37,15 +37,8 @@ const TRIGGER_FILTERS: Array<{ value: TriggerFilter; label: string }> = [
   { value: 'LEGACY_SESSION', label: 'Legacy session' },
 ];
 
-const previewMinutesAgo = (minutes: number) =>
-  new Date(Date.now() - minutes * 60_000).toISOString();
-
-function localDayStart(value: string) {
-  return new Date(`${value}T00:00:00`);
-}
-
 function localDayBoundary(value: string, offsetDays = 0) {
-  const date = localDayStart(value);
+  const date = new Date(`${value}T00:00:00`);
   date.setDate(date.getDate() + offsetDays);
   return date.toISOString();
 }
@@ -53,86 +46,6 @@ function localDayBoundary(value: string, offsetDays = 0) {
 function digitsOnly(value: string | null | undefined) {
   return value?.replace(/\D/g, '') ?? '';
 }
-
-const PREVIEW_ACTIVITY_DATA: NonNullable<ReturnType<typeof useSearchChatbotFlowExecutions>['data']> = {
-  executions: [
-    {
-      id: 'preview-run-001',
-      contactId: 'preview-contact-001',
-      contactName: 'Preview Contact 01',
-      contactPhone: '+91 00000 00101',
-      triggerType: 'KEYWORD',
-      status: 'ACTIVE',
-      startedAt: previewMinutesAgo(14),
-      lastActivityAt: previewMinutesAgo(2),
-      endedAt: null,
-    },
-    {
-      id: 'preview-run-002',
-      contactId: 'preview-contact-002',
-      contactName: 'Preview Contact 02',
-      contactPhone: '+91 00000 00102',
-      triggerType: 'DEFAULT',
-      status: 'COMPLETED',
-      startedAt: previewMinutesAgo(92),
-      lastActivityAt: previewMinutesAgo(87),
-      endedAt: previewMinutesAgo(86),
-    },
-    {
-      id: 'preview-run-003',
-      contactId: 'preview-contact-003',
-      contactName: 'Preview Contact 03',
-      contactPhone: '+91 00000 00103',
-      triggerType: 'TEMPLATE_LINK',
-      status: 'COMPLETED',
-      startedAt: previewMinutesAgo(1_440),
-      lastActivityAt: previewMinutesAgo(1_420),
-      endedAt: previewMinutesAgo(1_418),
-    },
-    {
-      id: 'preview-run-004',
-      contactId: 'preview-contact-004',
-      contactName: 'Preview Contact 04',
-      contactPhone: '+91 00000 00104',
-      triggerType: 'KEYWORD',
-      status: 'INTERRUPTED',
-      startedAt: previewMinutesAgo(2_880),
-      lastActivityAt: previewMinutesAgo(2_870),
-      endedAt: previewMinutesAgo(2_868),
-    },
-    {
-      id: 'preview-run-005',
-      contactId: 'preview-contact-005',
-      contactName: 'Preview Contact 05',
-      contactPhone: '+91 00000 00105',
-      triggerType: 'LEGACY_SESSION',
-      status: 'STOPPED',
-      startedAt: previewMinutesAgo(4_320),
-      lastActivityAt: previewMinutesAgo(4_310),
-      endedAt: previewMinutesAgo(4_309),
-    },
-    {
-      id: 'preview-run-006',
-      contactId: 'preview-contact-006',
-      contactName: 'Preview Contact 06',
-      contactPhone: '+91 00000 00106',
-      triggerType: 'DEFAULT',
-      status: 'FAILED',
-      startedAt: previewMinutesAgo(5_760),
-      lastActivityAt: previewMinutesAgo(5_755),
-      endedAt: previewMinutesAgo(5_754),
-    },
-  ],
-  stats: {
-    triggered: 6,
-    completed: 2,
-    active: 1,
-    interrupted: 1,
-    stopped: 1,
-    failed: 1,
-  },
-  nextCursor: null,
-};
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return '—';
@@ -199,16 +112,14 @@ function ContactName({ name, phone }: { name: string | null; phone: string | nul
 function TranscriptLink({
   contactId,
   executionId,
-  preview = false,
 }: {
   contactId: string | null;
   executionId: string;
-  preview?: boolean;
 }) {
-  if (preview || !contactId) {
+  if (!contactId) {
     return (
       <span
-        title={preview ? 'No transcript is linked in the sample preview' : 'No contact is linked to this run'}
+        title="No contact is linked to this run"
         aria-label="Open chat unavailable"
         data-testid={`link-chatbot-execution-chat-${executionId}`}
         className="inline-flex h-9 items-center justify-center gap-1.5 px-1 text-sm font-medium text-primary/45"
@@ -242,12 +153,10 @@ export default function ChatbotActivity({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [triggerTypeFilter, setTriggerTypeFilter] = useState<TriggerFilter>('ALL');
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined]);
-  const [samplePreviewEnabled, setSamplePreviewEnabled] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [startedAtFromDate, setStartedAtFromDate] = useState('');
   const [startedAtToDate, setStartedAtToDate] = useState('');
-  const isPreview = import.meta.env.DEV && samplePreviewEnabled;
   const cursor = cursors[cursors.length - 1];
   const query = useMemo<ChatbotExecutionQuery>(() => ({
     limit: 25,
@@ -273,46 +182,23 @@ export default function ChatbotActivity({
   }, [reset, searchInput, searchTerm]);
 
   useEffect(() => {
-    if (isPreview) return;
     mutate({ id: flow.id, data: query });
-  }, [flow.id, isPreview, mutate, query]);
+  }, [flow.id, mutate, query]);
 
-  const isLoading = !isPreview && (
+  const isLoading = (
     executionsQuery.isPending ||
     executionsQuery.isIdle ||
     searchInput.trim() !== searchTerm
   );
-  const isError = !isPreview && executionsQuery.isError;
-  const data = isPreview ? PREVIEW_ACTIVITY_DATA : executionsQuery.data;
-  const error = isPreview ? undefined : executionsQuery.error;
-  const allExecutions = data?.executions ?? [];
-  const previewFrom = startedAtFromDate ? localDayStart(startedAtFromDate).getTime() : null;
-  const previewBefore = startedAtToDate ? localDayBoundary(startedAtToDate, 1) : null;
-  const previewBeforeTime = previewBefore ? new Date(previewBefore).getTime() : null;
-  const normalizedSearch = searchTerm.toLocaleLowerCase();
-  const normalizedPhoneSearch = digitsOnly(searchTerm);
-  const executions = isPreview
-    ? allExecutions.filter(run => {
-        const contactName = run.contactName?.toLocaleLowerCase() ?? '';
-        const contactPhone = run.contactPhone ?? '';
-        const matchesSearch = !searchTerm ||
-          contactName.includes(normalizedSearch) ||
-          contactPhone.toLocaleLowerCase().includes(normalizedSearch) ||
-          (normalizedPhoneSearch && digitsOnly(contactPhone).includes(normalizedPhoneSearch));
-        const matchesStatus = statusFilter === 'ALL' || run.status === statusFilter;
-        const matchesTrigger = triggerTypeFilter === 'ALL' || run.triggerType === triggerTypeFilter;
-        const startedAt = new Date(run.startedAt).getTime();
-        const matchesFrom = previewFrom === null || startedAt >= previewFrom;
-        const matchesTo = previewBeforeTime === null || startedAt < previewBeforeTime;
-        return Boolean(matchesSearch && matchesStatus && matchesTrigger && matchesFrom && matchesTo);
-      })
-    : allExecutions;
+  const isError = executionsQuery.isError;
+  const data = executionsQuery.data;
+  const error = executionsQuery.error;
+  const executions = data?.executions ?? [];
   const hasActiveListFilters =
     statusFilter !== 'ALL' ||
     triggerTypeFilter !== 'ALL' ||
     Boolean(searchTerm || searchInput.trim() || startedAtFromDate || startedAtToDate);
   const hasLegacyOnlyHistory =
-    !isPreview &&
     statusFilter === 'ALL' &&
     triggerTypeFilter === 'ALL' &&
     cursors.length === 1 &&
@@ -353,13 +239,6 @@ export default function ChatbotActivity({
   };
 
   const retry = () => mutate({ id: flow.id, data: query });
-  const toggleSamplePreview = () => {
-    reset();
-    setStatusFilter('ALL');
-    setTriggerTypeFilter('ALL');
-    setCursors([undefined]);
-    setSamplePreviewEnabled(enabled => !enabled);
-  };
 
   return (
     <div className="chatbot-page flex h-full min-h-0 flex-col overflow-hidden bg-white">
@@ -394,17 +273,6 @@ export default function ChatbotActivity({
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              {import.meta.env.DEV && (
-                <button
-                  type="button"
-                  onClick={toggleSamplePreview}
-                  data-testid="button-toggle-chatbot-activity-preview"
-                  aria-pressed={isPreview}
-                  className="h-10 border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                >
-                  {isPreview ? 'Exit sample preview' : 'Preview sample activity'}
-                </button>
-              )}
               <label className="flex shrink-0 flex-col gap-1 text-xs font-medium text-gray-600">
                 Filter activity
                 <select
@@ -567,7 +435,7 @@ export default function ChatbotActivity({
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-center">
-                      <TranscriptLink contactId={run.contactId} executionId={run.id} preview={isPreview} />
+                      <TranscriptLink contactId={run.contactId} executionId={run.id} />
                     </td>
                   </tr>
                 ))}
