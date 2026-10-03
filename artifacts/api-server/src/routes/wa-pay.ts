@@ -202,8 +202,11 @@ function setupRedirectUrl(value: string, req: AuthRequest): string | null {
 function metaSetupError(error: unknown): string {
   if (error instanceof MetaApiError && error.response && typeof error.response === "object") {
     const response = error.response as {
-      error?: { message?: unknown; error_data?: { details?: unknown } };
+      error?: { code?: unknown; message?: unknown; error_data?: { details?: unknown } };
     };
+    if (response.error?.code === 10) {
+      return "Meta has not approved this app to create WhatsApp payment configurations for client accounts. Request Advanced Access for whatsapp_business_management in Meta App Review, then have each client reconnect WhatsApp.";
+    }
     const details = response.error?.error_data?.details;
     if (typeof details === "string" && details.trim()) return details;
     const message = response.error?.message;
