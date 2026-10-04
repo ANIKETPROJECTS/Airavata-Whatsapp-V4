@@ -7,7 +7,6 @@ import { ArrowRight, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import CommerceDemo from '../components/login/CommerceDemo';
-import fullLogo from '@assets/HFULL_NOBGSVG.svg';
 import './login.css';
 
 const schema = z.object({
@@ -41,26 +40,8 @@ export default function Login() {
   return (
     <main className="login-shell">
       <section className="login-showcase" aria-label="WhatsApp commerce demo">
-        <div className="showcase-orbit showcase-orbit-one" aria-hidden="true" />
-        <div className="showcase-orbit showcase-orbit-two" aria-hidden="true" />
         <div className="showcase-inner">
-          <div className="showcase-brand">
-            <img src={fullLogo} alt="ATWASSUP logo" data-testid="img-brand-logo" />
-            <span className="brand-caption">Commerce, in conversation.</span>
-          </div>
-          <div className="showcase-copy">
-            <p className="login-kicker"><span /> THE WHATSAPP COMMERCE WORKSPACE</p>
-            <h1>From a simple<br /><em>hello</em> to an order.</h1>
-            <p className="showcase-description">
-              Turn product templates into helpful conversations, smooth checkouts, and paid orders — all inside WhatsApp.
-            </p>
-          </div>
           <CommerceDemo />
-          <div className="showcase-foot">
-            <span className="foot-rule" />
-            <span>One conversation. Every step handled.</span>
-            <span className="foot-index">01 — 06</span>
-          </div>
         </div>
       </section>
 
