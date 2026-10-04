@@ -6,7 +6,6 @@ import { Shell } from './components/layout/Shell';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { routes } from './routes';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import Privacy from './pages/Privacy';
 import MasterAdmin from './pages/MasterAdmin';
 
@@ -94,7 +93,7 @@ function AppRouter() {
       <Route path="/MasterAdmin/analytics" component={MasterAdmin} />
       {/* Public routes — no auth required */}
       <Route path="/login" component={() => (user ? <Redirect to="/dashboard" /> : <Login />)} />
-      <Route path="/signup" component={() => (user ? <Redirect to="/dashboard" /> : <Signup />)} />
+      <Route path="/signup" component={() => <Redirect to={user ? '/dashboard' : '/login'} />} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/privacy/deletion-status" component={Privacy} />
       {/* Everything else is protected */}

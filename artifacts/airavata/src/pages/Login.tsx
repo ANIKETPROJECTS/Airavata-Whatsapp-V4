@@ -3,9 +3,12 @@ import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
+import CommerceDemo from '../components/login/CommerceDemo';
+import fullLogo from '@assets/HFULL_NOBGSVG.svg';
+import './login.css';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -17,7 +20,6 @@ export default function Login() {
   const { login } = useAuth();
   const [, setLocation] = useLocation();
   const [submitting, setSubmitting] = useState(false);
-
   const {
     register,
     handleSubmit,
@@ -37,74 +39,87 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow">
-            <MessageCircle className="w-6 h-6 text-white" />
+    <main className="login-shell">
+      <section className="login-showcase" aria-label="WhatsApp commerce demo">
+        <div className="showcase-orbit showcase-orbit-one" aria-hidden="true" />
+        <div className="showcase-orbit showcase-orbit-two" aria-hidden="true" />
+        <div className="showcase-inner">
+          <div className="showcase-brand">
+            <img src={fullLogo} alt="ATWASSUP logo" data-testid="img-brand-logo" />
+            <span className="brand-caption">Commerce, in conversation.</span>
           </div>
-          <span className="text-2xl font-bold text-gray-900">Airavata</span>
+          <div className="showcase-copy">
+            <p className="login-kicker"><span /> THE WHATSAPP COMMERCE WORKSPACE</p>
+            <h1>From a simple<br /><em>hello</em> to an order.</h1>
+            <p className="showcase-description">
+              Turn product templates into helpful conversations, smooth checkouts, and paid orders — all inside WhatsApp.
+            </p>
+          </div>
+          <CommerceDemo />
+          <div className="showcase-foot">
+            <span className="foot-rule" />
+            <span>One conversation. Every step handled.</span>
+            <span className="foot-index">01 — 06</span>
+          </div>
         </div>
+      </section>
 
-        <div className="bg-white rounded-2xl shadow-sm border p-8">
-          <h1 className="text-xl font-semibold text-gray-900 mb-1">Welcome back</h1>
-          <p className="text-sm text-gray-500 mb-6">Sign in to your account to continue</p>
+      <section className="login-panel" aria-label="Sign in">
+        <div className="login-panel-top">
+          <span className="secure-note"><LockKeyhole size={14} strokeWidth={1.8} /> SECURE WORKSPACE ACCESS</span>
+          <span className="panel-mark">ATWASSUP <span>／</span> WORKSPACE</span>
+        </div>
+        <div className="login-form-wrap">
+          <div className="form-intro">
+            <div className="form-eyebrow">WELCOME BACK</div>
+            <h2>Your business,<br /><span>right where you left it.</span></h2>
+            <p>Sign in to continue to your WhatsApp workspace.</p>
+          </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email address
-              </label>
+          <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
+            <div className="login-field">
+              <label htmlFor="login-email">Email address</label>
               <input
+                id="login-email"
                 type="email"
                 autoComplete="email"
-                {...register('email')}
                 placeholder="you@company.com"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'login-email-error' : undefined}
+                data-testid="input-email"
+                {...register('email')}
               />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
-              )}
+              {errors.email && <p id="login-email-error" className="login-error" role="alert" data-testid="text-email-error">{errors.email.message}</p>}
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">Password</label>
-              </div>
+            <div className="login-field">
+              <label htmlFor="login-password">Password</label>
               <input
+                id="login-password"
                 type="password"
                 autoComplete="current-password"
+                placeholder="Enter your password"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? 'login-password-error' : undefined}
+                data-testid="input-password"
                 {...register('password')}
-                placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               />
-              {errors.password && (
-                <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
-              )}
+              {errors.password && <p id="login-password-error" className="login-error" role="alert" data-testid="text-password-error">{errors.password.message}</p>}
             </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 bg-primary text-white rounded-lg py-2.5 text-sm font-medium hover:bg-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-            >
-              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {submitting ? 'Signing in…' : 'Sign in'}
+            <button type="submit" className="login-submit" disabled={submitting} data-testid="button-submit">
+              {submitting ? <><Loader2 className="login-loader" size={18} /> Signing in…</> : <>Sign in to your workspace <ArrowRight size={17} /></>}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <button
-              onClick={() => setLocation('/signup')}
-              className="text-primary font-medium hover:underline"
-            >
-              Create one
-            </button>
-          </p>
+          <div className="login-trust" data-testid="text-security-note">
+            <ShieldCheck size={17} strokeWidth={1.8} />
+            <span>Your account is protected with secure sign-in.</span>
+          </div>
         </div>
-      </div>
-    </div>
+        <div className="login-panel-bottom">
+          <span>Built for conversations that move business forward.</span>
+          <span className="copyright">ATWASSUP</span>
+        </div>
+      </section>
+    </main>
   );
 }
