@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   ArrowRight,
   Check,
+  ChevronLeft,
   ChevronDown,
+  Download,
   FileText,
   PackageCheck,
   RotateCcw,
@@ -21,7 +23,8 @@ type DemoStep =
   | 'confirmed'
   | 'razorpay'
   | 'paymentSuccess'
-  | 'paid';
+  | 'paid'
+  | 'invoiceViewer';
 
 type CheckoutDetails = {
   name: string;
@@ -116,6 +119,7 @@ export default function CommerceDemo() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const demoStageRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  const invoiceViewerShownRef = useRef(false);
   const nextOrderNumber = useRef(2048);
 
   useEffect(() => {
@@ -151,17 +155,24 @@ export default function CommerceDemo() {
   useEffect(() => {
     let timeout: number | undefined;
     if (step === 'template') {
-      timeout = window.setTimeout(() => setStep('customerReply'), 2100);
+      timeout = window.setTimeout(() => setStep('customerReply'), 3300);
     } else if (step === 'customerReply') {
-      timeout = window.setTimeout(() => setStep('details'), 1900);
+      timeout = window.setTimeout(() => setStep('details'), 3200);
     } else if (step === 'details') {
-      timeout = window.setTimeout(() => setStep('flow'), 3300);
+      timeout = window.setTimeout(() => setStep('flow'), 4700);
     } else if (step === 'confirmed') {
-      timeout = window.setTimeout(() => setStep('razorpay'), 1900);
+      timeout = window.setTimeout(() => setStep('razorpay'), 4700);
     } else if (step === 'razorpay') {
-      timeout = window.setTimeout(() => setStep('paymentSuccess'), 2300);
+      timeout = window.setTimeout(() => setStep('paymentSuccess'), 5700);
     } else if (step === 'paymentSuccess') {
-      timeout = window.setTimeout(() => setStep('paid'), 1300);
+      timeout = window.setTimeout(() => setStep('paid'), 3700);
+    } else if (step === 'paid' && !invoiceViewerShownRef.current) {
+      timeout = window.setTimeout(() => {
+        invoiceViewerShownRef.current = true;
+        setStep('invoiceViewer');
+      }, 6500);
+    } else if (step === 'invoiceViewer') {
+      timeout = window.setTimeout(() => setStep('paid'), 7500);
     }
     return () => {
       if (timeout !== undefined) window.clearTimeout(timeout);
@@ -201,19 +212,29 @@ export default function CommerceDemo() {
       for (let length = 1; length <= value.length; length += 1) {
         timers.push(window.setTimeout(
           () => setCheckout(current => ({ ...current, [field]: value.slice(0, length) })),
-          fieldStart + length * 24,
+          fieldStart + length * 42,
         ));
       }
-      cursor += value.length * 24 + 250;
+      cursor += value.length * 42 + 350;
     }
     timers.push(window.setTimeout(() => setFlowTypingField(null), cursor));
-    timers.push(window.setTimeout(() => completeCheckout(demoCheckout), cursor + 700));
+    timers.push(window.setTimeout(() => completeCheckout(demoCheckout), cursor + 1100));
 
     return () => timers.forEach(timer => window.clearTimeout(timer));
   }, [step, completeCheckout]);
 
   const openCheckoutFlow = () => {
     setStep('flow');
+  };
+
+  const openInvoiceViewer = () => {
+    if (!invoicePdfUrl) return;
+    invoiceViewerShownRef.current = true;
+    setStep('invoiceViewer');
+  };
+
+  const closeInvoiceViewer = () => {
+    setStep('paid');
   };
 
   const submitCheckout = (event: FormEvent<HTMLFormElement>) => {
@@ -225,6 +246,7 @@ export default function CommerceDemo() {
     setStep('template');
     setCheckout({ ...emptyCheckout });
     setReceipt(null);
+    invoiceViewerShownRef.current = false;
     setFlowTypingField(null);
   };
 
@@ -284,7 +306,7 @@ export default function CommerceDemo() {
                   </div>
                 )}
 
-                {(step === 'details' || step === 'flow' || step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid') && (
+                {(step === 'details' || step === 'flow' || step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid' || step === 'invoiceViewer') && (
                   <div className="demo-message from-business demo-detail-message message-appear" data-testid="message-demo-product-details">
                     <span className="demo-message-label">AUTOMATED CHATBOT REPLY</span>
                     <p>Absolutely! This Banarasi saree is handwoven in Varanasi from pure Katan silk.</p>
@@ -308,7 +330,7 @@ export default function CommerceDemo() {
                   </div>
                 )}
 
-                {(step === 'flow' || step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid') && (
+                {(step === 'flow' || step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid' || step === 'invoiceViewer') && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-buy-now">
                     <span className="demo-message-copy">Buy Now</span>
                     <span className="demo-outgoing-meta"><time>10:43</time><FigmaReadReceipt /></span>
@@ -344,7 +366,7 @@ export default function CommerceDemo() {
                     </div>
                   </>
                 )}
-                {step === 'paid' && receipt && (
+                {(step === 'paid' || step === 'invoiceViewer') && receipt && (
                   <>
                     <div className="demo-message from-business demo-payment-confirmation message-appear" data-testid="message-demo-payment-success">
                       <span className="payment-label"><Check size={11} /> RAZORPAY PAYMENT SUCCESSFUL · DEMO</span>
@@ -363,29 +385,33 @@ export default function CommerceDemo() {
                         </span>
                       </div>
                       {invoicePdfUrl ? (
-                        <a
-                          className="invoice-open-link"
-                          href={invoicePdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          data-testid="link-demo-invoice-pdf"
+                        <button
+                          type="button"
+                          className={`invoice-open-link ${step === 'paid' && !invoiceViewerShownRef.current ? 'invoice-auto-open-hint' : ''}`}
+                          onClick={openInvoiceViewer}
+                          data-testid="button-demo-invoice-preview"
                         >
-                          Open invoice PDF <ArrowRight size={10} />
-                        </a>
+                          Preview invoice <ArrowRight size={10} />
+                        </button>
                       ) : (
                         <span className="invoice-preparing">Preparing invoice PDF…</span>
                       )}
                       <time>10:46</time>
                     </div>
                     <div className="demo-message from-business demo-order-status message-appear" data-testid="message-demo-order-status">
-                      <span className="order-status-heading"><PackageCheck size={11} /> ORDER STATUS · DEMO</span>
-                      <strong className="receipt-thanks">{receipt.orderId} · Processing</strong>
-                      <div className="order-status-progress" aria-label="Paid, order processing, dispatch next">
-                        <span className="is-complete">Paid</span>
-                        <span className="is-current">Processing</span>
-                        <span>Dispatch next</span>
+                      <span className="order-status-heading"><PackageCheck size={11} /> ORDER UPDATE</span>
+                      <div className="order-status-summary">
+                        <span className="order-status-number">Order {receipt.orderId}</span>
+                        <strong>Processing</strong>
                       </div>
-                      <p>Your saree is being prepared. Tracking details will follow after dispatch.</p>
+                      <div className="order-status-timeline" aria-label="Paid, processing, dispatch next">
+                        <div className="order-timeline-step is-complete"><span /><small>Paid</small></div>
+                        <div className="order-timeline-connector is-complete" />
+                        <div className="order-timeline-step is-current"><span /><small>Processing</small></div>
+                        <div className="order-timeline-connector" />
+                        <div className="order-timeline-step"><span /><small>Dispatch</small></div>
+                      </div>
+                      <p>Your saree is being prepared. Tracking will be shared once it is dispatched.</p>
                       <button
                         type="button"
                         className="demo-replay-button"
@@ -520,6 +546,71 @@ export default function CommerceDemo() {
                     </div>
                   )}
                   <span className="razorpay-home-indicator" />
+                </div>
+              )}
+              {step === 'invoiceViewer' && receipt && invoicePdfUrl && (
+                <div
+                  className="demo-invoice-viewer"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`Invoice PDF preview for order ${receipt.orderId}`}
+                  data-testid="card-demo-invoice-viewer"
+                >
+                  <div className="invoice-viewer-topbar">
+                    <button type="button" aria-label="Back to WhatsApp chat" onClick={closeInvoiceViewer}>
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="invoice-viewer-title">
+                      <strong>Invoice-{receipt.orderId}.pdf</strong>
+                      <small>PDF document · 1 page</small>
+                    </span>
+                    <a
+                      href={invoicePdfUrl}
+                      download={`Invoice-${receipt.orderId}.pdf`}
+                      aria-label="Download invoice PDF"
+                      data-testid="link-demo-invoice-download"
+                    >
+                      <Download size={14} />
+                    </a>
+                  </div>
+                  <div className="invoice-viewer-canvas">
+                    <article className="invoice-page-preview">
+                      <div className="invoice-page-brand">
+                        <strong>RANGREZ STUDIO</strong>
+                        <span>PAYMENT INVOICE</span>
+                      </div>
+                      <div className="invoice-page-heading">
+                        <h2>Invoice</h2>
+                        <span>INV-{receipt.orderId}</span>
+                      </div>
+                      <div className="invoice-page-summary">
+                        <div><small>ORDER NUMBER</small><strong>{receipt.orderId}</strong></div>
+                        <div><small>PAYMENT STATUS</small><strong className="invoice-paid-label">Paid · UPI</strong></div>
+                      </div>
+                      <div className="invoice-page-customer">
+                        <small>BILLED TO</small>
+                        <strong>{receipt.name}</strong>
+                        <span>{receipt.phone}</span>
+                        <span>{receipt.address}, {receipt.city} {receipt.pinCode}</span>
+                      </div>
+                      <div className="invoice-page-table">
+                        <div className="invoice-page-table-head"><span>ITEM</span><span>QTY</span><span>AMOUNT</span></div>
+                        <div className="invoice-page-item"><span>Banarasi Silk Saree<small>Pure Katan silk · 6.3 m</small></span><span>1</span><strong>₹6,490</strong></div>
+                      </div>
+                      <div className="invoice-page-total"><span>Total paid</span><strong>₹6,490</strong></div>
+                      <div className="invoice-page-order-state">
+                        <span>Order status</span><strong>Processing</strong>
+                      </div>
+                      <small className="invoice-page-disclaimer">Demo invoice only. No real payment or order was created.</small>
+                    </article>
+                  </div>
+                  <div className="invoice-viewer-footer">
+                    <span>Shared in your WhatsApp chat</span>
+                    <a href={invoicePdfUrl} download={`Invoice-${receipt.orderId}.pdf`}>
+                      <Download size={11} /> Download PDF
+                    </a>
+                  </div>
+                  <span className="invoice-viewer-home-indicator" />
                 </div>
               )}
             </div>
