@@ -43,3 +43,4 @@
 - [Customer integration direction](customer-integration-direction.md) — favor a tenant-scoped API and signed webhooks for any HTTP-capable system; never imply a native connector without OAuth support.
 - [Meta catalog permissions](meta-catalog-permissions.md) — catalog operations need business/catalog permissions in the Login for Business config and client reauthorization after approval.
 - [Router middleware scope](router-middleware-scope.md) — root-mounted routers must scope access guards to their route prefix or they can block unrelated endpoints.
+- [Interactive commerce login showcase](login-commerce-showcase.md) — start at the product template, let visitors drive each step, and keep orders and payment links simulated.
