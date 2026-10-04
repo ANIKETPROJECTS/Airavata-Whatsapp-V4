@@ -77,8 +77,8 @@
 .demo-status-art { top: 0; left: 0; }
 .demo-chat-header { position: relative; display: block; height: 32px; flex: 0 0 auto; overflow: hidden; border-bottom: 1px solid #e6e8e9; background: #f5f2eb; }
 .demo-back-art { top: 0; left: 0; }
-.demo-shop-avatar { position: absolute; top: 0; left: 39px; display: flex; width: 23px; height: 23px; align-items: center; justify-content: center; border: 1px solid #d1e1d2; border-radius: 50%; background: #dceadd; color: #447b54; font-size: 8px; font-weight: 600; }
-.demo-shop-name { position: absolute; top: 3px; left: 69px; right: 66px; display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.demo-shop-avatar { position: absolute; top: 0; left: 38px; display: flex; width: 28px; height: 28px; align-items: center; justify-content: center; border: 1px solid #d1e1d2; border-radius: 50%; background: #dceadd; color: #447b54; font-size: 9px; font-weight: 600; }
+.demo-shop-name { position: absolute; top: 3px; left: 74px; right: 66px; display: flex; min-width: 0; flex-direction: column; gap: 1px; }
 .demo-shop-name strong { color: #0a0a0a; font-size: 10px; font-weight: 600; line-height: 12px; }
 .demo-shop-name small { color: rgb(0 0 0 / 50%); font-size: 8px; line-height: 9px; }
 .demo-header-actions-art { top: 0; right: 11px; }
