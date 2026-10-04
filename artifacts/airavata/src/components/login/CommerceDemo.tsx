@@ -48,6 +48,7 @@ export default function CommerceDemo() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [paymentPreviewOpen, setPaymentPreviewOpen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(252);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const demoStageRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const nextOrderNumber = useRef(2048);
@@ -113,7 +114,7 @@ export default function CommerceDemo() {
   };
 
   const screenScale = screenWidth / 252;
-  const screenHeight = Math.round(500 * screenScale);
+  const screenHeight = Math.round(524 * screenScale);
 
   return (
     <div className="demo-stage" ref={demoStageRef}>
@@ -121,28 +122,37 @@ export default function CommerceDemo() {
         <DevicePreviewFrame device="ios" screenWidth={screenWidth} hideStatusBar>
           <div className="demo-phone-screen" style={{ height: screenHeight }}>
             <div className="demo-screen-content" style={{ transform: `scale(${screenScale})` }}>
-              <div className="demo-status-bar" aria-label="iPhone status bar, 12:18, battery 89 percent">
-                <strong>12:18</strong>
+              <div className="demo-status-bar" aria-label="iPhone status bar, 23:59, battery 100 percent">
+                <strong>23:59</strong>
                 <div className="demo-status-icons" aria-hidden="true">
                   <span className="demo-cell-signal"><i /><i /><i /><i /></span>
                   <Wifi size={11} strokeWidth={2.6} />
-                  <span className="demo-battery"><span>89</span></span>
+                  <span className="demo-battery"><span>100</span></span>
                 </div>
               </div>
               <div className="demo-chat-header">
                 <span className="demo-back" aria-hidden="true">
-                  <ChevronLeft size={17} strokeWidth={2.5} />
-                  <b>12</b>
+                  <ChevronLeft size={11} strokeWidth={2.5} />
+                  <b>1</b>
                 </span>
                 <div className="demo-shop-avatar">R</div>
-                <div className="demo-shop-name"><strong>Rangrez Studio</strong><small>Business account</small></div>
+                <div className="demo-shop-name"><strong>Rangrez Studio</strong><small>tap here for contact info</small></div>
                 <div className="demo-header-actions" aria-hidden="true">
-                  <span><Video size={16} strokeWidth={1.8} /></span>
-                  <span><Phone size={15} strokeWidth={1.8} /></span>
+                  <span><Video size={12} strokeWidth={1.8} /></span>
+                  <span><Phone size={11} strokeWidth={1.8} /></span>
                 </div>
               </div>
-              <div ref={chatBodyRef} className="demo-chat-body" aria-live="polite" aria-label="Interactive sample WhatsApp conversation">
-                <div className="demo-date-pill">TODAY</div>
+              <div
+                ref={chatBodyRef}
+                className="demo-chat-body"
+                aria-live="polite"
+                aria-label="Interactive sample WhatsApp conversation"
+                onScroll={event => {
+                  const body = event.currentTarget;
+                  setShowScrollButton(body.scrollHeight - body.scrollTop - body.clientHeight > 24);
+                }}
+              >
+                <div className="demo-date-pill">Today</div>
                 <div className="demo-message from-customer message-appear">
                   Hi! I’m looking for something festive.
                   <span className="demo-outgoing-meta"><time>10:40</time><CheckCheck size={10} strokeWidth={1.8} /></span>
@@ -189,6 +199,15 @@ export default function CommerceDemo() {
                     <time>10:42</time>
                     <CheckCheck size={10} strokeWidth={1.8} aria-label="Delivered and read" />
                   </div>
+                </div>
+
+                <div className="demo-message from-shop message-appear">
+                  Need a size guide or delivery details? Happy to help.
+                  <time>10:43</time>
+                </div>
+                <div className="demo-message from-customer message-appear">
+                  Thanks, I’ll take a look.
+                  <span className="demo-outgoing-meta"><time>10:43</time><CheckCheck size={10} strokeWidth={1.8} /></span>
                 </div>
 
                 {step !== 'template' && (
@@ -351,26 +370,26 @@ export default function CommerceDemo() {
                     </div>
                   </>
                 )}
-                <button
-                  type="button"
-                  className="demo-scroll-bottom"
-                  aria-label="Scroll to latest messages"
-                  onClick={() => chatBodyRef.current?.scrollTo({ top: chatBodyRef.current.scrollHeight, behavior: 'smooth' })}
-                >
-                  <ChevronDown size={15} strokeWidth={2.2} />
-                </button>
+                {showScrollButton && (
+                  <button
+                    type="button"
+                    className="demo-scroll-bottom"
+                    aria-label="Scroll to latest messages"
+                    onClick={() => chatBodyRef.current?.scrollTo({ top: chatBodyRef.current.scrollHeight, behavior: 'smooth' })}
+                  >
+                    <ChevronDown size={15} strokeWidth={2.2} />
+                  </button>
+                )}
               </div>
               <div className="demo-chat-footer">
                 <div className="demo-composer" role="group" aria-label="WhatsApp message composer">
-                  <span className="composer-add" aria-hidden="true"><Plus size={19} strokeWidth={2.2} /></span>
+                  <span className="composer-add" aria-hidden="true"><Plus size={12} strokeWidth={2.2} /></span>
                   <div className="composer-input" role="textbox" aria-readonly="true" aria-label="Message">
-                    <Sticker size={15} strokeWidth={1.8} aria-hidden="true" />
+                    <Sticker size={10} strokeWidth={1.8} aria-hidden="true" />
                   </div>
-                  <span className="composer-payment" aria-hidden="true">₹</span>
-                  <span className="composer-camera" aria-hidden="true"><Camera size={16} strokeWidth={1.9} /></span>
-                  <span className="composer-mic" aria-hidden="true"><Mic size={14} strokeWidth={2.1} /></span>
+                  <span className="composer-camera" aria-hidden="true"><Camera size={12} strokeWidth={1.9} /></span>
+                  <span className="composer-mic" aria-hidden="true"><Mic size={12} strokeWidth={1.9} /></span>
                 </div>
-                <div className="demo-safe-area" aria-hidden="true" />
               </div>
             </div>
           </div>

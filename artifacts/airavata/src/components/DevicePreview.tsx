@@ -60,7 +60,7 @@ export function DevicePreviewFrame({
         screenType="island"
         hideStatusBar={hideStatusBar}
         frameColor="#151922"
-        statusbarColor="#f8fafc"
+        statusbarColor="#f3efe8"
         hideNavBar={false}
       >
         {children}
