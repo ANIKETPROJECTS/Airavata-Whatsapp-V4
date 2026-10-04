@@ -1,21 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ArrowRight,
-  Camera,
   Check,
-  CheckCheck,
   ChevronDown,
-  ChevronLeft,
-  Mic,
-  Plus,
   RotateCcw,
   ShieldCheck,
-  Sticker,
-  Video,
-  Phone,
-  Wifi,
 } from 'lucide-react';
 import { DevicePreviewFrame } from '../DevicePreview';
+import figmaChatScreen from '@assets/Messages_-_Full_view_1791142275495.svg';
 import sareeImage from '@assets/generated_images/atw-banarasi-saree-product.jpg';
 
 type DemoStep = 'template' | 'details' | 'flow' | 'confirmed';
@@ -40,6 +32,61 @@ const emptyCheckout: CheckoutDetails = {
 };
 
 const productPrice = '₹6,490';
+const figmaCanvasScale = 252 / 393;
+
+function FigmaSvgCrop({
+  x,
+  y,
+  width,
+  height,
+  className,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`demo-figma-crop ${className ?? ''}`}
+      style={{ width: width * figmaCanvasScale, height: height * figmaCanvasScale }}
+      aria-hidden="true"
+    >
+      <img
+        src={figmaChatScreen}
+        alt=""
+        draggable={false}
+        style={{
+          width: 252,
+          left: -x * figmaCanvasScale,
+          top: -y * figmaCanvasScale,
+        }}
+      />
+    </span>
+  );
+}
+
+function FigmaReadReceipt({ ariaLabel }: { ariaLabel?: string }) {
+  return (
+    <svg
+      width="10"
+      height="7"
+      viewBox="352.5 392 15 10"
+      role={ariaLabel ? 'img' : undefined}
+      aria-label={ariaLabel}
+      aria-hidden={ariaLabel ? undefined : true}
+      focusable="false"
+    >
+      <path
+        d="M366.724 393.242C366.971 392.934 366.921 392.484 366.613 392.237C366.305 391.989 365.854 392.039 365.607 392.347L359.922 399.428L359.487 398.993C359.207 398.714 358.754 398.714 358.474 398.994C358.195 399.273 358.195 399.727 358.475 400.007L359.475 401.006C359.619 401.15 359.817 401.225 360.02 401.214C360.223 401.203 360.411 401.106 360.539 400.947L366.724 393.242ZM362.638 393.243C362.885 392.934 362.835 392.484 362.527 392.236C362.219 391.989 361.768 392.039 361.521 392.347L355.836 399.429L353.9 397.494C353.621 397.214 353.168 397.214 352.888 397.494C352.609 397.773 352.609 398.227 352.889 398.506L355.389 401.006C355.533 401.15 355.731 401.225 355.934 401.214C356.137 401.203 356.326 401.106 356.453 400.948L362.638 393.243Z"
+        fill="#007BFC"
+        fillRule="evenodd"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
 export default function CommerceDemo() {
   const [step, setStep] = useState<DemoStep>('template');
@@ -123,24 +170,13 @@ export default function CommerceDemo() {
           <div className="demo-phone-screen" style={{ height: screenHeight }}>
             <div className="demo-screen-content" style={{ transform: `scale(${screenScale})` }}>
               <div className="demo-status-bar" aria-label="iPhone status bar, 23:59, battery 100 percent">
-                <strong>23:59</strong>
-                <div className="demo-status-icons" aria-hidden="true">
-                  <span className="demo-cell-signal"><i /><i /><i /><i /></span>
-                  <Wifi size={11} strokeWidth={2.6} />
-                  <span className="demo-battery"><span>100</span></span>
-                </div>
+                <FigmaSvgCrop x={0} y={0} width={393} height={42} className="demo-status-art" />
               </div>
               <div className="demo-chat-header">
-                <span className="demo-back" aria-hidden="true">
-                  <ChevronLeft size={11} strokeWidth={2.5} />
-                  <b>1</b>
-                </span>
+                <FigmaSvgCrop x={0} y={58} width={40} height={36} className="demo-back-art" />
                 <div className="demo-shop-avatar">R</div>
                 <div className="demo-shop-name"><strong>Rangrez Studio</strong><small>tap here for contact info</small></div>
-                <div className="demo-header-actions" aria-hidden="true">
-                  <span><Video size={12} strokeWidth={1.8} /></span>
-                  <span><Phone size={11} strokeWidth={1.8} /></span>
-                </div>
+                <FigmaSvgCrop x={288} y={58} width={88} height={36} className="demo-header-actions-art" />
               </div>
               <div
                 ref={chatBodyRef}
@@ -155,7 +191,7 @@ export default function CommerceDemo() {
                 <div className="demo-date-pill">Today</div>
                 <div className="demo-message from-customer message-appear">
                   Hi! I’m looking for something festive.
-                  <span className="demo-outgoing-meta"><time>10:40</time><CheckCheck size={10} strokeWidth={1.8} /></span>
+                  <span className="demo-outgoing-meta"><time>10:40</time><FigmaReadReceipt /></span>
                 </div>
                 <div className="demo-message from-shop message-appear">
                   Of course. Take a look at our latest arrival.
@@ -197,23 +233,14 @@ export default function CommerceDemo() {
                   </div>
                   <div className="demo-template-meta">
                     <time>10:42</time>
-                    <CheckCheck size={10} strokeWidth={1.8} aria-label="Delivered and read" />
+                    <FigmaReadReceipt ariaLabel="Delivered and read" />
                   </div>
-                </div>
-
-                <div className="demo-message from-shop message-appear">
-                  Need a size guide or delivery details? Happy to help.
-                  <time>10:43</time>
-                </div>
-                <div className="demo-message from-customer message-appear">
-                  Thanks, I’ll take a look.
-                  <span className="demo-outgoing-meta"><time>10:43</time><CheckCheck size={10} strokeWidth={1.8} /></span>
                 </div>
 
                 {step !== 'template' && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-know-more">
                     {selectedTemplateAction === 'details' ? 'Know More' : 'Buy Now'}
-                    <span className="demo-outgoing-meta"><time>10:42</time><CheckCheck size={10} strokeWidth={1.8} /></span>
+                    <span className="demo-outgoing-meta"><time>10:42</time><FigmaReadReceipt /></span>
                   </div>
                 )}
 
@@ -382,13 +409,8 @@ export default function CommerceDemo() {
                 )}
               </div>
               <div className="demo-chat-footer">
-                <div className="demo-composer" role="group" aria-label="WhatsApp message composer">
-                  <span className="composer-add" aria-hidden="true"><Plus size={12} strokeWidth={2.2} /></span>
-                  <div className="composer-input" role="textbox" aria-readonly="true" aria-label="Message">
-                    <Sticker size={10} strokeWidth={1.8} aria-hidden="true" />
-                  </div>
-                  <span className="composer-camera" aria-hidden="true"><Camera size={12} strokeWidth={1.9} /></span>
-                  <span className="composer-mic" aria-hidden="true"><Mic size={12} strokeWidth={1.9} /></span>
+                <div role="group" aria-label="WhatsApp message composer">
+                  <FigmaSvgCrop x={0} y={1625} width={393} height={45} className="demo-composer-art" />
                 </div>
               </div>
             </div>
