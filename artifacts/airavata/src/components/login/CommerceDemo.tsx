@@ -9,9 +9,10 @@ import {
   Plus,
   RotateCcw,
   ShieldCheck,
-  Smile,
+  Sticker,
   Video,
   Phone,
+  Wifi,
 } from 'lucide-react';
 import { DevicePreviewFrame } from '../DevicePreview';
 import sareeImage from '@assets/generated_images/atw-banarasi-saree-product.jpg';
@@ -38,6 +39,8 @@ const emptyCheckout: CheckoutDetails = {
 };
 
 const productPrice = '₹6,490';
+const formatDeviceTime = () =>
+  new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date());
 
 export default function CommerceDemo() {
   const [step, setStep] = useState<DemoStep>('template');
@@ -46,6 +49,7 @@ export default function CommerceDemo() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [paymentPreviewOpen, setPaymentPreviewOpen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(252);
+  const [deviceTime, setDeviceTime] = useState(formatDeviceTime);
   const demoStageRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const nextOrderNumber = useRef(2048);
@@ -65,6 +69,11 @@ export default function CommerceDemo() {
     observer.observe(stage);
     updateScreenWidth();
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setDeviceTime(formatDeviceTime()), 30_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -119,6 +128,14 @@ export default function CommerceDemo() {
         <DevicePreviewFrame device="ios" screenWidth={screenWidth}>
           <div className="demo-phone-screen" style={{ height: screenHeight }}>
             <div className="demo-screen-content" style={{ transform: `scale(${screenScale})` }}>
+              <div className="demo-status-bar" aria-label={`Phone status bar, ${deviceTime}`}>
+                <strong>{deviceTime}</strong>
+                <div className="demo-status-icons" aria-hidden="true">
+                  <span className="demo-cell-signal"><i /><i /><i /><i /></span>
+                  <Wifi size={12} strokeWidth={2.3} />
+                  <span className="demo-battery"><span>89</span></span>
+                </div>
+              </div>
               <div className="demo-chat-header">
                 <span className="demo-back" aria-hidden="true"><ChevronLeft size={19} strokeWidth={2.5} /></span>
                 <div className="demo-shop-avatar">R</div>
@@ -130,6 +147,14 @@ export default function CommerceDemo() {
               </div>
               <div ref={chatBodyRef} className="demo-chat-body" aria-live="polite" aria-label="Interactive sample WhatsApp conversation">
                 <div className="demo-date-pill">TODAY</div>
+                <div className="demo-message from-customer message-appear">
+                  Hi! I’m looking for something festive.
+                  <span className="demo-outgoing-meta"><time>10:40</time><CheckCheck size={10} strokeWidth={1.8} /></span>
+                </div>
+                <div className="demo-message from-shop message-appear">
+                  Of course. Take a look at our latest arrival.
+                  <time>10:41</time>
+                </div>
 
                 <div className="demo-product-bubble message-appear" data-testid="card-demo-product-template">
                   <img
@@ -165,7 +190,7 @@ export default function CommerceDemo() {
                     </button>
                   </div>
                   <div className="demo-template-meta">
-                    <time>10:41</time>
+                    <time>10:42</time>
                     <CheckCheck size={10} strokeWidth={1.8} aria-label="Delivered and read" />
                   </div>
                 </div>
@@ -336,10 +361,11 @@ export default function CommerceDemo() {
                   <span className="composer-add" aria-hidden="true"><Plus size={19} strokeWidth={2.2} /></span>
                   <div className="composer-input" role="textbox" aria-readonly="true" aria-label="Message">
                     <span>Message</span>
-                    <Smile size={16} strokeWidth={1.8} aria-hidden="true" />
+                    <Sticker size={15} strokeWidth={1.8} aria-hidden="true" />
                   </div>
+                  <span className="composer-payment" aria-hidden="true">₹</span>
                   <span className="composer-camera" aria-hidden="true"><Camera size={16} strokeWidth={1.9} /></span>
-                  <span className="composer-mic" aria-hidden="true"><Mic size={16} strokeWidth={1.9} /></span>
+                  <span className="composer-mic" aria-hidden="true"><Mic size={14} strokeWidth={2.1} /></span>
                 </div>
                 <div className="demo-safe-area" aria-hidden="true" />
               </div>
