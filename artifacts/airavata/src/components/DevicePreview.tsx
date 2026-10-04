@@ -45,10 +45,12 @@ export function DevicePreviewSelector({
 export function DevicePreviewFrame({
   device,
   screenWidth = 300,
+  hideStatusBar = false,
   children,
 }: {
   device: PreviewDevice;
   screenWidth?: number;
+  hideStatusBar?: boolean;
   children: ReactNode;
 }) {
   if (device === 'ios') {
@@ -56,6 +58,7 @@ export function DevicePreviewFrame({
       <IPhoneMockup
         screenWidth={screenWidth}
         screenType="island"
+        hideStatusBar={hideStatusBar}
         frameColor="#151922"
         statusbarColor="#f8fafc"
         hideNavBar={false}

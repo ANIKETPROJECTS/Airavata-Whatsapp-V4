@@ -40,8 +40,6 @@ const emptyCheckout: CheckoutDetails = {
 };
 
 const productPrice = '₹6,490';
-const formatDeviceTime = () =>
-  new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date());
 
 export default function CommerceDemo() {
   const [step, setStep] = useState<DemoStep>('template');
@@ -50,7 +48,6 @@ export default function CommerceDemo() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [paymentPreviewOpen, setPaymentPreviewOpen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(252);
-  const [deviceTime, setDeviceTime] = useState(formatDeviceTime);
   const demoStageRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const nextOrderNumber = useRef(2048);
@@ -70,11 +67,6 @@ export default function CommerceDemo() {
     observer.observe(stage);
     updateScreenWidth();
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setDeviceTime(formatDeviceTime()), 30_000);
-    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -126,14 +118,14 @@ export default function CommerceDemo() {
   return (
     <div className="demo-stage" ref={demoStageRef}>
       <div className="demo-phone-wrap">
-        <DevicePreviewFrame device="ios" screenWidth={screenWidth}>
+        <DevicePreviewFrame device="ios" screenWidth={screenWidth} hideStatusBar>
           <div className="demo-phone-screen" style={{ height: screenHeight }}>
             <div className="demo-screen-content" style={{ transform: `scale(${screenScale})` }}>
-              <div className="demo-status-bar" aria-label={`Phone status bar, ${deviceTime}`}>
-                <strong>{deviceTime}</strong>
+              <div className="demo-status-bar" aria-label="iPhone status bar, 12:18, battery 89 percent">
+                <strong>12:18</strong>
                 <div className="demo-status-icons" aria-hidden="true">
                   <span className="demo-cell-signal"><i /><i /><i /><i /></span>
-                  <Wifi size={12} strokeWidth={2.3} />
+                  <Wifi size={11} strokeWidth={2.6} />
                   <span className="demo-battery"><span>89</span></span>
                 </div>
               </div>
