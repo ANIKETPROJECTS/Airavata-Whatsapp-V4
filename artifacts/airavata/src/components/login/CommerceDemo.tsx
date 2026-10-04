@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ArrowRight,
   Check,
@@ -10,8 +10,7 @@ import { DevicePreviewFrame } from '../DevicePreview';
 import figmaChatScreen from '@assets/Messages_-_Full_view_1791144042420.svg';
 import sareeImage from '@assets/generated_images/atw-banarasi-saree-product.jpg';
 
-type DemoStep = 'template' | 'details' | 'flow' | 'confirmed';
-type TemplateAction = 'details' | 'buy' | null;
+type DemoStep = 'template' | 'customerReply' | 'details' | 'flow' | 'confirmed';
 
 type CheckoutDetails = {
   name: string;
@@ -29,6 +28,14 @@ const emptyCheckout: CheckoutDetails = {
   address: '',
   city: '',
   pinCode: '',
+};
+
+const demoCheckout: CheckoutDetails = {
+  name: 'Demo Customer',
+  phone: '+91 90000 00000',
+  address: '12 Demo Lane, Silk Market',
+  city: 'Varanasi',
+  pinCode: '221001',
 };
 
 const productPrice = '₹6,490';
@@ -90,10 +97,10 @@ function FigmaReadReceipt({ ariaLabel }: { ariaLabel?: string }) {
 
 export default function CommerceDemo() {
   const [step, setStep] = useState<DemoStep>('template');
-  const [selectedTemplateAction, setSelectedTemplateAction] = useState<TemplateAction>(null);
   const [checkout, setCheckout] = useState<CheckoutDetails>(emptyCheckout);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [paymentPreviewOpen, setPaymentPreviewOpen] = useState(false);
+  const [flowTypingField, setFlowTypingField] = useState<keyof CheckoutDetails | null>(null);
   const [screenWidth, setScreenWidth] = useState(252);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const demoStageRef = useRef<HTMLDivElement>(null);
@@ -124,44 +131,79 @@ export default function CommerceDemo() {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     chatBody.scrollTo({
       top: chatBody.scrollHeight,
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      behavior: prefersReducedMotion || step === 'confirmed' ? 'auto' : 'smooth',
     });
+    if (step === 'confirmed') setShowScrollButton(false);
   }, [step, paymentPreviewOpen]);
 
-  const showProductDetails = () => {
-    if (step !== 'template') return;
-    setSelectedTemplateAction('details');
-    setStep('details');
-  };
+  useEffect(() => {
+    let timeout: number | undefined;
+    if (step === 'template') {
+      timeout = window.setTimeout(() => setStep('customerReply'), 2100);
+    } else if (step === 'customerReply') {
+      timeout = window.setTimeout(() => setStep('details'), 1900);
+    } else if (step === 'details') {
+      timeout = window.setTimeout(() => setStep('flow'), 3300);
+    }
+    return () => {
+      if (timeout !== undefined) window.clearTimeout(timeout);
+    };
+  }, [step]);
 
-  const openCheckoutFlow = (fromTemplate = false) => {
-    if (fromTemplate) setSelectedTemplateAction('buy');
+  const completeCheckout = useCallback((details: CheckoutDetails) => {
+    const orderId = `ATW-${nextOrderNumber.current}`;
+    nextOrderNumber.current += 1;
+    setReceipt({ ...details, orderId });
+    setFlowTypingField(null);
+    setStep('confirmed');
+  }, []);
+
+  useEffect(() => {
+    if (step !== 'flow') return;
+    setCheckout({ ...emptyCheckout });
+    setFlowTypingField(null);
+
+    const timers: number[] = [];
+    const fields = Object.entries(demoCheckout) as Array<[keyof CheckoutDetails, string]>;
+    let cursor = 400;
+    for (const [field, value] of fields) {
+      const fieldStart = cursor;
+      timers.push(window.setTimeout(() => setFlowTypingField(field), fieldStart));
+      for (let length = 1; length <= value.length; length += 1) {
+        timers.push(window.setTimeout(
+          () => setCheckout(current => ({ ...current, [field]: value.slice(0, length) })),
+          fieldStart + length * 24,
+        ));
+      }
+      cursor += value.length * 24 + 250;
+    }
+    timers.push(window.setTimeout(() => setFlowTypingField(null), cursor));
+    timers.push(window.setTimeout(() => completeCheckout(demoCheckout), cursor + 700));
+
+    return () => timers.forEach(timer => window.clearTimeout(timer));
+  }, [step, completeCheckout]);
+
+  const openCheckoutFlow = () => {
     setPaymentPreviewOpen(false);
     setStep('flow');
   };
 
-  const updateCheckout = (field: keyof CheckoutDetails, value: string) => {
-    setCheckout(current => ({ ...current, [field]: value }));
-  };
-
   const submitCheckout = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const orderId = `ATW-${nextOrderNumber.current}`;
-    nextOrderNumber.current += 1;
-    setReceipt({ ...checkout, orderId });
-    setStep('confirmed');
+    completeCheckout(checkout);
   };
 
   const replayDemo = () => {
     setStep('template');
-    setSelectedTemplateAction(null);
     setCheckout({ ...emptyCheckout });
     setReceipt(null);
     setPaymentPreviewOpen(false);
+    setFlowTypingField(null);
   };
 
   const screenScale = screenWidth / 252;
   const screenHeight = Math.round(524 * screenScale);
+  const checkoutReady = Object.values(checkout).every(Boolean);
 
   return (
     <div className="demo-stage" ref={demoStageRef}>
@@ -182,22 +224,13 @@ export default function CommerceDemo() {
                 ref={chatBodyRef}
                 className="demo-chat-body"
                 aria-live="polite"
-                aria-label="Interactive sample WhatsApp conversation"
+                 aria-label="Self-running WhatsApp conversation on a customer's phone"
                 onScroll={event => {
                   const body = event.currentTarget;
                   setShowScrollButton(body.scrollHeight - body.scrollTop - body.clientHeight > 24);
                 }}
               >
                 <FigmaSvgCrop x={146} y={280} width={101} height={21} className="demo-date-art" />
-                <div className="demo-message from-customer message-appear">
-                  <span className="demo-message-copy">Hi! I’m looking for something festive.</span>
-                  <span className="demo-outgoing-meta"><time>10:40</time><FigmaReadReceipt /></span>
-                </div>
-                <div className="demo-message from-shop message-appear">
-                  <span className="demo-message-copy">Of course. Take a look at our latest arrival.</span>
-                  <time>10:41</time>
-                </div>
-
                 <div className="demo-product-bubble message-appear" data-testid="card-demo-product-template">
                   <div className="demo-product-card">
                     <img
@@ -206,165 +239,61 @@ export default function CommerceDemo() {
                       alt="Deep crimson Banarasi silk saree with a gold zari border"
                     />
                     <div className="demo-product-info">
-                      <span className="demo-template-label">NEW ARRIVAL · PRODUCT TEMPLATE</span>
+                      <span className="demo-template-label">NEW ARRIVAL · BANARASI COLLECTION</span>
                       <strong>Banarasi Silk Saree</strong>
-                      <p>Handwoven crimson silk with an intricate gold zari border. A timeless drape for festive moments.</p>
-                      <div className="demo-product-meta"><span>Pure Katan silk</span><b>{productPrice}</b></div>
-                    </div>
-                    <div className="demo-template-actions" aria-label="Product template actions">
-                      <button
-                        type="button"
-                        className={`demo-template-action secondary ${selectedTemplateAction === 'details' ? 'is-selected' : ''}`}
-                        onClick={showProductDetails}
-                        disabled={step !== 'template'}
-                        data-testid="button-demo-know-more"
-                      >
-                        {selectedTemplateAction === 'details' && <Check size={11} />}
-                        Know More
-                      </button>
-                      <button
-                        type="button"
-                        className={`demo-template-action primary ${selectedTemplateAction === 'buy' ? 'is-selected' : ''}`}
-                        onClick={() => openCheckoutFlow(true)}
-                        disabled={step !== 'template'}
-                        data-testid="button-demo-template-buy-now"
-                      >
-                        Buy Now <ArrowRight size={11} />
-                      </button>
+                      <p>A festive new arrival, handwoven in rich crimson Katan silk with intricate gold zari detailing.</p>
+                      <div className="demo-product-meta"><span>Pure Katan · 6.3 m</span><b>{productPrice}</b></div>
                     </div>
                     <div className="demo-template-meta">
-                      <time>10:42</time>
-                      <FigmaReadReceipt ariaLabel="Delivered and read" />
+                      <time>10:40</time>
                     </div>
                   </div>
                 </div>
 
                 {step !== 'template' && (
-                  <div className="demo-message from-customer message-appear" data-testid="message-demo-know-more">
-                    <span className="demo-message-copy">{selectedTemplateAction === 'details' ? 'Know More' : 'Buy Now'}</span>
-                    <span className="demo-outgoing-meta"><time>10:42</time><FigmaReadReceipt /></span>
+                  <div className="demo-message from-customer message-appear" data-testid="message-demo-customer-question">
+                    <span className="demo-message-copy">This saree is beautiful! Could you share the fabric, length and blouse details?</span>
+                    <span className="demo-outgoing-meta"><time>10:41</time><FigmaReadReceipt /></span>
                   </div>
                 )}
 
-                {(step === 'details' || (step === 'flow' && selectedTemplateAction === 'details') || (step === 'confirmed' && selectedTemplateAction === 'details')) && (
-                  <div className="demo-message from-shop demo-detail-message message-appear" data-testid="message-demo-product-details">
-                    <span className="demo-message-label">PRODUCT DETAILS</span>
-                    <p>Meet our Banarasi Silk Saree, woven in Varanasi from pure Katan silk with detailed gold zari buta work.</p>
-                    <p>Includes an unstitched blouse piece · 6.3 m saree · Dry-clean care.</p>
+                {(step === 'details' || step === 'flow' || step === 'confirmed') && (
+                  <div className="demo-message from-business demo-detail-message message-appear" data-testid="message-demo-product-details">
+                    <span className="demo-message-label">AUTOMATED CHATBOT REPLY</span>
+                    <p>Absolutely! This Banarasi saree is handwoven in Varanasi from pure Katan silk.</p>
+                    <div className="demo-spec-list">
+                      <div className="demo-spec-row"><span>Fabric</span><b>Pure Katan silk</b></div>
+                      <div className="demo-spec-row"><span>Saree length</span><b>6.3 metres</b></div>
+                      <div className="demo-spec-row"><span>Blouse</span><b>Matching unstitched piece</b></div>
+                      <div className="demo-spec-row"><span>Work & care</span><b>Gold zari · dry clean</b></div>
+                    </div>
                     <div className="demo-detail-price">{productPrice} <span>· Ships in 2–4 days</span></div>
                     <button
                       type="button"
-                      className="details-buy-button"
-                      onClick={() => openCheckoutFlow()}
+                      className={`details-buy-button ${step === 'details' ? 'demo-auto-press' : ''}`}
+                      onClick={openCheckoutFlow}
                       disabled={step !== 'details'}
                       data-testid="button-demo-details-buy-now"
                     >
                       Buy Now <ArrowRight size={11} />
                     </button>
-                    <time>10:42</time>
+                    <span className="demo-incoming-meta"><time>10:42</time></span>
                   </div>
                 )}
 
-                {step === 'flow' && (
-                  <div className="demo-flow message-appear" data-testid="card-demo-flow">
-                    <div className="flow-heading">
-                      <span className="flow-mini-icon">R</span>
-                      <span><strong>Delivery details</strong><small>Rangrez Studio · WhatsApp Flow</small></span>
-                    </div>
-                    <div className="flow-rule" />
-                    <form className="flow-form" onSubmit={submitCheckout}>
-                      <div className="flow-form-field">
-                        <label htmlFor="demo-checkout-name">Full name</label>
-                        <input
-                          id="demo-checkout-name"
-                          name="name"
-                          autoComplete="name"
-                          required
-                          maxLength={60}
-                          placeholder="Your name"
-                          value={checkout.name}
-                          onChange={event => updateCheckout('name', event.target.value)}
-                          data-testid="input-demo-name"
-                        />
-                      </div>
-                      <div className="flow-form-field">
-                        <label htmlFor="demo-checkout-phone">Mobile number</label>
-                        <input
-                          id="demo-checkout-phone"
-                          name="phone"
-                          type="tel"
-                          autoComplete="tel"
-                          inputMode="tel"
-                          required
-                          pattern="[0-9+() -]{10,16}"
-                          maxLength={16}
-                          placeholder="+91 98765 43210"
-                          value={checkout.phone}
-                          onChange={event => updateCheckout('phone', event.target.value)}
-                          data-testid="input-demo-phone"
-                        />
-                      </div>
-                      <div className="flow-form-field">
-                        <label htmlFor="demo-checkout-address">Delivery address</label>
-                        <textarea
-                          id="demo-checkout-address"
-                          name="address"
-                          autoComplete="street-address"
-                          required
-                          maxLength={140}
-                          rows={2}
-                          placeholder="House, street, area"
-                          value={checkout.address}
-                          onChange={event => updateCheckout('address', event.target.value)}
-                          data-testid="input-demo-address"
-                        />
-                      </div>
-                      <div className="flow-form-row">
-                        <div className="flow-form-field">
-                          <label htmlFor="demo-checkout-city">City</label>
-                          <input
-                            id="demo-checkout-city"
-                            name="city"
-                            autoComplete="address-level2"
-                            required
-                            maxLength={40}
-                            placeholder="City"
-                            value={checkout.city}
-                            onChange={event => updateCheckout('city', event.target.value)}
-                            data-testid="input-demo-city"
-                          />
-                        </div>
-                        <div className="flow-form-field">
-                          <label htmlFor="demo-checkout-pin">PIN code</label>
-                          <input
-                            id="demo-checkout-pin"
-                            name="pinCode"
-                            autoComplete="postal-code"
-                            inputMode="numeric"
-                            required
-                            pattern="[0-9]{6}"
-                            maxLength={6}
-                            placeholder="6 digits"
-                            value={checkout.pinCode}
-                            onChange={event => updateCheckout('pinCode', event.target.value)}
-                            data-testid="input-demo-pin"
-                          />
-                        </div>
-                      </div>
-                      <button className="flow-submit" type="submit" data-testid="button-demo-submit-order">
-                        Submit details <ArrowRight size={11} />
-                      </button>
-                      <p className="flow-disclaimer">Demo only · details are not sent or saved</p>
-                    </form>
+                {(step === 'flow' || step === 'confirmed') && (
+                  <div className="demo-message from-customer message-appear" data-testid="message-demo-buy-now">
+                    <span className="demo-message-copy">Buy Now</span>
+                    <span className="demo-outgoing-meta"><time>10:43</time><FigmaReadReceipt /></span>
                   </div>
                 )}
 
                 {step === 'confirmed' && receipt && (
                   <>
-                    <div className="demo-message from-shop demo-receipt message-appear" data-testid="message-demo-receipt">
-                      <span className="receipt-heading"><Check size={11} /> ORDER RECEIPT</span>
-                      <strong className="receipt-thanks">Order received, {receipt.name}.</strong>
-                      <div className="receipt-line"><span>Order ID</span><b>{receipt.orderId}</b></div>
+                    <div className="demo-message from-business demo-receipt message-appear" data-testid="message-demo-receipt">
+                      <span className="receipt-heading"><Check size={11} /> ORDER RECEIPT · DEMO</span>
+                      <strong className="receipt-thanks">Thank you, {receipt.name}! Your saree is reserved.</strong>
+                      <div className="receipt-line"><span>Invoice number</span><b>{receipt.orderId}</b></div>
                       <div className="receipt-line"><span>Banarasi Silk Saree</span><b>{productPrice}</b></div>
                       <div className="receipt-line receipt-total"><span>Total</span><b>{productPrice}</b></div>
                       <div className="receipt-address">
@@ -373,9 +302,9 @@ export default function CommerceDemo() {
                       <span className="receipt-pending">Payment pending · order is reserved</span>
                       <time>10:44</time>
                     </div>
-                    <div className="demo-message from-shop demo-payment message-appear" data-testid="message-demo-payment">
-                      <span className="payment-label"><ShieldCheck size={11} /> SECURE RAZORPAY PAYMENT LINK</span>
-                      <p>Pay to confirm your order. Your secure payment link is ready.</p>
+                    <div className="demo-message from-business demo-payment message-appear" data-testid="message-demo-payment">
+                      <span className="payment-label"><ShieldCheck size={11} /> SECURE PAYMENT LINK</span>
+                      <p>Complete payment to confirm your order. This sample link will not process a real payment.</p>
                       <button
                         type="button"
                         className="payment-link"
@@ -415,6 +344,61 @@ export default function CommerceDemo() {
                   <FigmaSvgCrop x={0} y={1625} width={393} height={45} className="demo-composer-art" />
                 </div>
               </div>
+              {step === 'flow' && (
+                <div className="demo-flow-screen" role="region" aria-label="WhatsApp Flow delivery form" data-testid="card-demo-flow">
+                  <div className="flow-screen-topbar">
+                    <span className="flow-screen-mark">R</span>
+                    <span className="flow-screen-brand">
+                      <strong>Rangrez Studio</strong>
+                      <small>WhatsApp Flow · Secure checkout</small>
+                    </span>
+                    <span className="flow-screen-page">1 OF 1</span>
+                  </div>
+                  <div className="flow-screen-content">
+                    <div className="flow-screen-intro">
+                      <span className="flow-screen-kicker">SECURE CHECKOUT · DEMO</span>
+                      <h2>Delivery details</h2>
+                      <p>Where should we deliver your new Banarasi saree?</p>
+                    </div>
+                    <div className="flow-order-summary">
+                      <img src={sareeImage} alt="" />
+                      <span className="flow-order-copy">
+                        <strong>Banarasi Silk Saree</strong>
+                        <small>Pure Katan silk · 6.3 m</small>
+                      </span>
+                      <b>{productPrice}</b>
+                    </div>
+                    <form className="flow-screen-form" onSubmit={submitCheckout}>
+                      <div className={`flow-screen-field ${flowTypingField === 'name' ? 'is-typing' : ''}`}>
+                        <label htmlFor="demo-checkout-name">Full name</label>
+                        <input id="demo-checkout-name" name="name" autoComplete="name" required maxLength={60} value={checkout.name} readOnly data-testid="input-demo-name" />
+                      </div>
+                      <div className={`flow-screen-field ${flowTypingField === 'phone' ? 'is-typing' : ''}`}>
+                        <label htmlFor="demo-checkout-phone">Mobile number</label>
+                        <input id="demo-checkout-phone" name="phone" type="tel" autoComplete="tel" required pattern="[0-9+() -]{10,16}" maxLength={16} value={checkout.phone} readOnly data-testid="input-demo-phone" />
+                      </div>
+                      <div className={`flow-screen-field ${flowTypingField === 'address' ? 'is-typing' : ''}`}>
+                        <label htmlFor="demo-checkout-address">Delivery address</label>
+                        <textarea id="demo-checkout-address" name="address" autoComplete="street-address" required maxLength={140} rows={2} value={checkout.address} readOnly data-testid="input-demo-address" />
+                      </div>
+                      <div className="flow-screen-fields-row">
+                        <div className={`flow-screen-field ${flowTypingField === 'city' ? 'is-typing' : ''}`}>
+                          <label htmlFor="demo-checkout-city">City</label>
+                          <input id="demo-checkout-city" name="city" autoComplete="address-level2" required maxLength={40} value={checkout.city} readOnly data-testid="input-demo-city" />
+                        </div>
+                        <div className={`flow-screen-field ${flowTypingField === 'pinCode' ? 'is-typing' : ''}`}>
+                          <label htmlFor="demo-checkout-pin">PIN code</label>
+                          <input id="demo-checkout-pin" name="pinCode" autoComplete="postal-code" required pattern="[0-9]{6}" maxLength={6} value={checkout.pinCode} readOnly data-testid="input-demo-pin" />
+                        </div>
+                      </div>
+                      <button className="flow-screen-submit" type="submit" disabled={!checkoutReady} data-testid="button-demo-submit-order">
+                        {checkoutReady ? 'Submit delivery details' : 'Adding sample details…'} <ArrowRight size={12} />
+                      </button>
+                      <p className="flow-auto-note"><span className="flow-auto-dot" /> Sample details fill automatically · nothing is saved or sent</p>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </DevicePreviewFrame>
