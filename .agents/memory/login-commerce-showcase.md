@@ -11,6 +11,8 @@ Use the user's reference screenshot and the exact “Messages - Full view” Fig
 
 For this public preview, keep the rounded bubble cards but omit the pointed tails; the user explicitly chose this to avoid the tail mismatch. The newer unread-message SVG keeps `#F5F2EB` as its base fill but references a wallpaper pattern without embedding a reusable definition.
 
+The supplied SVGs outline their text instead of retaining font-family metadata, so the exact font cannot be recovered from the exports. Keep native iOS system fonts first and use the already-loaded Inter font as the non-Apple fallback; calibrate text sizes against the SVG's 393px width and the demo's 252px design canvas.
+
 **Why:** The showcase must stay interactive and visually faithful; the user has repeatedly corrected icon-only matching and crop misalignment, emphasizing that typography, spacing, scale, and alignment matter too. The user chose clean rounded cards without directional tails even though the supplied SVG examples include tails.
 
 **How to apply:** Keep explicit user-controlled states and a replay path. Before changing the phone UI, inspect the linked Figma frame and supplied SVG; match typography, spacing, proportions, rounded corners, and the exact background base fill. Keep incoming timestamp space reserved so wrapped copy cannot run beneath it. Before finishing, compare the rendered phone with the reference at a similar viewport and check that the header subtitle, date pill, bubbles, card, and composer align and remain visible. Keep app-specific commerce content interactive; do not copy personal conversation text. Never auto-advance through customer actions or call production messaging or payment services from this preview.
