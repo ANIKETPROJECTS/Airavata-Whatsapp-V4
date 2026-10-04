@@ -387,7 +387,7 @@ export default function CommerceDemo() {
                       {invoicePdfUrl ? (
                         <button
                           type="button"
-                          className={`invoice-open-link ${step === 'paid' && !invoiceViewerShownRef.current ? 'invoice-auto-open-hint' : ''}`}
+                          className="invoice-open-link"
                           onClick={openInvoiceViewer}
                           data-testid="button-demo-invoice-preview"
                         >
@@ -505,25 +505,32 @@ export default function CommerceDemo() {
                   data-testid="card-demo-razorpay"
                 >
                   <div className="razorpay-topbar">
-                    <span className="razorpay-brand-mark">r</span>
                     <span className="razorpay-brand-copy">
                       <strong>Razorpay</strong>
-                      <small>Secure checkout · Demo</small>
+                      <small>Payment gateway</small>
                     </span>
-                    <ShieldCheck size={14} aria-hidden="true" />
+                    <span className="razorpay-secure-label"><ShieldCheck size={12} /> Secure checkout</span>
                   </div>
                   {step === 'razorpay' ? (
                     <div className="razorpay-checkout-content">
-                      <div className="razorpay-merchant">
-                        <span className="razorpay-merchant-mark">R</span>
-                        <span><strong>Rangrez Studio</strong><small>Order {receipt.orderId}</small></span>
+                      <div className="razorpay-order-summary">
+                        <div className="razorpay-merchant">
+                          <span><strong>Rangrez Studio</strong><small>Order {receipt.orderId}</small></span>
+                        </div>
+                        <div className="razorpay-total">
+                          <span>Amount to pay</span>
+                          <strong>{productPrice}</strong>
+                        </div>
                       </div>
-                      <span className="razorpay-amount-label">AMOUNT TO PAY</span>
-                      <strong className="razorpay-amount">{productPrice}</strong>
+                      <span className="razorpay-method-heading">Payment method</span>
                       <div className="razorpay-method">
+                        <span className="razorpay-method-radio is-selected" aria-hidden="true" />
+                        <span className="razorpay-method-copy"><strong>UPI</strong><small>Pay using a UPI app</small></span>
                         <span className="razorpay-upi-mark">UPI</span>
-                        <span className="razorpay-method-copy"><strong>Pay by UPI</strong><small>demo@upi</small></span>
-                        <span className="razorpay-method-selected">✓</span>
+                      </div>
+                      <div className="razorpay-upi-reference">
+                        <span>Sample UPI ID</span>
+                        <strong>demo@upi</strong>
                       </div>
                       <button
                         type="button"
@@ -531,21 +538,20 @@ export default function CommerceDemo() {
                         onClick={() => setStep('paymentSuccess')}
                         data-testid="button-demo-razorpay-pay"
                       >
-                        Pay {productPrice}
+                        Pay {productPrice} <ArrowRight size={11} />
                       </button>
-                      <p className="razorpay-demo-note"><ShieldCheck size={10} /> SIMULATED PAYMENT · NO MONEY MOVES</p>
+                      <p className="razorpay-demo-note">Demonstration checkout · No payment is processed</p>
                     </div>
                   ) : (
                     <div className="razorpay-success-content" data-testid="message-demo-razorpay-success">
                       <span className="razorpay-success-icon"><Check size={22} /></span>
-                      <span className="razorpay-success-label">DEMO PAYMENT</span>
+                      <span className="razorpay-success-label">PAYMENT CONFIRMED</span>
                       <h2>Payment successful</h2>
                       <p>{productPrice} paid to Rangrez Studio</p>
                       <span className="razorpay-success-id">Payment ID · pay_DEMO{receipt.orderId.replace(/\D/g, '')}</span>
-                      <small>Invoice and order update arriving in WhatsApp…</small>
+                      <small>Returning to your WhatsApp chat shortly</small>
                     </div>
                   )}
-                  <span className="razorpay-home-indicator" />
                 </div>
               )}
               {step === 'invoiceViewer' && receipt && invoicePdfUrl && (
@@ -610,7 +616,6 @@ export default function CommerceDemo() {
                       <Download size={11} /> Download PDF
                     </a>
                   </div>
-                  <span className="invoice-viewer-home-indicator" />
                 </div>
               )}
             </div>
