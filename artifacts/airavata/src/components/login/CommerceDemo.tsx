@@ -4,6 +4,7 @@ import {
   Camera,
   Check,
   CheckCheck,
+  ChevronDown,
   ChevronLeft,
   Mic,
   Plus,
@@ -137,7 +138,10 @@ export default function CommerceDemo() {
                 </div>
               </div>
               <div className="demo-chat-header">
-                <span className="demo-back" aria-hidden="true"><ChevronLeft size={19} strokeWidth={2.5} /></span>
+                <span className="demo-back" aria-hidden="true">
+                  <ChevronLeft size={17} strokeWidth={2.5} />
+                  <b>12</b>
+                </span>
                 <div className="demo-shop-avatar">R</div>
                 <div className="demo-shop-name"><strong>Rangrez Studio</strong><small>Business account</small></div>
                 <div className="demo-header-actions" aria-hidden="true">
@@ -355,12 +359,19 @@ export default function CommerceDemo() {
                     </div>
                   </>
                 )}
+                <button
+                  type="button"
+                  className="demo-scroll-bottom"
+                  aria-label="Scroll to latest messages"
+                  onClick={() => chatBodyRef.current?.scrollTo({ top: chatBodyRef.current.scrollHeight, behavior: 'smooth' })}
+                >
+                  <ChevronDown size={15} strokeWidth={2.2} />
+                </button>
               </div>
               <div className="demo-chat-footer">
                 <div className="demo-composer" role="group" aria-label="WhatsApp message composer">
                   <span className="composer-add" aria-hidden="true"><Plus size={19} strokeWidth={2.2} /></span>
                   <div className="composer-input" role="textbox" aria-readonly="true" aria-label="Message">
-                    <span>Message</span>
                     <Sticker size={15} strokeWidth={1.8} aria-hidden="true" />
                   </div>
                   <span className="composer-payment" aria-hidden="true">₹</span>
