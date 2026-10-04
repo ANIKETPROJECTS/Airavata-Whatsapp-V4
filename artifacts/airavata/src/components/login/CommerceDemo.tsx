@@ -173,7 +173,7 @@ export default function CommerceDemo() {
                 <FigmaSvgCrop x={0} y={0} width={393} height={42} className="demo-status-art" />
               </div>
               <div className="demo-chat-header">
-                <FigmaSvgCrop x={0} y={58} width={40} height={36} className="demo-back-art" />
+                <FigmaSvgCrop x={3} y={58} width={22} height={36} className="demo-back-art" />
                 <div className="demo-shop-avatar">R</div>
                 <div className="demo-shop-name"><strong>Rangrez Studio</strong><small>tap here for contact info</small></div>
                 <FigmaSvgCrop x={288} y={58} width={88} height={36} className="demo-header-actions-art" />
