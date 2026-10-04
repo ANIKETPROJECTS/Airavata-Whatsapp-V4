@@ -111,7 +111,8 @@
 .demo-message > :not(.demo-bubble-tail):not(time) { position: relative; z-index: 2; }
 .demo-message time { position: absolute; z-index: 3; right: 6px; bottom: 2px; color: rgb(0 0 0 / 50%); font-size: 6px; }
 .from-customer { align-self: flex-end; --demo-bubble-fill: #d0fecf; }
-.from-shop { align-self: flex-start; padding-right: 30px; padding-bottom: 12px; --demo-bubble-fill: #fff; }
+.from-shop { align-self: flex-start; --demo-bubble-fill: #fff; }
+.demo-message.from-shop:not(.demo-detail-message):not(.demo-receipt):not(.demo-payment) { padding-right: 30px; padding-bottom: 8px; }
 .demo-bubble-tail { position: absolute; z-index: 1; bottom: 0; display: block; overflow: visible; pointer-events: none; }
 .demo-bubble-tail.from-customer { right: -3.85px; }
 .demo-bubble-tail.from-shop { left: -3.85px; }
