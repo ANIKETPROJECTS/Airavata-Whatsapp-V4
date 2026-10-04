@@ -1,5 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, Check, RotateCcw, ShieldCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  Camera,
+  Check,
+  CheckCheck,
+  ChevronLeft,
+  Mic,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  Smile,
+  Video,
+  Phone,
+} from 'lucide-react';
 import { DevicePreviewFrame } from '../DevicePreview';
 import sareeImage from '@assets/generated_images/atw-banarasi-saree-product.jpg';
 
@@ -42,7 +55,7 @@ export default function CommerceDemo() {
     if (!stage) return;
 
     const updateScreenWidth = () => {
-      const heightLimit = Math.floor(stage.clientHeight / 2.3);
+      const heightLimit = Math.floor(stage.clientHeight / 2.65);
       const widthLimit = stage.clientWidth - 36;
       if (heightLimit <= 0 || widthLimit <= 0) return;
       setScreenWidth(Math.max(160, Math.min(heightLimit, widthLimit)));
@@ -97,8 +110,8 @@ export default function CommerceDemo() {
     setPaymentPreviewOpen(false);
   };
 
-  const screenHeight = Math.round(screenWidth * 1.69);
   const screenScale = screenWidth / 252;
+  const screenHeight = Math.round(500 * screenScale);
 
   return (
     <div className="demo-stage" ref={demoStageRef}>
@@ -107,10 +120,13 @@ export default function CommerceDemo() {
           <div className="demo-phone-screen" style={{ height: screenHeight }}>
             <div className="demo-screen-content" style={{ transform: `scale(${screenScale})` }}>
               <div className="demo-chat-header">
-                <div className="demo-back" aria-hidden="true">‹</div>
+                <span className="demo-back" aria-hidden="true"><ChevronLeft size={19} strokeWidth={2.5} /></span>
                 <div className="demo-shop-avatar">R</div>
                 <div className="demo-shop-name"><strong>Rangrez Studio</strong><small>Business account</small></div>
-                <span className="demo-header-dots" aria-hidden="true">···</span>
+                <div className="demo-header-actions" aria-hidden="true">
+                  <span><Video size={16} strokeWidth={1.8} /></span>
+                  <span><Phone size={15} strokeWidth={1.8} /></span>
+                </div>
               </div>
               <div ref={chatBodyRef} className="demo-chat-body" aria-live="polite" aria-label="Interactive sample WhatsApp conversation">
                 <div className="demo-date-pill">TODAY</div>
@@ -148,12 +164,16 @@ export default function CommerceDemo() {
                       Buy Now <ArrowRight size={11} />
                     </button>
                   </div>
+                  <div className="demo-template-meta">
+                    <time>10:41</time>
+                    <CheckCheck size={10} strokeWidth={1.8} aria-label="Delivered and read" />
+                  </div>
                 </div>
 
                 {step !== 'template' && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-know-more">
                     {selectedTemplateAction === 'details' ? 'Know More' : 'Buy Now'}
-                    <time>10:42</time>
+                    <span className="demo-outgoing-meta"><time>10:42</time><CheckCheck size={10} strokeWidth={1.8} /></span>
                   </div>
                 )}
 
@@ -298,20 +318,30 @@ export default function CommerceDemo() {
                       {paymentPreviewOpen && (
                         <span className="payment-note" role="status">Demo preview · no payment is processed</span>
                       )}
+                      <button
+                        type="button"
+                        className="demo-replay-button"
+                        onClick={replayDemo}
+                        data-testid="button-demo-replay"
+                      >
+                        <RotateCcw size={10} /> Start demo again
+                      </button>
                       <time>10:44</time>
                     </div>
                   </>
                 )}
               </div>
-              <div className="demo-composer">
-                <span>Message</span>
-                {step === 'confirmed' ? (
-                  <button type="button" className="composer-send" onClick={replayDemo} aria-label="Start the demo again" title="Start the demo again">
-                    <RotateCcw size={13} />
-                  </button>
-                ) : (
-                  <span className="composer-send"><ArrowRight size={13} /></span>
-                )}
+              <div className="demo-chat-footer">
+                <div className="demo-composer" role="group" aria-label="WhatsApp message composer">
+                  <span className="composer-add" aria-hidden="true"><Plus size={19} strokeWidth={2.2} /></span>
+                  <div className="composer-input" role="textbox" aria-readonly="true" aria-label="Message">
+                    <span>Message</span>
+                    <Smile size={16} strokeWidth={1.8} aria-hidden="true" />
+                  </div>
+                  <span className="composer-camera" aria-hidden="true"><Camera size={16} strokeWidth={1.9} /></span>
+                  <span className="composer-mic" aria-hidden="true"><Mic size={16} strokeWidth={1.9} /></span>
+                </div>
+                <div className="demo-safe-area" aria-hidden="true" />
               </div>
             </div>
           </div>
