@@ -67,30 +67,6 @@ function FigmaSvgCrop({
   );
 }
 
-function FigmaBubbleTail({ direction }: { direction: 'incoming' | 'outgoing' }) {
-  const outgoing = direction === 'outgoing';
-
-  return (
-    <svg
-      className={`demo-bubble-tail ${outgoing ? 'from-customer' : 'from-shop'}`}
-      width={(outgoing ? 13.5 : 14) * figmaCanvasScale}
-      height={18 * figmaCanvasScale}
-      viewBox={outgoing ? '369.5 390.5 13.5 18' : '10 328.5 14 18'}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d={
-          outgoing
-            ? 'M377 394.5L377 390.5H369.5V404.5C373.159 407.753 380.125 408.36 382.6 408.474C382.907 408.488 383.065 408.102 382.848 407.884C381.2 406.227 377 401.333 377 394.5Z'
-            : 'M16 332.5L16 328.5H23.5V342.5C19.8406 345.753 12.8748 346.36 10.4 346.474C10.0929 346.488 9.93536 346.102 10.1521 345.884C11.7998 344.227 16 339.333 16 332.5Z'
-        }
-        fill={outgoing ? '#D0FECF' : '#FFFFFF'}
-      />
-    </svg>
-  );
-}
-
 function FigmaReadReceipt({ ariaLabel }: { ariaLabel?: string }) {
   return (
     <svg
@@ -214,18 +190,15 @@ export default function CommerceDemo() {
               >
                 <FigmaSvgCrop x={146} y={280} width={101} height={21} className="demo-date-art" />
                 <div className="demo-message from-customer message-appear">
-                  <FigmaBubbleTail direction="outgoing" />
                   <span className="demo-message-copy">Hi! I’m looking for something festive.</span>
                   <span className="demo-outgoing-meta"><time>10:40</time><FigmaReadReceipt /></span>
                 </div>
                 <div className="demo-message from-shop message-appear">
-                  <FigmaBubbleTail direction="incoming" />
                   <span className="demo-message-copy">Of course. Take a look at our latest arrival.</span>
                   <time>10:41</time>
                 </div>
 
                 <div className="demo-product-bubble message-appear" data-testid="card-demo-product-template">
-                  <FigmaBubbleTail direction="outgoing" />
                   <div className="demo-product-card">
                     <img
                       className="demo-product-image"
@@ -268,7 +241,6 @@ export default function CommerceDemo() {
 
                 {step !== 'template' && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-know-more">
-                    <FigmaBubbleTail direction="outgoing" />
                     <span className="demo-message-copy">{selectedTemplateAction === 'details' ? 'Know More' : 'Buy Now'}</span>
                     <span className="demo-outgoing-meta"><time>10:42</time><FigmaReadReceipt /></span>
                   </div>
@@ -276,7 +248,6 @@ export default function CommerceDemo() {
 
                 {(step === 'details' || (step === 'flow' && selectedTemplateAction === 'details') || (step === 'confirmed' && selectedTemplateAction === 'details')) && (
                   <div className="demo-message from-shop demo-detail-message message-appear" data-testid="message-demo-product-details">
-                    <FigmaBubbleTail direction="incoming" />
                     <span className="demo-message-label">PRODUCT DETAILS</span>
                     <p>Meet our Banarasi Silk Saree, woven in Varanasi from pure Katan silk with detailed gold zari buta work.</p>
                     <p>Includes an unstitched blouse piece · 6.3 m saree · Dry-clean care.</p>
@@ -391,7 +362,6 @@ export default function CommerceDemo() {
                 {step === 'confirmed' && receipt && (
                   <>
                     <div className="demo-message from-shop demo-receipt message-appear" data-testid="message-demo-receipt">
-                      <FigmaBubbleTail direction="incoming" />
                       <span className="receipt-heading"><Check size={11} /> ORDER RECEIPT</span>
                       <strong className="receipt-thanks">Order received, {receipt.name}.</strong>
                       <div className="receipt-line"><span>Order ID</span><b>{receipt.orderId}</b></div>
@@ -404,7 +374,6 @@ export default function CommerceDemo() {
                       <time>10:44</time>
                     </div>
                     <div className="demo-message from-shop demo-payment message-appear" data-testid="message-demo-payment">
-                      <FigmaBubbleTail direction="incoming" />
                       <span className="payment-label"><ShieldCheck size={11} /> SECURE RAZORPAY PAYMENT LINK</span>
                       <p>Pay to confirm your order. Your secure payment link is ready.</p>
                       <button

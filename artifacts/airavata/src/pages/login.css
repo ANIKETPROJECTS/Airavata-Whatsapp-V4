@@ -108,14 +108,11 @@
 .demo-template-meta svg { color: #007bfc; }
 .demo-message { position: relative; isolation: isolate; max-width: 78%; flex: 0 0 auto; border-radius: 7.69px; padding: 4px 7px 7px; color: #0a0a0a; font-size: 8px; line-height: 1.125; }
 .demo-message::before { position: absolute; z-index: 0; inset: 0; border: .423px solid rgb(0 0 0 / 6%); border-radius: inherit; background: var(--demo-bubble-fill); content: ''; pointer-events: none; }
-.demo-message > :not(.demo-bubble-tail):not(time) { position: relative; z-index: 2; }
+.demo-message > :not(time) { position: relative; z-index: 2; }
 .demo-message time { position: absolute; z-index: 3; right: 6px; bottom: 2px; color: rgb(0 0 0 / 50%); font-size: 6px; }
 .from-customer { align-self: flex-end; --demo-bubble-fill: #d0fecf; }
 .from-shop { align-self: flex-start; --demo-bubble-fill: #fff; }
 .demo-message.from-shop:not(.demo-detail-message):not(.demo-receipt):not(.demo-payment) { padding-right: 30px; padding-bottom: 8px; }
-.demo-bubble-tail { position: absolute; z-index: 1; bottom: 0; display: block; overflow: visible; pointer-events: none; }
-.demo-bubble-tail.from-customer { right: -3.85px; }
-.demo-bubble-tail.from-shop { left: -3.85px; }
 .demo-outgoing-meta { position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin: 2px -3px -6px 0; color: #007bfc; }
 .demo-outgoing-meta time { position: static; color: rgb(0 0 0 / 50%); }
 .demo-detail-message { max-width: 92%; }
