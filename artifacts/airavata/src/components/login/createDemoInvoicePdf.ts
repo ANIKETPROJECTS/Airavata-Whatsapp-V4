@@ -7,6 +7,38 @@ export type DemoInvoiceReceipt = {
   orderId: string;
 };
 
+const invoiceTotalPaise = 649_000;
+
+export function getDemoInvoiceAmounts() {
+  const taxablePaise = Math.round(invoiceTotalPaise * 100 / 105);
+  const gstPaise = invoiceTotalPaise - taxablePaise;
+  const cgstPaise = Math.floor(gstPaise / 2);
+
+  return {
+    totalPaise: invoiceTotalPaise,
+    taxablePaise,
+    cgstPaise,
+    sgstPaise: gstPaise - cgstPaise,
+    gstPaise,
+  };
+}
+
+export function formatDemoInvoiceMoney(paise: number): string {
+  return `₹${(paise / 100).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+export function getDemoInvoiceDate(): string {
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  }).format(new Date());
+}
+
 export function getPaymentReference(orderId: string): string {
   return `pay_${orderId.replace(/\D/g, '')}R8K4`;
 }
@@ -29,40 +61,102 @@ function pdfText(
   return `${color} rg\nBT ${font} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${escapePdfText(value)}) Tj ET`;
 }
 
-function pdfRule(y: number): string {
-  return `0.85 0.89 0.85 RG 0.8 w 56 ${y} m 539 ${y} l S`;
+function pdfRect(x: number, y: number, width: number, height: number, color: string): string {
+  return `${color} rg\n${x} ${y} ${width} ${height} re f`;
 }
 
-export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt): Blob {
+function pdfRule(y: number, color = '0.87 0.90 0.93'): string {
+  return `${color} RG 0.8 w 50 ${y} m 545 ${y} l S`;
+}
+
+function pdfMoney(paise: number): string {
+  const amount = (paise / 100).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `INR ${amount}`;
+}
+
+export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt, paymentMethod = 'Google Pay'): Blob {
+  const tax = getDemoInvoiceAmounts();
   const paymentId = getPaymentReference(receipt.orderId);
+  const invoiceDate = getDemoInvoiceDate();
   const content = [
-    '0.95 0.98 0.95 rg 50 730 495 75 re f',
-    pdfText('Rangrez Studio', 70, 775, 23, '/F2', '0.13 0.31 0.23'),
-    pdfText('PAYMENT INVOICE', 70, 752, 10, '/F1', '0.33 0.45 0.37'),
-    pdfRule(718),
-    pdfText(`Invoice no: INV-${receipt.orderId}`, 56, 694, 11, '/F2'),
-    pdfText(`Order no: ${receipt.orderId}`, 56, 675, 10),
-    pdfText(`Payment ID: ${paymentId}`, 56, 657, 10),
-    pdfText('BILL TO', 56, 626, 9, '/F2', '0.36 0.52 0.40'),
-    pdfText(receipt.name, 56, 608, 11, '/F2'),
-    pdfText(`Phone: ${receipt.phone}`, 56, 590, 9),
-    pdfText(`Deliver to: ${receipt.address}`, 56, 572, 9),
-    pdfText(`${receipt.city}, ${receipt.pinCode}`, 56, 554, 9),
-    pdfRule(530),
-    pdfText('ITEM', 56, 507, 9, '/F2', '0.45 0.53 0.46'),
-    pdfText('QTY', 420, 507, 9, '/F2', '0.45 0.53 0.46'),
-    pdfText('AMOUNT', 470, 507, 9, '/F2', '0.45 0.53 0.46'),
-    pdfText('Banarasi Silk Saree - Pure Katan silk, 6.3 m', 56, 484, 9),
-    pdfText('1', 427, 484, 9),
-    pdfText('INR 6,490', 470, 484, 9, '/F2'),
-    pdfRule(463),
-    pdfText('TOTAL PAID', 350, 437, 11, '/F2'),
-    pdfText('INR 6,490', 470, 437, 11, '/F2', '0.13 0.42 0.27'),
-    pdfText('Payment status: PAID - PREVIEW ONLY', 56, 401, 10, '/F2', '0.13 0.42 0.27'),
-    pdfText('Order status: Processing', 56, 382, 10),
-    pdfRule(358),
-    pdfText('Preview invoice for display only.', 56, 332, 9, '/F1', '0.48 0.54 0.49'),
-    pdfText('No real payment or order was created.', 56, 315, 9, '/F1', '0.48 0.54 0.49'),
+    pdfRect(50, 748, 495, 56, '0.95 0.97 0.99'),
+    pdfText('RANGREZ STUDIO', 66, 779, 18, '/F2', '0.11 0.29 0.23'),
+    pdfText('HANDWOVEN BANARASI TEXTILES', 66, 761, 7, '/F1', '0.39 0.48 0.44'),
+    pdfText('SAMPLE GST INVOICE', 404, 779, 8, '/F2', '0.12 0.39 0.65'),
+    pdfText('NOT VALID FOR TAX CLAIM', 404, 762, 6, '/F2', '0.60 0.34 0.27'),
+
+    pdfText('Tax invoice', 50, 718, 20, '/F2', '0.12 0.20 0.29'),
+    pdfText(`Invoice no.  INV-${receipt.orderId}`, 50, 699, 8, '/F2', '0.35 0.43 0.50'),
+    pdfText('INVOICE DATE', 374, 719, 6, '/F2', '0.48 0.55 0.61'),
+    pdfText(invoiceDate, 374, 702, 9, '/F2', '0.16 0.25 0.33'),
+    pdfText('ORDER NUMBER', 470, 719, 6, '/F2', '0.48 0.55 0.61'),
+    pdfText(receipt.orderId, 470, 702, 8, '/F2', '0.16 0.25 0.33'),
+    pdfRule(687),
+
+    pdfRect(50, 589, 241, 82, '0.97 0.98 0.99'),
+    pdfRect(304, 589, 241, 82, '0.97 0.98 0.99'),
+    pdfText('SOLD BY', 63, 653, 7, '/F2', '0.12 0.39 0.65'),
+    pdfText('Rangrez Studio - sample merchant', 63, 636, 9, '/F2', '0.16 0.25 0.33'),
+    pdfText('Varanasi, Uttar Pradesh 221001', 63, 619, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText('GSTIN: Not configured (sample)', 63, 603, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText('BILL TO / SHIP TO', 317, 653, 7, '/F2', '0.12 0.39 0.65'),
+    pdfText(receipt.name, 317, 636, 9, '/F2', '0.16 0.25 0.33'),
+    pdfText(receipt.phone, 317, 619, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(receipt.address, 317, 603, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(`${receipt.city}, Uttar Pradesh ${receipt.pinCode}`, 317, 591, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText('PLACE OF SUPPLY  Uttar Pradesh (illustrative)', 50, 570, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText('Tax calculation assumes an intra-state sample sale.', 50, 557, 7, '/F1', '0.48 0.55 0.61'),
+
+    pdfRect(50, 516, 495, 28, '0.91 0.95 0.97'),
+    pdfText('ITEM DESCRIPTION', 62, 527, 6, '/F2', '0.34 0.43 0.50'),
+    pdfText('HSN', 300, 527, 6, '/F2', '0.34 0.43 0.50'),
+    pdfText('QTY', 352, 527, 6, '/F2', '0.34 0.43 0.50'),
+    pdfText('TAXABLE VALUE', 390, 527, 6, '/F2', '0.34 0.43 0.50'),
+    pdfText('TOTAL', 494, 527, 6, '/F2', '0.34 0.43 0.50'),
+    pdfText('Banarasi Silk Saree', 62, 498, 8, '/F2', '0.16 0.25 0.33'),
+    pdfText('Pure Katan silk - 6.3 m', 62, 483, 7, '/F1', '0.48 0.55 0.61'),
+    pdfText('5007', 300, 498, 7, '/F1', '0.27 0.36 0.43'),
+    pdfText('1', 352, 498, 7, '/F1', '0.27 0.36 0.43'),
+    pdfText(pdfMoney(tax.taxablePaise), 390, 498, 7, '/F1', '0.27 0.36 0.43'),
+    pdfText(pdfMoney(tax.totalPaise), 494, 498, 7, '/F2', '0.16 0.25 0.33'),
+    pdfRule(472),
+
+    pdfRect(50, 355, 239, 101, '0.97 0.98 0.99'),
+    pdfRect(302, 355, 243, 101, '0.97 0.98 0.99'),
+    pdfText('PAYMENT DETAILS', 63, 437, 7, '/F2', '0.12 0.39 0.65'),
+    pdfText('Status', 63, 418, 7, '/F1', '0.48 0.55 0.61'),
+    pdfText('Successful in preview only', 146, 418, 7, '/F2', '0.18 0.42 0.29'),
+    pdfText('Method', 63, 400, 7, '/F1', '0.48 0.55 0.61'),
+    pdfText(`UPI - ${paymentMethod}`, 146, 400, 7, '/F2', '0.27 0.36 0.43'),
+    pdfText('Payment ref.', 63, 382, 7, '/F1', '0.48 0.55 0.61'),
+    pdfText(paymentId, 146, 382, 7, '/F1', '0.27 0.36 0.43'),
+
+    pdfText('TAX SUMMARY', 316, 437, 7, '/F2', '0.12 0.39 0.65'),
+    pdfText('Taxable value', 316, 418, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(pdfMoney(tax.taxablePaise), 475, 418, 7, '/F1', '0.27 0.36 0.43'),
+    pdfText('CGST @ 2.5%', 316, 402, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(pdfMoney(tax.cgstPaise), 475, 402, 7, '/F1', '0.27 0.36 0.43'),
+    pdfText('SGST @ 2.5%', 316, 386, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(pdfMoney(tax.sgstPaise), 475, 386, 7, '/F1', '0.27 0.36 0.43'),
+    pdfRule(374),
+    pdfText('Total payable (incl. GST)', 316, 361, 7, '/F2', '0.16 0.25 0.33'),
+    pdfText(pdfMoney(tax.totalPaise), 475, 361, 8, '/F2', '0.12 0.39 0.31'),
+
+    pdfText('GST rate: 5%  |  HSN 5007  |  Total GST included:  ' + pdfMoney(tax.gstPaise), 50, 333, 8, '/F2', '0.16 0.25 0.33'),
+    pdfText('Amount in words: Indian Rupees Six Thousand Four Hundred Ninety Only', 50, 315, 8, '/F1', '0.35 0.43 0.50'),
+    pdfText('Order status: Processing', 50, 297, 8, '/F1', '0.35 0.43 0.50'),
+
+    pdfRect(50, 214, 495, 61, '0.96 0.97 0.95'),
+    pdfText('SAMPLE DOCUMENT NOTICE', 64, 255, 7, '/F2', '0.12 0.39 0.65'),
+    pdfText('This is an illustrative preview using sample merchant and customer details.', 64, 237, 8, '/F1', '0.27 0.36 0.43'),
+    pdfText('GSTIN is not configured. Do not use this preview to claim input tax credit.', 64, 222, 8, '/F1', '0.27 0.36 0.43'),
+    pdfRule(194),
+    pdfText('No payment, tax invoice, or order was actually created.', 50, 174, 8, '/F2', '0.60 0.34 0.27'),
+    pdfText('Thank you for choosing Rangrez Studio.', 50, 146, 8, '/F1', '0.48 0.55 0.61'),
+    pdfText(`Invoice preview  |  ${invoiceDate}  |  ${receipt.orderId}`, 352, 146, 7, '/F1', '0.48 0.55 0.61'),
   ].join('\n');
 
   const objects = [

@@ -16,10 +16,16 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { DevicePreviewFrame } from '../DevicePreview';
-import { createDemoInvoicePdf, getPaymentReference } from './createDemoInvoicePdf';
+import {
+  createDemoInvoicePdf,
+  formatDemoInvoiceMoney,
+  getDemoInvoiceAmounts,
+  getDemoInvoiceDate,
+  getPaymentReference,
+} from './createDemoInvoicePdf';
 import figmaChatScreen from '@assets/Messages_-_Full_view_1791144042420.svg';
 import sareeImage from '@assets/generated_images/atw-banarasi-saree-product.jpg';
-import razorpayLogo from '../../assets/razorpay-logo.png';
+import razorpayLogo from '../../assets/razorpay-logo-blue.png';
 
 type DemoStep =
   | 'template'
@@ -119,42 +125,106 @@ function FigmaReadReceipt({ ariaLabel }: { ariaLabel?: string }) {
   );
 }
 
+function GooglePayMark() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="razorpay-brand-mark">
+      <path fill="#4285F4" d="M21.35 12.25c0-.72-.06-1.42-.18-2.1H12v3.97h5.23a4.5 4.5 0 0 1-1.96 2.96v2.47h3.17c1.85-1.7 2.91-4.2 2.91-7.3z" />
+      <path fill="#34A853" d="M12 21.6c2.64 0 4.85-.87 6.46-2.36l-3.17-2.47c-.88.59-2 .94-3.29.94-2.53 0-4.68-1.71-5.45-4.01H3.28v2.55A9.75 9.75 0 0 0 12 21.6z" />
+      <path fill="#FBBC05" d="M6.55 13.7a5.86 5.86 0 0 1 0-3.4V7.75H3.28a9.75 9.75 0 0 0 0 8.5z" />
+      <path fill="#EA4335" d="M12 6.29c1.44 0 2.73.49 3.75 1.46l2.82-2.82C16.84 3.35 14.64 2.4 12 2.4a9.75 9.75 0 0 0-8.72 5.35l3.27 2.55C7.32 8 9.47 6.29 12 6.29z" />
+    </svg>
+  );
+}
+
+function PaytmMark() {
+  return (
+    <span aria-hidden="true" className="razorpay-paytm-mark">
+      <span>pay</span><strong>tm</strong>
+    </span>
+  );
+}
+
+function PhonePeMark() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="razorpay-brand-mark">
+      <circle cx="12" cy="12" r="11" fill="#5F259F" />
+      <path d="M8 5.5h5.25a4 4 0 0 1 0 8H11v5H8zm3 3v2h2.25a1 1 0 0 0 0-2z" fill="#fff" />
+    </svg>
+  );
+}
+
 function InvoiceDocumentPage({
   receipt,
+  paymentMethod,
   thumbnail = false,
 }: {
   receipt: Receipt;
+  paymentMethod: string;
   thumbnail?: boolean;
 }) {
+  const tax = getDemoInvoiceAmounts();
+  const paymentId = getPaymentReference(receipt.orderId);
+
   return (
     <article className={`invoice-page-preview ${thumbnail ? 'invoice-page-preview--thumbnail' : ''}`}>
       <div className="invoice-page-brand">
-        <strong>RANGREZ STUDIO</strong>
-        <span>PAYMENT INVOICE</span>
+        <span className="invoice-page-brand-copy">
+          <strong>RANGREZ STUDIO</strong>
+          <small>HANDWOVEN BANARASI TEXTILES</small>
+        </span>
+        <span className="invoice-page-sample-tag">GST INVOICE<br />SAMPLE PREVIEW</span>
       </div>
       <div className="invoice-page-heading">
-        <h2>Invoice</h2>
-        <span>INV-{receipt.orderId}</span>
+        <span><h2>Tax invoice</h2><small>INV-{receipt.orderId}</small></span>
+        <span className="invoice-page-validity">Not valid for tax claim</span>
       </div>
       <div className="invoice-page-summary">
+        <div><small>INVOICE DATE</small><strong>{getDemoInvoiceDate()}</strong></div>
         <div><small>ORDER NUMBER</small><strong>{receipt.orderId}</strong></div>
-        <div><small>PAYMENT STATUS</small><strong className="invoice-paid-label">Paid · UPI</strong></div>
+        <div><small>PAYMENT</small><strong className="invoice-paid-label">UPI · {paymentMethod}</strong></div>
       </div>
-      <div className="invoice-page-customer">
-        <small>BILLED TO</small>
-        <strong>{receipt.name}</strong>
-        <span>{receipt.phone}</span>
-        <span>{receipt.address}, {receipt.city} {receipt.pinCode}</span>
+      <div className="invoice-page-parties">
+        <section>
+          <small>SOLD BY</small>
+          <strong>Rangrez Studio</strong>
+          <span>Varanasi, Uttar Pradesh 221001</span>
+          <span>GSTIN: Not configured (sample)</span>
+        </section>
+        <section>
+          <small>BILL TO / SHIP TO</small>
+          <strong>{receipt.name}</strong>
+          <span>{receipt.phone}</span>
+          <span>{receipt.address}, {receipt.city} {receipt.pinCode}</span>
+        </section>
       </div>
+      <p className="invoice-page-supply">Place of supply: Uttar Pradesh · Intra-state sample sale</p>
       <div className="invoice-page-table">
-        <div className="invoice-page-table-head"><span>ITEM</span><span>QTY</span><span>AMOUNT</span></div>
-        <div className="invoice-page-item"><span>Banarasi Silk Saree<small>Pure Katan silk · 6.3 m</small></span><span>1</span><strong>₹6,490</strong></div>
+        <div className="invoice-page-table-head"><span>DESCRIPTION</span><span>HSN</span><span>QTY</span><span>INCL. GST</span></div>
+        <div className="invoice-page-item">
+          <span>Banarasi Silk Saree<small>Pure Katan silk · 6.3 m</small></span>
+          <span>5007</span><span>1</span><strong>{formatDemoInvoiceMoney(tax.totalPaise)}</strong>
+        </div>
       </div>
-      <div className="invoice-page-total"><span>Total paid</span><strong>₹6,490</strong></div>
-      <div className="invoice-page-order-state">
-        <span>Order status</span><strong>Processing</strong>
+      <div className="invoice-page-accounting">
+        <div className="invoice-page-tax-list">
+          <strong>GST BREAKUP · INCLUDED IN PRICE</strong>
+          <span><small>Taxable value</small><b>{formatDemoInvoiceMoney(tax.taxablePaise)}</b></span>
+          <span><small>CGST @ 2.5%</small><b>{formatDemoInvoiceMoney(tax.cgstPaise)}</b></span>
+          <span><small>SGST @ 2.5%</small><b>{formatDemoInvoiceMoney(tax.sgstPaise)}</b></span>
+          <span className="invoice-page-gst-total"><small>Total GST · 5%</small><b>{formatDemoInvoiceMoney(tax.gstPaise)}</b></span>
+        </div>
+        <div className="invoice-page-grand-total">
+          <small>TOTAL PAID</small>
+          <strong>{formatDemoInvoiceMoney(tax.totalPaise)}</strong>
+          <span>Includes GST</span>
+        </div>
       </div>
-      <small className="invoice-page-disclaimer">Preview invoice · no payment or order was created.</small>
+      <div className="invoice-page-payment-ref">
+        <span>Payment reference <strong>{paymentId}</strong></span>
+        <span>Order status <strong>Processing</strong></span>
+      </div>
+      <p className="invoice-page-amount-words">Amount in words: Indian Rupees Six Thousand Four Hundred Ninety Only</p>
+      <small className="invoice-page-disclaimer">Sample invoice preview. GSTIN is not configured. No payment or order was created; do not use for tax claims.</small>
     </article>
   );
 }
@@ -168,6 +238,7 @@ export default function CommerceDemo() {
   const [invoiceViewerOpen, setInvoiceViewerOpen] = useState(false);
   const [postPaymentStage, setPostPaymentStage] = useState<'payment' | 'invoice' | 'order'>('payment');
   const [razorpayStage, setRazorpayStage] = useState<'methods' | 'upi' | 'processing'>('methods');
+  const [selectedUpiApp, setSelectedUpiApp] = useState<'Google Pay' | 'Paytm' | 'PhonePe'>('Google Pay');
   const [flowTypingField, setFlowTypingField] = useState<keyof CheckoutDetails | null>(null);
   const [screenWidth, setScreenWidth] = useState(252);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -259,12 +330,12 @@ export default function CommerceDemo() {
       return;
     }
 
-    const invoicePdf = createDemoInvoicePdf(receipt);
+    const invoicePdf = createDemoInvoicePdf(receipt, selectedUpiApp);
     const invoiceUrl = URL.createObjectURL(invoicePdf);
     setInvoiceFileSize(formatFileSize(invoicePdf.size));
     setInvoicePdfUrl(invoiceUrl);
     return () => URL.revokeObjectURL(invoiceUrl);
-  }, [receipt]);
+  }, [receipt, selectedUpiApp]);
 
   useEffect(() => {
     if (step !== 'flow') return;
@@ -318,6 +389,7 @@ export default function CommerceDemo() {
     setInvoiceViewerOpen(false);
     setPostPaymentStage('payment');
     setRazorpayStage('methods');
+    setSelectedUpiApp('Google Pay');
     invoiceViewerShownRef.current = false;
     setFlowTypingField(null);
   };
@@ -453,7 +525,7 @@ export default function CommerceDemo() {
                         {invoicePdfUrl ? (
                           <div className="invoice-document">
                             <div className="invoice-document-thumbnail" role="img" aria-label={`First-page preview of Invoice-${receipt.orderId}.pdf`}>
-                              <InvoiceDocumentPage receipt={receipt} thumbnail />
+                              <InvoiceDocumentPage receipt={receipt} paymentMethod={selectedUpiApp} thumbnail />
                             </div>
                             <button
                               type="button"
@@ -617,9 +689,15 @@ export default function CommerceDemo() {
                           <div className="razorpay-upi-panel message-appear">
                             <span className="razorpay-upi-title">Select a UPI app</span>
                             <div className="razorpay-upi-apps">
-                              <button type="button" className="is-active"><b>G</b><span>Google Pay</span></button>
-                              <button type="button"><b>Pe</b><span>PhonePe</span></button>
-                              <button type="button"><b>paytm</b><span>Paytm</span></button>
+                              <button type="button" className={selectedUpiApp === 'Google Pay' ? 'is-active' : ''} aria-pressed={selectedUpiApp === 'Google Pay'} onClick={() => setSelectedUpiApp('Google Pay')}>
+                                <GooglePayMark /><span>Google Pay</span>
+                              </button>
+                              <button type="button" className={selectedUpiApp === 'Paytm' ? 'is-active' : ''} aria-pressed={selectedUpiApp === 'Paytm'} onClick={() => setSelectedUpiApp('Paytm')}>
+                                <PaytmMark /><span>Paytm</span>
+                              </button>
+                              <button type="button" className={selectedUpiApp === 'PhonePe' ? 'is-active' : ''} aria-pressed={selectedUpiApp === 'PhonePe'} onClick={() => setSelectedUpiApp('PhonePe')}>
+                                <PhonePeMark /><span>PhonePe</span>
+                              </button>
                             </div>
                             <span className="razorpay-upi-divider">OR</span>
                             <div className="razorpay-upi-id">
@@ -662,7 +740,7 @@ export default function CommerceDemo() {
                       <p>Paid to <strong>Rangrez Studio</strong></p>
                       <div className="razorpay-success-details">
                         <span><small>Payment ID</small><strong>{getPaymentReference(receipt.orderId)}</strong></span>
-                        <span><small>Method</small><strong>UPI · Google Pay</strong></span>
+                        <span><small>Method</small><strong>UPI · {selectedUpiApp}</strong></span>
                       </div>
                       <small><ShieldCheck size={9} /> Preview only · no payment was processed</small>
                     </div>
@@ -695,7 +773,7 @@ export default function CommerceDemo() {
                     </a>
                   </div>
                   <div className="invoice-viewer-canvas">
-                    <InvoiceDocumentPage receipt={receipt} />
+                    <InvoiceDocumentPage receipt={receipt} paymentMethod={selectedUpiApp} />
                   </div>
                   <div className="invoice-viewer-footer">
                     <span>Shared in your WhatsApp chat</span>
