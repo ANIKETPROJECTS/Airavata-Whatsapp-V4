@@ -188,7 +188,7 @@ export default function CommerceDemo() {
                   setShowScrollButton(body.scrollHeight - body.scrollTop - body.clientHeight > 24);
                 }}
               >
-                <div className="demo-date-pill">Today</div>
+                <FigmaSvgCrop x={146} y={280} width={101} height={21} className="demo-date-art" />
                 <div className="demo-message from-customer message-appear">
                   Hi! I’m looking for something festive.
                   <span className="demo-outgoing-meta"><time>10:40</time><FigmaReadReceipt /></span>
