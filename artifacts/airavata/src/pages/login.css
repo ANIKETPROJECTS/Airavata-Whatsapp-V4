@@ -59,7 +59,7 @@
 .login-error { margin: -3px 0 0; color: #b24f43; font-size: 10px; }
 .login-submit { display: flex; height: 50px; align-items: center; justify-content: center; gap: 10px; margin-top: 4px; border: 0; border-radius: 7px; background: #238858; color: #fff; cursor: pointer; font: inherit; font-size: 12px; font-weight: 500; box-shadow: 0 7px 16px rgb(32 117 72 / 14%); transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
 .login-submit:hover:not(:disabled) { transform: translateY(-1px); background: #1c754b; box-shadow: 0 9px 20px rgb(32 117 72 / 20%); }
-.login-submit:focus-visible, .details-buy-button:focus-visible, .flow-screen-submit:focus-visible, .payment-link:focus-visible, .razorpay-pay-button:focus-visible, .invoice-open-link:focus-visible, .invoice-viewer-topbar button:focus-visible, .invoice-viewer-topbar a:focus-visible, .invoice-viewer-footer a:focus-visible { outline: 3px solid #a8d2b2; outline-offset: 3px; }
+.login-submit:focus-visible, .details-buy-button:focus-visible, .flow-screen-submit:focus-visible, .payment-link:focus-visible, .razorpay-pay-button:focus-visible, .invoice-file-row:focus-visible, .invoice-viewer-topbar button:focus-visible, .invoice-viewer-topbar a:focus-visible, .invoice-viewer-footer a:focus-visible { outline: 3px solid #a8d2b2; outline-offset: 3px; }
 .login-submit:disabled { cursor: wait; opacity: .72; }
 .login-loader { animation: login-spin 1s linear infinite; }
 .login-trust { display: flex; align-items: center; gap: 9px; margin-top: 24px; color: #849289; font-size: 10px; }
@@ -104,7 +104,7 @@
 .demo-message > :not(time) { position: relative; z-index: 2; }
 .demo-message time { position: absolute; z-index: 3; right: 6px; bottom: 2px; color: rgb(0 0 0 / 50%); font-size: 7px; }
 .from-business { align-self: flex-start; --demo-bubble-fill: #fff; }
-.from-customer { align-self: flex-end; --demo-bubble-fill: #d0fecf; padding-right: 30px; padding-bottom: 8px; }
+.from-customer { align-self: flex-end; --demo-bubble-fill: #d0fecf; padding-right: 8px; padding-bottom: 8px; }
 .demo-outgoing-meta { position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin: 2px -3px -6px 0; color: #007bfc; }
 .demo-outgoing-meta time { position: static; color: rgb(0 0 0 / 50%); }
 .demo-incoming-meta { position: relative; display: flex; align-items: center; justify-content: flex-end; margin: 2px -3px -6px 0; color: rgb(0 0 0 / 50%); }
@@ -120,7 +120,7 @@
 .details-buy-button { display: flex; width: 100%; min-height: 25px; align-items: center; justify-content: center; gap: 4px; margin-top: 5px; border: 0; border-radius: 4px; background: #f0f7f0; color: #2c8452; cursor: pointer; font: inherit; font-size: 9px; font-weight: 600; }
 .details-buy-button:disabled { cursor: default; opacity: .8; }
 .details-buy-button.demo-auto-press { animation: demo-auto-click 420ms ease 2.35s 1 both; }
-.demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #16251a; animation: demo-flow-enter 280ms ease both; }
+.demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #16251a; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
 .demo-flow-screen::after { position: absolute; right: 50%; bottom: 6px; width: 62px; height: 4px; border-radius: 99px; background: #111; content: ''; transform: translateX(50%); }
 .flow-screen-topbar { display: flex; min-height: 46px; flex: 0 0 46px; align-items: center; gap: 8px; border-bottom: 1px solid #edf0eb; padding: 7px 12px; }
 .flow-screen-mark { display: flex; width: 25px; height: 25px; flex: 0 0 25px; align-items: center; justify-content: center; border-radius: 7px; background: #e8f3e8; color: #448455; font-size: 10px; font-weight: 700; }
@@ -150,7 +150,7 @@
 .flow-screen-submit:disabled { cursor: wait; opacity: .72; }
 .flow-auto-note { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 0; color: #879388; text-align: center; font-size: 7px; line-height: 1.35; }
 .flow-auto-dot { width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: #36915b; box-shadow: 0 0 0 3px rgb(54 145 91 / 12%); animation: flow-auto-pulse 1.2s ease-in-out infinite; }
-.demo-razorpay-screen { position: absolute; z-index: 6; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #253342; animation: demo-flow-enter 280ms ease both; }
+.demo-razorpay-screen { position: absolute; z-index: 6; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #253342; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
 .razorpay-topbar { display: flex; min-height: 44px; flex: 0 0 44px; align-items: center; gap: 7px; border-bottom: 1px solid #e8edf2; padding: 6px 12px; }
 .razorpay-brand-copy { display: grid; gap: 2px; }
 .razorpay-brand-copy strong { color: #246db4; font-size: 10px; font-weight: 700; letter-spacing: -.02em; }
@@ -178,7 +178,7 @@
 .razorpay-upi-reference strong { color: #465a6d; font-size: 7px; font-weight: 500; }
 .razorpay-pay-button { display: flex; min-height: 34px; align-items: center; justify-content: center; gap: 5px; border: 0; border-radius: 4px; background: #287fce; color: #fff; cursor: pointer; font: inherit; font-size: 9px; font-weight: 600; }
 .razorpay-pay-button:hover { background: #216db4; }
-.razorpay-demo-note { margin: 0; color: #8a95a0; font-size: 6.5px; line-height: 1.4; text-align: center; }
+.razorpay-preview-note { margin: 0; color: #8a95a0; font-size: 6.5px; line-height: 1.4; text-align: center; }
 .razorpay-success-content { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; text-align: center; }
 .razorpay-success-icon { display: flex; width: 38px; height: 38px; align-items: center; justify-content: center; border: 1px solid #d5e5d8; border-radius: 50%; background: #f2f8f3; color: #34794b; }
 .razorpay-success-label { color: #61796a; font-size: 6.5px; font-weight: 600; letter-spacing: .1em; }
@@ -186,7 +186,7 @@
 .razorpay-success-content p { margin: 0; color: #6e7e72; font-size: 8px; }
 .razorpay-success-id { border: 1px solid #e5ebe6; border-radius: 4px; background: #fbfdfb; padding: 6px 8px; color: #6e7c72; font-size: 7px; }
 .razorpay-success-content > small { color: #89958b; font-size: 7px; }
-.demo-invoice-viewer { position: absolute; z-index: 7; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #f1f3f3; color: #27343e; animation: demo-flow-enter 220ms ease both; }
+.demo-invoice-viewer { position: absolute; z-index: 7; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #f1f3f3; color: #27343e; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
 .invoice-viewer-topbar { display: flex; min-height: 43px; flex: 0 0 43px; align-items: center; gap: 5px; border-bottom: 1px solid #e4e8e8; background: #fff; padding: 5px 7px; }
 .invoice-viewer-topbar button, .invoice-viewer-topbar > a { display: flex; width: 25px; height: 28px; flex: 0 0 25px; align-items: center; justify-content: center; border: 0; background: transparent; color: #53626e; cursor: pointer; text-decoration: none; }
 .invoice-viewer-title { display: grid; min-width: 0; flex: 1; gap: 2px; }
@@ -238,13 +238,16 @@
 .demo-message.demo-receipt, .demo-message.demo-payment, .demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
 .demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
 .invoice-heading, .order-status-heading { display: flex; align-items: center; gap: 4px; color: #548366; font-size: 7px; font-weight: 600; letter-spacing: .07em; }
-.invoice-document { display: flex; min-width: 0; align-items: center; gap: 7px; border: 1px solid #e1e9e2; border-radius: 5px; background: #fbfdfb; padding: 6px; }
-.invoice-file-icon { display: flex; width: 26px; height: 30px; flex: 0 0 26px; align-items: center; justify-content: center; border-radius: 3px; background: #f8eeee; color: #b55454; }
+.invoice-document { display: grid; min-width: 0; overflow: hidden; border: 1px solid #e1e9e2; border-radius: 5px; background: #fff; }
+.invoice-document-thumbnail { display: block; height: 82px; overflow: hidden; background: #eef0ee; padding: 6px 11px 0; }
+.invoice-page-preview--thumbnail { width: 100%; max-width: 216px; min-height: 305px; flex: 0 0 auto; margin: 0 auto; padding: 13px 12px 11px; pointer-events: none; }
+.invoice-file-row { display: flex; width: 100%; min-width: 0; align-items: center; gap: 7px; border: 0; border-top: 1px solid #e7ebe7; background: #fbfdfb; padding: 6px; color: inherit; cursor: pointer; font: inherit; text-align: left; transition: background-color 150ms ease; }
+.invoice-file-row:hover { background: #f3f7f3; }
+.invoice-file-icon { position: relative; display: flex; width: 26px; height: 30px; flex: 0 0 26px; align-items: center; justify-content: center; border-radius: 3px; background: #f8eeee; color: #b55454; }
+.invoice-file-icon b { position: absolute; right: 2px; bottom: 2px; left: 2px; color: #a34444; font-size: 4px; line-height: 1; text-align: center; }
 .invoice-file-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
 .invoice-file-copy strong { overflow: hidden; color: #415449; font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .invoice-file-copy small { color: #8a968d; font-size: 7px; }
-.invoice-open-link { display: flex; width: 100%; min-height: 25px; align-items: center; justify-content: center; gap: 4px; border: 0; border-radius: 4px; background: #edf3ed; color: #3d6949; cursor: pointer; font: inherit; font-size: 8px; font-weight: 600; }
-.invoice-open-link:hover { background: #e5eee6; }
 .invoice-preparing { color: #8b978c; text-align: center; font-size: 7px; }
 .order-status-summary { display: flex; align-items: center; justify-content: space-between; gap: 6px; border-bottom: 1px solid #edf0ed; padding-bottom: 5px; }
 .order-status-number { color: #6d7b71; font-size: 8px; }
@@ -263,11 +266,11 @@
 .demo-composer-art { top: 0; left: 0; }
 .demo-replay-button { display: inline-flex; width: fit-content; align-items: center; gap: 4px; border: 0; border-radius: 4px; background: transparent; padding: 3px 0; color: #008069; cursor: pointer; font: inherit; font-size: 7px; font-weight: 500; }
 .demo-replay-button:hover { text-decoration: underline; }
-.message-appear { animation: demo-rise 360ms ease both; }
+.message-appear { animation: demo-rise 420ms cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes demo-auto-click { 0%, 100% { transform: scale(1); } 45% { transform: scale(.96); background: #d8eadb; } }
-@keyframes demo-flow-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes demo-flow-enter { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes flow-auto-pulse { 50% { box-shadow: 0 0 0 5px rgb(54 145 91 / 5%); opacity: .58; } }
-@keyframes demo-rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes demo-rise { from { opacity: 0; transform: translateY(7px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes login-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 1050px) {

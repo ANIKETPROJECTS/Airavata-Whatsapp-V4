@@ -7,6 +7,10 @@ export type DemoInvoiceReceipt = {
   orderId: string;
 };
 
+export function getPaymentReference(orderId: string): string {
+  return `pay_${orderId.replace(/\D/g, '')}R8K4`;
+}
+
 function escapePdfText(value: string): string {
   return value
     .replace(/[\r\n]+/g, ' ')
@@ -30,12 +34,11 @@ function pdfRule(y: number): string {
 }
 
 export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt): Blob {
-  const numericId = receipt.orderId.replace(/\D/g, '');
-  const paymentId = `pay_DEMO${numericId}`;
+  const paymentId = getPaymentReference(receipt.orderId);
   const content = [
     '0.95 0.98 0.95 rg 50 730 495 75 re f',
     pdfText('Rangrez Studio', 70, 775, 23, '/F2', '0.13 0.31 0.23'),
-    pdfText('DEMO INVOICE', 70, 752, 10, '/F1', '0.33 0.45 0.37'),
+    pdfText('PAYMENT INVOICE', 70, 752, 10, '/F1', '0.33 0.45 0.37'),
     pdfRule(718),
     pdfText(`Invoice no: INV-${receipt.orderId}`, 56, 694, 11, '/F2'),
     pdfText(`Order no: ${receipt.orderId}`, 56, 675, 10),
@@ -55,10 +58,10 @@ export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt): Blob {
     pdfRule(463),
     pdfText('TOTAL PAID', 350, 437, 11, '/F2'),
     pdfText('INR 6,490', 470, 437, 11, '/F2', '0.13 0.42 0.27'),
-    pdfText('Payment status: PAID - SIMULATED RAZORPAY', 56, 401, 10, '/F2', '0.13 0.42 0.27'),
+    pdfText('Payment status: PAID - PREVIEW ONLY', 56, 401, 10, '/F2', '0.13 0.42 0.27'),
     pdfText('Order status: Processing', 56, 382, 10),
     pdfRule(358),
-    pdfText('This sample invoice was generated for the product demo.', 56, 332, 9, '/F1', '0.48 0.54 0.49'),
+    pdfText('Preview invoice for display only.', 56, 332, 9, '/F1', '0.48 0.54 0.49'),
     pdfText('No real payment or order was created.', 56, 315, 9, '/F1', '0.48 0.54 0.49'),
   ].join('\n');
 
