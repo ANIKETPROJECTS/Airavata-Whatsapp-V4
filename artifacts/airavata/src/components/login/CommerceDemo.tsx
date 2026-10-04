@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ArrowRight,
+  Building2,
   Check,
   ChevronLeft,
   ChevronDown,
+  CreditCard,
   Download,
   FileText,
+  LoaderCircle,
+  LockKeyhole,
   PackageCheck,
   RotateCcw,
   ShieldCheck,
+  Smartphone,
 } from 'lucide-react';
 import { DevicePreviewFrame } from '../DevicePreview';
 import { createDemoInvoicePdf, getPaymentReference } from './createDemoInvoicePdf';
 import figmaChatScreen from '@assets/Messages_-_Full_view_1791144042420.svg';
 import sareeImage from '@assets/generated_images/atw-banarasi-saree-product.jpg';
+import razorpayLogo from '../../assets/razorpay-logo.png';
 
 type DemoStep =
   | 'template'
@@ -161,6 +167,7 @@ export default function CommerceDemo() {
   const [invoiceFileSize, setInvoiceFileSize] = useState('');
   const [invoiceViewerOpen, setInvoiceViewerOpen] = useState(false);
   const [postPaymentStage, setPostPaymentStage] = useState<'payment' | 'invoice' | 'order'>('payment');
+  const [razorpayStage, setRazorpayStage] = useState<'methods' | 'upi' | 'processing'>('methods');
   const [flowTypingField, setFlowTypingField] = useState<keyof CheckoutDetails | null>(null);
   const [screenWidth, setScreenWidth] = useState(252);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -210,6 +217,9 @@ export default function CommerceDemo() {
     } else if (step === 'confirmed') {
       timeouts.push(window.setTimeout(() => setStep('razorpay'), 4700));
     } else if (step === 'razorpay') {
+      setRazorpayStage('methods');
+      timeouts.push(window.setTimeout(() => setRazorpayStage('upi'), 1400));
+      timeouts.push(window.setTimeout(() => setRazorpayStage('processing'), 4100));
       timeouts.push(window.setTimeout(() => setStep('paymentSuccess'), 5700));
     } else if (step === 'paymentSuccess') {
       timeouts.push(window.setTimeout(() => {
@@ -307,6 +317,7 @@ export default function CommerceDemo() {
     setInvoiceFileSize('');
     setInvoiceViewerOpen(false);
     setPostPaymentStage('payment');
+    setRazorpayStage('methods');
     invoiceViewerShownRef.current = false;
     setFlowTypingField(null);
   };
@@ -573,47 +584,87 @@ export default function CommerceDemo() {
                   data-testid="card-demo-razorpay"
                 >
                   <div className="razorpay-topbar">
-                    <span className="razorpay-brand-copy">
-                      <strong>Razorpay</strong>
-                      <small>Payment gateway</small>
-                    </span>
-                    <span className="razorpay-secure-label"><ShieldCheck size={12} /> Secure checkout</span>
+                    <img src={razorpayLogo} alt="Razorpay" className="razorpay-logo" />
+                    <span className="razorpay-secure-label"><LockKeyhole size={10} /> Secured</span>
                   </div>
                   {step === 'razorpay' ? (
-                    <div className="razorpay-checkout-content">
+                    <>
                       <div className="razorpay-order-summary">
                         <div className="razorpay-merchant">
-                          <span><strong>Rangrez Studio</strong><small>Order {receipt.orderId}</small></span>
+                          <span className="razorpay-merchant-mark">R</span>
+                          <span><small>Paying to</small><strong>Rangrez Studio</strong><small>Order #{receipt.orderId}</small></span>
                         </div>
                         <div className="razorpay-total">
-                          <span>Amount to pay</span>
+                          <span>Total</span>
                           <strong>{productPrice}</strong>
                         </div>
                       </div>
-                      <span className="razorpay-method-heading">Payment method</span>
-                      <div className="razorpay-method">
-                        <span className="razorpay-method-radio is-selected" aria-hidden="true" />
-                        <span className="razorpay-method-copy"><strong>UPI</strong><small>Pay using a UPI app</small></span>
-                        <span className="razorpay-upi-mark">UPI</span>
+                      <div className="razorpay-checkout-content">
+                        <div className="razorpay-section-heading">
+                          <strong>Choose a payment method</strong>
+                          <small>All transactions are secure and encrypted</small>
+                        </div>
+                        <button
+                          type="button"
+                          className={`razorpay-method ${razorpayStage !== 'methods' ? 'is-selected' : ''}`}
+                          onClick={() => setRazorpayStage('upi')}
+                        >
+                          <span className="razorpay-method-icon"><Smartphone size={13} /></span>
+                          <span className="razorpay-method-copy"><strong>UPI</strong><small>Google Pay, PhonePe, Paytm and more</small></span>
+                          <ChevronDown size={11} className="razorpay-method-chevron" />
+                        </button>
+                        {razorpayStage !== 'methods' && (
+                          <div className="razorpay-upi-panel message-appear">
+                            <span className="razorpay-upi-title">Select a UPI app</span>
+                            <div className="razorpay-upi-apps">
+                              <button type="button" className="is-active"><b>G</b><span>Google Pay</span></button>
+                              <button type="button"><b>Pe</b><span>PhonePe</span></button>
+                              <button type="button"><b>paytm</b><span>Paytm</span></button>
+                            </div>
+                            <span className="razorpay-upi-divider">OR</span>
+                            <div className="razorpay-upi-id">
+                              <span><small>UPI ID</small><strong>priya@okaxis</strong></span>
+                              <Check size={11} />
+                            </div>
+                          </div>
+                        )}
+                        <div className="razorpay-method is-muted">
+                          <span className="razorpay-method-icon"><CreditCard size={13} /></span>
+                          <span className="razorpay-method-copy"><strong>Cards</strong><small>Visa, Mastercard, RuPay</small></span>
+                          <ArrowRight size={10} />
+                        </div>
+                        <div className="razorpay-method is-muted">
+                          <span className="razorpay-method-icon"><Building2 size={13} /></span>
+                          <span className="razorpay-method-copy"><strong>Netbanking</strong><small>All Indian banks</small></span>
+                          <ArrowRight size={10} />
+                        </div>
+                        <button
+                          type="button"
+                          className="razorpay-pay-button"
+                          onClick={() => setStep('paymentSuccess')}
+                          data-testid="button-demo-razorpay-pay"
+                          disabled={razorpayStage === 'processing'}
+                        >
+                          {razorpayStage === 'processing' ? (
+                            <><LoaderCircle size={12} className="razorpay-spinner" /> Processing securely…</>
+                          ) : (
+                            <><span>Pay {productPrice}</span><span>Continue <ArrowRight size={10} /></span></>
+                          )}
+                        </button>
+                        <p className="razorpay-preview-note"><ShieldCheck size={9} /> Preview only · no payment is processed</p>
                       </div>
-                      <button
-                        type="button"
-                        className="razorpay-pay-button"
-                        onClick={() => setStep('paymentSuccess')}
-                        data-testid="button-demo-razorpay-pay"
-                      >
-                        Pay {productPrice} <ArrowRight size={11} />
-                      </button>
-                      <p className="razorpay-preview-note">Preview only · no payment is processed</p>
-                    </div>
+                    </>
                   ) : (
                     <div className="razorpay-success-content" data-testid="message-demo-razorpay-success">
                       <span className="razorpay-success-icon"><Check size={22} /></span>
-                      <span className="razorpay-success-label">PAYMENT CONFIRMED</span>
-                      <h2>Payment successful</h2>
-                      <p>{productPrice} paid to Rangrez Studio</p>
-                      <span className="razorpay-success-id">Payment ID · {getPaymentReference(receipt.orderId)}</span>
-                      <small>Preview only · no payment was processed</small>
+                      <span className="razorpay-success-label">PAYMENT SUCCESSFUL</span>
+                      <h2>{productPrice}</h2>
+                      <p>Paid to <strong>Rangrez Studio</strong></p>
+                      <div className="razorpay-success-details">
+                        <span><small>Payment ID</small><strong>{getPaymentReference(receipt.orderId)}</strong></span>
+                        <span><small>Method</small><strong>UPI · Google Pay</strong></span>
+                      </div>
+                      <small><ShieldCheck size={9} /> Preview only · no payment was processed</small>
                     </div>
                   )}
                 </div>

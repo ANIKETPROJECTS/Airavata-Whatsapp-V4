@@ -150,42 +150,66 @@
 .flow-screen-submit:disabled { cursor: wait; opacity: .72; }
 .flow-auto-note { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 0; color: #879388; text-align: center; font-size: 7px; line-height: 1.35; }
 .flow-auto-dot { width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: #36915b; box-shadow: 0 0 0 3px rgb(54 145 91 / 12%); animation: flow-auto-pulse 1.2s ease-in-out infinite; }
-.demo-razorpay-screen { position: absolute; z-index: 6; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #253342; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
-.razorpay-topbar { display: flex; min-height: 44px; flex: 0 0 44px; align-items: center; gap: 7px; border-bottom: 1px solid #e8edf2; padding: 6px 12px; }
-.razorpay-brand-copy { display: grid; gap: 2px; }
-.razorpay-brand-copy strong { color: #246db4; font-size: 10px; font-weight: 700; letter-spacing: -.02em; }
-.razorpay-brand-copy small { color: #7d8b99; font-size: 6.5px; }
-.razorpay-secure-label { display: flex; align-items: center; gap: 4px; margin-left: auto; color: #758395; font-size: 6.5px; }
-.razorpay-secure-label svg { color: #528466; }
-.razorpay-checkout-content { display: flex; width: 100%; max-width: 232px; flex-direction: column; gap: 10px; margin: auto; padding: 13px; }
-.razorpay-order-summary { display: grid; gap: 8px; border: 1px solid #e5eaf0; border-radius: 5px; background: #fff; padding: 9px; }
-.razorpay-merchant { display: flex; align-items: center; border-bottom: 1px solid #edf0f4; padding-bottom: 7px; }
-.razorpay-merchant > span { display: grid; gap: 2px; }
-.razorpay-merchant strong { color: #33465a; font-size: 8.5px; font-weight: 600; }
-.razorpay-merchant small { color: #8995a3; font-size: 7px; }
-.razorpay-total { display: flex; align-items: center; justify-content: space-between; color: #758395; font-size: 7px; }
-.razorpay-total strong { color: #233548; font-size: 16px; font-weight: 600; letter-spacing: -.03em; }
-.razorpay-method-heading { color: #4c5b6a; font-size: 7px; font-weight: 600; }
-.razorpay-method { display: flex; align-items: center; gap: 7px; border: 1px solid #cbd9e7; border-radius: 5px; background: #fbfdff; padding: 8px; }
-.razorpay-method-radio { display: flex; width: 12px; height: 12px; flex: 0 0 12px; align-items: center; justify-content: center; border: 1px solid #9baaba; border-radius: 50%; }
-.razorpay-method-radio.is-selected { border-color: #287bc5; }
-.razorpay-method-radio.is-selected::after { width: 6px; height: 6px; border-radius: 50%; background: #287bc5; content: ''; }
-.razorpay-method-copy { display: grid; flex: 1; gap: 2px; }
-.razorpay-method-copy strong { color: #34475d; font-size: 8px; font-weight: 600; }
-.razorpay-method-copy small { color: #8694a3; font-size: 7px; }
-.razorpay-upi-mark { color: #5e7185; font-size: 6.5px; font-weight: 600; }
-.razorpay-upi-reference { display: flex; min-height: 22px; align-items: center; justify-content: space-between; border-bottom: 1px solid #edf0f4; padding: 0 2px; color: #8190a0; font-size: 7px; }
-.razorpay-upi-reference strong { color: #465a6d; font-size: 7px; font-weight: 500; }
-.razorpay-pay-button { display: flex; min-height: 34px; align-items: center; justify-content: center; gap: 5px; border: 0; border-radius: 4px; background: #287fce; color: #fff; cursor: pointer; font: inherit; font-size: 9px; font-weight: 600; }
-.razorpay-pay-button:hover { background: #216db4; }
-.razorpay-preview-note { margin: 0; color: #8a95a0; font-size: 6.5px; line-height: 1.4; text-align: center; }
-.razorpay-success-content { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; text-align: center; }
-.razorpay-success-icon { display: flex; width: 38px; height: 38px; align-items: center; justify-content: center; border: 1px solid #d5e5d8; border-radius: 50%; background: #f2f8f3; color: #34794b; }
-.razorpay-success-label { color: #61796a; font-size: 6.5px; font-weight: 600; letter-spacing: .1em; }
-.razorpay-success-content h2 { margin: 0; color: #263a2d; font-size: 16px; font-weight: 600; }
-.razorpay-success-content p { margin: 0; color: #6e7e72; font-size: 8px; }
-.razorpay-success-id { border: 1px solid #e5ebe6; border-radius: 4px; background: #fbfdfb; padding: 6px 8px; color: #6e7c72; font-size: 7px; }
-.razorpay-success-content > small { color: #89958b; font-size: 7px; }
+.demo-razorpay-screen { position: absolute; z-index: 6; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #f4f6f9; color: #182536; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
+.razorpay-topbar { display: flex; min-height: 39px; flex: 0 0 39px; align-items: center; gap: 7px; background: #0b2347; padding: 7px 11px; }
+.razorpay-logo { display: block; width: 78px; height: auto; object-fit: contain; }
+.razorpay-secure-label { display: flex; align-items: center; gap: 3px; margin-left: auto; color: rgb(255 255 255 / 72%); font-size: 6.5px; }
+.razorpay-order-summary { display: flex; min-height: 62px; flex: 0 0 62px; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e7ed; background: #fff; padding: 9px 12px; box-shadow: 0 2px 8px rgb(20 35 58 / 5%); }
+.razorpay-merchant { display: flex; min-width: 0; align-items: center; gap: 7px; }
+.razorpay-merchant-mark { display: flex; width: 26px; height: 26px; flex: 0 0 26px; align-items: center; justify-content: center; border: 1px solid #dce5df; border-radius: 4px; background: #eef5f0; color: #39734b; font-size: 10px; font-weight: 700; }
+.razorpay-merchant > span:not(.razorpay-merchant-mark) { display: grid; gap: 1px; }
+.razorpay-merchant strong { color: #1c2c3e; font-size: 8.5px; font-weight: 600; }
+.razorpay-merchant small { color: #8190a1; font-size: 6.5px; }
+.razorpay-total { display: grid; justify-items: end; gap: 2px; color: #8190a1; font-size: 6.5px; }
+.razorpay-total strong { color: #13243a; font-size: 14px; font-weight: 650; letter-spacing: -.03em; }
+.razorpay-checkout-content { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 6px; overflow-y: auto; padding: 10px 11px 8px; scrollbar-width: none; }
+.razorpay-checkout-content::-webkit-scrollbar { display: none; }
+.razorpay-section-heading { display: grid; gap: 2px; margin-bottom: 1px; }
+.razorpay-section-heading strong { color: #25374a; font-size: 8.5px; font-weight: 600; }
+.razorpay-section-heading small { color: #8a98a7; font-size: 6.5px; }
+.razorpay-method { display: flex; width: 100%; min-height: 42px; align-items: center; gap: 7px; border: 1px solid #e0e5eb; border-radius: 5px; background: #fff; padding: 7px 8px; color: #728094; font: inherit; text-align: left; }
+button.razorpay-method { cursor: pointer; }
+.razorpay-method.is-selected { border-color: #347bc2; border-bottom-right-radius: 0; border-bottom-left-radius: 0; background: #fafdff; }
+.razorpay-method.is-muted { min-height: 37px; }
+.razorpay-method-icon { display: flex; width: 24px; height: 24px; flex: 0 0 24px; align-items: center; justify-content: center; border-radius: 4px; background: #edf4fb; color: #286eaf; }
+.razorpay-method.is-muted .razorpay-method-icon { background: #f1f3f6; color: #6f7e8e; }
+.razorpay-method-copy { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.razorpay-method-copy strong { color: #26384b; font-size: 8px; font-weight: 600; }
+.razorpay-method-copy small { overflow: hidden; color: #8995a3; font-size: 6.5px; text-overflow: ellipsis; white-space: nowrap; }
+.razorpay-method-chevron { transition: transform 180ms ease; }
+.razorpay-method.is-selected .razorpay-method-chevron { transform: rotate(180deg); }
+.razorpay-upi-panel { display: grid; gap: 7px; margin-top: -6px; border: 1px solid #347bc2; border-top: 0; border-radius: 0 0 5px 5px; background: #fff; padding: 8px; }
+.razorpay-upi-title { color: #66778a; font-size: 6.5px; font-weight: 500; }
+.razorpay-upi-apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.razorpay-upi-apps button { display: grid; min-width: 0; justify-items: center; gap: 4px; border: 1px solid #e4e8ed; border-radius: 4px; background: #fff; padding: 6px 3px 5px; color: #6d7b8b; font: inherit; cursor: pointer; }
+.razorpay-upi-apps button.is-active { border-color: #80acd7; background: #f5faff; }
+.razorpay-upi-apps b { display: flex; height: 15px; align-items: center; color: #315c9c; font-size: 7px; font-weight: 700; }
+.razorpay-upi-apps span { overflow: hidden; width: 100%; font-size: 6px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.razorpay-upi-divider { display: flex; align-items: center; gap: 6px; color: #a0aab4; font-size: 5.5px; }
+.razorpay-upi-divider::before, .razorpay-upi-divider::after { height: 1px; flex: 1; background: #edf0f3; content: ''; }
+.razorpay-upi-id { display: flex; min-height: 30px; align-items: center; justify-content: space-between; border: 1px solid #dfe5eb; border-radius: 4px; padding: 5px 7px; color: #318254; }
+.razorpay-upi-id span { display: grid; gap: 1px; }
+.razorpay-upi-id small { color: #8a97a5; font-size: 5.5px; }
+.razorpay-upi-id strong { color: #34475b; font-size: 7px; font-weight: 500; }
+.razorpay-pay-button { display: flex; min-height: 34px; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 5px; margin-top: 2px; border: 0; border-radius: 4px; background: #2b78c5; padding: 0 10px; color: #fff; cursor: pointer; font: inherit; font-size: 8px; font-weight: 600; box-shadow: 0 3px 8px rgb(43 120 197 / 20%); }
+.razorpay-pay-button > span { display: flex; align-items: center; gap: 4px; }
+.razorpay-pay-button:hover { background: #2469ad; }
+.razorpay-pay-button:disabled { justify-content: center; cursor: wait; opacity: .88; }
+.razorpay-spinner { animation: razorpay-spin 850ms linear infinite; }
+.razorpay-preview-note { display: flex; align-items: center; justify-content: center; gap: 3px; margin: 0; color: #8a95a0; font-size: 6px; line-height: 1.4; text-align: center; }
+.razorpay-success-content { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 16px; text-align: center; }
+.razorpay-success-icon { display: flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 50%; background: #e9f6ed; color: #25804a; box-shadow: 0 0 0 7px rgb(45 139 79 / 8%); }
+.razorpay-success-label { margin-top: 5px; color: #43805a; font-size: 6.5px; font-weight: 600; letter-spacing: .1em; }
+.razorpay-success-content h2 { margin: 0; color: #15283a; font-size: 18px; font-weight: 650; letter-spacing: -.03em; }
+.razorpay-success-content p { margin: 0; color: #758394; font-size: 7.5px; }
+.razorpay-success-content p strong { color: #3b4b5c; font-weight: 600; }
+.razorpay-success-details { display: grid; width: 100%; max-width: 196px; margin-top: 5px; border: 1px solid #e2e7ec; border-radius: 5px; background: #fff; text-align: left; }
+.razorpay-success-details span { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; }
+.razorpay-success-details span + span { border-top: 1px solid #edf0f3; }
+.razorpay-success-details small { color: #8b97a4; font-size: 6px; }
+.razorpay-success-details strong { color: #45576a; font-size: 6.5px; font-weight: 500; }
+.razorpay-success-content > small { display: flex; align-items: center; gap: 3px; color: #8c98a4; font-size: 6.5px; }
+@keyframes razorpay-spin { to { transform: rotate(360deg); } }
 .demo-invoice-viewer { position: absolute; z-index: 7; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #f1f3f3; color: #27343e; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
 .invoice-viewer-topbar { display: flex; min-height: 43px; flex: 0 0 43px; align-items: center; gap: 5px; border-bottom: 1px solid #e4e8e8; background: #fff; padding: 5px 7px; }
 .invoice-viewer-topbar button, .invoice-viewer-topbar > a { display: flex; width: 25px; height: 28px; flex: 0 0 25px; align-items: center; justify-content: center; border: 0; background: transparent; color: #53626e; cursor: pointer; text-decoration: none; }
