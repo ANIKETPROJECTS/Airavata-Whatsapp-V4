@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import CommerceDemo from '../components/login/CommerceDemo';
 import { LoginJourney } from '../components/login/LoginValueProps';
+import fullLogo from '@assets/HFULL_NOBGSVG.svg';
 import './login.css';
 
 const schema = z.object({
@@ -51,6 +52,7 @@ export default function Login() {
         <div className="login-panel-content">
           <div className="login-form-wrap">
             <div className="form-intro">
+              <img className="login-brand-logo" src={fullLogo} alt="AtWassup" />
               <div className="form-eyebrow">WELCOME BACK</div>
               <h2>Your business,<br /><span>right where you left it.</span></h2>
               <p>Sign in to continue to your WhatsApp workspace.</p>

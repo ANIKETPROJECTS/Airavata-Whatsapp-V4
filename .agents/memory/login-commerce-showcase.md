@@ -100,3 +100,9 @@ Center the sign-in content within its panel and keep it visually prominent. Omit
 **Why:** The user asked for a larger, centered sign-in section and asked to remove those secondary labels and messages.
 
 **How to apply:** Keep the welcome heading, explanatory sentence, credential fields, and submit button. Use the journey's Poppins type style and readable 15px-scale supporting text for the form controls.
+
+Show the same full AtWassup brand logo used in the expanded workspace header, at a clearly large display size centered above the sign-in welcome text.
+
+**Why:** The user asked for the existing header logo to be prominent and centered on the login panel, and corrected a version where it rendered too small.
+
+**How to apply:** Reuse the full brand artwork rather than replacing it with typed text or the collapsed icon mark. Preserve a large visible mark at short desktop heights too; compact nearby spacing instead of shrinking the logo to icon size.
