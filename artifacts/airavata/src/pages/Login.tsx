@@ -7,6 +7,7 @@ import { ArrowRight, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import CommerceDemo from '../components/login/CommerceDemo';
+import { LoginFeatureSummary, LoginJourney } from '../components/login/LoginValueProps';
 import './login.css';
 
 const schema = z.object({
@@ -41,6 +42,7 @@ export default function Login() {
     <main className="login-shell">
       <section className="login-showcase" aria-label="WhatsApp commerce demo">
         <div className="showcase-inner">
+          <LoginJourney />
           <CommerceDemo />
         </div>
       </section>
@@ -50,51 +52,54 @@ export default function Login() {
           <span className="secure-note"><LockKeyhole size={14} strokeWidth={1.8} /> SECURE WORKSPACE ACCESS</span>
           <span className="panel-mark">ATWASSUP <span>／</span> WORKSPACE</span>
         </div>
-        <div className="login-form-wrap">
-          <div className="form-intro">
-            <div className="form-eyebrow">WELCOME BACK</div>
-            <h2>Your business,<br /><span>right where you left it.</span></h2>
-            <p>Sign in to continue to your WhatsApp workspace.</p>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
-            <div className="login-field">
-              <label htmlFor="login-email">Email address</label>
-              <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@company.com"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? 'login-email-error' : undefined}
-                data-testid="input-email"
-                {...register('email')}
-              />
-              {errors.email && <p id="login-email-error" className="login-error" role="alert" data-testid="text-email-error">{errors.email.message}</p>}
+        <div className="login-panel-content">
+          <div className="login-form-wrap">
+            <div className="form-intro">
+              <div className="form-eyebrow">WELCOME BACK</div>
+              <h2>Your business,<br /><span>right where you left it.</span></h2>
+              <p>Sign in to continue to your WhatsApp workspace.</p>
             </div>
-            <div className="login-field">
-              <label htmlFor="login-password">Password</label>
-              <input
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                aria-invalid={!!errors.password}
-                aria-describedby={errors.password ? 'login-password-error' : undefined}
-                data-testid="input-password"
-                {...register('password')}
-              />
-              {errors.password && <p id="login-password-error" className="login-error" role="alert" data-testid="text-password-error">{errors.password.message}</p>}
-            </div>
-            <button type="submit" className="login-submit" disabled={submitting} data-testid="button-submit">
-              {submitting ? <><Loader2 className="login-loader" size={18} /> Signing in…</> : <>Sign in to your workspace <ArrowRight size={17} /></>}
-            </button>
-          </form>
 
-          <div className="login-trust" data-testid="text-security-note">
-            <ShieldCheck size={17} strokeWidth={1.8} />
-            <span>Your account is protected with secure sign-in.</span>
+            <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
+              <div className="login-field">
+                <label htmlFor="login-email">Email address</label>
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? 'login-email-error' : undefined}
+                  data-testid="input-email"
+                  {...register('email')}
+                />
+                {errors.email && <p id="login-email-error" className="login-error" role="alert" data-testid="text-email-error">{errors.email.message}</p>}
+              </div>
+              <div className="login-field">
+                <label htmlFor="login-password">Password</label>
+                <input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? 'login-password-error' : undefined}
+                  data-testid="input-password"
+                  {...register('password')}
+                />
+                {errors.password && <p id="login-password-error" className="login-error" role="alert" data-testid="text-password-error">{errors.password.message}</p>}
+              </div>
+              <button type="submit" className="login-submit" disabled={submitting} data-testid="button-submit">
+                {submitting ? <><Loader2 className="login-loader" size={18} /> Signing in…</> : <>Sign in to your workspace <ArrowRight size={17} /></>}
+              </button>
+            </form>
+
+            <div className="login-trust" data-testid="text-security-note">
+              <ShieldCheck size={17} strokeWidth={1.8} />
+              <span>Your account is protected with secure sign-in.</span>
+            </div>
           </div>
+          <LoginFeatureSummary />
         </div>
         <div className="login-panel-bottom">
           <span>Built for conversations that move business forward.</span>
