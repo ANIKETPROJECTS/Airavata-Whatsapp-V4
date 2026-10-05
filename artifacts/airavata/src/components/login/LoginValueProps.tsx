@@ -12,23 +12,23 @@ const journeySteps: Array<{
   icon: LucideIcon;
 }> = [
   {
-    title: 'Bring shoppers in',
-    description: 'Turn campaign clicks into WhatsApp conversations.',
+    title: 'Launch the campaign',
+    description: 'Shoppers see your product campaign and message on WhatsApp for details.',
     icon: Megaphone,
   },
   {
-    title: 'Answer and assist',
-    description: 'Let chatbots handle common questions; your team can step in.',
+    title: 'AI answers and assists',
+    description: 'The chatbot replies instantly, handles product questions, and guides customers toward purchase—with no human handoff.',
     icon: Bot,
   },
   {
-    title: 'Guide the purchase',
-    description: 'Show products and collect delivery details right in chat.',
+    title: 'Capture details and create the order',
+    description: 'Flow Builder collects delivery details; the chatbot creates the purchase order.',
     icon: ShoppingBag,
   },
   {
-    title: 'Complete the journey',
-    description: 'Share payment links, confirmations, and invoice details.',
+    title: 'Collect payment and send the invoice',
+    description: 'The payment gateway completes checkout. The system generates and sends the invoice automatically in WhatsApp.',
     icon: CreditCard,
   },
 ];
@@ -38,8 +38,8 @@ export function LoginJourney() {
     <aside className="login-journey" aria-labelledby="login-journey-title">
       <div className="login-journey-intro">
         <span className="login-journey-eyebrow">THE CUSTOMER JOURNEY</span>
-        <h2 id="login-journey-title">From first click to confident checkout.</h2>
-        <p>Keep every customer conversation moving in one WhatsApp workspace.</p>
+        <h2 id="login-journey-title">From campaign to completed order.</h2>
+        <p>Campaigns, AI, Flow Builder and payments automate every step in WhatsApp.</p>
       </div>
 
       <ol className="login-journey-steps">
