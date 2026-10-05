@@ -6,7 +6,6 @@ import {
   Megaphone,
   MessageCircle,
   ShoppingBag,
-  Users,
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
@@ -44,23 +43,23 @@ const workspaceFeatures: Array<{
   icon: LucideIcon;
 }> = [
   {
-    title: 'AI chatbot + Live Chat',
+    title: 'AI chatbots + Live Chat',
     description: 'Automate routine replies and let your team take over in one inbox.',
     icon: MessageCircle,
   },
   {
-    title: 'Campaigns + reports',
+    title: 'Campaigns + dashboard reports',
     description: 'Manage approved templates, send campaigns, and review delivery results.',
     icon: BarChart3,
   },
   {
-    title: 'Catalogue + Flows + payments',
-    description: 'Show products, collect details, and guide customers through payment.',
+    title: 'Catalogue + Flows + WA Pay',
+    description: 'Show products, collect details, and guide checkout with payment links and invoice details.',
     icon: Workflow,
   },
   {
     title: 'Contacts + connected tools',
-    description: 'Organize contacts and groups, connect integrations, and manage usage and alerts.',
+    description: 'Organize contacts and groups, connect integrations, and manage credits, alerts, and settings.',
     icon: Blocks,
   },
 ];
