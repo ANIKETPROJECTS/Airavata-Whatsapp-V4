@@ -463,25 +463,28 @@ export default function CommerceDemo() {
 
                 {(step === 'details' || step === 'flow' || step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid') && (
                   <div className="demo-message from-business demo-detail-message message-appear" data-testid="message-demo-product-details">
-                    <span className="demo-message-label">AUTOMATED CHATBOT REPLY</span>
-                    <p>Absolutely! This Banarasi saree is handwoven in Varanasi from pure Katan silk.</p>
-                    <div className="demo-spec-list">
-                      <div className="demo-spec-row"><span>Fabric</span><b>Pure Katan silk</b></div>
-                      <div className="demo-spec-row"><span>Saree length</span><b>6.3 metres</b></div>
-                      <div className="demo-spec-row"><span>Blouse</span><b>Matching unstitched piece</b></div>
-                      <div className="demo-spec-row"><span>Work & care</span><b>Gold zari · dry clean</b></div>
+                    <div className="demo-detail-content">
+                      <p>Absolutely! This Banarasi saree is handwoven in Varanasi from pure Katan silk.</p>
+                      <div className="demo-spec-list">
+                        <div className="demo-spec-row"><span>Fabric</span><b>Pure Katan silk</b></div>
+                        <div className="demo-spec-row"><span>Saree length</span><b>6.3 metres</b></div>
+                        <div className="demo-spec-row"><span>Blouse</span><b>Matching unstitched piece</b></div>
+                        <div className="demo-spec-row"><span>Work & care</span><b>Gold zari · dry clean</b></div>
+                        <div className="demo-spec-row"><span>Delivery time</span><b>Ships in 2–4 days</b></div>
+                      </div>
+                      <div className="demo-detail-price">{productPrice}</div>
                     </div>
-                    <div className="demo-detail-price">{productPrice} <span>· Ships in 2–4 days</span></div>
+                    <span className="demo-incoming-meta demo-detail-meta"><time>10:42</time></span>
                     <button
                       type="button"
-                      className={`details-buy-button ${step === 'details' ? 'demo-auto-press' : ''}`}
+                      className={`demo-template-cta details-buy-button ${step === 'details' ? 'demo-auto-press' : ''}`}
                       onClick={openCheckoutFlow}
                       disabled={step !== 'details'}
+                      aria-label={`Buy Banarasi Silk Saree for ${productPrice}`}
                       data-testid="button-demo-details-buy-now"
                     >
-                      Buy Now <ArrowRight size={11} />
+                      <ExternalLink size={10} aria-hidden="true" /> Buy Now
                     </button>
-                    <span className="demo-incoming-meta"><time>10:42</time></span>
                   </div>
                 )}
 
