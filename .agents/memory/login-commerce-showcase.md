@@ -17,11 +17,17 @@ Keep the order-summary and payment-link bubbles in the chat history after checko
 
 **How to apply:** Render those bubbles for confirmed, Razorpay, payment-success, and paid states. Preserve the original historical payment-pending copy, but don't allow the payment action to restart checkout once processing has started.
 
-The post-payment confirmation should congratulate the named customer, thank them for choosing Rangrez Studio, and include Instagram and review calls to action while retaining the payment reference and method. Use dummy destinations only when the user explicitly authorizes them; never silently treat sample links as official merchant links.
+The post-payment confirmation should start with a congratulatory named-customer message, thank them for choosing Rangrez Studio, and retain the payment reference and method. Omit standalone payment-confirmed and payment-amount headings. Use separate Instagram and Google review action rows styled like the Buy Now button, with the timestamp immediately above them. Use dummy destinations only when the user explicitly authorizes them; never silently treat sample links as official merchant links.
 
 **Why:** The user wants a personal, celebratory receipt without losing payment context, and sample social links must not be mistaken for production destinations.
 
-**How to apply:** Keep the copy and links inside the existing payment-confirmation bubble. Dummy destinations are for the showcase only, not production messaging.
+**How to apply:** Keep the copy and links inside the existing payment-confirmation bubble. Place the timestamp between the payment details and the two action rows. Dummy destinations are for the showcase only, not production messaging.
+
+For the WhatsApp invoice attachment, omit the extra heading, show a full-width white preview of roughly the top half of the invoice page, and use the supplied transparent PDF icon without a gray tile or gutter. Keep the filename and file-size row.
+
+**Why:** The user wants the invoice page itself to be the focus and the attachment to resemble a native WhatsApp PDF card.
+
+**How to apply:** Keep the page crop clean and legible, preserve the clickable attachment row, and retain the sample/no-tax-claim disclaimers inside the invoice.
 
 The order summary should omit the decorative check icon, use the requested invoice-style order-number format, and show the customer's name, phone, and complete delivery address below the total. Keep the Razorpay message visually consistent with the summary, with a plain heading and a clear payment action; place its timestamp after the action.
 

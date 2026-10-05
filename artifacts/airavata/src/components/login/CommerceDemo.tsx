@@ -8,7 +8,6 @@ import {
   CreditCard,
   Download,
   ExternalLink,
-  FileText,
   LoaderCircle,
   LockKeyhole,
   PackageCheck,
@@ -26,6 +25,7 @@ import {
 } from './createDemoInvoicePdf';
 import figmaChatScreen from '@assets/Messages_-_Full_view_1791144042420.svg';
 import sareeImage from '@assets/generated_images/atw-banarasi-saree-product.jpg';
+import pdfFileIcon from '@assets/pdf_1791198174982.png';
 import razorpayLogo from '../../assets/razorpay-logo-blue.png';
 
 type DemoStep =
@@ -549,6 +549,7 @@ export default function CommerceDemo() {
                       </p>
                       <div className="receipt-line"><span>Payment ID</span><b>{getPaymentReference(receipt.orderId)}</b></div>
                       <div className="receipt-line"><span>Method</span><b>UPI</b></div>
+                      <time>10:45 AM</time>
                       <div className="payment-confirmation-links" aria-label="Follow and review Rangrez Studio">
                         <a
                           className="demo-template-cta payment-confirmation-cta"
@@ -570,11 +571,9 @@ export default function CommerceDemo() {
                           <ExternalLink size={10} aria-hidden="true" /> Leave us a Google review
                         </a>
                       </div>
-                      <time>10:45 AM</time>
                     </div>
                     {postPaymentStage !== 'payment' && (
                       <div className="demo-message from-business demo-invoice message-appear" data-testid="message-demo-invoice-pdf">
-                        <span className="invoice-heading"><FileText size={11} /> INVOICE SHARED · PDF</span>
                         {invoicePdfUrl ? (
                           <div className="invoice-document">
                             <div className="invoice-document-thumbnail" role="img" aria-label={`First-page preview of Invoice-${receipt.orderId}.pdf`}>
@@ -587,7 +586,7 @@ export default function CommerceDemo() {
                               aria-label={`Open Invoice-${receipt.orderId}.pdf`}
                               data-testid="button-demo-invoice-preview"
                             >
-                              <span className="invoice-file-icon"><FileText size={16} /><b>PDF</b></span>
+                              <img className="invoice-file-icon" src={pdfFileIcon} alt="" aria-hidden="true" />
                               <span className="invoice-file-copy">
                                 <strong>Invoice-{receipt.orderId}.pdf</strong>
                                 <small>1 page · {invoiceFileSize} · PDF</small>

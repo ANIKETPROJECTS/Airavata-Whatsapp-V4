@@ -296,7 +296,7 @@ button.razorpay-method { cursor: pointer; }
 .payment-link:disabled { cursor: default; }
 .demo-message.demo-receipt, .demo-message.demo-payment { padding-bottom: 7px; }
 .demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
-.demo-message.demo-receipt time, .demo-message.demo-payment time { position: static; justify-self: end; margin-top: -1px; }
+.demo-message.demo-receipt time, .demo-message.demo-payment time, .demo-message.demo-payment-confirmation time { position: static; justify-self: end; margin-top: -1px; }
 .demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
 .payment-confirmation-note { margin: 0; color: #111b21; font-size: 10px; line-height: 1.25; }
 .payment-confirmation-links { display: grid; width: calc(100% + 14px); margin: 2px -7px -4px; overflow: hidden; border-radius: 0 0 7px 7px; }
@@ -306,12 +306,11 @@ button.razorpay-method { cursor: pointer; }
 .payment-confirmation-links svg { flex: 0 0 auto; color: currentColor; }
 .invoice-heading, .order-status-heading { display: flex; align-items: center; gap: 4px; color: #548366; font-size: 7px; font-weight: 600; letter-spacing: .07em; }
 .invoice-document { display: grid; min-width: 0; overflow: hidden; border: 1px solid #e1e9e2; border-radius: 5px; background: #fff; }
-.invoice-document-thumbnail { display: block; height: 82px; overflow: hidden; background: #eef0ee; padding: 6px 11px 0; }
-.invoice-page-preview--thumbnail { width: 100%; max-width: 216px; min-height: 305px; flex: 0 0 auto; margin: 0 auto; padding: 13px 12px 11px; pointer-events: none; }
-.invoice-file-row { display: flex; width: 100%; min-width: 0; align-items: center; gap: 7px; border: 0; border-top: 1px solid #e7ebe7; background: #fbfdfb; padding: 6px; color: inherit; cursor: pointer; font: inherit; text-align: left; transition: background-color 150ms ease; }
-.invoice-file-row:hover { background: #f3f7f3; }
-.invoice-file-icon { position: relative; display: flex; width: 26px; height: 30px; flex: 0 0 26px; align-items: center; justify-content: center; border-radius: 3px; background: #f8eeee; color: #b55454; }
-.invoice-file-icon b { position: absolute; right: 2px; bottom: 2px; left: 2px; color: #a34444; font-size: 4px; line-height: 1; text-align: center; }
+.invoice-document-thumbnail { display: block; height: 145px; overflow: hidden; background: #fff; padding: 0; }
+.invoice-page-preview--thumbnail { width: 100%; max-width: none; min-height: 305px; flex: 0 0 auto; margin: 0; padding: 13px 12px 11px; box-shadow: none; pointer-events: none; }
+.invoice-file-row { display: flex; width: 100%; min-width: 0; align-items: center; gap: 7px; border: 0; border-top: 1px solid #e7ebe7; background: #fff; padding: 6px; color: inherit; cursor: pointer; font: inherit; text-align: left; transition: background-color 150ms ease; }
+.invoice-file-row:hover { background: #f7faf8; }
+.invoice-file-icon { display: block; width: 30px; height: 30px; flex: 0 0 30px; object-fit: contain; }
 .invoice-file-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
 .invoice-file-copy strong { overflow: hidden; color: #415449; font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .invoice-file-copy small { color: #8a968d; font-size: 7px; }
