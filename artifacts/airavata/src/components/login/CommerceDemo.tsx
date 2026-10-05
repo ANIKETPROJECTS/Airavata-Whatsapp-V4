@@ -530,9 +530,33 @@ export default function CommerceDemo() {
                     <div className="demo-message from-business demo-payment-confirmation message-appear" data-testid="message-demo-payment-success">
                       <span className="payment-label"><Check size={11} /> PAYMENT CONFIRMED</span>
                       <strong className="receipt-thanks">Payment received · {productPrice}</strong>
+                      <p className="payment-confirmation-note">
+                        Congratulations, {receipt.name}! 🎉 Your order is confirmed. Thank you for choosing Rangrez Studio—we hope your Banarasi saree brings joy to every celebration.
+                      </p>
                       <div className="receipt-line"><span>Payment ID</span><b>{getPaymentReference(receipt.orderId)}</b></div>
                       <div className="receipt-line"><span>Method</span><b>UPI</b></div>
-                        <time>10:45 AM</time>
+                      <div className="payment-confirmation-links" aria-label="Follow and review Rangrez Studio">
+                        <a
+                          href="https://www.instagram.com/raneaniketai23/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-testid="link-demo-instagram"
+                        >
+                          <span>Follow us on Instagram<small>@raneaniketai23</small></span>
+                          <ExternalLink size={10} aria-hidden="true" />
+                        </a>
+                        <a
+                          href="https://example.com/rangrez-studio-review"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Sample review destination"
+                          data-testid="link-demo-review"
+                        >
+                          <span>Leave us a review<small>Share your Rangrez experience</small></span>
+                          <ExternalLink size={10} aria-hidden="true" />
+                        </a>
+                      </div>
+                      <time>10:45 AM</time>
                     </div>
                     {postPaymentStage !== 'payment' && (
                       <div className="demo-message from-business demo-invoice message-appear" data-testid="message-demo-invoice-pdf">

@@ -17,6 +17,12 @@ Keep the order-summary and payment-link bubbles in the chat history after checko
 
 **How to apply:** Render those bubbles for confirmed, Razorpay, payment-success, and paid states. Preserve the original historical payment-pending copy, but don't allow the payment action to restart checkout once processing has started.
 
+The post-payment confirmation should congratulate the named customer, thank them for choosing Rangrez Studio, and include Instagram and review calls to action while retaining the payment reference and method. Use dummy destinations only when the user explicitly authorizes them; never silently treat sample links as official merchant links.
+
+**Why:** The user wants a personal, celebratory receipt without losing payment context, and sample social links must not be mistaken for production destinations.
+
+**How to apply:** Keep the copy and links inside the existing payment-confirmation bubble. Dummy destinations are for the showcase only, not production messaging.
+
 Message timestamps use a 12-hour time with AM/PM, matching normal WhatsApp.
 
 **Why:** The user called out missing AM/PM as a difference from WhatsApp.

@@ -59,7 +59,7 @@
 .login-error { margin: -3px 0 0; color: #b24f43; font-size: 10px; }
 .login-submit { display: flex; height: 50px; align-items: center; justify-content: center; gap: 10px; margin-top: 4px; border: 0; border-radius: 7px; background: #238858; color: #fff; cursor: pointer; font: inherit; font-size: 12px; font-weight: 500; box-shadow: 0 7px 16px rgb(32 117 72 / 14%); transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
 .login-submit:hover:not(:disabled) { transform: translateY(-1px); background: #1c754b; box-shadow: 0 9px 20px rgb(32 117 72 / 20%); }
-.login-submit:focus-visible, .details-buy-button:focus-visible, .flow-screen-submit:focus-visible, .payment-link:focus-visible, .razorpay-pay-button:focus-visible, .invoice-file-row:focus-visible, .invoice-viewer-topbar button:focus-visible, .invoice-viewer-topbar a:focus-visible, .invoice-viewer-footer a:focus-visible { outline: 3px solid #a8d2b2; outline-offset: 3px; }
+.login-submit:focus-visible, .details-buy-button:focus-visible, .flow-screen-submit:focus-visible, .payment-link:focus-visible, .payment-confirmation-links a:focus-visible, .razorpay-pay-button:focus-visible, .invoice-file-row:focus-visible, .invoice-viewer-topbar button:focus-visible, .invoice-viewer-topbar a:focus-visible, .invoice-viewer-footer a:focus-visible { outline: 3px solid #a8d2b2; outline-offset: 3px; }
 .login-submit:disabled { cursor: wait; opacity: .72; }
 .login-loader { animation: login-spin 1s linear infinite; }
 .login-trust { display: flex; align-items: center; gap: 9px; margin-top: 24px; color: #849289; font-size: 10px; }
@@ -292,6 +292,14 @@ button.razorpay-method { cursor: pointer; }
 .payment-link:disabled { cursor: default; }
 .demo-message.demo-receipt, .demo-message.demo-payment, .demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
 .demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
+.payment-confirmation-note { margin: 0; color: #111b21; font-size: 10px; line-height: 1.25; }
+.payment-confirmation-links { display: grid; margin-top: 2px; border-top: 1px solid #edf0ee; }
+.payment-confirmation-links a { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 1px; color: #111b21; font-size: 9px; font-weight: 600; text-decoration: none; }
+.payment-confirmation-links a + a { border-top: 1px solid #edf0ee; }
+.payment-confirmation-links a > span { display: grid; min-width: 0; gap: 1px; }
+.payment-confirmation-links small { color: #68736c; font-size: 7px; font-weight: 400; }
+.payment-confirmation-links svg { flex: 0 0 auto; color: #548366; }
+.payment-confirmation-links a:hover { color: #176840; }
 .invoice-heading, .order-status-heading { display: flex; align-items: center; gap: 4px; color: #548366; font-size: 7px; font-weight: 600; letter-spacing: .07em; }
 .invoice-document { display: grid; min-width: 0; overflow: hidden; border: 1px solid #e1e9e2; border-radius: 5px; background: #fff; }
 .invoice-document-thumbnail { display: block; height: 82px; overflow: hidden; background: #eef0ee; padding: 6px 11px 0; }
