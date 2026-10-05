@@ -388,11 +388,11 @@
   .showcase-inner { padding: 0 10px; }
 }
 @media (min-width: 951px) and (max-height: 680px) {
-  .login-journey-intro { margin-bottom: 8px; }
-  .login-journey-intro h2 { margin-top: 8px; margin-bottom: 6px; font-size: 25px; }
+  .login-journey-intro { margin-bottom: 4px; }
+  .login-journey-intro h2 { margin-top: 6px; margin-bottom: 4px; font-size: 25px; }
   .login-journey-intro p { font-size: 13px; line-height: 1.2; }
-  .login-journey-steps { gap: 6px; }
-  .login-journey-copy h3 { margin-top: 1px; margin-bottom: 2px; font-size: 14px; line-height: 1.15; }
+  .login-journey-steps { gap: 4px; }
+  .login-journey-copy h3 { margin-top: 0; margin-bottom: 1px; font-size: 14px; line-height: 1.15; }
   .login-journey-copy p { font-size: 12.5px; line-height: 1.2; }
 }
 @media (min-width: 781px) and (max-height: 840px) {
