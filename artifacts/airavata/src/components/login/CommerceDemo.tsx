@@ -239,6 +239,7 @@ export default function CommerceDemo() {
   const [postPaymentStage, setPostPaymentStage] = useState<'payment' | 'invoice' | 'replay'>('payment');
   const [razorpayStage, setRazorpayStage] = useState<'upi' | 'processing'>('upi');
   const [selectedUpiApp, setSelectedUpiApp] = useState<'Google Pay' | 'Paytm' | 'PhonePe'>('Google Pay');
+  const startRazorpayPreview = useCallback(() => setRazorpayStage('processing'), []);
   const [flowTypingField, setFlowTypingField] = useState<keyof CheckoutDetails | null>(null);
   const [screenWidth, setScreenWidth] = useState(252);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -304,6 +305,12 @@ export default function CommerceDemo() {
     }
     return () => timeouts.forEach(timeout => window.clearTimeout(timeout));
   }, [step]);
+
+  useEffect(() => {
+    if (step !== 'razorpay' || razorpayStage !== 'upi') return;
+    const timeout = window.setTimeout(startRazorpayPreview, 3500);
+    return () => window.clearTimeout(timeout);
+  }, [step, razorpayStage, startRazorpayPreview]);
 
   const completeCheckout = useCallback((details: CheckoutDetails) => {
     const orderId = `INV20260901${String(nextOrderNumber.current).padStart(2, '0')}`;
@@ -777,9 +784,8 @@ export default function CommerceDemo() {
                         <button
                           type="button"
                           className="razorpay-pay-button"
-                          onClick={() => setRazorpayStage('processing')}
+                          onClick={startRazorpayPreview}
                           data-testid="button-demo-razorpay-pay"
-                          disabled={razorpayStage === 'processing'}
                         >
                           <span>Pay {orderTotal}</span><span>Continue <ArrowRight size={14} /></span>
                         </button>
