@@ -471,8 +471,8 @@ export default function CommerceDemo() {
                         <div className="demo-spec-row"><span>Blouse</span><b>Matching unstitched piece</b></div>
                         <div className="demo-spec-row"><span>Work & care</span><b>Gold zari · dry clean</b></div>
                         <div className="demo-spec-row"><span>Delivery time</span><b>Ships in 2–4 days</b></div>
+                        <div className="demo-spec-row"><span>Price</span><b>{productPrice}</b></div>
                       </div>
-                      <div className="demo-detail-price"><span>Price:</span><b>{productPrice}</b></div>
                     </div>
                     <span className="demo-incoming-meta demo-detail-meta"><time>10:42</time></span>
                     <button
