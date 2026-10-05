@@ -495,7 +495,7 @@ export default function CommerceDemo() {
                   </div>
                 )}
 
-                {step === 'confirmed' && receipt && (
+                {(step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid') && receipt && (
                   <>
                     <div className="demo-message from-business demo-receipt message-appear" data-testid="message-demo-receipt">
                       <span className="receipt-heading"><Check size={11} /> ORDER SUMMARY</span>
@@ -516,6 +516,7 @@ export default function CommerceDemo() {
                         type="button"
                         className="payment-link"
                         onClick={() => setStep('razorpay')}
+                        disabled={step !== 'confirmed'}
                         data-testid="button-demo-payment-link"
                       >
                         Pay with Razorpay · {productPrice} <ArrowRight size={11} />

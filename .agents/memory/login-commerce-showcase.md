@@ -11,6 +11,12 @@ The delivery-details step is for customer information, not checkout. Keep its co
 
 **How to apply:** Do not label the delivery-details form “secure checkout” or add payment UI to it. Keep its details local and preview-only without displaying the removed note. Keep payment methods and copy on the distinct Razorpay step. The device's outer iOS home indicator remains part of the phone frame.
 
+Keep the order-summary and payment-link bubbles in the chat history after checkout advances and payment completes. Style them as incoming WhatsApp messages with black text at the normal chat font size; render the payment action as a simple separated button row, and disable it after payment.
+
+**Why:** The user expects the conversation to retain its earlier order and payment messages and wants them to match the black, regular-size WhatsApp styling used above.
+
+**How to apply:** Render those bubbles for confirmed, Razorpay, payment-success, and paid states. Preserve the original historical payment-pending copy, but don't allow the payment action to restart checkout once processing has started.
+
 Message timestamps use a 12-hour time with AM/PM, matching normal WhatsApp.
 
 **Why:** The user called out missing AM/PM as a difference from WhatsApp.
