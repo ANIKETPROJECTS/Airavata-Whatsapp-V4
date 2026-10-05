@@ -44,3 +44,4 @@
 - [Meta catalog permissions](meta-catalog-permissions.md) — catalog operations need business/catalog permissions in the Login for Business config and client reauthorization after approval.
 - [Router middleware scope](router-middleware-scope.md) — root-mounted routers must scope access guards to their route prefix or they can block unrelated endpoints.
 - [Interactive commerce login showcase](login-commerce-showcase.md) — start at the product template, let visitors drive each step, and keep orders and payment links simulated.
+- [Direct artifact builds](direct-artifact-builds.md) — shell builds do not inherit managed workflow env; pass the artifact's required `PORT` and `BASE_PATH` explicitly.
