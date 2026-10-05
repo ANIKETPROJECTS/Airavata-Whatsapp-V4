@@ -303,15 +303,15 @@ export default function CommerceDemo() {
       timeouts.push(window.setTimeout(() => {
         setPostPaymentStage('payment');
         setStep('paid');
-      }, 2800));
+      }, 2000));
     } else if (step === 'paid') {
-      timeouts.push(window.setTimeout(() => setPostPaymentStage('invoice'), 1700));
-      timeouts.push(window.setTimeout(() => setPostPaymentStage('replay'), 3800));
+      timeouts.push(window.setTimeout(() => setPostPaymentStage('invoice'), 5000));
+      timeouts.push(window.setTimeout(() => setPostPaymentStage('replay'), 9000));
       timeouts.push(window.setTimeout(() => {
         if (invoiceViewerShownRef.current) return;
         invoiceViewerShownRef.current = true;
         setInvoiceViewerOpen(true);
-      }, 9200));
+      }, 14000));
     }
     return () => timeouts.forEach(timeout => window.clearTimeout(timeout));
   }, [step, confirmedStage]);
