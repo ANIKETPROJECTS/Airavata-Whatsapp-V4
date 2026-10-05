@@ -10,7 +10,6 @@ import {
   ExternalLink,
   LoaderCircle,
   LockKeyhole,
-  PackageCheck,
   RotateCcw,
   ShieldCheck,
   Smartphone,
@@ -236,7 +235,7 @@ export default function CommerceDemo() {
   const [invoicePdfUrl, setInvoicePdfUrl] = useState<string | null>(null);
   const [invoiceFileSize, setInvoiceFileSize] = useState('');
   const [invoiceViewerOpen, setInvoiceViewerOpen] = useState(false);
-  const [postPaymentStage, setPostPaymentStage] = useState<'payment' | 'invoice' | 'order'>('payment');
+  const [postPaymentStage, setPostPaymentStage] = useState<'payment' | 'invoice' | 'replay'>('payment');
   const [razorpayStage, setRazorpayStage] = useState<'methods' | 'upi' | 'processing'>('methods');
   const [selectedUpiApp, setSelectedUpiApp] = useState<'Google Pay' | 'Paytm' | 'PhonePe'>('Google Pay');
   const [flowTypingField, setFlowTypingField] = useState<keyof CheckoutDetails | null>(null);
@@ -300,7 +299,7 @@ export default function CommerceDemo() {
       }, 3700));
     } else if (step === 'paid') {
       timeouts.push(window.setTimeout(() => setPostPaymentStage('invoice'), 1700));
-      timeouts.push(window.setTimeout(() => setPostPaymentStage('order'), 3800));
+      timeouts.push(window.setTimeout(() => setPostPaymentStage('replay'), 3800));
       timeouts.push(window.setTimeout(() => {
         if (invoiceViewerShownRef.current) return;
         invoiceViewerShownRef.current = true;
@@ -591,20 +590,8 @@ export default function CommerceDemo() {
                         <time>10:46 AM</time>
                       </div>
                     )}
-                    {postPaymentStage === 'order' && (
-                      <div className="demo-message from-business demo-order-status message-appear" data-testid="message-demo-order-status">
-                        <span className="order-status-heading"><PackageCheck size={11} /> ORDER UPDATE</span>
-                        <div className="order-status-summary">
-                          <span className="order-status-number">Order {receipt.orderId}</span>
-                          <strong>Processing</strong>
-                        </div>
-                        <div className="order-status-timeline" aria-label="Paid, processing, dispatch next">
-                          <div className="order-timeline-step is-complete"><span /><small>Paid</small></div>
-                          <div className="order-timeline-connector is-complete" />
-                          <div className="order-timeline-step is-current"><span /><small>Processing</small></div>
-                          <div className="order-timeline-connector" />
-                          <div className="order-timeline-step"><span /><small>Dispatch</small></div>
-                        </div>
+                    {postPaymentStage === 'replay' && (
+                      <div className="demo-message from-business demo-replay-message message-appear" data-testid="message-demo-replay">
                         <button
                           type="button"
                           className="demo-replay-button"

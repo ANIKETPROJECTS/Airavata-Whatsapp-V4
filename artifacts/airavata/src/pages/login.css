@@ -295,16 +295,15 @@ button.razorpay-method { cursor: pointer; }
 .payment-link { width: calc(100% + 14px); margin: 1px -7px -4px; border-radius: 0 0 7px 7px; }
 .payment-link:disabled { cursor: default; }
 .demo-message.demo-receipt, .demo-message.demo-payment { padding-bottom: 7px; }
-.demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
+.demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-replay-message { padding-bottom: 17px; }
 .demo-message.demo-receipt time, .demo-message.demo-payment time, .demo-message.demo-payment-confirmation time { position: static; justify-self: end; margin-top: -1px; }
-.demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
+.demo-payment-confirmation, .demo-invoice, .demo-replay-message { display: grid; max-width: 94%; gap: 5px; }
 .payment-confirmation-note { margin: 0; color: #111b21; font-size: 10px; line-height: 1.25; }
 .payment-confirmation-links { display: grid; width: calc(100% + 14px); margin: 2px -7px -4px; overflow: hidden; border-radius: 0 0 7px 7px; }
 .payment-confirmation-links .demo-template-cta { text-decoration: none; }
 .payment-confirmation-links .demo-template-cta + .demo-template-cta { border-top: 1px solid #edf0ee; }
 .payment-confirmation-links .demo-template-cta:hover { color: #176840; }
 .payment-confirmation-links svg { flex: 0 0 auto; color: currentColor; }
-.invoice-heading, .order-status-heading { display: flex; align-items: center; gap: 4px; color: #548366; font-size: 7px; font-weight: 600; letter-spacing: .07em; }
 .invoice-document { display: grid; min-width: 0; overflow: hidden; border: 1px solid #e1e9e2; border-radius: 5px; background: #fff; }
 .invoice-document-thumbnail { display: block; height: 160px; overflow: hidden; background: #fff; padding: 0; }
 .invoice-page-preview--thumbnail { width: 100%; max-width: none; min-height: 305px; flex: 0 0 auto; margin: 0; padding: 13px 12px 11px; box-shadow: none; pointer-events: none; }
@@ -315,19 +314,6 @@ button.razorpay-method { cursor: pointer; }
 .invoice-file-copy strong { overflow: hidden; color: #415449; font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .invoice-file-copy small { color: #8a968d; font-size: 7px; }
 .invoice-preparing { color: #8b978c; text-align: center; font-size: 7px; }
-.order-status-summary { display: flex; align-items: center; justify-content: space-between; gap: 6px; border-bottom: 1px solid #edf0ed; padding-bottom: 5px; }
-.order-status-number { color: #6d7b71; font-size: 8px; }
-.order-status-summary strong { color: #385e42; font-size: 9px; font-weight: 600; }
-.order-status-timeline { display: flex; align-items: flex-start; gap: 3px; padding: 3px 2px 1px; }
-.order-timeline-step { display: grid; flex: 0 0 auto; justify-items: center; gap: 3px; color: #8a958d; }
-.order-timeline-step > span { width: 8px; height: 8px; border: 1px solid #cbd3cd; border-radius: 50%; background: #fff; }
-.order-timeline-step small { font-size: 6.5px; white-space: nowrap; }
-.order-timeline-step.is-complete > span { border-color: #548263; background: #548263; }
-.order-timeline-step.is-current { color: #426e4e; font-weight: 600; }
-.order-timeline-step.is-current > span { border: 2px solid #548263; background: #fff; }
-.order-timeline-connector { height: 1px; flex: 1; margin-top: 3.5px; background: #d7dfd8; }
-.order-timeline-connector.is-complete { background: #7ea58a; }
-.demo-order-status p { margin: 0; color: #66766b; font-size: 8px; line-height: 1.4; }
 .demo-chat-footer { position: relative; height: 32px; flex: 0 0 32px; overflow: hidden; background: #f5f2eb; }
 .demo-composer-art { top: 0; left: 0; }
 .demo-replay-button { display: inline-flex; width: fit-content; align-items: center; gap: 4px; border: 0; border-radius: 4px; background: transparent; padding: 3px 0; color: #008069; cursor: pointer; font: inherit; font-size: 7px; font-weight: 500; }

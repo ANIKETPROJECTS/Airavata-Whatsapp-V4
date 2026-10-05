@@ -35,11 +35,11 @@ The order summary should omit the decorative check icon, use the requested invoi
 
 **How to apply:** Keep the same sample order ID across the chat, invoice preview, and payment context. Avoid icons in these two message headings and keep timestamps from overlapping action rows.
 
-Keep the paid ORDER UPDATE card concise: retain the order number, processing status, progress timeline, and replay action, but omit the explanatory preparation/tracking paragraph.
+Remove the paid ORDER UPDATE module entirely, but keep the conversation replay action as a separate control.
 
-**Why:** The user asked to remove that paragraph while keeping the status card.
+**Why:** The user asked to remove the entire status module while preserving a way to replay the scripted showcase.
 
-**How to apply:** Preserve the structured status details and controls; do not restore the narrative paragraph unless asked.
+**How to apply:** Do not render the order number, processing status, or progress timeline after invoice delivery. Keep “Replay conversation” separate from the removed module.
 
 Keep the saree base price separate from sample CGST, SGST, and delivery charges, and use the same computed payable total in the order summary, Razorpay simulation, payment confirmation, and sample invoice. Keep the revised payment confirmation warm and celebratory while preserving payment reference and method.
 
