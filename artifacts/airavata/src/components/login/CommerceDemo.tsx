@@ -440,7 +440,7 @@ export default function CommerceDemo() {
                       <div className="demo-product-meta"><b>{productPrice}</b></div>
                     </div>
                     <div className="demo-template-meta">
-                      <time>10:40</time>
+                      <time>10:40 AM</time>
                     </div>
                     <button
                       type="button"
@@ -457,7 +457,7 @@ export default function CommerceDemo() {
                 {step !== 'template' && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-customer-question">
                     <span className="demo-message-copy">I love this saree! 😍 Could you share a few more details about it?</span>
-                    <span className="demo-outgoing-meta"><time>10:41</time><FigmaReadReceipt /></span>
+                    <span className="demo-outgoing-meta"><time>10:41 AM</time><FigmaReadReceipt /></span>
                   </div>
                 )}
 
@@ -474,7 +474,7 @@ export default function CommerceDemo() {
                         <div className="demo-spec-row"><span>Price</span><b>{productPrice}</b></div>
                       </div>
                     </div>
-                    <span className="demo-incoming-meta demo-detail-meta"><time>10:42</time></span>
+                    <span className="demo-incoming-meta demo-detail-meta"><time>10:42 AM</time></span>
                     <button
                       type="button"
                       className={`demo-template-cta details-buy-button ${step === 'details' ? 'demo-auto-press' : ''}`}
@@ -491,7 +491,7 @@ export default function CommerceDemo() {
                 {(step === 'flow' || step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid') && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-buy-now">
                     <span className="demo-message-copy">Buy Now</span>
-                    <span className="demo-outgoing-meta"><time>10:43</time><FigmaReadReceipt /></span>
+                    <span className="demo-outgoing-meta"><time>10:43 AM</time><FigmaReadReceipt /></span>
                   </div>
                 )}
 
@@ -507,7 +507,7 @@ export default function CommerceDemo() {
                         Delivering to {receipt.address}, {receipt.city} {receipt.pinCode}
                       </div>
                       <span className="receipt-pending">Payment pending · order is reserved</span>
-                      <time>10:44</time>
+                      <time>10:44 AM</time>
                     </div>
                     <div className="demo-message from-business demo-payment message-appear" data-testid="message-demo-payment">
                       <span className="payment-label"><ShieldCheck size={11} /> RAZORPAY PAYMENT LINK</span>
@@ -520,7 +520,7 @@ export default function CommerceDemo() {
                       >
                         Pay with Razorpay · {productPrice} <ArrowRight size={11} />
                       </button>
-                      <time>10:44</time>
+                      <time>10:44 AM</time>
                     </div>
                   </>
                 )}
@@ -531,7 +531,7 @@ export default function CommerceDemo() {
                       <strong className="receipt-thanks">Payment received · {productPrice}</strong>
                       <div className="receipt-line"><span>Payment ID</span><b>{getPaymentReference(receipt.orderId)}</b></div>
                       <div className="receipt-line"><span>Method</span><b>UPI</b></div>
-                      <time>10:45</time>
+                        <time>10:45 AM</time>
                     </div>
                     {postPaymentStage !== 'payment' && (
                       <div className="demo-message from-business demo-invoice message-appear" data-testid="message-demo-invoice-pdf">
@@ -558,7 +558,7 @@ export default function CommerceDemo() {
                         ) : (
                           <span className="invoice-preparing">Preparing invoice PDF…</span>
                         )}
-                        <time>10:46</time>
+                        <time>10:46 AM</time>
                       </div>
                     )}
                     {postPaymentStage === 'order' && (
@@ -584,7 +584,7 @@ export default function CommerceDemo() {
                         >
                           <RotateCcw size={10} /> Replay conversation
                         </button>
-                        <time>10:47</time>
+                        <time>10:47 AM</time>
                       </div>
                     )}
                   </>
@@ -611,23 +611,23 @@ export default function CommerceDemo() {
                     <span className="flow-screen-mark">R</span>
                     <span className="flow-screen-brand">
                       <strong>Rangrez Studio</strong>
-                      <small>WhatsApp Flow · Secure checkout</small>
+                      <small>WhatsApp Flow · Customer details</small>
                     </span>
                     <span className="flow-screen-page">1 OF 1</span>
                   </div>
                   <div className="flow-screen-content">
                     <div className="flow-screen-intro">
-                      <span className="flow-screen-kicker">SECURE CHECKOUT</span>
+                      <span className="flow-screen-kicker">CUSTOMER DETAILS</span>
                       <h2>Delivery details</h2>
-                      <p>Where should we deliver your new Banarasi saree?</p>
+                      <p>Add your contact and delivery address for this saree.</p>
                     </div>
-                    <div className="flow-order-summary">
-                      <img src={sareeImage} alt="" />
-                      <span className="flow-order-copy">
+                    <div className="flow-product-card">
+                      <img src={sareeImage} alt="Banarasi Silk Saree" />
+                      <span className="flow-product-copy">
                         <strong>Banarasi Silk Saree</strong>
                         <small>Pure Katan silk · 6.3 m</small>
                       </span>
-                      <b>{productPrice}</b>
+                      <b className="flow-product-price">{productPrice}</b>
                     </div>
                     <form className="flow-screen-form" onSubmit={submitCheckout}>
                       <div className={`flow-screen-field ${flowTypingField === 'name' ? 'is-typing' : ''}`}>

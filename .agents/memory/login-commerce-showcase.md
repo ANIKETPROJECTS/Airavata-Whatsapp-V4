@@ -3,7 +3,19 @@ name: Interactive commerce login showcase
 description: Required behavior for the customer-facing WhatsApp commerce demo on the public login page.
 ---
 
-The showcase is viewed on the customer's phone. Rangrez Studio's product template arrives first, then the customer asks for details; the chatbot replies with specs and Buy Now, a WhatsApp Flow-style checkout auto-fills fabricated details, and a receipt plus simulated payment link appear. The scripted Razorpay checkout then completes locally, generates a PDF invoice attachment, and shows Paid · Processing. Business messages are incoming left-side white bubbles; customer messages are outgoing right-side green bubbles. Keep the journey local and do not send details, create real orders, or initiate payments.
+The showcase is viewed on the customer's phone. Rangrez Studio's product template arrives first, then the customer asks for details; the chatbot replies with specs and Buy Now, a WhatsApp Flow collects customer delivery details using fabricated preview data, and a receipt plus simulated payment link appear. A separate Razorpay screen handles the simulated payment, then completes locally, generates a PDF invoice attachment, and shows Paid · Processing. Business messages are incoming left-side white bubbles; customer messages are outgoing right-side green bubbles. Keep the journey local and do not send details, create real orders, or initiate payments.
+
+The delivery-details step is for customer information, not checkout. Keep its customer/delivery language separate from the later payment screen, and preserve the preview-only notice.
+
+**Why:** The user explicitly corrected checkout framing on the form because it collects customer details; conflating it with payment misstates the screen's purpose.
+
+**How to apply:** Do not label the delivery-details form “secure checkout” or add payment UI to it. Keep payment methods and payment copy on the distinct Razorpay step.
+
+Message timestamps use a 12-hour time with AM/PM, matching normal WhatsApp.
+
+**Why:** The user called out missing AM/PM as a difference from WhatsApp.
+
+**How to apply:** Include AM/PM on every visible message, template, and bubble timestamp.
 
 The phone should look like a WhatsApp iOS conversation rather than a generic chat: use the business header, chat wallpaper, outgoing and incoming bubble conventions, delivery/read details, and a composer anchored above the device safe area with plus, message field, camera, and microphone controls. Keep replay controls out of the composer.
 
