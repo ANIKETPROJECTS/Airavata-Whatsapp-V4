@@ -25,9 +25,9 @@ Use a consistent entrance duration and easing for every chat bubble and full-scr
 
 Keep payment confirmation on one Razorpay screen: show the supplied green success animation together with the amount, merchant, payment ID, selected method, and preview-only notice. Do not transition to a separate black-and-white checkmark receipt screen; continue directly to the existing WhatsApp and invoice flow.
 
-**Why:** The user explicitly asked for the former third page's receipt details to appear alongside the animation on the second page, without a separate confirmation page.
+**Why:** The user explicitly asked for the former third page's receipt details to appear alongside the animation on the second page, without a separate confirmation page, then clarified that the payment confirmation and invoice need distinct reading time.
 
-**How to apply:** Keep the animated success screen mounted through its completion and display all confirmation details there. After the animation, keep the details visible briefly, then continue promptly to the post-payment conversation. Preserve the simulated-only boundary and the existing invoice sequence.
+**How to apply:** Keep the animated success screen mounted through its completion and display all confirmation details there. Keep that screen's post-animation hold brief, then show the payment-confirmation chat bubble before revealing the invoice after a separate reading pause. Delay replay and automatic invoice opening so they do not crowd or interrupt those messages. Preserve the simulated-only boundary.
 
 The post-payment confirmation uses the user's supplied celebratory “Payment Confirmed” copy, with selected phrases bolded. Retain the payment reference and method. Use separate Instagram and Google review action rows styled like the Buy Now button, with the timestamp immediately above them. Use dummy destinations only when the user explicitly authorizes them; never silently treat sample links as official merchant links.
 
