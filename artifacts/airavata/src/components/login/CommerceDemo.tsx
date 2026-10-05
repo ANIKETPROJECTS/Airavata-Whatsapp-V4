@@ -605,7 +605,6 @@ export default function CommerceDemo() {
                           <div className="order-timeline-connector" />
                           <div className="order-timeline-step"><span /><small>Dispatch</small></div>
                         </div>
-                        <p>Your saree is being prepared. Tracking will be shared once it is dispatched.</p>
                         <button
                           type="button"
                           className="demo-replay-button"
