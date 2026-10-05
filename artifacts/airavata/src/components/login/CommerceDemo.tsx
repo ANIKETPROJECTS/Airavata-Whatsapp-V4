@@ -428,9 +428,9 @@ export default function CommerceDemo() {
                       alt="Deep crimson Banarasi silk saree with a gold zari border"
                     />
                     <div className="demo-product-info">
-                      <span className="demo-template-label">{'Hello 👋 NEW ARRIVAL ✨ BANARASI COLLECTION 💛'}</span>
-                      <strong>Banarasi Silk Saree</strong>
-                      <p>A festive new arrival, handwoven in rich crimson Katan silk with intricate gold zari detailing.</p>
+                      <span className="demo-template-label">Hello {checkoutProfile.name.split(' ')[0]} 👋 NEW ARRIVAL ✨ BANARASI COLLECTION 💛</span>
+                      <strong>Banarasi Silk Saree 🪷</strong>
+                      <p>A festive new arrival, handwoven in rich crimson Katan silk with intricate gold zari detailing. ✨</p>
                       <div className="demo-product-meta"><b>{productPrice}</b></div>
                     </div>
                     <div className="demo-template-meta">
