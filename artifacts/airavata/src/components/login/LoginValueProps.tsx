@@ -13,22 +13,22 @@ const journeySteps: Array<{
 }> = [
   {
     title: 'Launch the campaign',
-    description: 'Interested shoppers message on WhatsApp for product details after seeing your campaign.',
+    description: 'Customers message on WhatsApp for details after seeing your campaign.',
     icon: Megaphone,
   },
   {
     title: 'AI answers and assists',
-    description: 'AI answers product questions and guides customers to buy—no human handoff.',
+    description: 'AI answers customer questions and guides them toward purchase—no human handoff.',
     icon: Bot,
   },
   {
     title: 'Capture details and create the order',
-    description: 'Flow Builder collects delivery details; the AI chatbot creates the purchase order and guides payment.',
+    description: 'Flow Builder gathers customer details; AI creates the purchase order and guides payment.',
     icon: ShoppingBag,
   },
   {
     title: 'Collect payment and send the invoice',
-    description: 'Payment gateway completes checkout; the invoice is generated and sent automatically in WhatsApp.',
+    description: 'Payment gateway completes checkout; the invoice is auto-generated and sent in WhatsApp.',
     icon: CreditCard,
   },
 ];
@@ -39,7 +39,7 @@ export function LoginJourney() {
       <div className="login-journey-intro">
         <span className="login-journey-eyebrow">THE CUSTOMER JOURNEY</span>
         <h2 id="login-journey-title">From campaign to completed order.</h2>
-        <p>Campaigns, AI, Flow Builder and payments automate every step in WhatsApp.</p>
+        <p>Beyond ecommerce: retail, restaurants, clinics, schools and services. Connect CRM, ERP and websites via APIs and signed webhooks.</p>
       </div>
 
       <ol className="login-journey-steps">
