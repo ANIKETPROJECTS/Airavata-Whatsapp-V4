@@ -94,3 +94,9 @@ The login-page customer journey is page content, so use the Add Template module'
 **Why:** The user said the journey text was too small and specifically asked for the Add Template font with a larger text size.
 
 **How to apply:** Keep the journey's headings and explanatory copy comfortably readable at desktop sizes. Compact it only as much as needed to fit shorter desktop viewports; do not reduce it back to microtext.
+
+Center the sign-in content within its panel and keep it visually prominent. Omit decorative workspace labels, footer branding/copy, and the security reassurance row.
+
+**Why:** The user asked for a larger, centered sign-in section and asked to remove those secondary labels and messages.
+
+**How to apply:** Keep the welcome heading, explanatory sentence, credential fields, and submit button. Use the journey's Poppins type style and readable 15px-scale supporting text for the form controls.

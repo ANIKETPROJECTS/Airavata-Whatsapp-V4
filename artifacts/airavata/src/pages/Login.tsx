@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowRight, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import CommerceDemo from '../components/login/CommerceDemo';
@@ -48,10 +48,6 @@ export default function Login() {
       </section>
 
       <section className="login-panel" aria-label="Sign in">
-        <div className="login-panel-top">
-          <span className="secure-note"><LockKeyhole size={14} strokeWidth={1.8} /> SECURE WORKSPACE ACCESS</span>
-          <span className="panel-mark">ATWASSUP <span>／</span> WORKSPACE</span>
-        </div>
         <div className="login-panel-content">
           <div className="login-form-wrap">
             <div className="form-intro">
@@ -93,16 +89,7 @@ export default function Login() {
                 {submitting ? <><Loader2 className="login-loader" size={18} /> Signing in…</> : <>Sign in to your workspace <ArrowRight size={17} /></>}
               </button>
             </form>
-
-            <div className="login-trust" data-testid="text-security-note">
-              <ShieldCheck size={17} strokeWidth={1.8} />
-              <span>Your account is protected with secure sign-in.</span>
-            </div>
           </div>
-        </div>
-        <div className="login-panel-bottom">
-          <span>Built for conversations that move business forward.</span>
-          <span className="copyright">ATWASSUP</span>
         </div>
       </section>
     </main>
