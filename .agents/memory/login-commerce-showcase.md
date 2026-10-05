@@ -3,6 +3,12 @@ name: Interactive commerce login showcase
 description: Required behavior for the customer-facing WhatsApp commerce demo on the public login page.
 ---
 
+Login-page journey copy should describe the product's automated WhatsApp sales flow: a business sends a campaign, an interested shopper messages for product details, AI answers without a human handoff, Flow Builder collects delivery details, the chatbot creates the purchase order, the payment gateway completes checkout, and the system generates and sends the invoice in WhatsApp.
+
+**Why:** The user identified this end-to-end automation as the product's customer journey and asked the login page to explain it clearly, without implying a human takes over.
+
+**How to apply:** Keep the automated product promise distinct from the phone's sample transaction. The showcase is local and simulated; it must not send details, create real orders, or initiate payments.
+
 The showcase is viewed on the customer's phone. Rangrez Studio's product template arrives first, then the customer asks for details; the chatbot replies with specs and Buy Now, a WhatsApp Flow collects customer delivery details using fabricated preview data, and a receipt plus simulated payment link appear. A separate Razorpay screen handles the simulated payment, then completes locally, generates a PDF invoice attachment, and shows Paid · Processing. Business messages are incoming left-side white bubbles; customer messages are outgoing right-side green bubbles. Keep the journey local and do not send details, create real orders, or initiate payments.
 
 The delivery-details step is for customer information, not checkout. Keep its copy black, show the product image, name, price, short description, and readable specifications before the customer fields, omit the preview note/dot, and label the CTA “Save Details”. Do not add a second home-indicator line inside the form.

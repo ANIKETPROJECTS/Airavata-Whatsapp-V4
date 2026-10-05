@@ -13,22 +13,22 @@ const journeySteps: Array<{
 }> = [
   {
     title: 'Launch the campaign',
-    description: 'Shoppers see your product campaign and message on WhatsApp for details.',
+    description: 'Interested shoppers message on WhatsApp for product details after seeing your campaign.',
     icon: Megaphone,
   },
   {
     title: 'AI answers and assists',
-    description: 'The chatbot replies instantly, handles product questions, and guides customers toward purchase—with no human handoff.',
+    description: 'AI answers product questions and guides customers to buy—no human handoff.',
     icon: Bot,
   },
   {
     title: 'Capture details and create the order',
-    description: 'Flow Builder collects delivery details; the chatbot creates the purchase order.',
+    description: 'Flow Builder collects delivery details; the AI chatbot creates the purchase order and guides payment.',
     icon: ShoppingBag,
   },
   {
     title: 'Collect payment and send the invoice',
-    description: 'The payment gateway completes checkout. The system generates and sends the invoice automatically in WhatsApp.',
+    description: 'Payment gateway completes checkout; the invoice is generated and sent automatically in WhatsApp.',
     icon: CreditCard,
   },
 ];
