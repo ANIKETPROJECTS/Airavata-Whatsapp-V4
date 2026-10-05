@@ -88,3 +88,9 @@ The commerce showcase should feel like one continuous scripted journey from the 
 **Why:** The user clarified that motion should cover the whole process, not only payment, while keeping the current sequence and layout.
 
 **How to apply:** Preserve the established copy and preview-only boundaries. Do not redesign the screens or add a separate success page. Use static feedback or near-instant transitions when reduced motion is enabled.
+
+The login-page customer journey is page content, so use the Add Template module's Poppins typography scale rather than the tiny text sizing used inside the simulated phone.
+
+**Why:** The user said the journey text was too small and specifically asked for the Add Template font with a larger text size.
+
+**How to apply:** Keep the journey's headings and explanatory copy comfortably readable at desktop sizes. Compact it only as much as needed to fit shorter desktop viewports; do not reduce it back to microtext.
