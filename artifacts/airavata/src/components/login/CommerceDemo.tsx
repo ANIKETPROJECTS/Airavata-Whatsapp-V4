@@ -624,16 +624,14 @@ export default function CommerceDemo() {
                     <div className="flow-product-card">
                       <div className="flow-product-heading">
                         <img src={sareeImage} alt="Banarasi Silk Saree" />
-                        <strong>Banarasi Silk Saree</strong>
+                        <div className="flow-product-copy">
+                          <div className="flow-product-title-row">
+                            <strong>Banarasi Silk Saree</strong>
+                            <b className="flow-product-price">{productPrice}</b>
+                          </div>
+                          <p>Pure Katan silk with gold zari work and a matching unstitched blouse.</p>
+                        </div>
                       </div>
-                      <dl className="flow-product-details">
-                        <div className="flow-product-detail"><dt>Fabric</dt><dd>Pure Katan silk</dd></div>
-                        <div className="flow-product-detail"><dt>Saree length</dt><dd>6.3 metres</dd></div>
-                        <div className="flow-product-detail"><dt>Blouse</dt><dd>Matching unstitched piece</dd></div>
-                        <div className="flow-product-detail"><dt>Work &amp; care</dt><dd>Gold zari · dry clean</dd></div>
-                        <div className="flow-product-detail"><dt>Delivery time</dt><dd>Ships in 2–4 days</dd></div>
-                        <div className="flow-product-detail is-price"><dt>Price</dt><dd>{productPrice}</dd></div>
-                      </dl>
                     </div>
                     <form className="flow-screen-form" onSubmit={submitCheckout}>
                       <div className={`flow-screen-field ${flowTypingField === 'name' ? 'is-typing' : ''}`}>
@@ -659,7 +657,7 @@ export default function CommerceDemo() {
                         </div>
                       </div>
                       <button className="flow-screen-submit" type="submit" disabled={!checkoutReady} data-testid="button-demo-submit-order">
-                        Save Details <ArrowRight size={12} />
+                        Save Details
                       </button>
                     </form>
                   </div>
