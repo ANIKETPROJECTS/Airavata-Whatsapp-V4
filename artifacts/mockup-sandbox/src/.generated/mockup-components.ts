@@ -4,5 +4,7 @@ export const modules: ModuleMap = {
   "./components/mockups/flow-editor/Current.tsx": () => import("../components/mockups/flow-editor/Current.tsx"),
   "./components/mockups/flow-editor/Enhanced.tsx": () => import("../components/mockups/flow-editor/Enhanced.tsx"),
   "./components/mockups/live-chat/Current.tsx": () => import("../components/mockups/live-chat/Current.tsx"),
-  "./components/mockups/live-chat/Enhanced.tsx": () => import("../components/mockups/live-chat/Enhanced.tsx")
+  "./components/mockups/live-chat/Enhanced.tsx": () => import("../components/mockups/live-chat/Enhanced.tsx"),
+  "./components/mockups/login-payment/Current.tsx": () => import("../components/mockups/login-payment/Current.tsx"),
+  "./components/mockups/login-payment/ExpandedUpi.tsx": () => import("../components/mockups/login-payment/ExpandedUpi.tsx")
 };
