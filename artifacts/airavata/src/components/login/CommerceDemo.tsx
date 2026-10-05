@@ -456,7 +456,7 @@ export default function CommerceDemo() {
 
                 {step !== 'template' && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-customer-question">
-                    <span className="demo-message-copy">This saree is beautiful! Could you share the fabric, length and blouse details?</span>
+                    <span className="demo-message-copy">I love this saree! Could you share a few more details about it?</span>
                     <span className="demo-outgoing-meta"><time>10:41</time><FigmaReadReceipt /></span>
                   </div>
                 )}
