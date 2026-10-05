@@ -122,36 +122,37 @@
 .demo-detail-meta { margin: 2px 9px 4px; }
 .details-buy-button:disabled { cursor: default; opacity: 1; }
 .details-buy-button.demo-auto-press { animation: demo-auto-click 420ms ease 2.35s 1 both; }
-.demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #16251a; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
+.demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #111; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
 .demo-flow-screen::after { position: absolute; right: 50%; bottom: 6px; width: 62px; height: 4px; border-radius: 99px; background: #111; content: ''; transform: translateX(50%); }
 .flow-screen-topbar { display: flex; min-height: 46px; flex: 0 0 46px; align-items: center; gap: 8px; border-bottom: 1px solid #edf0eb; padding: 7px 12px; }
-.flow-screen-mark { display: flex; width: 25px; height: 25px; flex: 0 0 25px; align-items: center; justify-content: center; border-radius: 7px; background: #e8f3e8; color: #448455; font-size: 10px; font-weight: 700; }
+.flow-screen-mark { display: flex; width: 25px; height: 25px; flex: 0 0 25px; align-items: center; justify-content: center; border-radius: 7px; background: #e8f3e8; color: #111; font-size: 10px; font-weight: 700; }
 .flow-screen-brand { display: grid; min-width: 0; gap: 2px; }
-.flow-screen-brand strong { color: #33493a; font-size: 9px; font-weight: 600; }
-.flow-screen-brand small { color: #89958b; font-size: 7px; }
-.flow-screen-page { margin-left: auto; color: #87948a; font-size: 7px; font-weight: 600; letter-spacing: .06em; }
-.flow-screen-content { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 10px; overflow-y: auto; padding: 13px 12px 20px; scrollbar-width: none; }
+.flow-screen-brand strong { color: #111; font-size: 9px; font-weight: 600; }
+.flow-screen-brand small { color: #111; font-size: 7px; }
+.flow-screen-page { margin-left: auto; color: #111; font-size: 7px; font-weight: 600; letter-spacing: .06em; }
+.flow-screen-content { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 8px; overflow-y: auto; padding: 13px 12px 20px; scrollbar-width: none; }
 .flow-screen-content::-webkit-scrollbar { display: none; }
-.flow-screen-kicker { color: #629070; font-size: 7px; font-weight: 600; letter-spacing: .1em; }
-.flow-screen-intro h2 { margin: 4px 0 3px; color: #24372a; font-size: 16px; font-weight: 600; line-height: 1.15; }
-.flow-screen-intro p { margin: 0; color: #7b887d; font-size: 8px; line-height: 1.4; }
-.flow-product-card { display: flex; min-height: 60px; align-items: center; gap: 9px; border: 1px solid #d9e7da; border-radius: 7px; background: #f8fbf7; padding: 6px 8px; }
-.flow-product-card img { display: block; width: 40px; height: 48px; flex: 0 0 40px; border-radius: 4px; object-fit: cover; object-position: center; }
-.flow-product-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
-.flow-product-copy strong { overflow: hidden; color: #304d38; font-size: 8.5px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.flow-product-copy small { color: #66796b; font-size: 7.5px; font-weight: 500; }
-.flow-product-price { margin-left: auto; border-radius: 4px; background: #edf5ee; padding: 5px 6px; color: #2d7043; font-size: 9px; font-weight: 700; white-space: nowrap; }
-.flow-screen-form { display: grid; gap: 7px; }
+.flow-screen-kicker { color: #111; font-size: 7px; font-weight: 600; letter-spacing: .1em; }
+.flow-screen-intro h2 { margin: 4px 0 3px; color: #111; font-size: 16px; font-weight: 600; line-height: 1.15; }
+.flow-screen-intro p { margin: 0; color: #111; font-size: 8px; line-height: 1.4; }
+.flow-product-card { border: 1px solid #e2e2e2; border-radius: 7px; background: #fafafa; padding: 6px 7px; color: #111; }
+.flow-product-heading { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.flow-product-heading img { display: block; width: 34px; height: 40px; flex: 0 0 34px; border-radius: 4px; object-fit: cover; object-position: center; }
+.flow-product-heading strong { overflow: hidden; color: #111; font-size: 8.5px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.flow-product-details { display: grid; gap: 2px; margin: 5px 0 0; border-top: 1px solid #e5e5e5; padding-top: 4px; color: #111; }
+.flow-product-detail { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; color: #111; font-size: 6.5px; line-height: 1.15; }
+.flow-product-detail dt { flex: 0 0 auto; color: #111; }
+.flow-product-detail dd { min-width: 0; margin: 0; color: #111; font-weight: 600; text-align: right; }
+.flow-product-detail.is-price dd { font-weight: 700; }
+.flow-screen-form { display: grid; gap: 6px; }
 .flow-screen-field { display: grid; min-width: 0; gap: 3px; }
-.flow-screen-field label { color: #6e7f72; font-size: 8px; font-weight: 500; }
-.flow-screen-field input, .flow-screen-field textarea { width: 100%; min-height: 27px; border: 1px solid #dfe7df; border-radius: 4px; outline: none; background: #fff; padding: 5px 7px; color: #354b3b; font: inherit; font-size: 9px; line-height: 1.3; }
+.flow-screen-field label { color: #111; font-size: 8px; font-weight: 500; }
+.flow-screen-field input, .flow-screen-field textarea { width: 100%; min-height: 27px; border: 1px solid #dfe7df; border-radius: 4px; outline: none; background: #fff; padding: 5px 7px; color: #111; font: inherit; font-size: 9px; line-height: 1.3; }
 .flow-screen-field textarea { min-height: 38px; max-height: 38px; resize: none; }
 .flow-screen-field.is-typing input, .flow-screen-field.is-typing textarea { border-color: #5b9c6c; background: #fbfefb; box-shadow: 0 0 0 2px rgb(65 146 94 / 12%); }
 .flow-screen-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.flow-screen-submit { display: flex; width: 100%; min-height: 31px; align-items: center; justify-content: center; gap: 5px; margin-top: 1px; border: 0; border-radius: 4px; background: #238858; color: #fff; cursor: pointer; font: inherit; font-size: 8px; font-weight: 600; }
-.flow-screen-submit:disabled { cursor: wait; opacity: .72; }
-.flow-auto-note { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 0; color: #879388; text-align: center; font-size: 7px; line-height: 1.35; }
-.flow-auto-dot { width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: #36915b; box-shadow: 0 0 0 3px rgb(54 145 91 / 12%); animation: flow-auto-pulse 1.2s ease-in-out infinite; }
+.flow-screen-submit { display: flex; width: 100%; min-height: 31px; align-items: center; justify-content: center; gap: 5px; margin-top: 1px; border: 0; border-radius: 4px; background: #238858; color: #111; cursor: pointer; font: inherit; font-size: 8px; font-weight: 600; }
+.flow-screen-submit:disabled { cursor: wait; opacity: 1; }
 .demo-razorpay-screen { position: absolute; z-index: 6; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #f7f9fc; color: #182536; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
 .razorpay-topbar { display: flex; min-height: 40px; flex: 0 0 40px; align-items: center; gap: 7px; border-bottom: 1px solid #e8edf3; background: #fff; padding: 7px 11px; }
 .razorpay-logo { display: block; width: 78px; height: auto; object-fit: contain; }
@@ -318,7 +319,6 @@ button.razorpay-method { cursor: pointer; }
 .message-appear { animation: demo-rise 420ms cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes demo-auto-click { 0%, 100% { transform: scale(1); } 45% { transform: scale(.96); background: #d8eadb; } }
 @keyframes demo-flow-enter { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes flow-auto-pulse { 50% { box-shadow: 0 0 0 5px rgb(54 145 91 / 5%); opacity: .58; } }
 @keyframes demo-rise { from { opacity: 0; transform: translateY(7px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes login-spin { to { transform: rotate(360deg); } }
 
