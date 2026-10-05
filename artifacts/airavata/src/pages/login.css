@@ -299,13 +299,11 @@ button.razorpay-method { cursor: pointer; }
 .demo-message.demo-receipt time, .demo-message.demo-payment time { position: static; justify-self: end; margin-top: -1px; }
 .demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
 .payment-confirmation-note { margin: 0; color: #111b21; font-size: 10px; line-height: 1.25; }
-.payment-confirmation-links { display: grid; margin-top: 2px; border-top: 1px solid #edf0ee; }
-.payment-confirmation-links a { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 1px; color: #111b21; font-size: 9px; font-weight: 600; text-decoration: none; }
-.payment-confirmation-links a + a { border-top: 1px solid #edf0ee; }
-.payment-confirmation-links a > span { display: grid; min-width: 0; gap: 1px; }
-.payment-confirmation-links small { color: #68736c; font-size: 7px; font-weight: 400; }
-.payment-confirmation-links svg { flex: 0 0 auto; color: #548366; }
-.payment-confirmation-links a:hover { color: #176840; }
+.payment-confirmation-links { display: grid; width: calc(100% + 14px); margin: 2px -7px -4px; overflow: hidden; border-radius: 0 0 7px 7px; }
+.payment-confirmation-links .demo-template-cta { text-decoration: none; }
+.payment-confirmation-links .demo-template-cta + .demo-template-cta { border-top: 1px solid #edf0ee; }
+.payment-confirmation-links .demo-template-cta:hover { color: #176840; }
+.payment-confirmation-links svg { flex: 0 0 auto; color: currentColor; }
 .invoice-heading, .order-status-heading { display: flex; align-items: center; gap: 4px; color: #548366; font-size: 7px; font-weight: 600; letter-spacing: .07em; }
 .invoice-document { display: grid; min-width: 0; overflow: hidden; border: 1px solid #e1e9e2; border-radius: 5px; background: #fff; }
 .invoice-document-thumbnail { display: block; height: 82px; overflow: hidden; background: #eef0ee; padding: 6px 11px 0; }
