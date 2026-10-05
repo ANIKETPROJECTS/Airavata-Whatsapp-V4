@@ -91,17 +91,17 @@
 .demo-product-card { position: relative; z-index: 2; display: flex; width: 100%; flex-direction: column; overflow: hidden; border-radius: 7.69px; background: transparent; }
 .demo-product-image { display: block; width: 100%; height: 220px; object-fit: cover; object-position: center 50%; background: #eaded8; }
 .demo-product-info { display: grid; gap: 5px; background: #fff; padding: 8px 9px 9px; }
-.demo-template-label { color: #829187; font-size: 10px; font-weight: 600; letter-spacing: .04em; line-height: 1.3; }
-.demo-product-info strong { color: #33483a; font-size: 10px; font-weight: 700; line-height: 1.3; }
-.demo-product-info p { margin: 0; color: #68776d; font-size: 10px; line-height: 1.35; }
-.demo-product-meta { display: flex; align-items: center; justify-content: flex-end; gap: 5px; color: #839087; font-size: 10px; line-height: 1.3; }
-.demo-product-meta b { color: #374d3e; font-size: inherit; font-weight: 700; }
+.demo-template-label { color: #111b21; font-size: 10px; font-weight: 400; letter-spacing: 0; line-height: 1.35; }
+.demo-product-info strong { color: #111b21; font-size: 10px; font-weight: 700; line-height: 1.35; }
+.demo-product-info p { margin: 0; color: #111b21; font-size: 10px; line-height: 1.35; }
+.demo-product-meta { display: flex; align-items: center; justify-content: flex-end; gap: 5px; color: #111b21; font-size: 10px; line-height: 1.35; }
+.demo-product-meta b { color: #111b21; font-size: inherit; font-weight: 700; }
 .demo-template-cta { display: flex; min-height: 30px; align-items: center; justify-content: center; gap: 5px; border: 0; border-top: 1px solid #edf0ee; background: #fff; color: #258361; font-family: inherit; font-size: 10px; font-weight: 600; cursor: pointer; }
 .demo-template-cta:hover { background: #f7faf8; }
 .demo-template-cta:focus-visible { outline: 2px solid #258361; outline-offset: -2px; }
 .details-buy-button:hover:not(:disabled), .flow-screen-submit:hover:not(:disabled), .payment-link:hover { background: #eff7ef; }
-.demo-template-meta { display: flex; min-height: 12px; align-items: center; justify-content: flex-end; gap: 2px; background: #fff; padding: 0 6px 4px; color: rgb(0 0 0 / 50%); }
-.demo-template-meta time { font-size: 7px; }
+.demo-template-meta { display: flex; min-height: 12px; align-items: center; justify-content: flex-end; gap: 2px; background: #fff; padding: 0 9px 4px; color: rgb(0 0 0 / 50%); }
+.demo-template-meta time { font-size: 7px; line-height: 1; }
 .demo-message { position: relative; isolation: isolate; max-width: 78%; flex: 0 0 auto; border-radius: 7.69px; padding: 4px 7px 7px; color: #0a0a0a; font-size: 10px; line-height: 1.2; }
 .demo-message::before { position: absolute; z-index: 0; inset: 0; border: .423px solid rgb(0 0 0 / 6%); border-radius: inherit; background: var(--demo-bubble-fill); content: ''; pointer-events: none; }
 .demo-message > :not(time) { position: relative; z-index: 2; }

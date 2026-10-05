@@ -439,6 +439,9 @@ export default function CommerceDemo() {
                       <p>A festive new arrival, handwoven in rich crimson Katan silk with intricate gold zari detailing.</p>
                       <div className="demo-product-meta"><b>{productPrice}</b></div>
                     </div>
+                    <div className="demo-template-meta">
+                      <time>10:40</time>
+                    </div>
                     <button
                       type="button"
                       className="demo-template-cta"
@@ -448,9 +451,6 @@ export default function CommerceDemo() {
                     >
                       <ExternalLink size={10} aria-hidden="true" /> Buy Now
                     </button>
-                    <div className="demo-template-meta">
-                      <time>10:40</time>
-                    </div>
                   </div>
                 </div>
 
