@@ -13,9 +13,9 @@ The delivery-details step is for customer information, not checkout. Keep its co
 
 Keep the order-summary and payment-link bubbles in the chat history after checkout advances and payment completes. Style them as incoming WhatsApp messages with black text at the normal chat font size; render the payment action as a simple separated button row, and disable it after payment.
 
-**Why:** The user expects the conversation to retain its earlier order and payment messages and wants them to match the black, regular-size WhatsApp styling used above.
+**Why:** The user expects the conversation to retain its earlier order and payment messages, read them one at a time, and wants them to match the black, regular-size WhatsApp styling used above.
 
-**How to apply:** Render those bubbles for confirmed, Razorpay, payment-success, and paid states. Preserve the original historical payment-pending copy, but don't allow the payment action to restart checkout once processing has started.
+**How to apply:** Reveal the order summary first, then the payment link after a reading pause. Scroll each new message into view and leave the payment link visible before auto-opening Razorpay. Keep both bubbles in chat history for confirmed, Razorpay, payment-success, and paid states. Preserve the original historical payment-pending copy, but don't allow the payment action to restart checkout once processing has started.
 
 Keep payment confirmation on one Razorpay screen: show the supplied green success animation together with the amount, merchant, payment ID, selected method, and preview-only notice. Do not transition to a separate black-and-white checkmark receipt screen; continue directly to the existing WhatsApp and invoice flow.
 

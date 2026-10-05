@@ -233,6 +233,7 @@ function InvoiceDocumentPage({
 export default function CommerceDemo() {
   const prefersReducedMotion = useReducedMotion() === true;
   const [step, setStep] = useState<DemoStep>('template');
+  const [confirmedStage, setConfirmedStage] = useState<'summary' | 'paymentLink'>('summary');
   const [checkout, setCheckout] = useState<CheckoutDetails>(emptyCheckout);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [invoicePdfUrl, setInvoicePdfUrl] = useState<string | null>(null);
@@ -278,7 +279,7 @@ export default function CommerceDemo() {
       behavior: isInitialTemplate || prefersReducedMotion ? 'auto' : 'smooth',
     });
     if (shouldJumpToLatest) setShowScrollButton(false);
-  }, [step, postPaymentStage, prefersReducedMotion]);
+  }, [step, confirmedStage, postPaymentStage, prefersReducedMotion]);
 
   useEffect(() => {
     const timeouts: number[] = [];
@@ -288,7 +289,7 @@ export default function CommerceDemo() {
       timeouts.push(window.setTimeout(() => setStep('details'), 3200));
     } else if (step === 'details') {
       timeouts.push(window.setTimeout(() => setStep('flow'), 4700));
-    } else if (step === 'confirmed') {
+    } else if (step === 'confirmed' && confirmedStage === 'paymentLink') {
       timeouts.push(window.setTimeout(() => setStep('razorpay'), 4700));
     } else if (step === 'paymentSuccess') {
       timeouts.push(window.setTimeout(() => {
@@ -305,6 +306,13 @@ export default function CommerceDemo() {
       }, 9200));
     }
     return () => timeouts.forEach(timeout => window.clearTimeout(timeout));
+  }, [step, confirmedStage]);
+
+  useEffect(() => {
+    if (step !== 'confirmed') return;
+    setConfirmedStage('summary');
+    const timeout = window.setTimeout(() => setConfirmedStage('paymentLink'), 4500);
+    return () => window.clearTimeout(timeout);
   }, [step]);
 
   useEffect(() => {
@@ -322,6 +330,7 @@ export default function CommerceDemo() {
     const orderId = `INV20260901${String(nextOrderNumber.current).padStart(2, '0')}`;
     nextOrderNumber.current += 1;
     setReceipt({ ...details, orderId });
+    setConfirmedStage('summary');
     setFlowTypingField(null);
     setStep('confirmed');
   }, []);
@@ -390,6 +399,7 @@ export default function CommerceDemo() {
     setReceipt(null);
     setInvoiceFileSize('');
     setInvoiceViewerOpen(false);
+    setConfirmedStage('summary');
     setPostPaymentStage('payment');
     setRazorpayStage('upi');
     setSelectedUpiApp('Google Pay');
@@ -518,27 +528,29 @@ export default function CommerceDemo() {
                       <span className="receipt-pending">Payment pending · order is reserved</span>
                       <time>10:44 AM</time>
                     </div>
-                    <div className="demo-message from-business demo-payment message-appear" data-testid="message-demo-payment">
-                      <span className="payment-label">RAZORPAY PAYMENT LINK</span>
-                      <p>Hi {receipt.name}, here’s the final amount for your Banarasi saree:</p>
-                      <div className="receipt-line"><span>Order number</span><b>{receipt.orderId}</b></div>
-                      <div className="receipt-line"><span>Banarasi Silk Saree</span><b>{productPrice}</b></div>
-                      <div className="receipt-line"><span>CGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.cgstPaise)}</b></div>
-                      <div className="receipt-line"><span>SGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.sgstPaise)}</b></div>
-                      <div className="receipt-line"><span>Delivery charges</span><b>{formatDemoInvoiceMoney(amountBreakdown.deliveryChargePaise)}</b></div>
-                      <div className="receipt-line receipt-total"><span>Amount due</span><b>{orderTotal}</b></div>
-                      <time>10:44 AM</time>
-                      <button
-                        type="button"
-                        className="demo-template-cta payment-link"
-                        onClick={() => setStep('razorpay')}
-                        disabled={step !== 'confirmed'}
-                        aria-label={`Pay ${orderTotal} using Razorpay`}
-                        data-testid="button-demo-payment-link"
-                      >
-                        <ExternalLink size={10} aria-hidden="true" /> Pay now · {orderTotal}
-                      </button>
-                    </div>
+                    {(step !== 'confirmed' || confirmedStage === 'paymentLink') && (
+                      <div className="demo-message from-business demo-payment message-appear" data-testid="message-demo-payment">
+                        <span className="payment-label">RAZORPAY PAYMENT LINK</span>
+                        <p>Hi {receipt.name}, here’s the final amount for your Banarasi saree:</p>
+                        <div className="receipt-line"><span>Order number</span><b>{receipt.orderId}</b></div>
+                        <div className="receipt-line"><span>Banarasi Silk Saree</span><b>{productPrice}</b></div>
+                        <div className="receipt-line"><span>CGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.cgstPaise)}</b></div>
+                        <div className="receipt-line"><span>SGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.sgstPaise)}</b></div>
+                        <div className="receipt-line"><span>Delivery charges</span><b>{formatDemoInvoiceMoney(amountBreakdown.deliveryChargePaise)}</b></div>
+                        <div className="receipt-line receipt-total"><span>Amount due</span><b>{orderTotal}</b></div>
+                        <time>10:44 AM</time>
+                        <button
+                          type="button"
+                          className="demo-template-cta payment-link"
+                          onClick={() => setStep('razorpay')}
+                          disabled={step !== 'confirmed'}
+                          aria-label={`Pay ${orderTotal} using Razorpay`}
+                          data-testid="button-demo-payment-link"
+                        >
+                          <ExternalLink size={10} aria-hidden="true" /> Pay now · {orderTotal}
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
                 {step === 'paid' && receipt && (
