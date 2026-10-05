@@ -282,15 +282,21 @@ button.razorpay-method { cursor: pointer; }
 .receipt-line { display: flex; justify-content: space-between; gap: 6px; color: #111b21; font-size: 10px; }
 .receipt-line b { color: #111b21; font-weight: 600; }
 .receipt-total { border-top: 1px solid #edf0e9; padding-top: 4px; color: #111b21; font-size: 10px; font-weight: 600; }
-.receipt-address { color: #111b21; font-size: 10px; line-height: 1.2; overflow-wrap: anywhere; }
+.receipt-customer-details { display: grid; gap: 4px; border-top: 1px solid #edf0e9; padding-top: 5px; color: #111b21; }
+.receipt-customer-details > strong { font-size: 9px; font-weight: 600; }
+.receipt-customer-row { display: grid; grid-template-columns: 43px minmax(0, 1fr); align-items: baseline; gap: 5px; font-size: 9px; line-height: 1.25; }
+.receipt-customer-row > span { color: #62736a; }
+.receipt-customer-row > b { min-width: 0; color: #111b21; font-weight: 500; overflow-wrap: anywhere; text-align: right; }
 .receipt-pending { color: #111b21; font-size: 10px; }
 .demo-payment { display: grid; gap: 5px; max-width: 93%; }
 .payment-label { display: inline-flex; align-items: center; gap: 4px; color: #548366; font-size: 7px; font-weight: 600; letter-spacing: .07em; }
 .demo-payment > .payment-label { color: #111b21; font-size: 10px; letter-spacing: normal; }
 .demo-payment p { margin: 0; color: #111b21; font-size: 10px; line-height: 1.2; }
-.payment-link { box-sizing: border-box; display: flex; width: calc(100% + 14px); min-height: 30px; align-items: center; justify-content: center; gap: 4px; margin: 1px -7px -7px; border: 0; border-top: 1px solid #edf0ee; border-radius: 0 0 7px 7px; background: #fff; padding: 4px 7px; color: #111b21; cursor: pointer; font: inherit; font-size: 10px; font-weight: 600; }
+.payment-link { box-sizing: border-box; display: flex; width: calc(100% + 14px); min-height: 30px; align-items: center; justify-content: center; gap: 4px; margin: 1px -7px -4px; border: 0; border-top: 1px solid #edf0ee; border-radius: 0 0 7px 7px; background: #fff; padding: 4px 7px; color: #111b21; cursor: pointer; font: inherit; font-size: 10px; font-weight: 600; }
 .payment-link:disabled { cursor: default; }
-.demo-message.demo-receipt, .demo-message.demo-payment, .demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
+.demo-message.demo-receipt, .demo-message.demo-payment { padding-bottom: 7px; }
+.demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
+.demo-message.demo-receipt time, .demo-message.demo-payment time { position: static; justify-self: end; margin-top: -1px; }
 .demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
 .payment-confirmation-note { margin: 0; color: #111b21; font-size: 10px; line-height: 1.25; }
 .payment-confirmation-links { display: grid; margin-top: 2px; border-top: 1px solid #edf0ee; }

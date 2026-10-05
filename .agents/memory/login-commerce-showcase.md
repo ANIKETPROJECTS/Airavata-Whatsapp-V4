@@ -23,6 +23,12 @@ The post-payment confirmation should congratulate the named customer, thank them
 
 **How to apply:** Keep the copy and links inside the existing payment-confirmation bubble. Dummy destinations are for the showcase only, not production messaging.
 
+The order summary should omit the decorative check icon, use the requested invoice-style order-number format, and show the customer's name, phone, and complete delivery address below the total. Keep the Razorpay message visually consistent with the summary, with a plain heading and a clear payment action; place its timestamp after the action.
+
+**Why:** The user wants both messages to read as clear, structured WhatsApp receipts and the customer details to appear with the price breakdown.
+
+**How to apply:** Keep the same sample order ID across the chat, invoice preview, and payment context. Avoid icons in these two message headings and keep timestamps from overlapping action rows.
+
 Message timestamps use a 12-hour time with AM/PM, matching normal WhatsApp.
 
 **Why:** The user called out missing AM/PM as a difference from WhatsApp.

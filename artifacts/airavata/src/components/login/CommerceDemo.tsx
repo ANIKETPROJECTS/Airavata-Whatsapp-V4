@@ -176,7 +176,7 @@ function InvoiceDocumentPage({
         <span className="invoice-page-sample-tag">GST INVOICE<br />SAMPLE PREVIEW</span>
       </div>
       <div className="invoice-page-heading">
-        <span><h2>Tax invoice</h2><small>INV-{receipt.orderId}</small></span>
+          <span><h2>Tax invoice</h2><small>{receipt.orderId}</small></span>
         <span className="invoice-page-validity">Not valid for tax claim</span>
       </div>
       <div className="invoice-page-summary">
@@ -246,7 +246,7 @@ export default function CommerceDemo() {
   const demoStageRef = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const invoiceViewerShownRef = useRef(false);
-  const nextOrderNumber = useRef(2048);
+  const nextOrderNumber = useRef(15);
 
   useEffect(() => {
     const stage = demoStageRef.current;
@@ -318,7 +318,7 @@ export default function CommerceDemo() {
   }, [invoiceViewerOpen]);
 
   const completeCheckout = useCallback((details: CheckoutDetails) => {
-    const orderId = `ATW-${nextOrderNumber.current}`;
+    const orderId = `INV20260901${String(nextOrderNumber.current).padStart(2, '0')}`;
     nextOrderNumber.current += 1;
     setReceipt({ ...details, orderId });
     setFlowTypingField(null);
@@ -498,20 +498,26 @@ export default function CommerceDemo() {
                 {(step === 'confirmed' || step === 'razorpay' || step === 'paymentSuccess' || step === 'paid') && receipt && (
                   <>
                     <div className="demo-message from-business demo-receipt message-appear" data-testid="message-demo-receipt">
-                      <span className="receipt-heading"><Check size={11} /> ORDER SUMMARY</span>
+                      <span className="receipt-heading">ORDER SUMMARY</span>
                       <strong className="receipt-thanks">Thanks, {receipt.name}! Your saree is reserved.</strong>
                       <div className="receipt-line"><span>Order number</span><b>{receipt.orderId}</b></div>
                       <div className="receipt-line"><span>Banarasi Silk Saree</span><b>{productPrice}</b></div>
                       <div className="receipt-line receipt-total"><span>Total</span><b>{productPrice}</b></div>
-                      <div className="receipt-address">
-                        Delivering to {receipt.address}, {receipt.city} {receipt.pinCode}
+                      <div className="receipt-customer-details" aria-label="Customer delivery details">
+                        <strong>Customer details</strong>
+                        <div className="receipt-customer-row"><span>Name</span><b>{receipt.name}</b></div>
+                        <div className="receipt-customer-row"><span>Number</span><b>{receipt.phone}</b></div>
+                        <div className="receipt-customer-row"><span>Address</span><b>{receipt.address}, {receipt.city}, {receipt.pinCode}</b></div>
                       </div>
                       <span className="receipt-pending">Payment pending · order is reserved</span>
                       <time>10:44 AM</time>
                     </div>
                     <div className="demo-message from-business demo-payment message-appear" data-testid="message-demo-payment">
-                      <span className="payment-label"><ShieldCheck size={11} /> RAZORPAY PAYMENT LINK</span>
-                      <p>Continue to secure checkout to confirm your order.</p>
+                      <span className="payment-label">RAZORPAY PAYMENT LINK</span>
+                      <p>Hi {receipt.name}, complete payment to confirm your order.</p>
+                      <div className="receipt-line"><span>Order number</span><b>{receipt.orderId}</b></div>
+                      <div className="receipt-line"><span>Banarasi Silk Saree</span><b>{productPrice}</b></div>
+                      <div className="receipt-line receipt-total"><span>Amount due</span><b>{productPrice}</b></div>
                       <button
                         type="button"
                         className="payment-link"
@@ -519,7 +525,7 @@ export default function CommerceDemo() {
                         disabled={step !== 'confirmed'}
                         data-testid="button-demo-payment-link"
                       >
-                        Pay with Razorpay · {productPrice} <ArrowRight size={11} />
+                        Pay {productPrice} with Razorpay
                       </button>
                       <time>10:44 AM</time>
                     </div>

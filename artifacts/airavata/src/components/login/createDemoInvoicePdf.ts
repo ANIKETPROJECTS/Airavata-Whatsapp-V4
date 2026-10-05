@@ -89,7 +89,7 @@ export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt, paymentMethod 
     pdfText('NOT VALID FOR TAX CLAIM', 404, 762, 6, '/F2', '0.60 0.34 0.27'),
 
     pdfText('Tax invoice', 50, 718, 20, '/F2', '0.12 0.20 0.29'),
-    pdfText(`Invoice no.  INV-${receipt.orderId}`, 50, 699, 8, '/F2', '0.35 0.43 0.50'),
+    pdfText(`Invoice no.  ${receipt.orderId}`, 50, 699, 8, '/F2', '0.35 0.43 0.50'),
     pdfText('INVOICE DATE', 374, 719, 6, '/F2', '0.48 0.55 0.61'),
     pdfText(invoiceDate, 374, 702, 9, '/F2', '0.16 0.25 0.33'),
     pdfText('ORDER NUMBER', 470, 719, 6, '/F2', '0.48 0.55 0.61'),
