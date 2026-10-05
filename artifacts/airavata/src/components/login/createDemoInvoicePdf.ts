@@ -7,19 +7,21 @@ export type DemoInvoiceReceipt = {
   orderId: string;
 };
 
-const invoiceTotalPaise = 649_000;
+const taxableValuePaise = 649_000;
+const deliveryChargePaise = 9_900;
 
 export function getDemoInvoiceAmounts() {
-  const taxablePaise = Math.round(invoiceTotalPaise * 100 / 105);
-  const gstPaise = invoiceTotalPaise - taxablePaise;
-  const cgstPaise = Math.floor(gstPaise / 2);
+  const cgstPaise = Math.round(taxableValuePaise * 25 / 1_000);
+  const sgstPaise = cgstPaise;
+  const gstPaise = cgstPaise + sgstPaise;
 
   return {
-    totalPaise: invoiceTotalPaise,
-    taxablePaise,
+    totalPaise: taxableValuePaise + gstPaise + deliveryChargePaise,
+    taxablePaise: taxableValuePaise,
     cgstPaise,
-    sgstPaise: gstPaise - cgstPaise,
+    sgstPaise,
     gstPaise,
+    deliveryChargePaise,
   };
 }
 
@@ -115,17 +117,17 @@ export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt, paymentMethod 
     pdfText('HSN', 300, 527, 6, '/F2', '0.34 0.43 0.50'),
     pdfText('QTY', 352, 527, 6, '/F2', '0.34 0.43 0.50'),
     pdfText('TAXABLE VALUE', 390, 527, 6, '/F2', '0.34 0.43 0.50'),
-    pdfText('TOTAL', 494, 527, 6, '/F2', '0.34 0.43 0.50'),
+    pdfText('BASE PRICE', 494, 527, 6, '/F2', '0.34 0.43 0.50'),
     pdfText('Banarasi Silk Saree', 62, 498, 8, '/F2', '0.16 0.25 0.33'),
     pdfText('Pure Katan silk - 6.3 m', 62, 483, 7, '/F1', '0.48 0.55 0.61'),
     pdfText('5007', 300, 498, 7, '/F1', '0.27 0.36 0.43'),
     pdfText('1', 352, 498, 7, '/F1', '0.27 0.36 0.43'),
     pdfText(pdfMoney(tax.taxablePaise), 390, 498, 7, '/F1', '0.27 0.36 0.43'),
-    pdfText(pdfMoney(tax.totalPaise), 494, 498, 7, '/F2', '0.16 0.25 0.33'),
+    pdfText(pdfMoney(tax.taxablePaise), 494, 498, 7, '/F2', '0.16 0.25 0.33'),
     pdfRule(472),
 
-    pdfRect(50, 355, 239, 101, '0.97 0.98 0.99'),
-    pdfRect(302, 355, 243, 101, '0.97 0.98 0.99'),
+    pdfRect(50, 338, 239, 118, '0.97 0.98 0.99'),
+    pdfRect(302, 338, 243, 118, '0.97 0.98 0.99'),
     pdfText('PAYMENT DETAILS', 63, 437, 7, '/F2', '0.12 0.39 0.65'),
     pdfText('Status', 63, 418, 7, '/F1', '0.48 0.55 0.61'),
     pdfText('Successful in preview only', 146, 418, 7, '/F2', '0.18 0.42 0.29'),
@@ -141,12 +143,14 @@ export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt, paymentMethod 
     pdfText(pdfMoney(tax.cgstPaise), 475, 402, 7, '/F1', '0.27 0.36 0.43'),
     pdfText('SGST @ 2.5%', 316, 386, 7, '/F1', '0.35 0.43 0.50'),
     pdfText(pdfMoney(tax.sgstPaise), 475, 386, 7, '/F1', '0.27 0.36 0.43'),
-    pdfRule(374),
-    pdfText('Total payable (incl. GST)', 316, 361, 7, '/F2', '0.16 0.25 0.33'),
-    pdfText(pdfMoney(tax.totalPaise), 475, 361, 8, '/F2', '0.12 0.39 0.31'),
+    pdfText('Delivery charge', 316, 370, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(pdfMoney(tax.deliveryChargePaise), 475, 370, 7, '/F1', '0.27 0.36 0.43'),
+    pdfRule(358),
+    pdfText('Total payable (GST + delivery)', 316, 345, 7, '/F2', '0.16 0.25 0.33'),
+    pdfText(pdfMoney(tax.totalPaise), 475, 345, 8, '/F2', '0.12 0.39 0.31'),
 
-    pdfText('GST rate: 5%  |  HSN 5007  |  Total GST included:  ' + pdfMoney(tax.gstPaise), 50, 333, 8, '/F2', '0.16 0.25 0.33'),
-    pdfText('Amount in words: Indian Rupees Six Thousand Four Hundred Ninety Only', 50, 315, 8, '/F1', '0.35 0.43 0.50'),
+    pdfText('GST rate: 5%  |  HSN 5007  |  GST: ' + pdfMoney(tax.gstPaise) + '  |  Delivery: ' + pdfMoney(tax.deliveryChargePaise), 50, 333, 8, '/F2', '0.16 0.25 0.33'),
+    pdfText('Amount in words: Indian Rupees Six Thousand Nine Hundred Thirteen and Fifty Paise Only', 50, 315, 8, '/F1', '0.35 0.43 0.50'),
     pdfText('Order status: Processing', 50, 297, 8, '/F1', '0.35 0.43 0.50'),
 
     pdfRect(50, 214, 495, 61, '0.96 0.97 0.95'),

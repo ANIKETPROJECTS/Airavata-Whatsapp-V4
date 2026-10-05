@@ -29,6 +29,12 @@ The order summary should omit the decorative check icon, use the requested invoi
 
 **How to apply:** Keep the same sample order ID across the chat, invoice preview, and payment context. Avoid icons in these two message headings and keep timestamps from overlapping action rows.
 
+Keep the saree base price separate from sample CGST, SGST, and delivery charges, and use the same computed payable total in the order summary, Razorpay simulation, payment confirmation, and sample invoice. Keep the revised payment confirmation warm and celebratory while preserving payment reference and method.
+
+**Why:** The user asked for a visible charge breakdown and consistent total across the payment journey, plus a more personal paid message.
+
+**How to apply:** Calculate in paise, show each charge as a separate row, and keep all GST/invoice language clearly illustrative and preview-only.
+
 Message timestamps use a 12-hour time with AM/PM, matching normal WhatsApp.
 
 **Why:** The user called out missing AM/PM as a difference from WhatsApp.

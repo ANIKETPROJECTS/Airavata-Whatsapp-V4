@@ -200,31 +200,32 @@ function InvoiceDocumentPage({
       </div>
       <p className="invoice-page-supply">Place of supply: Uttar Pradesh · Intra-state sample sale</p>
       <div className="invoice-page-table">
-        <div className="invoice-page-table-head"><span>DESCRIPTION</span><span>HSN</span><span>QTY</span><span>INCL. GST</span></div>
+        <div className="invoice-page-table-head"><span>DESCRIPTION</span><span>HSN</span><span>QTY</span><span>BASE PRICE</span></div>
         <div className="invoice-page-item">
           <span>Banarasi Silk Saree<small>Pure Katan silk · 6.3 m</small></span>
-          <span>5007</span><span>1</span><strong>{formatDemoInvoiceMoney(tax.totalPaise)}</strong>
+          <span>5007</span><span>1</span><strong>{formatDemoInvoiceMoney(tax.taxablePaise)}</strong>
         </div>
       </div>
       <div className="invoice-page-accounting">
         <div className="invoice-page-tax-list">
-          <strong>GST BREAKUP · INCLUDED IN PRICE</strong>
+          <strong>GST BREAKUP · SAMPLE</strong>
           <span><small>Taxable value</small><b>{formatDemoInvoiceMoney(tax.taxablePaise)}</b></span>
           <span><small>CGST @ 2.5%</small><b>{formatDemoInvoiceMoney(tax.cgstPaise)}</b></span>
           <span><small>SGST @ 2.5%</small><b>{formatDemoInvoiceMoney(tax.sgstPaise)}</b></span>
+          <span><small>Delivery charge</small><b>{formatDemoInvoiceMoney(tax.deliveryChargePaise)}</b></span>
           <span className="invoice-page-gst-total"><small>Total GST · 5%</small><b>{formatDemoInvoiceMoney(tax.gstPaise)}</b></span>
         </div>
         <div className="invoice-page-grand-total">
           <small>TOTAL PAID</small>
           <strong>{formatDemoInvoiceMoney(tax.totalPaise)}</strong>
-          <span>Includes GST</span>
+          <span>GST + delivery</span>
         </div>
       </div>
       <div className="invoice-page-payment-ref">
         <span>Payment reference <strong>{paymentId}</strong></span>
         <span>Order status <strong>Processing</strong></span>
       </div>
-      <p className="invoice-page-amount-words">Amount in words: Indian Rupees Six Thousand Four Hundred Ninety Only</p>
+      <p className="invoice-page-amount-words">Amount in words: Indian Rupees Six Thousand Nine Hundred Thirteen and Fifty Paise Only</p>
       <small className="invoice-page-disclaimer">Sample invoice preview. GSTIN is not configured. No payment or order was created; do not use for tax claims.</small>
     </article>
   );
@@ -398,6 +399,8 @@ export default function CommerceDemo() {
 
   const screenScale = screenWidth / 252;
   const screenHeight = Math.round(524 * screenScale);
+  const amountBreakdown = getDemoInvoiceAmounts();
+  const orderTotal = formatDemoInvoiceMoney(amountBreakdown.totalPaise);
   const checkoutReady = Object.values(checkout).every(Boolean);
 
   return (
@@ -502,7 +505,10 @@ export default function CommerceDemo() {
                       <strong className="receipt-thanks">Thanks, {receipt.name}! Your saree is reserved.</strong>
                       <div className="receipt-line"><span>Order number</span><b>{receipt.orderId}</b></div>
                       <div className="receipt-line"><span>Banarasi Silk Saree</span><b>{productPrice}</b></div>
-                      <div className="receipt-line receipt-total"><span>Total</span><b>{productPrice}</b></div>
+                      <div className="receipt-line"><span>CGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.cgstPaise)}</b></div>
+                      <div className="receipt-line"><span>SGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.sgstPaise)}</b></div>
+                      <div className="receipt-line"><span>Delivery charges</span><b>{formatDemoInvoiceMoney(amountBreakdown.deliveryChargePaise)}</b></div>
+                      <div className="receipt-line receipt-total"><span>Total</span><b>{orderTotal}</b></div>
                       <div className="receipt-customer-details" aria-label="Customer delivery details">
                         <strong>Customer details</strong>
                         <div className="receipt-customer-row"><span>Name</span><b>{receipt.name}</b></div>
@@ -514,18 +520,21 @@ export default function CommerceDemo() {
                     </div>
                     <div className="demo-message from-business demo-payment message-appear" data-testid="message-demo-payment">
                       <span className="payment-label">RAZORPAY PAYMENT LINK</span>
-                      <p>Hi {receipt.name}, complete payment to confirm your order.</p>
+                      <p>Hi {receipt.name}, here’s the final amount for your Banarasi saree:</p>
                       <div className="receipt-line"><span>Order number</span><b>{receipt.orderId}</b></div>
                       <div className="receipt-line"><span>Banarasi Silk Saree</span><b>{productPrice}</b></div>
-                      <div className="receipt-line receipt-total"><span>Amount due</span><b>{productPrice}</b></div>
+                      <div className="receipt-line"><span>CGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.cgstPaise)}</b></div>
+                      <div className="receipt-line"><span>SGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.sgstPaise)}</b></div>
+                      <div className="receipt-line"><span>Delivery charges</span><b>{formatDemoInvoiceMoney(amountBreakdown.deliveryChargePaise)}</b></div>
+                      <div className="receipt-line receipt-total"><span>Amount due</span><b>{orderTotal}</b></div>
                       <button
                         type="button"
-                        className="payment-link"
+                        className="demo-template-cta payment-link"
                         onClick={() => setStep('razorpay')}
                         disabled={step !== 'confirmed'}
                         data-testid="button-demo-payment-link"
                       >
-                        Pay {productPrice} with Razorpay
+                        Pay now · {orderTotal}
                       </button>
                       <time>10:44 AM</time>
                     </div>
@@ -535,9 +544,9 @@ export default function CommerceDemo() {
                   <>
                     <div className="demo-message from-business demo-payment-confirmation message-appear" data-testid="message-demo-payment-success">
                       <span className="payment-label"><Check size={11} /> PAYMENT CONFIRMED</span>
-                      <strong className="receipt-thanks">Payment received · {productPrice}</strong>
+                      <strong className="receipt-thanks">Payment received · {orderTotal}</strong>
                       <p className="payment-confirmation-note">
-                        Congratulations, {receipt.name}! 🎉 Your order is confirmed. Thank you for choosing Rangrez Studio—we hope your Banarasi saree brings joy to every celebration.
+                        🎉 Yay, {receipt.name}! Your payment is confirmed and your Banarasi saree is being prepared with care. Thank you for choosing Rangrez Studio! We’ll share tracking details as soon as it’s dispatched. 💛✨
                       </p>
                       <div className="receipt-line"><span>Payment ID</span><b>{getPaymentReference(receipt.orderId)}</b></div>
                       <div className="receipt-line"><span>Method</span><b>UPI</b></div>
@@ -723,7 +732,7 @@ export default function CommerceDemo() {
                         </div>
                         <div className="razorpay-total">
                           <span>Total</span>
-                          <strong>{productPrice}</strong>
+                          <strong>{orderTotal}</strong>
                         </div>
                       </div>
                       <div className="razorpay-checkout-content">
@@ -781,7 +790,7 @@ export default function CommerceDemo() {
                           {razorpayStage === 'processing' ? (
                             <><LoaderCircle size={12} className="razorpay-spinner" /> Processing securely…</>
                           ) : (
-                            <><span>Pay {productPrice}</span><span>Continue <ArrowRight size={10} /></span></>
+                            <><span>Pay {orderTotal}</span><span>Continue <ArrowRight size={10} /></span></>
                           )}
                         </button>
                         <p className="razorpay-preview-note"><ShieldCheck size={9} /> Preview only · no payment is processed</p>
@@ -791,7 +800,7 @@ export default function CommerceDemo() {
                     <div className="razorpay-success-content" data-testid="message-demo-razorpay-success">
                       <span className="razorpay-success-icon"><Check size={22} /></span>
                       <span className="razorpay-success-label">PAYMENT SUCCESSFUL</span>
-                      <h2>{productPrice}</h2>
+                      <h2>{orderTotal}</h2>
                       <p>Paid to <strong>Rangrez Studio</strong></p>
                       <div className="razorpay-success-details">
                         <span><small>Payment ID</small><strong>{getPaymentReference(receipt.orderId)}</strong></span>
