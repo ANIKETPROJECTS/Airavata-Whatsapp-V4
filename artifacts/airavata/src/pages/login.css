@@ -123,7 +123,6 @@
 .details-buy-button:disabled { cursor: default; opacity: 1; }
 .details-buy-button.demo-auto-press { animation: demo-auto-click 420ms ease 2.35s 1 both; }
 .demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #111; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
-.demo-flow-screen::after { position: absolute; right: 50%; bottom: 6px; width: 62px; height: 4px; border-radius: 99px; background: #111; content: ''; transform: translateX(50%); }
 .flow-screen-topbar { display: flex; min-height: 46px; flex: 0 0 46px; align-items: center; gap: 8px; border-bottom: 1px solid #edf0eb; padding: 7px 12px; }
 .flow-screen-mark { display: flex; width: 25px; height: 25px; flex: 0 0 25px; align-items: center; justify-content: center; border-radius: 7px; background: #e8f3e8; color: #111; font-size: 10px; font-weight: 700; }
 .flow-screen-brand { display: grid; min-width: 0; gap: 2px; }
@@ -143,8 +142,8 @@
 .flow-product-heading strong { min-width: 0; overflow: hidden; color: #111; font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .flow-product-price { flex: 0 0 auto; color: #111; font-size: 10px; font-weight: 700; white-space: nowrap; }
 .flow-product-copy p { margin: 0; color: #111; font-size: 8px; line-height: 1.3; }
-.flow-product-details { display: grid; gap: 2px; margin: 5px 0 0; border-top: 1px solid #e5e5e5; padding-top: 4px; color: #111; }
-.flow-product-detail { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; color: #111; font-size: 6.5px; line-height: 1.15; }
+.flow-product-details { display: grid; gap: 3px; margin: 6px 0 0; border-top: 1px solid #e5e5e5; padding-top: 5px; color: #111; }
+.flow-product-detail { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: #111; font-size: 7.5px; line-height: 1.25; }
 .flow-product-detail dt { flex: 0 0 auto; color: #111; }
 .flow-product-detail dd { min-width: 0; margin: 0; color: #111; font-weight: 600; text-align: right; }
 .flow-product-detail.is-price dd { font-weight: 700; }

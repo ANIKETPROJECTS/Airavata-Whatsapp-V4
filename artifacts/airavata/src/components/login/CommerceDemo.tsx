@@ -629,9 +629,16 @@ export default function CommerceDemo() {
                             <strong>Banarasi Silk Saree</strong>
                             <b className="flow-product-price">{productPrice}</b>
                           </div>
-                          <p>Pure Katan silk with gold zari work and a matching unstitched blouse.</p>
+                          <p>Handwoven Banarasi silk in a rich crimson finish for festive occasions.</p>
                         </div>
                       </div>
+                      <dl className="flow-product-details" aria-label="Product specifications">
+                        <div className="flow-product-detail"><dt>Fabric</dt><dd>Pure Katan silk</dd></div>
+                        <div className="flow-product-detail"><dt>Length</dt><dd>6.3 metres</dd></div>
+                        <div className="flow-product-detail"><dt>Blouse</dt><dd>Matching unstitched piece</dd></div>
+                        <div className="flow-product-detail"><dt>Work &amp; care</dt><dd>Gold zari · dry clean</dd></div>
+                        <div className="flow-product-detail"><dt>Delivery</dt><dd>Ships in 2–4 days</dd></div>
+                      </dl>
                     </div>
                     <form className="flow-screen-form" onSubmit={submitCheckout}>
                       <div className={`flow-screen-field ${flowTypingField === 'name' ? 'is-typing' : ''}`}>
