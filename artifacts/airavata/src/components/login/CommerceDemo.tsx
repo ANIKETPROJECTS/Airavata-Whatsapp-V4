@@ -7,6 +7,7 @@ import {
   ChevronDown,
   CreditCard,
   Download,
+  ExternalLink,
   FileText,
   LoaderCircle,
   LockKeyhole,
@@ -269,10 +270,11 @@ export default function CommerceDemo() {
     if (!chatBody) return;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isInitialTemplate = step === 'template';
     const shouldJumpToLatest = step === 'confirmed' || step === 'paid';
     chatBody.scrollTo({
-      top: chatBody.scrollHeight,
-      behavior: prefersReducedMotion || shouldJumpToLatest ? 'auto' : 'smooth',
+      top: isInitialTemplate ? 0 : chatBody.scrollHeight,
+      behavior: isInitialTemplate || prefersReducedMotion || shouldJumpToLatest ? 'auto' : 'smooth',
     });
     if (shouldJumpToLatest) setShowScrollButton(false);
   }, [step, postPaymentStage]);
@@ -435,8 +437,17 @@ export default function CommerceDemo() {
                       <span className="demo-template-label">NEW ARRIVAL · BANARASI COLLECTION</span>
                       <strong>Banarasi Silk Saree</strong>
                       <p>A festive new arrival, handwoven in rich crimson Katan silk with intricate gold zari detailing.</p>
-                      <div className="demo-product-meta"><span>Pure Katan · 6.3 m</span><b>{productPrice}</b></div>
+                      <div className="demo-product-meta"><b>{productPrice}</b></div>
                     </div>
+                    <button
+                      type="button"
+                      className="demo-template-cta"
+                      onClick={openCheckoutFlow}
+                      aria-label={`Buy Banarasi Silk Saree for ${productPrice}`}
+                      data-testid="button-demo-template-buy-now"
+                    >
+                      <ExternalLink size={10} aria-hidden="true" /> Buy Now
+                    </button>
                     <div className="demo-template-meta">
                       <time>10:40</time>
                     </div>
