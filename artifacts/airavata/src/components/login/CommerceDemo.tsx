@@ -456,7 +456,7 @@ export default function CommerceDemo() {
 
                 {step !== 'template' && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-customer-question">
-                    <span className="demo-message-copy">I love this saree! Could you share a few more details about it?</span>
+                    <span className="demo-message-copy">I love this saree! 😍 Could you share a few more details about it?</span>
                     <span className="demo-outgoing-meta"><time>10:41</time><FigmaReadReceipt /></span>
                   </div>
                 )}
@@ -472,7 +472,7 @@ export default function CommerceDemo() {
                         <div className="demo-spec-row"><span>Work & care</span><b>Gold zari · dry clean</b></div>
                         <div className="demo-spec-row"><span>Delivery time</span><b>Ships in 2–4 days</b></div>
                       </div>
-                      <div className="demo-detail-price">{productPrice}</div>
+                      <div className="demo-detail-price"><span>Price:</span><b>{productPrice}</b></div>
                     </div>
                     <span className="demo-incoming-meta demo-detail-meta"><time>10:42</time></span>
                     <button

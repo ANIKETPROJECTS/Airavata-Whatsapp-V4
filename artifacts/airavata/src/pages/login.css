@@ -119,7 +119,8 @@
 .demo-spec-list { display: grid; gap: 3px; margin-top: 2px; }
 .demo-spec-row { display: flex; align-items: baseline; justify-content: space-between; gap: 7px; color: #111b21; font-size: 10px; line-height: 1.2; }
 .demo-spec-row b { color: #111b21; font-size: 10px; font-weight: 700; text-align: right; }
-.demo-detail-price { margin-top: 1px; color: #111b21; font-size: 10px; font-weight: 700; text-align: left; }
+.demo-detail-price { display: flex; align-items: baseline; gap: 4px; margin-top: 1px; color: #111b21; font-size: 10px; font-weight: 400; text-align: left; }
+.demo-detail-price b { color: #111b21; font-size: 10px; font-weight: 700; }
 .demo-detail-meta { margin: 2px 9px 4px; }
 .details-buy-button:disabled { cursor: default; opacity: 1; }
 .details-buy-button.demo-auto-press { animation: demo-auto-click 420ms ease 2.35s 1 both; }
