@@ -5,11 +5,11 @@ description: Required behavior for the customer-facing WhatsApp commerce demo on
 
 The showcase is viewed on the customer's phone. Rangrez Studio's product template arrives first, then the customer asks for details; the chatbot replies with specs and Buy Now, a WhatsApp Flow collects customer delivery details using fabricated preview data, and a receipt plus simulated payment link appear. A separate Razorpay screen handles the simulated payment, then completes locally, generates a PDF invoice attachment, and shows Paid · Processing. Business messages are incoming left-side white bubbles; customer messages are outgoing right-side green bubbles. Keep the journey local and do not send details, create real orders, or initiate payments.
 
-The delivery-details step is for customer information, not checkout. Keep its customer/delivery language separate from the later payment screen, and preserve the preview-only notice.
+The delivery-details step is for customer information, not checkout. Keep its copy black, show the full product attributes before the customer fields, omit the preview note/dot, and label the CTA “Save Details”; payment remains on the separate Razorpay screen.
 
-**Why:** The user explicitly corrected checkout framing on the form because it collects customer details; conflating it with payment misstates the screen's purpose.
+**Why:** The user explicitly defined this screen as customer-detail collection and requested a complete product summary, black text, and no preview-status note.
 
-**How to apply:** Do not label the delivery-details form “secure checkout” or add payment UI to it. Keep payment methods and payment copy on the distinct Razorpay step.
+**How to apply:** Do not label the delivery-details form “secure checkout” or add payment UI to it. Keep its details local and preview-only without displaying the removed note. Keep payment methods and copy on the distinct Razorpay step.
 
 Message timestamps use a 12-hour time with AM/PM, matching normal WhatsApp.
 
