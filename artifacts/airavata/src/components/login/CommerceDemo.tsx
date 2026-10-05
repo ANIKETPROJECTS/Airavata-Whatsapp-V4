@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Lottie } from 'lottie-react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   Building2,
@@ -66,6 +66,7 @@ const checkoutProfile: CheckoutDetails = {
 
 const productPrice = '₹6,490';
 const figmaCanvasScale = 252 / 393;
+const LazyLottie = lazy(() => import('lottie-react').then(({ Lottie }) => ({ default: Lottie })));
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -230,6 +231,7 @@ function InvoiceDocumentPage({
 }
 
 export default function CommerceDemo() {
+  const prefersReducedMotion = useReducedMotion() === true;
   const [step, setStep] = useState<DemoStep>('template');
   const [checkout, setCheckout] = useState<CheckoutDetails>(emptyCheckout);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -269,15 +271,14 @@ export default function CommerceDemo() {
     const chatBody = chatBodyRef.current;
     if (!chatBody) return;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isInitialTemplate = step === 'template';
     const shouldJumpToLatest = step === 'confirmed' || step === 'paid';
     chatBody.scrollTo({
       top: isInitialTemplate ? 0 : chatBody.scrollHeight,
-      behavior: isInitialTemplate || prefersReducedMotion || shouldJumpToLatest ? 'auto' : 'smooth',
+      behavior: isInitialTemplate || prefersReducedMotion ? 'auto' : 'smooth',
     });
     if (shouldJumpToLatest) setShowScrollButton(false);
-  }, [step, postPaymentStage]);
+  }, [step, postPaymentStage, prefersReducedMotion]);
 
   useEffect(() => {
     const timeouts: number[] = [];
@@ -321,7 +322,7 @@ export default function CommerceDemo() {
   }, []);
 
   useEffect(() => {
-    if (!receipt) {
+    if (!receipt || step !== 'paid') {
       setInvoicePdfUrl(null);
       setInvoiceFileSize('');
       return;
@@ -332,7 +333,7 @@ export default function CommerceDemo() {
     setInvoiceFileSize(formatFileSize(invoicePdf.size));
     setInvoicePdfUrl(invoiceUrl);
     return () => URL.revokeObjectURL(invoiceUrl);
-  }, [receipt, selectedUpiApp]);
+  }, [receipt, selectedUpiApp, step]);
 
   useEffect(() => {
     if (step !== 'flow') return;
@@ -632,8 +633,19 @@ export default function CommerceDemo() {
                   <FigmaSvgCrop x={0} y={1625} width={393} height={45} className="demo-composer-art" />
                 </div>
               </div>
+              <AnimatePresence mode="wait" initial={false}>
               {step === 'flow' && (
-                <div className="demo-flow-screen" role="region" aria-label="WhatsApp Flow delivery form" data-testid="card-demo-flow">
+                <motion.div
+                  key="flow"
+                  className="demo-flow-screen"
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 28, scale: 0.99 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -18, scale: 0.99 }}
+                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+                  role="region"
+                  aria-label="WhatsApp Flow delivery form"
+                  data-testid="card-demo-flow"
+                >
                   <div className="flow-screen-topbar">
                     <span className="flow-screen-mark">R</span>
                     <span className="flow-screen-brand">
@@ -695,7 +707,7 @@ export default function CommerceDemo() {
                       </button>
                     </form>
                   </div>
-                </div>
+                </motion.div>
               )}
               {(step === 'razorpay' || step === 'paymentSuccess') && receipt && (
                 <div
