@@ -23,11 +23,11 @@ The post-payment confirmation should start with a congratulatory named-customer 
 
 **How to apply:** Keep the copy and links inside the existing payment-confirmation bubble. Place the timestamp between the payment details and the two action rows. Dummy destinations are for the showcase only, not production messaging.
 
-For the WhatsApp invoice attachment, omit the extra heading, show a full-width white preview of roughly the top half of the invoice page, and use the supplied transparent PDF icon without a gray tile or gutter. Keep the filename and file-size row.
+For the WhatsApp invoice attachment, omit the extra bubble heading and the invoice's “GST INVOICE / SAMPLE PREVIEW” badge. Show a full-width white preview of roughly the top half of the invoice page, and use the supplied transparent PDF icon without a gray tile or gutter. Keep the filename and file-size row.
 
-**Why:** The user wants the invoice page itself to be the focus and the attachment to resemble a native WhatsApp PDF card.
+**Why:** The user wants a readable, professional invoice page and a native-looking WhatsApp PDF attachment without implying a valid tax invoice.
 
-**How to apply:** Keep the page crop clean and legible, preserve the clickable attachment row, and retain the sample/no-tax-claim disclaimers inside the invoice.
+**How to apply:** Use larger black text and neutral section styling in both the on-screen invoice and generated PDF. Keep the page crop clean, preserve the clickable attachment row, and retain clear preview/no-tax-claim disclaimers inside the invoice.
 
 The order summary should omit the decorative check icon, use the requested invoice-style order-number format, and show the customer's name, phone, and complete delivery address below the total. Keep the Razorpay message visually consistent with the summary, with a plain heading and a clear payment action; place its timestamp after the action.
 

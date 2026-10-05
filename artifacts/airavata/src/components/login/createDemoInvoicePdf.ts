@@ -58,9 +58,10 @@ function pdfText(
   y: number,
   size: number,
   font = '/F1',
-  color = '0.24 0.31 0.26',
+  _color = '0 0 0',
 ): string {
-  return `${color} rg\nBT ${font} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${escapePdfText(value)}) Tj ET`;
+  const fontSize = size < 14 ? size * 1.28 : size;
+  return `0 0 0 rg\nBT ${font} ${fontSize.toFixed(2)} Tf 1 0 0 1 ${x} ${y} Tm (${escapePdfText(value)}) Tj ET`;
 }
 
 function pdfRect(x: number, y: number, width: number, height: number, color: string): string {
@@ -87,10 +88,9 @@ export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt, paymentMethod 
     pdfRect(50, 748, 495, 56, '0.95 0.97 0.99'),
     pdfText('RANGREZ STUDIO', 66, 779, 18, '/F2', '0.11 0.29 0.23'),
     pdfText('HANDWOVEN BANARASI TEXTILES', 66, 761, 7, '/F1', '0.39 0.48 0.44'),
-    pdfText('SAMPLE GST INVOICE', 404, 779, 8, '/F2', '0.12 0.39 0.65'),
     pdfText('NOT VALID FOR TAX CLAIM', 404, 762, 6, '/F2', '0.60 0.34 0.27'),
 
-    pdfText('Tax invoice', 50, 718, 20, '/F2', '0.12 0.20 0.29'),
+    pdfText('Invoice', 50, 718, 23, '/F2', '0.12 0.20 0.29'),
     pdfText(`Invoice no.  ${receipt.orderId}`, 50, 699, 8, '/F2', '0.35 0.43 0.50'),
     pdfText('INVOICE DATE', 374, 719, 6, '/F2', '0.48 0.55 0.61'),
     pdfText(invoiceDate, 374, 702, 9, '/F2', '0.16 0.25 0.33'),
@@ -98,19 +98,18 @@ export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt, paymentMethod 
     pdfText(receipt.orderId, 470, 702, 8, '/F2', '0.16 0.25 0.33'),
     pdfRule(687),
 
-    pdfRect(50, 589, 241, 82, '0.97 0.98 0.99'),
-    pdfRect(304, 589, 241, 82, '0.97 0.98 0.99'),
-    pdfText('SOLD BY', 63, 653, 7, '/F2', '0.12 0.39 0.65'),
-    pdfText('Rangrez Studio - sample merchant', 63, 636, 9, '/F2', '0.16 0.25 0.33'),
-    pdfText('Varanasi, Uttar Pradesh 221001', 63, 619, 7, '/F1', '0.35 0.43 0.50'),
-    pdfText('GSTIN: Not configured (sample)', 63, 603, 7, '/F1', '0.35 0.43 0.50'),
-    pdfText('BILL TO / SHIP TO', 317, 653, 7, '/F2', '0.12 0.39 0.65'),
-    pdfText(receipt.name, 317, 636, 9, '/F2', '0.16 0.25 0.33'),
-    pdfText(receipt.phone, 317, 619, 7, '/F1', '0.35 0.43 0.50'),
-    pdfText(receipt.address, 317, 603, 7, '/F1', '0.35 0.43 0.50'),
-    pdfText(`${receipt.city}, Uttar Pradesh ${receipt.pinCode}`, 317, 591, 7, '/F1', '0.35 0.43 0.50'),
-    pdfText('PLACE OF SUPPLY  Uttar Pradesh (illustrative)', 50, 570, 7, '/F1', '0.35 0.43 0.50'),
-    pdfText('Tax calculation assumes an intra-state sample sale.', 50, 557, 7, '/F1', '0.48 0.55 0.61'),
+    pdfRect(50, 584, 241, 90, '0.97 0.98 0.99'),
+    pdfRect(304, 584, 241, 90, '0.97 0.98 0.99'),
+    pdfText('SOLD BY', 63, 656, 7, '/F2', '0.12 0.39 0.65'),
+    pdfText('Rangrez Studio', 63, 638, 9, '/F2', '0.16 0.25 0.33'),
+    pdfText('Varanasi, Uttar Pradesh 221001', 63, 621, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText('BILL TO / SHIP TO', 317, 656, 7, '/F2', '0.12 0.39 0.65'),
+    pdfText(receipt.name, 317, 638, 9, '/F2', '0.16 0.25 0.33'),
+    pdfText(receipt.phone, 317, 621, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(receipt.address, 317, 605, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText(`${receipt.city}, Uttar Pradesh ${receipt.pinCode}`, 317, 589, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText('PLACE OF SUPPLY  Uttar Pradesh', 50, 566, 7, '/F1', '0.35 0.43 0.50'),
+    pdfText('Tax calculation is illustrative only.', 50, 552, 7, '/F1', '0.48 0.55 0.61'),
 
     pdfRect(50, 516, 495, 28, '0.91 0.95 0.97'),
     pdfText('ITEM DESCRIPTION', 62, 527, 6, '/F2', '0.34 0.43 0.50'),

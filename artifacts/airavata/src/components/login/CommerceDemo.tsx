@@ -173,10 +173,9 @@ function InvoiceDocumentPage({
           <strong>RANGREZ STUDIO</strong>
           <small>HANDWOVEN BANARASI TEXTILES</small>
         </span>
-        <span className="invoice-page-sample-tag">GST INVOICE<br />SAMPLE PREVIEW</span>
       </div>
       <div className="invoice-page-heading">
-          <span><h2>Tax invoice</h2><small>{receipt.orderId}</small></span>
+        <span><h2>Invoice</h2><small>{receipt.orderId}</small></span>
         <span className="invoice-page-validity">Not valid for tax claim</span>
       </div>
       <div className="invoice-page-summary">
@@ -189,7 +188,6 @@ function InvoiceDocumentPage({
           <small>SOLD BY</small>
           <strong>Rangrez Studio</strong>
           <span>Varanasi, Uttar Pradesh 221001</span>
-          <span>GSTIN: Not configured (sample)</span>
         </section>
         <section>
           <small>BILL TO / SHIP TO</small>
@@ -198,7 +196,7 @@ function InvoiceDocumentPage({
           <span>{receipt.address}, {receipt.city} {receipt.pinCode}</span>
         </section>
       </div>
-      <p className="invoice-page-supply">Place of supply: Uttar Pradesh · Intra-state sample sale</p>
+      <p className="invoice-page-supply">Place of supply: Uttar Pradesh</p>
       <div className="invoice-page-table">
         <div className="invoice-page-table-head"><span>DESCRIPTION</span><span>HSN</span><span>QTY</span><span>BASE PRICE</span></div>
         <div className="invoice-page-item">
@@ -208,7 +206,7 @@ function InvoiceDocumentPage({
       </div>
       <div className="invoice-page-accounting">
         <div className="invoice-page-tax-list">
-          <strong>GST BREAKUP · SAMPLE</strong>
+          <strong>TAX SUMMARY</strong>
           <span><small>Taxable value</small><b>{formatDemoInvoiceMoney(tax.taxablePaise)}</b></span>
           <span><small>CGST @ 2.5%</small><b>{formatDemoInvoiceMoney(tax.cgstPaise)}</b></span>
           <span><small>SGST @ 2.5%</small><b>{formatDemoInvoiceMoney(tax.sgstPaise)}</b></span>
@@ -226,7 +224,7 @@ function InvoiceDocumentPage({
         <span>Order status <strong>Processing</strong></span>
       </div>
       <p className="invoice-page-amount-words">Amount in words: Indian Rupees Six Thousand Nine Hundred Thirteen and Fifty Paise Only</p>
-      <small className="invoice-page-disclaimer">Sample invoice preview. GSTIN is not configured. No payment or order was created; do not use for tax claims.</small>
+      <small className="invoice-page-disclaimer">Illustrative preview only. GSTIN is not configured; no valid tax invoice, payment or order was created.</small>
     </article>
   );
 }
