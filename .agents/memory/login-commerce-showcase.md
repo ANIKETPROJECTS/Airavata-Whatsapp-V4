@@ -17,11 +17,11 @@ Keep the order-summary and payment-link bubbles in the chat history after checko
 
 **How to apply:** Render those bubbles for confirmed, Razorpay, payment-success, and paid states. Preserve the original historical payment-pending copy, but don't allow the payment action to restart checkout once processing has started.
 
-The post-payment confirmation should start with a congratulatory named-customer message, thank them for choosing Rangrez Studio, and retain the payment reference and method. Omit standalone payment-confirmed and payment-amount headings. Use separate Instagram and Google review action rows styled like the Buy Now button, with the timestamp immediately above them. Use dummy destinations only when the user explicitly authorizes them; never silently treat sample links as official merchant links.
+The post-payment confirmation uses the user's supplied celebratory “Payment Confirmed” copy, with selected phrases bolded. Retain the payment reference and method. Use separate Instagram and Google review action rows styled like the Buy Now button, with the timestamp immediately above them. Use dummy destinations only when the user explicitly authorizes them; never silently treat sample links as official merchant links.
 
-**Why:** The user wants a personal, celebratory receipt without losing payment context, and sample social links must not be mistaken for production destinations.
+**Why:** The user supplied the exact message and requested emphasis while keeping payment context; sample social links must not be mistaken for production destinations.
 
-**How to apply:** Keep the copy and links inside the existing payment-confirmation bubble. Place the timestamp between the payment details and the two action rows. Dummy destinations are for the showcase only, not production messaging.
+**How to apply:** Preserve the supplied copy's paragraph breaks and bold treatment in the existing payment-confirmation bubble. The heading is “Payment Confirmed, {name}! ✨” without a leading sparkle. Do not add a dash before the team signature or after “Rangrez Studio” in the thank-you line. Put 💫 after “Team Rangrez Studio 🤍”, not after “unwrap the magic!”. Place the timestamp between payment details and action rows. Dummy destinations are for the showcase only, not production messaging.
 
 For the WhatsApp invoice attachment, omit the extra bubble heading and the invoice's “GST INVOICE / SAMPLE PREVIEW” badge. Show a full-width white preview of roughly the top half of the invoice page, and use the supplied transparent PDF icon without a gray tile or gutter. Keep the filename and file-size row.
 

@@ -535,9 +535,17 @@ export default function CommerceDemo() {
                 {step === 'paid' && receipt && (
                   <>
                     <div className="demo-message from-business demo-payment-confirmation message-appear" data-testid="message-demo-payment-success">
-                      <p className="payment-confirmation-note">
-                        🎉 Congratulations, {receipt.name}! Your payment is confirmed, and your Banarasi saree is being prepared with care. Thank you for choosing Rangrez Studio—we’ll share tracking details as soon as it’s dispatched. 💛✨
-                      </p>
+                      <div className="payment-confirmation-note">
+                        <p><strong>Payment Confirmed, {receipt.name}! ✨</strong></p>
+                        <p>Your beautiful <strong>Banarasi Saree</strong> is now being prepared with love and care. 🥰🪷</p>
+                        <p>Thank you for choosing <strong>Rangrez Studio</strong> we’re so happy to be a part of your <strong>special style journey.</strong> 💛</p>
+                        <p>
+                          <strong>What’s next?</strong><br />
+                          Your saree will be carefully packed and dispatched soon. We’ll share your <strong>tracking details</strong> as soon as it’s on its way to you. 🚚✨
+                        </p>
+                        <p><strong>Can’t wait for you to unwrap the magic!</strong></p>
+                        <p>Team Rangrez Studio 🤍💫</p>
+                      </div>
                       <div className="receipt-line"><span>Payment ID</span><b>{getPaymentReference(receipt.orderId)}</b></div>
                       <div className="receipt-line"><span>Method</span><b>UPI</b></div>
                       <time>10:45 AM</time>
