@@ -91,7 +91,7 @@
 .demo-product-card { position: relative; z-index: 2; display: flex; width: 100%; flex-direction: column; overflow: hidden; border-radius: 7.69px; background: transparent; }
 .demo-product-image { display: block; width: 100%; height: 220px; object-fit: cover; object-position: center 50%; background: #eaded8; }
 .demo-product-info { display: grid; gap: 5px; background: #fff; padding: 8px 9px 9px; color: #111b21; font-size: 10px; line-height: 1.35; }
-.demo-template-label { color: inherit; font-size: inherit; font-weight: 400; letter-spacing: normal; line-height: inherit; }
+.demo-template-label { color: inherit; font-size: inherit; font-weight: 400; letter-spacing: normal; line-height: inherit; white-space: pre-wrap; }
 .demo-product-info strong { color: inherit; font-size: inherit; font-weight: 700; line-height: inherit; }
 .demo-product-info p { margin: 0; color: inherit; font-size: inherit; line-height: inherit; }
 .demo-product-meta { display: flex; align-items: center; justify-content: flex-start; gap: 5px; color: inherit; font-size: inherit; line-height: inherit; }
