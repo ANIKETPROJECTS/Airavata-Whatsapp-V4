@@ -527,16 +527,17 @@ export default function CommerceDemo() {
                       <div className="receipt-line"><span>SGST @ 2.5%</span><b>{formatDemoInvoiceMoney(amountBreakdown.sgstPaise)}</b></div>
                       <div className="receipt-line"><span>Delivery charges</span><b>{formatDemoInvoiceMoney(amountBreakdown.deliveryChargePaise)}</b></div>
                       <div className="receipt-line receipt-total"><span>Amount due</span><b>{orderTotal}</b></div>
+                      <time>10:44 AM</time>
                       <button
                         type="button"
                         className="demo-template-cta payment-link"
                         onClick={() => setStep('razorpay')}
                         disabled={step !== 'confirmed'}
+                        aria-label={`Pay ${orderTotal} using Razorpay`}
                         data-testid="button-demo-payment-link"
                       >
-                        Pay now · {orderTotal}
+                        <ExternalLink size={10} aria-hidden="true" /> Pay now · {orderTotal}
                       </button>
-                      <time>10:44 AM</time>
                     </div>
                   </>
                 )}
@@ -545,9 +546,6 @@ export default function CommerceDemo() {
                     <div className="demo-message from-business demo-payment-confirmation message-appear" data-testid="message-demo-payment-success">
                       <span className="payment-label"><Check size={11} /> PAYMENT CONFIRMED</span>
                       <strong className="receipt-thanks">Payment received · {orderTotal}</strong>
-                      <p className="payment-confirmation-note">
-                        🎉 Yay, {receipt.name}! Your payment is confirmed and your Banarasi saree is being prepared with care. Thank you for choosing Rangrez Studio! We’ll share tracking details as soon as it’s dispatched. 💛✨
-                      </p>
                       <div className="receipt-line"><span>Payment ID</span><b>{getPaymentReference(receipt.orderId)}</b></div>
                       <div className="receipt-line"><span>Method</span><b>UPI</b></div>
                       <div className="payment-confirmation-links" aria-label="Follow and review Rangrez Studio">

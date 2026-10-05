@@ -99,7 +99,7 @@
 .demo-template-cta { box-sizing: border-box; display: flex; width: 100%; min-height: 30px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; border: 0; border-top: 1px solid #edf0ee; background: #fff; color: #258361; font-family: inherit; font-size: 10px; font-weight: 600; cursor: pointer; }
 .demo-template-cta:hover { background: #f7faf8; }
 .demo-template-cta:focus-visible { outline: 2px solid #258361; outline-offset: -2px; }
-.flow-screen-submit:hover:not(:disabled), .payment-link:hover { background: #f7faf8; }
+.flow-screen-submit:hover:not(:disabled) { background: #f7faf8; }
 .demo-template-meta { display: flex; min-height: 12px; align-items: center; justify-content: flex-end; gap: 2px; background: #fff; padding: 0 9px 4px; color: rgb(0 0 0 / 50%); }
 .demo-template-meta time { font-size: 7px; line-height: 1; }
 .demo-message { position: relative; isolation: isolate; max-width: 78%; flex: 0 0 auto; border-radius: 7.69px; padding: 4px 7px 7px; color: #0a0a0a; font-size: 10px; line-height: 1.2; }
@@ -278,7 +278,7 @@ button.razorpay-method { cursor: pointer; }
 .invoice-viewer-footer > a { display: flex; align-items: center; gap: 3px; color: #39714c; font-size: 6.5px; font-weight: 600; text-decoration: none; }
 .demo-receipt { display: grid; max-width: 94%; gap: 5px; }
 .receipt-heading { display: flex; align-items: center; gap: 4px; color: #111b21; font-size: 10px; font-weight: 600; letter-spacing: normal; }
-.receipt-thanks { color: #111b21; font-size: 10px; font-weight: 600; }
+.receipt-thanks { color: #111b21; font-size: 11px; font-weight: 600; }
 .receipt-line { display: flex; justify-content: space-between; gap: 6px; color: #111b21; font-size: 10px; }
 .receipt-line b { color: #111b21; font-weight: 600; }
 .receipt-total { border-top: 1px solid #edf0e9; padding-top: 4px; color: #111b21; font-size: 10px; font-weight: 600; }
@@ -292,13 +292,12 @@ button.razorpay-method { cursor: pointer; }
 .payment-label { display: inline-flex; align-items: center; gap: 4px; color: #548366; font-size: 7px; font-weight: 600; letter-spacing: .07em; }
 .demo-payment > .payment-label { color: #111b21; font-size: 10px; letter-spacing: normal; }
 .demo-payment p { margin: 0; color: #111b21; font-size: 10px; line-height: 1.35; }
-.payment-link { box-sizing: border-box; display: flex; width: calc(100% + 14px); min-height: 30px; align-items: center; justify-content: center; gap: 4px; margin: 1px -7px -4px; border: 0; border-top: 1px solid #edf0ee; border-radius: 0 0 7px 7px; background: #fff; padding: 4px 7px; color: #258361; cursor: pointer; font: inherit; font-size: 10px; font-weight: 600; }
+.payment-link { width: calc(100% + 14px); margin: 1px -7px -4px; border-radius: 0 0 7px 7px; }
 .payment-link:disabled { cursor: default; }
 .demo-message.demo-receipt, .demo-message.demo-payment { padding-bottom: 7px; }
 .demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
 .demo-message.demo-receipt time, .demo-message.demo-payment time { position: static; justify-self: end; margin-top: -1px; }
 .demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
-.payment-confirmation-note { margin: 0; color: #111b21; font-size: 10px; line-height: 1.25; }
 .payment-confirmation-links { display: grid; margin-top: 2px; border-top: 1px solid #edf0ee; }
 .payment-confirmation-links a { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 1px; color: #111b21; font-size: 9px; font-weight: 600; text-decoration: none; }
 .payment-confirmation-links a + a { border-top: 1px solid #edf0ee; }
