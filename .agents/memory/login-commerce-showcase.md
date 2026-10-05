@@ -17,6 +17,12 @@ Keep the order-summary and payment-link bubbles in the chat history after checko
 
 **How to apply:** Reveal the order summary first, then the payment link after a reading pause. Scroll each new message into view and leave the payment link visible before auto-opening Razorpay. Keep both bubbles in chat history for confirmed, Razorpay, payment-success, and paid states. Preserve the original historical payment-pending copy, but don't allow the payment action to restart checkout once processing has started.
 
+Use a consistent entrance duration and easing for every chat bubble and full-screen stage. The product template should enter only after the phone header and date are visible, rather than appearing in the first frame.
+
+**Why:** The user reported uneven message-card motion and asked for the first product message to transition in instead of already being present.
+
+**How to apply:** Keep a short initial reveal cue for the first bubble, and use shared motion timing for subsequent bubbles and overlays. Keep reading pauses between stages separate from animation speed.
+
 Keep payment confirmation on one Razorpay screen: show the supplied green success animation together with the amount, merchant, payment ID, selected method, and preview-only notice. Do not transition to a separate black-and-white checkmark receipt screen; continue directly to the existing WhatsApp and invoice flow.
 
 **Why:** The user explicitly asked for the former third page's receipt details to appear alongside the animation on the second page, without a separate confirmation page.

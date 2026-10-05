@@ -123,7 +123,7 @@
 .details-buy-button:disabled { cursor: default; opacity: 1; }
 .details-buy-button.demo-auto-press { animation: demo-auto-click 420ms ease 2.35s 1 both; }
 .demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #111; will-change: transform, opacity; }
-.demo-flow-screen .flow-screen-content > * { animation: demo-content-arrive 520ms cubic-bezier(.22, 1, .36, 1) both; }
+.demo-flow-screen .flow-screen-content > * { animation: demo-content-arrive 560ms cubic-bezier(.22, 1, .36, 1) both; }
 .demo-flow-screen .flow-screen-content > :nth-child(1) { animation-delay: 60ms; }
 .demo-flow-screen .flow-screen-content > :nth-child(2) { animation-delay: 130ms; }
 .demo-flow-screen .flow-screen-content > :nth-child(3) { animation-delay: 200ms; }
@@ -323,11 +323,7 @@
 .demo-composer-art { top: 0; left: 0; }
 .demo-replay-button { display: inline-flex; width: fit-content; align-items: center; gap: 4px; border: 0; border-radius: 4px; background: transparent; padding: 3px 0; color: #008069; cursor: pointer; font: inherit; font-size: 7px; font-weight: 500; }
 .demo-replay-button:hover { text-decoration: underline; }
-.message-appear { animation: demo-rise 560ms cubic-bezier(.22, 1, .36, 1) both; will-change: transform, opacity; }
-.demo-payment.message-appear { animation-delay: 100ms; }
-.demo-payment-confirmation.message-appear { animation-delay: 70ms; }
-.demo-invoice.message-appear { animation-delay: 130ms; }
-.demo-replay-message.message-appear { animation-delay: 150ms; }
+.message-appear { animation: demo-rise 560ms cubic-bezier(.22, 1, .36, 1) 70ms both; will-change: transform, opacity; }
 @keyframes demo-auto-click { 0%, 100% { transform: scale(1); } 45% { transform: scale(.96); background: #d8eadb; } }
 @keyframes demo-content-arrive { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes demo-rise { from { opacity: 0; transform: translateY(12px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }

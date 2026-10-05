@@ -66,6 +66,8 @@ const checkoutProfile: CheckoutDetails = {
 
 const productPrice = '₹6,490';
 const figmaCanvasScale = 252 / 393;
+const DEMO_MOTION_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const DEMO_MOTION_DURATION = 0.56;
 const LazyLottie = lazy(() => import('lottie-react').then(({ Lottie }) => ({ default: Lottie })));
 
 function formatFileSize(bytes: number): string {
@@ -232,7 +234,12 @@ function InvoiceDocumentPage({
 
 export default function CommerceDemo() {
   const prefersReducedMotion = useReducedMotion() === true;
+  const motionTransition = {
+    duration: prefersReducedMotion ? 0.01 : DEMO_MOTION_DURATION,
+    ease: DEMO_MOTION_EASE,
+  };
   const [step, setStep] = useState<DemoStep>('template');
+  const [showTemplateMessage, setShowTemplateMessage] = useState(false);
   const [confirmedStage, setConfirmedStage] = useState<'summary' | 'paymentLink'>('summary');
   const [checkout, setCheckout] = useState<CheckoutDetails>(emptyCheckout);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -284,6 +291,7 @@ export default function CommerceDemo() {
   useEffect(() => {
     const timeouts: number[] = [];
     if (step === 'template') {
+      timeouts.push(window.setTimeout(() => setShowTemplateMessage(true), 220));
       timeouts.push(window.setTimeout(() => setStep('customerReply'), 3300));
     } else if (step === 'customerReply') {
       timeouts.push(window.setTimeout(() => setStep('details'), 3200));
@@ -399,6 +407,7 @@ export default function CommerceDemo() {
     setReceipt(null);
     setInvoiceFileSize('');
     setInvoiceViewerOpen(false);
+    setShowTemplateMessage(false);
     setConfirmedStage('summary');
     setPostPaymentStage('payment');
     setRazorpayStage('upi');
@@ -439,33 +448,35 @@ export default function CommerceDemo() {
                 }}
               >
                 <FigmaSvgCrop x={146} y={280} width={101} height={21} className="demo-date-art" />
-                <div className="demo-product-bubble message-appear" data-testid="card-demo-product-template">
-                  <div className="demo-product-card">
-                    <img
-                      className="demo-product-image"
-                      src={sareeImage}
-                      alt="Deep crimson Banarasi silk saree with a gold zari border"
-                    />
-                    <div className="demo-product-info">
-                      <span className="demo-template-label">Hello {checkoutProfile.name.split(' ')[0]} 👋 NEW ARRIVAL ✨ BANARASI COLLECTION 💛</span>
-                      <strong>Banarasi Silk Saree 🪷</strong>
-                      <p>A festive new arrival, handwoven in rich crimson Katan silk with intricate gold zari detailing. ✨</p>
-                      <div className="demo-product-meta"><b>{productPrice}</b></div>
+                {showTemplateMessage && (
+                  <div className="demo-product-bubble message-appear" data-testid="card-demo-product-template">
+                    <div className="demo-product-card">
+                      <img
+                        className="demo-product-image"
+                        src={sareeImage}
+                        alt="Deep crimson Banarasi silk saree with a gold zari border"
+                      />
+                      <div className="demo-product-info">
+                        <span className="demo-template-label">Hello {checkoutProfile.name.split(' ')[0]} 👋 NEW ARRIVAL ✨ BANARASI COLLECTION 💛</span>
+                        <strong>Banarasi Silk Saree 🪷</strong>
+                        <p>A festive new arrival, handwoven in rich crimson Katan silk with intricate gold zari detailing. ✨</p>
+                        <div className="demo-product-meta"><b>{productPrice}</b></div>
+                      </div>
+                      <div className="demo-template-meta">
+                        <time>10:40 AM</time>
+                      </div>
+                      <button
+                        type="button"
+                        className="demo-template-cta"
+                        onClick={openCheckoutFlow}
+                        aria-label={`Buy Banarasi Silk Saree for ${productPrice}`}
+                        data-testid="button-demo-template-buy-now"
+                      >
+                        <ExternalLink size={10} aria-hidden="true" /> Buy Now
+                      </button>
                     </div>
-                    <div className="demo-template-meta">
-                      <time>10:40 AM</time>
-                    </div>
-                    <button
-                      type="button"
-                      className="demo-template-cta"
-                      onClick={openCheckoutFlow}
-                      aria-label={`Buy Banarasi Silk Saree for ${productPrice}`}
-                      data-testid="button-demo-template-buy-now"
-                    >
-                      <ExternalLink size={10} aria-hidden="true" /> Buy Now
-                    </button>
                   </div>
-                </div>
+                )}
 
                 {step !== 'template' && (
                   <div className="demo-message from-customer message-appear" data-testid="message-demo-customer-question">
@@ -658,7 +669,7 @@ export default function CommerceDemo() {
                   initial={prefersReducedMotion ? false : { opacity: 0, y: 28, scale: 0.99 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -18, scale: 0.99 }}
-                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+                  transition={motionTransition}
                   role="region"
                   aria-label="WhatsApp Flow delivery form"
                   data-testid="card-demo-flow"
@@ -733,7 +744,7 @@ export default function CommerceDemo() {
                   initial={prefersReducedMotion ? false : { opacity: 0, x: 32 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
-                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.52, ease: [0.22, 1, 0.36, 1] }}
+                  transition={motionTransition}
                   role="dialog"
                   aria-modal="true"
                   aria-live="polite"
@@ -752,7 +763,7 @@ export default function CommerceDemo() {
                         initial={prefersReducedMotion ? false : { opacity: 0, y: 16, scale: 0.985 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.99 }}
-                        transition={{ duration: prefersReducedMotion ? 0.01 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+                        transition={motionTransition}
                         role="status"
                         aria-live="polite"
                         data-testid="message-demo-razorpay-processing"
@@ -790,7 +801,7 @@ export default function CommerceDemo() {
                         initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
-                        transition={{ duration: prefersReducedMotion ? 0.01 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+                        transition={motionTransition}
                       >
                       <div className="razorpay-order-summary">
                         <div className="razorpay-merchant">
@@ -863,7 +874,7 @@ export default function CommerceDemo() {
                   initial={prefersReducedMotion ? false : { opacity: 0, y: 28, scale: 0.99 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.99 }}
-                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  transition={motionTransition}
                   role="dialog"
                   aria-modal="true"
                   aria-label={`Invoice PDF preview for order ${receipt.orderId}`}
