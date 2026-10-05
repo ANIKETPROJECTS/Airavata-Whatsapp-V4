@@ -313,6 +313,11 @@ export default function CommerceDemo() {
     return () => window.clearTimeout(timeout);
   }, [step, razorpayStage, startRazorpayPreview]);
 
+  useEffect(() => {
+    if (!prefersReducedMotion || step !== 'razorpay' || razorpayStage !== 'processing') return;
+    setStep('paymentSuccess');
+  }, [prefersReducedMotion, razorpayStage, step]);
+
   const completeCheckout = useCallback((details: CheckoutDetails) => {
     const orderId = `INV20260901${String(nextOrderNumber.current).padStart(2, '0')}`;
     nextOrderNumber.current += 1;
@@ -710,8 +715,13 @@ export default function CommerceDemo() {
                 </motion.div>
               )}
               {(step === 'razorpay' || step === 'paymentSuccess') && receipt && (
-                <div
+                <motion.div
+                  key="razorpay"
                   className="demo-razorpay-screen"
+                  initial={prefersReducedMotion ? false : { opacity: 0, x: 32 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
+                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.52, ease: [0.22, 1, 0.36, 1] }}
                   role="dialog"
                   aria-modal="true"
                   aria-live="polite"
@@ -722,28 +732,54 @@ export default function CommerceDemo() {
                     <img src={razorpayLogo} alt="Razorpay" className="razorpay-logo" />
                     <span className="razorpay-secure-label"><LockKeyhole size={14} /> Secured</span>
                   </div>
-                  {razorpayStage === 'processing' ? (
-                    <div className="razorpay-processing-content" role="status" aria-live="polite" data-testid="message-demo-razorpay-processing">
-                      <Lottie
-                        src={paymentSuccessAnimation}
-                        loop={false}
-                        autoplay
-                        className="razorpay-success-animation"
-                        aria-hidden="true"
-                        subscriptions={{ complete: () => setStep('paymentSuccess') }}
-                      />
-                      <strong>Payment successful</strong>
-                      <span>Completing your payment</span>
-                      <h2>{orderTotal}</h2>
-                      <p>Paid to <strong>Rangrez Studio</strong></p>
-                      <div className="razorpay-success-details" data-testid="message-demo-razorpay-success">
-                        <span><small>Payment ID</small><strong>{getPaymentReference(receipt.orderId)}</strong></span>
-                        <span><small>Method</small><strong>UPI · {selectedUpiApp}</strong></span>
-                      </div>
-                      <small className="razorpay-preview-note"><ShieldCheck size={9} /> Preview only · no payment was processed</small>
-                    </div>
-                  ) : step === 'razorpay' ? (
-                    <>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {razorpayStage === 'processing' ? (
+                      <motion.div
+                        key="processing"
+                        className="razorpay-processing-content"
+                        initial={prefersReducedMotion ? false : { opacity: 0, y: 16, scale: 0.985 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.99 }}
+                        transition={{ duration: prefersReducedMotion ? 0.01 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+                        role="status"
+                        aria-live="polite"
+                        data-testid="message-demo-razorpay-processing"
+                      >
+                        {prefersReducedMotion ? (
+                          <div className="razorpay-success-animation razorpay-success-static" aria-hidden="true">
+                            <Check size={40} strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <Suspense fallback={<span className="razorpay-success-animation razorpay-animation-loading" aria-hidden="true" />}>
+                            <LazyLottie
+                              src={paymentSuccessAnimation}
+                              loop={false}
+                              autoplay
+                              className="razorpay-success-animation"
+                              aria-hidden="true"
+                              subscriptions={{ complete: () => setStep('paymentSuccess') }}
+                            />
+                          </Suspense>
+                        )}
+                        <strong>Payment successful</strong>
+                        <span>Completing your payment</span>
+                        <h2>{orderTotal}</h2>
+                        <p>Paid to <strong>Rangrez Studio</strong></p>
+                        <div className="razorpay-success-details" data-testid="message-demo-razorpay-success">
+                          <span><small>Payment ID</small><strong>{getPaymentReference(receipt.orderId)}</strong></span>
+                          <span><small>Method</small><strong>UPI · {selectedUpiApp}</strong></span>
+                        </div>
+                        <small className="razorpay-preview-note"><ShieldCheck size={9} /> Preview only · no payment was processed</small>
+                      </motion.div>
+                    ) : step === 'razorpay' ? (
+                      <motion.div
+                        key="checkout"
+                        className="razorpay-checkout-state"
+                        initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
+                        transition={{ duration: prefersReducedMotion ? 0.01 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+                      >
                       <div className="razorpay-order-summary">
                         <div className="razorpay-merchant">
                           <span className="razorpay-merchant-mark">R</span>
@@ -803,13 +839,19 @@ export default function CommerceDemo() {
                         </button>
                         <p className="razorpay-preview-note"><ShieldCheck size={9} /> Preview only · no payment is processed</p>
                       </div>
-                    </>
-                  ) : null}
-                </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </motion.div>
               )}
               {invoiceViewerOpen && step === 'paid' && receipt && invoicePdfUrl && (
-                <div
+                <motion.div
+                  key="invoice"
                   className="demo-invoice-viewer"
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 28, scale: 0.99 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.99 }}
+                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.48, ease: [0.22, 1, 0.36, 1] }}
                   role="dialog"
                   aria-modal="true"
                   aria-label={`Invoice PDF preview for order ${receipt.orderId}`}
@@ -841,8 +883,9 @@ export default function CommerceDemo() {
                       <Download size={11} /> Download PDF
                     </a>
                   </div>
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
           </div>
         </DevicePreviewFrame>

@@ -122,7 +122,11 @@
 .demo-detail-meta { margin: 2px 9px 4px; }
 .details-buy-button:disabled { cursor: default; opacity: 1; }
 .details-buy-button.demo-auto-press { animation: demo-auto-click 420ms ease 2.35s 1 both; }
-.demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #111; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
+.demo-flow-screen { position: absolute; z-index: 5; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #111; will-change: transform, opacity; }
+.demo-flow-screen .flow-screen-content > * { animation: demo-content-arrive 520ms cubic-bezier(.22, 1, .36, 1) both; }
+.demo-flow-screen .flow-screen-content > :nth-child(1) { animation-delay: 60ms; }
+.demo-flow-screen .flow-screen-content > :nth-child(2) { animation-delay: 130ms; }
+.demo-flow-screen .flow-screen-content > :nth-child(3) { animation-delay: 200ms; }
 .flow-screen-topbar { display: flex; min-height: 46px; flex: 0 0 46px; align-items: center; gap: 8px; border-bottom: 1px solid #edf0eb; padding: 7px 12px; }
 .flow-screen-mark { display: flex; width: 25px; height: 25px; flex: 0 0 25px; align-items: center; justify-content: center; border-radius: 7px; background: #e8f3e8; color: #111; font-size: 10px; font-weight: 700; }
 .flow-screen-brand { display: grid; min-width: 0; gap: 2px; }
@@ -156,7 +160,7 @@
 .flow-screen-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .flow-screen-submit { display: flex; width: 100%; min-height: 34px; align-items: center; justify-content: center; gap: 5px; margin-top: 1px; border: 0; border-radius: 6px; background: #238858; color: #fff; cursor: pointer; font: inherit; font-size: 9px; font-weight: 600; box-shadow: 0 2px 5px rgb(20 90 54 / 16%); }
 .flow-screen-submit:disabled { cursor: wait; opacity: 1; }
-.demo-razorpay-screen { position: absolute; z-index: 6; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #111; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
+.demo-razorpay-screen { position: absolute; z-index: 6; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff; color: #111; will-change: transform, opacity; }
 .razorpay-topbar { display: flex; min-height: 48px; flex: 0 0 48px; align-items: center; gap: 8px; border-bottom: 1px solid #dedede; background: #fff; padding: 7px 12px; }
 .razorpay-logo { display: block; width: 96px; height: auto; object-fit: contain; }
 .razorpay-secure-label { display: flex; align-items: center; gap: 4px; margin-left: auto; color: #111; font-size: 10px; font-weight: 600; }
@@ -170,6 +174,7 @@
 .razorpay-total { display: grid; justify-items: end; gap: 2px; color: #111; font-size: 10px; font-weight: 600; }
 .razorpay-total strong { color: #111; font-size: 17px; font-weight: 700; letter-spacing: -.03em; }
 .razorpay-checkout-content { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 4px; overflow-y: auto; padding: 9px 11px 8px; scrollbar-width: none; }
+.razorpay-checkout-state { display: flex; min-height: 0; flex: 1; flex-direction: column; overflow: hidden; }
 .razorpay-checkout-content::-webkit-scrollbar { display: none; }
 .razorpay-section-heading { display: grid; gap: 2px; margin-bottom: 1px; }
 .razorpay-section-heading strong { color: #111; font-size: 12px; font-weight: 700; }
@@ -209,6 +214,7 @@
 .razorpay-preview-note { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 0; color: #111; font-size: 8px; font-weight: 600; line-height: 1.4; text-align: center; }
 .razorpay-processing-content { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 5px; overflow-y: auto; padding: 10px 14px; color: #111; text-align: center; }
 .razorpay-success-animation { width: 112px; height: 112px; flex: 0 0 auto; }
+.razorpay-animation-loading { display: block; border: 4px solid #e4f1e7; border-top-color: #168a5b; border-radius: 50%; animation: login-spin 900ms linear infinite; }
 .razorpay-processing-content > strong { color: #111; font-size: 14px; font-weight: 700; }
 .razorpay-processing-content > span { color: #111; font-size: 11px; }
 .razorpay-processing-content h2 { margin: 0; color: #111; font-size: 20px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
@@ -219,7 +225,7 @@
 .razorpay-success-details span + span { border-top: 1px solid #dedede; }
 .razorpay-success-details small { color: #111; font-size: 9px; font-weight: 600; }
 .razorpay-success-details strong { color: #111; font-size: 9px; font-weight: 700; }
-.demo-invoice-viewer { position: absolute; z-index: 7; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #f1f3f3; color: #27343e; animation: demo-flow-enter 380ms cubic-bezier(.22, 1, .36, 1) both; }
+.demo-invoice-viewer { position: absolute; z-index: 7; inset: 38px 0 0; display: flex; flex-direction: column; overflow: hidden; background: #f1f3f3; color: #27343e; will-change: transform, opacity; }
 .invoice-viewer-topbar { display: flex; min-height: 43px; flex: 0 0 43px; align-items: center; gap: 5px; border-bottom: 1px solid #e4e8e8; background: #fff; padding: 5px 7px; }
 .invoice-viewer-topbar button, .invoice-viewer-topbar > a { display: flex; width: 25px; height: 28px; flex: 0 0 25px; align-items: center; justify-content: center; border: 0; background: transparent; color: #53626e; cursor: pointer; text-decoration: none; }
 .invoice-viewer-title { display: grid; min-width: 0; flex: 1; gap: 2px; }
@@ -317,10 +323,14 @@
 .demo-composer-art { top: 0; left: 0; }
 .demo-replay-button { display: inline-flex; width: fit-content; align-items: center; gap: 4px; border: 0; border-radius: 4px; background: transparent; padding: 3px 0; color: #008069; cursor: pointer; font: inherit; font-size: 7px; font-weight: 500; }
 .demo-replay-button:hover { text-decoration: underline; }
-.message-appear { animation: demo-rise 420ms cubic-bezier(.22, 1, .36, 1) both; }
+.message-appear { animation: demo-rise 560ms cubic-bezier(.22, 1, .36, 1) both; will-change: transform, opacity; }
+.demo-payment.message-appear { animation-delay: 100ms; }
+.demo-payment-confirmation.message-appear { animation-delay: 70ms; }
+.demo-invoice.message-appear { animation-delay: 130ms; }
+.demo-replay-message.message-appear { animation-delay: 150ms; }
 @keyframes demo-auto-click { 0%, 100% { transform: scale(1); } 45% { transform: scale(.96); background: #d8eadb; } }
-@keyframes demo-flow-enter { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes demo-rise { from { opacity: 0; transform: translateY(7px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes demo-content-arrive { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes demo-rise { from { opacity: 0; transform: translateY(12px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes login-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 1050px) {
@@ -349,5 +359,5 @@
   .login-trust { margin-top: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .login-shell *, .login-shell *::before, .login-shell *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .login-shell *, .login-shell *::before, .login-shell *::after { scroll-behavior: auto !important; animation-delay: 0ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
