@@ -264,7 +264,7 @@ export default function CommerceDemo() {
 
     const updateScreenWidth = () => {
       const heightLimit = Math.floor(stage.clientHeight / 2.35);
-      const widthLimit = stage.clientWidth - 36;
+      const widthLimit = stage.clientWidth - 24;
       if (heightLimit <= 0 || widthLimit <= 0) return;
       setScreenWidth(Math.max(160, Math.min(heightLimit, widthLimit)));
     };

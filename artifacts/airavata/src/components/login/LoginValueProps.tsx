@@ -1,12 +1,8 @@
 import {
-  BarChart3,
-  Blocks,
   Bot,
   CreditCard,
   Megaphone,
-  MessageCircle,
   ShoppingBag,
-  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -37,33 +33,6 @@ const journeySteps: Array<{
   },
 ];
 
-const workspaceFeatures: Array<{
-  title: string;
-  description: string;
-  icon: LucideIcon;
-}> = [
-  {
-    title: 'AI chatbots + Live Chat',
-    description: 'Automate routine replies and let your team take over in one inbox.',
-    icon: MessageCircle,
-  },
-  {
-    title: 'Campaigns + dashboard reports',
-    description: 'Manage approved templates, send campaigns, and review delivery results.',
-    icon: BarChart3,
-  },
-  {
-    title: 'Catalogue + Flows + WA Pay',
-    description: 'Show products, collect details, and guide checkout with payment links and invoice details.',
-    icon: Workflow,
-  },
-  {
-    title: 'Contacts + connected tools',
-    description: 'Organize contacts and groups, connect integrations, and manage credits, alerts, and settings.',
-    icon: Blocks,
-  },
-];
-
 export function LoginJourney() {
   return (
     <aside className="login-journey" aria-labelledby="login-journey-title">
@@ -87,31 +56,6 @@ export function LoginJourney() {
           </li>
         ))}
       </ol>
-    </aside>
-  );
-}
-
-export function LoginFeatureSummary() {
-  return (
-    <aside className="login-feature-summary" aria-labelledby="login-feature-title">
-      <div className="login-feature-heading">
-        <span className="login-journey-eyebrow">ATWASSUP WORKSPACE</span>
-        <h2 id="login-feature-title">Tools for the whole journey</h2>
-      </div>
-
-      <div className="login-feature-list">
-        {workspaceFeatures.map(({ title, description, icon: Icon }) => (
-          <article className="login-feature-card" key={title}>
-            <span className="login-feature-icon" aria-hidden="true">
-              <Icon size={16} strokeWidth={1.8} />
-            </span>
-            <span className="login-feature-copy">
-              <strong>{title}</strong>
-              <span>{description}</span>
-            </span>
-          </article>
-        ))}
-      </div>
     </aside>
   );
 }

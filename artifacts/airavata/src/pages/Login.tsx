@@ -7,7 +7,7 @@ import { ArrowRight, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import CommerceDemo from '../components/login/CommerceDemo';
-import { LoginFeatureSummary, LoginJourney } from '../components/login/LoginValueProps';
+import { LoginJourney } from '../components/login/LoginValueProps';
 import './login.css';
 
 const schema = z.object({
@@ -99,7 +99,6 @@ export default function Login() {
               <span>Your account is protected with secure sign-in.</span>
             </div>
           </div>
-          <LoginFeatureSummary />
         </div>
         <div className="login-panel-bottom">
           <span>Built for conversations that move business forward.</span>
