@@ -200,7 +200,7 @@ function InvoiceDocumentPage({
       <div className="invoice-page-table">
         <div className="invoice-page-table-head"><span>DESCRIPTION</span><span>HSN</span><span>QTY</span><span>BASE PRICE</span></div>
         <div className="invoice-page-item">
-          <span>Banarasi Silk Saree<small>Pure Katan silk · 6.3 m</small></span>
+          <span>Banarasi Silk Saree</span>
           <span>5007</span><span>1</span><strong>{formatDemoInvoiceMoney(tax.taxablePaise)}</strong>
         </div>
       </div>
@@ -309,12 +309,6 @@ export default function CommerceDemo() {
     }
     return () => timeouts.forEach(timeout => window.clearTimeout(timeout));
   }, [step]);
-
-  useEffect(() => {
-    if (!invoiceViewerOpen) return;
-    const timeout = window.setTimeout(() => setInvoiceViewerOpen(false), 7000);
-    return () => window.clearTimeout(timeout);
-  }, [invoiceViewerOpen]);
 
   const completeCheckout = useCallback((details: CheckoutDetails) => {
     const orderId = `INV20260901${String(nextOrderNumber.current).padStart(2, '0')}`;

@@ -27,7 +27,7 @@ For the WhatsApp invoice attachment, omit the extra bubble heading and the invoi
 
 **Why:** The user wants a readable, professional invoice page and a native-looking WhatsApp PDF attachment without implying a valid tax invoice.
 
-**How to apply:** Use larger black text and neutral section styling in both the on-screen invoice and generated PDF. Keep the page crop clean, preserve the clickable attachment row, and retain clear preview/no-tax-claim disclaimers inside the invoice.
+**How to apply:** Use larger black text and neutral section styling in both the on-screen invoice and generated PDF. Keep the invoice line item to the product name without the fabric/length subline. Keep the viewer open until explicitly closed; preserve scrolling while hiding the scrollbar, and let the page use the available width. Preserve the clickable attachment row and clear preview/no-tax-claim disclaimers.
 
 The order summary should omit the decorative check icon, use the requested invoice-style order-number format, and show the customer's name, phone, and complete delivery address below the total. Keep the Razorpay message visually consistent with the summary, with a plain heading and a clear payment action; place its timestamp after the action.
 

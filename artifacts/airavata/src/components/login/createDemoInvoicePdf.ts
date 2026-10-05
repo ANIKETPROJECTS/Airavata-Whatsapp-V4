@@ -118,12 +118,11 @@ export function createDemoInvoicePdf(receipt: DemoInvoiceReceipt, paymentMethod 
     pdfText('TAXABLE VALUE', 390, 527, 6, '/F2', '0.34 0.43 0.50'),
     pdfText('BASE PRICE', 494, 527, 6, '/F2', '0.34 0.43 0.50'),
     pdfText('Banarasi Silk Saree', 62, 498, 8, '/F2', '0.16 0.25 0.33'),
-    pdfText('Pure Katan silk - 6.3 m', 62, 483, 7, '/F1', '0.48 0.55 0.61'),
     pdfText('5007', 300, 498, 7, '/F1', '0.27 0.36 0.43'),
     pdfText('1', 352, 498, 7, '/F1', '0.27 0.36 0.43'),
     pdfText(pdfMoney(tax.taxablePaise), 390, 498, 7, '/F1', '0.27 0.36 0.43'),
     pdfText(pdfMoney(tax.taxablePaise), 494, 498, 7, '/F2', '0.16 0.25 0.33'),
-    pdfRule(472),
+    pdfRule(482),
 
     pdfRect(50, 338, 239, 118, '0.97 0.98 0.99'),
     pdfRect(302, 338, 243, 118, '0.97 0.98 0.99'),
