@@ -303,7 +303,7 @@ export default function CommerceDemo() {
       timeouts.push(window.setTimeout(() => {
         setPostPaymentStage('payment');
         setStep('paid');
-      }, 3700));
+      }, 2800));
     } else if (step === 'paid') {
       timeouts.push(window.setTimeout(() => setPostPaymentStage('invoice'), 1700));
       timeouts.push(window.setTimeout(() => setPostPaymentStage('replay'), 3800));

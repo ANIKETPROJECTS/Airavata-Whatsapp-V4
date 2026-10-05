@@ -27,7 +27,7 @@ Keep payment confirmation on one Razorpay screen: show the supplied green succes
 
 **Why:** The user explicitly asked for the former third page's receipt details to appear alongside the animation on the second page, without a separate confirmation page.
 
-**How to apply:** Keep the animated success screen mounted through its completion and display all confirmation details there. Preserve the simulated-only boundary and the existing post-payment conversation and invoice sequence.
+**How to apply:** Keep the animated success screen mounted through its completion and display all confirmation details there. After the animation, keep the details visible briefly, then continue promptly to the post-payment conversation. Preserve the simulated-only boundary and the existing invoice sequence.
 
 The post-payment confirmation uses the user's supplied celebratory “Payment Confirmed” copy, with selected phrases bolded. Retain the payment reference and method. Use separate Instagram and Google review action rows styled like the Buy Now button, with the timestamp immediately above them. Use dummy destinations only when the user explicitly authorizes them; never silently treat sample links as official merchant links.
 
