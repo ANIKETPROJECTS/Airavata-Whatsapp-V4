@@ -298,6 +298,7 @@ button.razorpay-method { cursor: pointer; }
 .demo-message.demo-payment-confirmation, .demo-message.demo-invoice, .demo-message.demo-order-status { padding-bottom: 17px; }
 .demo-message.demo-receipt time, .demo-message.demo-payment time { position: static; justify-self: end; margin-top: -1px; }
 .demo-payment-confirmation, .demo-invoice, .demo-order-status { display: grid; max-width: 94%; gap: 5px; }
+.payment-confirmation-note { margin: 0; color: #111b21; font-size: 10px; line-height: 1.25; }
 .payment-confirmation-links { display: grid; margin-top: 2px; border-top: 1px solid #edf0ee; }
 .payment-confirmation-links a { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 1px; color: #111b21; font-size: 9px; font-weight: 600; text-decoration: none; }
 .payment-confirmation-links a + a { border-top: 1px solid #edf0ee; }
