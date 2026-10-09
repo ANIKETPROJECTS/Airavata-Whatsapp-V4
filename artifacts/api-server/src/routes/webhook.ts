@@ -251,6 +251,9 @@ async function handleIncomingMessage(
   let flowData: Record<string, unknown> | undefined;
   let flowId: mongoose.Types.ObjectId | undefined;
   let campaignId: mongoose.Types.ObjectId | undefined;
+  let mediaType: "image" | "video" | "document" | "audio" | undefined;
+  let mediaId: string | undefined;
+  let mediaFilename: string | undefined;
   let interactiveReplyId: string | undefined; // button_reply / list_reply ID for chatbot engine
   let runChatbot = false; // only fire engine for text + interactive button/list replies
   let isTemplateQuickReply = false; // true only for template quick-reply button taps (msg.type === "button")
@@ -268,10 +271,21 @@ async function handleIncomingMessage(
     isTemplateQuickReply = true;
     logger.info({ payload: msg.button?.payload, text: msg.button?.text }, "Template quick-reply button tapped");
   } else if (msg.type === "image") {
-    body = "[Image]";
+    mediaType = "image";
+    mediaId = msg.image?.id;
+    body = msg.image?.caption?.trim() || "[Image]";
+  } else if (msg.type === "video") {
+    mediaType = "video";
+    mediaId = msg.video?.id;
+    body = msg.video?.caption?.trim() || "[Video]";
   } else if (msg.type === "document") {
-    body = "[Document]";
+    mediaType = "document";
+    mediaId = msg.document?.id;
+    mediaFilename = msg.document?.filename;
+    body = msg.document?.caption?.trim() || "[Document]";
   } else if (msg.type === "audio") {
+    mediaType = "audio";
+    mediaId = msg.audio?.id;
     body = "[Audio]";
   } else if (msg.type === "interactive") {
     // Log everything we see for interactive so we can diagnose the exact structure
@@ -404,6 +418,9 @@ async function handleIncomingMessage(
     contactId,
     direction: "INBOUND",
     body,
+    ...(mediaType ? { mediaType } : {}),
+    ...(mediaId ? { mediaId } : {}),
+    ...(mediaFilename ? { mediaFilename } : {}),
     whatsappMessageId: msg.id,
     status: "RECEIVED",
     ...(flowData ? { flowData } : {}),
@@ -831,9 +848,10 @@ interface WebhookMessage {
   timestamp: string;
   type: string;
   text?: { body: string };
-  image?: { id: string; mime_type: string };
-  document?: { id: string; filename?: string };
-  audio?: { id: string };
+  image?: { id: string; mime_type?: string; caption?: string };
+  video?: { id: string; mime_type?: string; caption?: string };
+  document?: { id: string; filename?: string; mime_type?: string; caption?: string };
+  audio?: { id: string; mime_type?: string; voice?: boolean };
   /** Sent when a user taps a Quick Reply button on a template message */
   button?: { payload: string; text: string };
   interactive?: {
