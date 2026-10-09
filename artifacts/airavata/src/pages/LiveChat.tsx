@@ -1679,6 +1679,9 @@ export default function LiveChat() {
               <div className="space-y-5 max-w-4xl mx-auto">
                 {messages.map((msg, index) => {
                   const messageTime = getMessageTimestamp(msg);
+                  const bodyIsMediaPlaceholder =
+                    Boolean(msg.mediaType) &&
+                    /^\[(image|video|document|audio)\]$/i.test(msg.body.trim());
                   const previousMessage = messages[index - 1];
                   const previousMessageTime = previousMessage
                     ? getMessageTimestamp(previousMessage)
@@ -1715,7 +1718,7 @@ export default function LiveChat() {
                               mediaUrl={msg.mediaUrl}
                               filename={msg.mediaFilename}
                             />
-                            {msg.body && (
+                            {msg.body && !bodyIsMediaPlaceholder && (
                               <p className="text-base whitespace-pre-wrap mt-1 text-gray-600 italic">{msg.body}</p>
                             )}
                           </>

@@ -28,6 +28,7 @@ import { sendInquiryCreated } from "../lib/airavataIntegration";
 import { enrollNewContactsInTriggerCampaigns } from "../lib/triggerEnrollment";
 import { emitClientWebhookEvent, emitContactCreatedEvent } from "../lib/clientWebhooks";
 import { normalizeContactPhone } from "../lib/contactPhone";
+import { extractInboundMedia } from "../lib/inboundMedia";
 import { lookupWhatsAppPayment } from "../lib/whatsapp";
 import { reconcileMetaPaymentLookup } from "../lib/whatsappPayments";
 import {
@@ -251,9 +252,7 @@ async function handleIncomingMessage(
   let flowData: Record<string, unknown> | undefined;
   let flowId: mongoose.Types.ObjectId | undefined;
   let campaignId: mongoose.Types.ObjectId | undefined;
-  let mediaType: "image" | "video" | "document" | "audio" | undefined;
-  let mediaId: string | undefined;
-  let mediaFilename: string | undefined;
+  const incomingMedia = extractInboundMedia(msg);
   let interactiveReplyId: string | undefined; // button_reply / list_reply ID for chatbot engine
   let runChatbot = false; // only fire engine for text + interactive button/list replies
   let isTemplateQuickReply = false; // true only for template quick-reply button taps (msg.type === "button")
@@ -270,23 +269,8 @@ async function handleIncomingMessage(
     runChatbot = true;
     isTemplateQuickReply = true;
     logger.info({ payload: msg.button?.payload, text: msg.button?.text }, "Template quick-reply button tapped");
-  } else if (msg.type === "image") {
-    mediaType = "image";
-    mediaId = msg.image?.id;
-    body = msg.image?.caption?.trim() || "[Image]";
-  } else if (msg.type === "video") {
-    mediaType = "video";
-    mediaId = msg.video?.id;
-    body = msg.video?.caption?.trim() || "[Video]";
-  } else if (msg.type === "document") {
-    mediaType = "document";
-    mediaId = msg.document?.id;
-    mediaFilename = msg.document?.filename;
-    body = msg.document?.caption?.trim() || "[Document]";
-  } else if (msg.type === "audio") {
-    mediaType = "audio";
-    mediaId = msg.audio?.id;
-    body = "[Audio]";
+  } else if (incomingMedia) {
+    body = incomingMedia.body;
   } else if (msg.type === "interactive") {
     // Log everything we see for interactive so we can diagnose the exact structure
     const rawInteractive = (msg as Record<string, unknown>)["interactive"];
@@ -418,9 +402,9 @@ async function handleIncomingMessage(
     contactId,
     direction: "INBOUND",
     body,
-    ...(mediaType ? { mediaType } : {}),
-    ...(mediaId ? { mediaId } : {}),
-    ...(mediaFilename ? { mediaFilename } : {}),
+    ...(incomingMedia ? { mediaType: incomingMedia.mediaType } : {}),
+    ...(incomingMedia?.mediaId ? { mediaId: incomingMedia.mediaId } : {}),
+    ...(incomingMedia?.mediaFilename ? { mediaFilename: incomingMedia.mediaFilename } : {}),
     whatsappMessageId: msg.id,
     status: "RECEIVED",
     ...(flowData ? { flowData } : {}),
