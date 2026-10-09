@@ -14,6 +14,7 @@ import { logger } from "../lib/logger";
 import { withCreditCharge } from "../lib/creditDeduction";
 import { deriveConversationTabState } from "../lib/conversationTabState";
 import { buildConversationActivityMatch } from "../lib/conversationActivityQuery";
+import { runWithTenant } from "../lib/tenantDatabase";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -333,78 +334,83 @@ router.post(
   authenticate,
   upload.single("file"),
   async (req: AuthRequest, res) => {
+    const tenantUserId = req.user!.userId;
     try {
-      const userId = new mongoose.Types.ObjectId(req.user!.userId);
-      const contactId = new mongoose.Types.ObjectId(req.params.contactId);
+      // Multer's multipart event callbacks can outlive the AsyncLocalStorage
+      // context established by authenticate, so re-enter it after the upload.
+      await runWithTenant(tenantUserId, async () => {
+        const userId = new mongoose.Types.ObjectId(tenantUserId);
+        const contactId = new mongoose.Types.ObjectId(req.params.contactId);
 
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
 
-      const contact = await ContactModel.findOne({ _id: contactId, userId }).lean();
-      if (!contact) return res.status(404).json({ error: "Contact not found" });
+        const contact = await ContactModel.findOne({ _id: contactId, userId }).lean();
+        if (!contact) return res.status(404).json({ error: "Contact not found" });
 
-      // Verify 24-hour window
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const lastInbound = await MessageModel.findOne({
-        userId,
-        contactId,
-        direction: "INBOUND",
-        createdAt: { $gte: twentyFourHoursAgo },
-      });
-      if (!lastInbound) {
-        return res.status(400).json({
-          error: "24-hour customer service window is closed. Use a template message instead.",
+        // Verify 24-hour window
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const lastInbound = await MessageModel.findOne({
+          userId,
+          contactId,
+          direction: "INBOUND",
+          createdAt: { $gte: twentyFourHoursAgo },
         });
-      }
+        if (!lastInbound) {
+          return res.status(400).json({
+            error: "24-hour customer service window is closed. Use a template message instead.",
+          });
+        }
 
-      const { buffer, mimetype, originalname } = req.file;
-      const type = mediaTypeFromMime(mimetype);
+        const { buffer, mimetype, originalname } = req.file;
+        const type = mediaTypeFromMime(mimetype);
 
-       // Reserve credits before the upload/send sequence; refund if either Meta call fails.
-       const { mediaId, result } = await withCreditCharge({
-         userId,
-         description: `Live Chat media message to ${contact.phone}`,
-         send: async () => {
-           const mediaId = await uploadMedia(buffer, mimetype, originalname, userId.toString());
+        // Reserve credits before the upload/send sequence; refund if either Meta call fails.
+        const { mediaId, result } = await withCreditCharge({
+          userId,
+          description: `Live Chat media message to ${contact.phone}`,
+          send: async () => {
+            const mediaId = await uploadMedia(buffer, mimetype, originalname, tenantUserId);
            const result = await sendMediaMessage(
              contact.phone,
              mediaId,
              type,
              originalname,
-             userId.toString(),
+              tenantUserId,
            );
            return { mediaId, result };
          },
        });
-      const waMessageId = result.messages?.[0]?.id ?? null;
+        const waMessageId = result.messages?.[0]?.id ?? null;
 
-      // 3. Persist to MongoDB
-      const caption = (req.body as { caption?: string }).caption?.trim() ?? "";
-      const msg = await MessageModel.create({
-        userId,
-        contactId,
-        direction: "OUTBOUND",
-        body: caption || originalname,
-        mediaType: type,
-        mediaId,
-        mediaFilename: originalname,
-        whatsappMessageId: waMessageId,
-        status: "SENT",
-        sentAt: new Date(),
-      });
-
-      res.status(201).json({
-        message: {
-          id: String(msg._id),
+        // Persist the sent media reference in this tenant's MongoDB message history.
+        const caption = (req.body as { caption?: string }).caption?.trim() ?? "";
+        const msg = await MessageModel.create({
+          userId,
+          contactId,
           direction: "OUTBOUND",
-          body: msg.body,
+          body: caption || originalname,
           mediaType: type,
+          mediaId,
           mediaFilename: originalname,
-          status: msg.status,
-          whatsappMessageId: msg.whatsappMessageId,
-          createdAt: msg.createdAt,
-        },
+          whatsappMessageId: waMessageId,
+          status: "SENT",
+          sentAt: new Date(),
+        });
+
+        res.status(201).json({
+          message: {
+            id: String(msg._id),
+            direction: "OUTBOUND",
+            body: msg.body,
+            mediaType: type,
+            mediaFilename: originalname,
+            status: msg.status,
+            whatsappMessageId: msg.whatsappMessageId,
+            createdAt: msg.createdAt,
+          },
+        });
       });
     } catch (err: unknown) {
       logger.error({ err }, "POST /conversations/:contactId/media failed");
