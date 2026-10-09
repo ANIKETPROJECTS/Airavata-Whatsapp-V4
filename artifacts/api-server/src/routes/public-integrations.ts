@@ -19,6 +19,7 @@ import { authenticateAutoGammaRequest } from "../lib/apiKeyAuth";
 import { InsufficientCreditsError, withCreditCharge } from "../lib/creditDeduction";
 import { findOrCreateContactForPhone } from "../lib/liveChatPersistence";
 import { getCredentials, sendTemplateMessage, sendTextMessage } from "../lib/whatsapp";
+import { getTemplateMessageMediaFields } from "../lib/templateComponents";
 import { normalizeContactPhone } from "../lib/contactPhone";
 import { runWithTenant } from "../lib/tenantDatabase";
 import { logger } from "../lib/logger";
@@ -466,6 +467,7 @@ router.post("/integrations/v1/whatsapp/messages/template", async (req, res): Pro
               whatsappMessageId,
               status: "SENT",
               sentAt: new Date(),
+              ...getTemplateMessageMediaFields(components),
             },
           },
         );

@@ -20,6 +20,7 @@ import {
 import {
   buildTemplateComponents,
   getTemplateMediaExample,
+  getTemplateMessageMediaFields,
   getTemplateStructure,
   type TemplateParameterValues,
 } from "../lib/templateComponents";
@@ -445,6 +446,7 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
       whatsappMessageId,
       status: "SENT",
       sentAt: new Date(),
+      ...getTemplateMessageMediaFields(components),
     });
 
     // Keep lastContactedAt fresh

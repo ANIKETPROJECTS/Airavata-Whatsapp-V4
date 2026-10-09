@@ -13,6 +13,7 @@ import { checkMessagingLimitBeforeSend } from "./messagingLimit";
 import { normalizeCampaignPhone } from "./contactPhone";
 import {
   buildTemplateComponents,
+  getTemplateMessageMediaFields,
   type TemplateParameterValues,
 } from "./templateComponents";
 
@@ -130,26 +131,35 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
   let requestPayload: unknown;
   try {
     const normalizedPhone = normalizeCampaignPhone(contact.phone);
-    const result = await withCreditCharge({
+    const templateComponents = isFlowCampaign
+      ? undefined
+      : buildTemplateComponents(template!, values, headerValues, contact);
+    const creditChargeContext = {
       userId,
       category: template?.category,
       campaignId,
       description: `Campaign message to ${contact.phone}`,
-      send: () => isFlowCampaign
-        ? sendWhatsAppFlowMessage(
+    };
+    const result = isFlowCampaign
+      ? await withCreditCharge({
+          ...creditChargeContext,
+          send: () => sendWhatsAppFlowMessage(
             normalizedPhone,
             flow!,
             String(userId),
             { campaignId: String(campaignId), recipientId: String(recipientId) },
           )
-        : sendTemplateMessage(
+        })
+      : await withCreditCharge({
+          ...creditChargeContext,
+          send: () => sendTemplateMessage(
             normalizedPhone,
             template!.name,
             template!.language ?? "en_US",
-            buildTemplateComponents(template!, values, headerValues, contact),
+            templateComponents,
             String(userId),
           ),
-    });
+        });
     requestPayload = (result as { _metaRequest?: unknown })._metaRequest;
     const responsePayload = Object.fromEntries(
       Object.entries(result as Record<string, unknown>)
@@ -179,6 +189,7 @@ export async function executeCampaignSend(input: ExecuteCampaignSendInput) {
       whatsappMessageId,
       status: "SENT",
       sentAt: new Date(),
+      ...(templateComponents ? getTemplateMessageMediaFields(templateComponents) : {}),
     });
     await CampaignRecipientModel.updateOne(
       { _id: recipientId, userId },

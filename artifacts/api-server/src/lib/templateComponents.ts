@@ -149,3 +149,42 @@ export function buildTemplateComponents(
 
   return components;
 }
+
+export type TemplateMessageMediaFields = {
+  mediaType: "image" | "video" | "document" | "audio";
+  mediaId?: string;
+  mediaUrl?: string;
+  mediaFilename?: string;
+};
+
+export function getTemplateMessageMediaFields(
+  components: Array<Record<string, unknown>> | undefined,
+): Partial<TemplateMessageMediaFields> {
+  const header = components?.find(
+    (component) => String(component.type).toUpperCase() === "HEADER",
+  );
+  if (!header || !Array.isArray(header.parameters)) return {};
+
+  for (const rawParameter of header.parameters) {
+    if (!rawParameter || typeof rawParameter !== "object") continue;
+    const parameter = rawParameter as Record<string, unknown>;
+    const mediaType = String(parameter.type ?? "").toLowerCase();
+    if (!["image", "video", "document", "audio"].includes(mediaType)) continue;
+
+    const rawMedia = parameter[mediaType];
+    if (!rawMedia || typeof rawMedia !== "object") continue;
+    const media = rawMedia as Record<string, unknown>;
+    const link = typeof media.link === "string" ? media.link.trim() : "";
+    const id = typeof media.id === "string" ? media.id.trim() : "";
+    if (!link && !id) continue;
+
+    const mediaFilename = typeof media.filename === "string" ? media.filename : undefined;
+    return {
+      mediaType: mediaType as TemplateMessageMediaFields["mediaType"],
+      ...(link ? { mediaUrl: link } : { mediaId: id }),
+      ...(mediaFilename ? { mediaFilename } : {}),
+    };
+  }
+
+  return {};
+}

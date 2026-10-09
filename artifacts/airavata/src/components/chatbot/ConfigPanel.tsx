@@ -338,6 +338,9 @@ function TemplateConfig({ data, update }: { data: Record<string, unknown>; updat
       <Field label="Header Variable" hint="optional">
         <input className={input} value={String(data.headerVar ?? '')} onChange={e => update({ headerVar: e.target.value })} placeholder="{{1}} value for header..." />
       </Field>
+      <Field label="Header Image/Video URL" hint="optional; leave blank to use the approved template sample">
+        <input className={input} value={String(data.headerMediaUrl ?? '')} onChange={e => update({ headerMediaUrl: e.target.value })} placeholder="https://example.com/media.jpg" />
+      </Field>
       <Field label="Body Variables" hint="one per line">
         <div className="space-y-1.5">
           {variables.map((v, i) => (

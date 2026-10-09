@@ -25,9 +25,17 @@ import {
   sendLocationRequest,
   sendLocationMessage,
   sendTemplateMessage,
+  uploadTemplateSampleForMessage,
   getCredentials,
   normalizeWhatsAppPhone,
 } from "./whatsapp";
+import {
+  buildTemplateComponents,
+  getTemplateMediaExample,
+  getTemplateMessageMediaFields,
+  getTemplateStructure,
+  type TemplateParameterValues,
+} from "./templateComponents";
 import { resolvePricingLookupForUser } from "./pricing";
 import { withCreditCharge, type MessageCategory } from "./creditDeduction";
 
@@ -49,15 +57,14 @@ interface ChatbotEdge {
 async function resolveTemplateDetails(
   userId: mongoose.Types.ObjectId,
   templateName: string,
-): Promise<{ category: MessageCategory; templateId: mongoose.Types.ObjectId }> {
+){
   const template = await TemplateModel.findOne({ userId, name: templateName })
-    .select("_id category")
     .lean();
   const category = String(template?.category ?? "").toUpperCase();
   if (!template || (category !== "AUTHENTICATION" && category !== "UTILITY" && category !== "MARKETING")) {
     throw new Error(`Template "${templateName}" was not found or has no valid category`);
   }
-  return { category: category as MessageCategory, templateId: template._id };
+  return { category: category as MessageCategory, templateId: template._id, template };
 }
 
 interface ChatbotFlow {
@@ -724,7 +731,7 @@ async function executeNode(
         const mediaUrl = String(d["mediaUrl"] ?? "");
         const caption = d["caption"] ? String(d["caption"]) : undefined;
         if (mediaUrl) {
-          await withCreditCharge({
+          const result = await withCreditCharge({
             userId,
             description: `Chatbot media message to ${phone}`,
             send: () =>
@@ -737,7 +744,12 @@ async function executeNode(
                 userId.toString(),
               ),
           });
-          await storeOutbound(userId, contactId, `[${mediaType}]`, { mediaType, mediaUrl });
+          const whatsappMessageId = result.messages?.[0]?.id;
+          await storeOutbound(userId, contactId, caption || `[${mediaType}]`, {
+            mediaType,
+            mediaUrl,
+            ...(whatsappMessageId ? { whatsappMessageId } : {}),
+          });
         }
         return {};
       }
@@ -821,24 +833,60 @@ async function executeNode(
       case "template": {
         const templateName = String(d["templateName"] ?? "");
         const language = String(d["language"] ?? "en_US");
-        const vars = (d["variables"] as Array<{ value: string }> | undefined) ?? [];
         if (templateName) {
-          const template = await resolveTemplateDetails(userId, templateName);
-          const components =
-            vars.length > 0
-              ? [
-                  {
-                    type: "body",
-                    parameters: vars.map((v) => ({
-                      type: "text",
-                      text: interpolate(String(v.value ?? ""), variables, contact),
-                    })),
-                  },
-                ]
-              : undefined;
-          await withCreditCharge({
+          const templateDetails = await resolveTemplateDetails(userId, templateName);
+          const template = templateDetails.template;
+          const structure = getTemplateStructure(template);
+          const configuredVariables = (Array.isArray(d["variables"]) ? d["variables"] : []) as
+            Array<string | { value?: unknown }>;
+          const bodyValues: TemplateParameterValues = {};
+
+          structure.bodyVariableIndices.forEach((index, position) => {
+            const entry = configuredVariables[position];
+            const rawValue = typeof entry === "string"
+              ? entry
+              : entry && typeof entry === "object"
+                ? String(entry.value ?? "")
+                : String(entry ?? "");
+            bodyValues[String(index)] = interpolate(rawValue, variables, contact);
+          });
+
+          const headerValues: TemplateParameterValues = {};
+          const headerVariable = String(d["headerVar"] ?? "").trim();
+          if (headerVariable && structure.headerVariableIndices.length > 0) {
+            const index = structure.headerVariableIndices[0];
+            headerValues[String(index)] = interpolate(headerVariable, variables, contact);
+          }
+
+          if (structure.requiresMediaHeader) {
+            const configuredMediaUrl = String(d["headerMediaUrl"] ?? "").trim();
+            if (configuredMediaUrl) {
+              headerValues.media = interpolate(configuredMediaUrl, variables, contact);
+            } else {
+              const sampleUrl = getTemplateMediaExample(template);
+              if (!sampleUrl) {
+                throw new Error(
+                  "This template's media header sample is unavailable. Refresh templates or add a media URL in the chatbot node.",
+                );
+              }
+              headerValues.media = await uploadTemplateSampleForMessage(
+                sampleUrl,
+                structure.headerFormat as "IMAGE" | "VIDEO" | "DOCUMENT",
+                userId.toString(),
+              );
+              if (structure.headerFormat === "DOCUMENT") {
+                headerValues.mediaFilename = `${templateName}.pdf`;
+              }
+            }
+          }
+
+          const components = buildTemplateComponents(template, bodyValues, headerValues, {
+            name: String(contact.name ?? ""),
+            phone,
+          });
+          const result = await withCreditCharge({
             userId,
-            category: template.category,
+            category: templateDetails.category,
             description: `Chatbot template message to ${phone}`,
             send: () =>
               sendTemplateMessage(
@@ -850,7 +898,11 @@ async function executeNode(
               ),
           });
           await storeOutbound(userId, contactId, `[template: ${templateName}]`, {
-            templateId: template.templateId,
+            templateId: templateDetails.templateId,
+            ...(result.messages?.[0]?.id
+              ? { whatsappMessageId: result.messages[0].id }
+              : {}),
+            ...getTemplateMessageMediaFields(components),
           });
         }
         return {};

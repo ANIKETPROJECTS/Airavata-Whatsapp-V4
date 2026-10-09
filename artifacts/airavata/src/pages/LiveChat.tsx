@@ -53,6 +53,7 @@ interface Message {
   body: string;
   mediaType?: 'image' | 'video' | 'audio' | 'document';
   mediaId?: string | null;
+  mediaUrl?: string | null;
   mediaFilename?: string;
   flowData?: Record<string, unknown> | null;
   flowId?: string | null;
@@ -375,23 +376,26 @@ function LiveChatTemplateDialog({
 
 // ── Media renderer ────────────────────────────────────────────────────────────
 
-function MediaBubble({ mediaType, mediaId, filename }: {
+function MediaBubble({ mediaType, mediaId, mediaUrl, filename }: {
   mediaType: string;
   mediaId?: string | null;
+  mediaUrl?: string | null;
   filename?: string;
 }) {
-  // Build the proxy URL when we have a mediaId; fall back to icon-only when we don't.
-  const proxyUrl = mediaId
+  // Prefer the authenticated Meta proxy for tenant media IDs; use a public source URL otherwise.
+  const sourceUrl = mediaId
     ? `${import.meta.env.BASE_URL}api/media/proxy?mediaId=${encodeURIComponent(mediaId)}`
-    : null;
+    : mediaUrl && /^https?:\/\//i.test(mediaUrl)
+      ? mediaUrl
+      : null;
 
   if (mediaType === 'image') {
-    return proxyUrl ? (
+    return sourceUrl ? (
       <img
-        src={proxyUrl}
+        src={sourceUrl}
         alt={filename ?? 'image'}
         className="max-w-[260px] max-h-[260px] rounded-lg object-contain cursor-pointer"
-        onClick={() => window.open(proxyUrl, '_blank')}
+        onClick={() => window.open(sourceUrl, '_blank')}
       />
     ) : (
       <div className="flex items-center gap-2 px-1 py-0.5 text-gray-500">
@@ -402,9 +406,9 @@ function MediaBubble({ mediaType, mediaId, filename }: {
   }
 
   if (mediaType === 'video') {
-    return proxyUrl ? (
+    return sourceUrl ? (
       <video
-        src={proxyUrl}
+        src={sourceUrl}
         controls
         className="max-w-[280px] max-h-[200px] rounded-lg"
       />
@@ -417,8 +421,8 @@ function MediaBubble({ mediaType, mediaId, filename }: {
   }
 
   if (mediaType === 'audio') {
-    return proxyUrl ? (
-      <audio src={proxyUrl} controls className="max-w-[260px]" />
+    return sourceUrl ? (
+      <audio src={sourceUrl} controls className="max-w-[260px]" />
     ) : (
       <div className="flex items-center gap-2 px-1 py-0.5 text-gray-500">
         <Music className="w-5 h-5 shrink-0" />
@@ -431,9 +435,9 @@ function MediaBubble({ mediaType, mediaId, filename }: {
   return (
     <div className="flex items-center gap-2 px-1 py-0.5">
       <FileText className="w-5 h-5 shrink-0 text-gray-500" />
-      {proxyUrl ? (
+      {sourceUrl ? (
         <a
-          href={proxyUrl}
+          href={sourceUrl}
           download={filename ?? 'document'}
           target="_blank"
           rel="noreferrer"
@@ -1635,7 +1639,12 @@ export default function LiveChat() {
                           <FlowDataBubble data={msg.flowData} />
                         ) : msg.mediaType ? (
                           <>
-                            <MediaBubble mediaType={msg.mediaType} mediaId={msg.mediaId} filename={msg.mediaFilename} />
+                            <MediaBubble
+                              mediaType={msg.mediaType}
+                              mediaId={msg.mediaId}
+                              mediaUrl={msg.mediaUrl}
+                              filename={msg.mediaFilename}
+                            />
                             {msg.body && (
                               <p className="text-base whitespace-pre-wrap mt-1 text-gray-600 italic">{msg.body}</p>
                             )}

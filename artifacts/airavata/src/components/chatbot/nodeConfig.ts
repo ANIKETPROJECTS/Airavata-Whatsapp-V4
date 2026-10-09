@@ -96,7 +96,7 @@ export const NODE_DEFS: NodeDef[] = [
     icon: 'Layout',
     category: 'message',
     description: 'Send a Meta-approved template',
-    defaultData: { templateName: '', language: 'en_US', headerVar: '', variables: [], ctaUrl: '', ctaLabel: '' },
+    defaultData: { templateName: '', language: 'en_US', headerVar: '', headerMediaUrl: '', variables: [], ctaUrl: '', ctaLabel: '' },
   },
   {
     type: 'location',

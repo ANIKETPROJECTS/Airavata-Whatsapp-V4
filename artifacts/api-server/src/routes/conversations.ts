@@ -237,6 +237,7 @@ router.get("/conversations/:contactId/messages", authenticate, async (req: AuthR
       body: m.body ?? "",
       mediaType: m.mediaType ?? null,
       mediaId: m.mediaId ?? null,
+      mediaUrl: m.mediaUrl ?? null,
       mediaFilename: m.mediaFilename ?? null,
       flowData: (m as Record<string, unknown>).flowData ?? null,
       flowId: (m as Record<string, unknown>).flowId ? String((m as Record<string, unknown>).flowId) : null,
