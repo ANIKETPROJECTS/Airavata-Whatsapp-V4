@@ -28,6 +28,11 @@ interface Group    { id: string; name: string; memberCount?: number; }
 interface TagItem  { id: string; name: string; color?: string; }
 interface Contact  { id: string; name: string; phone: string; }
 interface PublishedFlow { id: string; name: string; status: string; metaFlowId?: string; }
+interface SegmentPreviewContact { id: string; name?: string | null; phone: string; }
+interface SegmentPreviewResponse { count: number; contacts: SegmentPreviewContact[]; }
+type SegmentPreviewFilter =
+  | { field: 'group' | 'tag'; value: string }
+  | { op: 'AND'; filters: Array<{ field: 'group' | 'tag'; value: string }> };
 interface CsvContactRow {
   phone: string;
   name?: string;
@@ -97,6 +102,14 @@ function normalizePhone(value: unknown, countryCode: string) {
   return selectedCountryDigits
     ? `+${selectedCountryDigits}${withoutInternationalPrefix}`
     : withoutInternationalPrefix;
+}
+
+function buildSegmentPreviewFilter(groupId: string, tagId: string): SegmentPreviewFilter | null {
+  const filters: Array<{ field: 'group' | 'tag'; value: string }> = [];
+  if (groupId) filters.push({ field: 'group', value: groupId });
+  if (tagId) filters.push({ field: 'tag', value: tagId });
+  if (filters.length === 0) return null;
+  return filters.length === 1 ? filters[0]! : { op: 'AND', filters };
 }
 
 function isValidCampaignPhone(value: string, countryCode: string) {
@@ -449,11 +462,13 @@ function ActionButtons({
   onSchedule,
   onSend,
   loading,
+  countLoading = false,
 }: {
   validCount: number;
   onSchedule: () => void;
   onSend: () => void;
   loading: boolean;
+  countLoading?: boolean;
 }) {
   return (
     <div className="flex items-center gap-3 bg-white border rounded-xl p-4 w-fit">
@@ -465,11 +480,13 @@ function ActionButtons({
       </button>
       <button
         onClick={onSend}
-        disabled={validCount === 0 || loading}
+        disabled={countLoading || validCount === 0 || loading}
         className="px-5 py-2.5 bg-gray-300 text-gray-500 text-sm font-semibold rounded-lg disabled:opacity-60 enabled:bg-gray-900 enabled:text-white enabled:hover:bg-gray-800 transition-colors flex items-center gap-2"
       >
-        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-        Create &amp; Start Campaign ({validCount} recipients)
+        {(loading || countLoading) && <Loader2 className="w-4 h-4 animate-spin" />}
+        {countLoading
+          ? 'Checking recipients…'
+          : `Create & Start Campaign (${validCount} recipient${validCount === 1 ? '' : 's'})`}
       </button>
     </div>
   );
@@ -589,10 +606,25 @@ export default function CreateCampaign() {
   });
   const tags = tagsData?.tags ?? [];
 
+  const segmentPreviewFilter = useMemo(
+    () => buildSegmentPreviewFilter(segmentGroupId, segmentTagId),
+    [segmentGroupId, segmentTagId],
+  );
+  const segmentPreviewQuery = useQuery<SegmentPreviewResponse>({
+    queryKey: ['campaign-segment-preview', segmentGroupId, segmentTagId],
+    queryFn: () => {
+      if (!segmentPreviewFilter) throw new Error('Choose a group or tag to preview recipients.');
+      return api.post<SegmentPreviewResponse>('/audience-segments/preview', {
+        filter: segmentPreviewFilter,
+      });
+    },
+    enabled: view === 'segment' && segmentPreviewFilter !== null,
+  });
+
   const { data: contactsData } = useQuery<{ contacts: Contact[] }>({
     queryKey: ['contacts'],
     queryFn: () => api.get('/contacts'),
-    enabled: view !== 'select' && view !== 'csv',
+    enabled: view !== 'select' && view !== 'csv' && view !== 'segment',
   });
   const contacts = contactsData?.contacts ?? [];
 
@@ -1048,6 +1080,12 @@ export default function CreateCampaign() {
   // ── Segment Campaign ───────────────────────────────────────────────────────
 
   if (view === 'segment') {
+    const hasSegmentAudience = Boolean(segmentGroupId || segmentTagId);
+    const previewCount = segmentPreviewQuery.isError
+      ? 0
+      : segmentPreviewQuery.data?.count ?? 0;
+    const previewContacts = segmentPreviewQuery.data?.contacts ?? [];
+
     return (
       <SubViewShell title="Segment Campaign" onBack={() => setView('select')}>
         <ConfigRow
@@ -1069,13 +1107,73 @@ export default function CreateCampaign() {
           }
         />
         <VariableValuesSection />
-        <div className="bg-white border rounded-xl p-4 text-sm text-gray-600">
-          {segmentGroupId || segmentTagId
-            ? 'The selected group or tag will be resolved again at send time and inactive or unsubscribed contacts will be skipped.'
-            : 'Choose a group or tag to define the segment audience.'}
+        <div className="bg-white border rounded-xl p-4 text-sm text-gray-600 space-y-3">
+          <p>
+            {hasSegmentAudience
+              ? 'This preview shows active contacts matching your selections. The audience is checked again when the campaign starts; inactive or unsubscribed contacts are skipped.'
+              : 'Choose a group or tag to preview the campaign audience.'}
+          </p>
+
+          {hasSegmentAudience && (
+            <div aria-live="polite">
+              {segmentPreviewQuery.isFetching ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Checking matching contacts…
+                </div>
+              ) : segmentPreviewQuery.isError ? (
+                <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-red-700">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>
+                    Could not load the recipient preview: {segmentPreviewQuery.error instanceof Error
+                      ? segmentPreviewQuery.error.message
+                      : 'Please try again.'}
+                  </span>
+                  <button
+                    type="button"
+                    className="underline font-medium"
+                    onClick={() => { void segmentPreviewQuery.refetch(); }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : segmentPreviewQuery.data ? (
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {previewCount} active recipient{previewCount === 1 ? '' : 's'}
+                  </p>
+                  {previewCount === 0 ? (
+                    <p className="mt-1 text-sm text-gray-500">
+                      No active contacts match these selections.
+                    </p>
+                  ) : (
+                    <ul className="mt-2 max-h-56 overflow-y-auto divide-y rounded-lg border">
+                      {previewContacts.map(contact => (
+                        <li
+                          key={contact.id}
+                          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-2"
+                        >
+                          <span className="font-medium text-gray-800">
+                            {contact.name?.trim() || 'Unnamed contact'}
+                          </span>
+                          <span className="text-gray-500">{contact.phone}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {previewCount > previewContacts.length && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      Showing the first {previewContacts.length} of {previewCount} matching contacts.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
         <ActionButtons
-          validCount={segmentGroupId || segmentTagId ? 1 : 0}
+          validCount={previewCount}
+          countLoading={hasSegmentAudience && segmentPreviewQuery.isFetching}
           onSchedule={() => handleSchedule({
             groupIds: segmentGroupId ? [segmentGroupId] : [],
             tagIds: segmentTagId ? [segmentTagId] : [],
@@ -1083,6 +1181,7 @@ export default function CreateCampaign() {
           onSend={() => {
             if (!validateCommon()) return;
             if (!segmentGroupId && !segmentTagId) { toast.error('Choose a group or tag'); return; }
+            if (!previewCount) { toast.error('No active contacts match the selected audience'); return; }
             launchMutation.mutate(buildPayload({
               groupIds: segmentGroupId ? [segmentGroupId] : [],
               tagIds: segmentTagId ? [segmentTagId] : [],

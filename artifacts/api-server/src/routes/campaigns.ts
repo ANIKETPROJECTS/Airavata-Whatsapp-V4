@@ -399,7 +399,10 @@ async function resolveRecipients(
   const byGroup = groupIds.length
     ? await ContactModel.find({
         userId,
-        groupId: { $in: groupIds.map((id) => new mongoose.Types.ObjectId(id)) },
+        $or: [
+          { groupId: { $in: groupIds.map((id) => new mongoose.Types.ObjectId(id)) } },
+          { groupIds: { $in: groupIds.map((id) => new mongoose.Types.ObjectId(id)) } },
+        ],
         status: "active",
       })
         .select("_id name phone")
