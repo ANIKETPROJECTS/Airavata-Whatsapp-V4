@@ -30,6 +30,46 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+type ContactGroupView = { id: string; name: string };
+type ContactTagView = { id: string; name: string; color: string };
+
+function contactReferenceId(value: unknown): string {
+  if (value instanceof mongoose.Types.ObjectId) return value.toHexString();
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+
+  const reference = value as { _id?: unknown; id?: unknown };
+  const id = reference._id ?? reference.id;
+  if (id instanceof mongoose.Types.ObjectId) return id.toHexString();
+  return typeof id === "string" || typeof id === "number" ? String(id) : "";
+}
+
+function serializeContactGroup(value: unknown): ContactGroupView | null {
+  const id = contactReferenceId(value);
+  if (!id) return null;
+  const reference = value as { name?: unknown };
+  return { id, name: typeof reference.name === "string" ? reference.name : "" };
+}
+
+function serializeContactTag(value: unknown): ContactTagView | null {
+  const id = contactReferenceId(value);
+  if (!id) return null;
+  const reference = value as { name?: unknown; color?: unknown };
+  return {
+    id,
+    name: typeof reference.name === "string" ? reference.name : "",
+    color: typeof reference.color === "string" ? reference.color : "#22c55e",
+  };
+}
+
+function serializeContactGroups(value: unknown, legacyGroup?: unknown): ContactGroupView[] {
+  const groupIds = Array.isArray(value) ? value : [];
+  const assignedGroups = groupIds.length ? groupIds : legacyGroup ? [legacyGroup] : [];
+  return assignedGroups
+    .map(serializeContactGroup)
+    .filter((group): group is ContactGroupView => group !== null);
+}
+
 async function getLiveChatStateContactIds(userId: string, chatState: string) {
   const userObjectId = new mongoose.Types.ObjectId(userId);
   const [contactStates, latestRows, unreadRows] = await Promise.all([
@@ -85,6 +125,10 @@ async function getLiveChatStateContactIds(userId: string, chatState: string) {
 
 // ── Helper: build a populated contact response object ─────────────────────────
 async function populateContact(doc: InstanceType<typeof ContactModel>) {
+  const groups = serializeContactGroups(
+    (doc as unknown as { groupIds?: unknown[] }).groupIds,
+    doc.groupId,
+  );
   return {
     id: doc._id,
     name: doc.name,
@@ -94,10 +138,12 @@ async function populateContact(doc: InstanceType<typeof ContactModel>) {
     status: doc.status,
     lastContactedAt: doc.lastContactedAt ?? null,
     createdAt: doc.createdAt,
-    tags: doc.tags,   // will be populated
-    groupId: doc.groupId ?? null,
-    groupIds: (doc as unknown as { groupIds?: unknown[] }).groupIds ?? [],
-    group: doc.groupId ?? null, // will be populated
+    tags: (doc.tags ?? [])
+      .map(serializeContactTag)
+      .filter((tag): tag is ContactTagView => tag !== null),
+    groupId: serializeContactGroup(doc.groupId),
+    groupIds: groups,
+    group: serializeContactGroup(doc.groupId) ?? groups[0] ?? null,
   };
 }
 
@@ -277,23 +323,31 @@ router.get("/contacts", async (req: AuthRequest, res) => {
     }
 
     res.json({
-      contacts: contacts.map((c) => ({
-        id: c._id,
-        name: c.name,
-        phone: c.phone,
-        email: c.email ?? null,
-        attributes: (c as unknown as { attributes?: Record<string, unknown> }).attributes ?? {},
-        status: c.status,
-        chatState: (c as Record<string, unknown>).chatState ?? "DOR",
-        hasConversation: latestByContact.has(String(c._id)),
-        unreadMessages: unreadByContact.get(String(c._id)) ?? 0,
-        lastContactedAt: c.lastContactedAt ?? null,
-        createdAt: c.createdAt,
-        tags: c.tags,
-        group: c.groupId,
-        groups: ((c as unknown as { groupIds?: unknown[] }).groupIds ?? (c.groupId ? [c.groupId] : [])),
-        campaigns: campaignsByContact.get(String(c._id)) ?? [],
-      })),
+      contacts: contacts.map((c) => {
+        const groups = serializeContactGroups(
+          (c as unknown as { groupIds?: unknown[] }).groupIds,
+          c.groupId,
+        );
+        return {
+          id: c._id,
+          name: c.name,
+          phone: c.phone,
+          email: c.email ?? null,
+          attributes: (c as unknown as { attributes?: Record<string, unknown> }).attributes ?? {},
+          status: c.status,
+          chatState: (c as Record<string, unknown>).chatState ?? "DOR",
+          hasConversation: latestByContact.has(String(c._id)),
+          unreadMessages: unreadByContact.get(String(c._id)) ?? 0,
+          lastContactedAt: c.lastContactedAt ?? null,
+          createdAt: c.createdAt,
+          tags: (c.tags ?? [])
+            .map(serializeContactTag)
+            .filter((tag): tag is ContactTagView => tag !== null),
+          group: serializeContactGroup(c.groupId) ?? groups[0] ?? null,
+          groups,
+          campaigns: campaignsByContact.get(String(c._id)) ?? [],
+        };
+      }),
       total,
       page: pageNum,
       pages: Math.ceil(total / limitNum),
@@ -471,6 +525,10 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
       .populate("tags", "name color")
       .populate("groupId", "name")
       .populate({ path: "groupIds", select: "name", strictPopulate: false });
+    const groups = serializeContactGroups(
+      (populated as unknown as { groupIds?: unknown[] }).groupIds,
+      populated!.groupId,
+    );
 
     res.json({
       contact: {
@@ -480,9 +538,11 @@ router.put("/contacts/:id", async (req: AuthRequest, res) => {
         email: populated!.email ?? null,
         attributes: (populated as unknown as { attributes?: Record<string, unknown> }).attributes ?? {},
         status: populated!.status,
-        tags: populated!.tags,
-        group: populated!.groupId ?? null,
-        groups: ((populated as unknown as { groupIds?: unknown[] }).groupIds ?? []),
+        tags: (populated!.tags ?? [])
+          .map(serializeContactTag)
+          .filter((tag): tag is ContactTagView => tag !== null),
+        group: serializeContactGroup(populated!.groupId) ?? groups[0] ?? null,
+        groups,
       },
     });
   } catch {
