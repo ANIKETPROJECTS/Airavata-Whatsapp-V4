@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MessageSquare,
@@ -382,6 +383,28 @@ function MediaBubble({ mediaType, mediaId, mediaUrl, filename }: {
   mediaUrl?: string | null;
   filename?: string;
 }) {
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+  const imageButtonRef = useRef<HTMLButtonElement>(null);
+  const previewCloseButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!imagePreviewOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setImagePreviewOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    previewCloseButtonRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+      imageButtonRef.current?.focus();
+    };
+  }, [imagePreviewOpen]);
+
   // Prefer the authenticated Meta proxy for tenant media IDs; use a public source URL otherwise.
   const sourceUrl = mediaId
     ? `${import.meta.env.BASE_URL}api/media/proxy?mediaId=${encodeURIComponent(mediaId)}`
@@ -391,12 +414,56 @@ function MediaBubble({ mediaType, mediaId, mediaUrl, filename }: {
 
   if (mediaType === 'image') {
     return sourceUrl ? (
-      <img
-        src={sourceUrl}
-        alt={filename ?? 'image'}
-        className="max-w-[260px] max-h-[260px] rounded-lg object-contain cursor-pointer"
-        onClick={() => window.open(sourceUrl, '_blank')}
-      />
+      <>
+        <button
+          ref={imageButtonRef}
+          type="button"
+          onClick={() => setImagePreviewOpen(true)}
+          aria-label={`Open image preview${filename ? `: ${filename}` : ''}`}
+          className="block cursor-zoom-in border-0 bg-transparent p-0 text-left"
+        >
+          <img
+            src={sourceUrl}
+            alt={filename ?? 'image'}
+            className="max-w-[260px] max-h-[260px] rounded-lg object-contain"
+          />
+        </button>
+        {imagePreviewOpen && createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-4"
+            role="presentation"
+            onClick={event => {
+              if (event.target === event.currentTarget) setImagePreviewOpen(false);
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Image preview${filename ? `: ${filename}` : ''}`}
+              className="relative flex h-full w-full items-center justify-center"
+              onClick={event => {
+                if (event.target === event.currentTarget) setImagePreviewOpen(false);
+              }}
+            >
+              <button
+                ref={previewCloseButtonRef}
+                type="button"
+                onClick={() => setImagePreviewOpen(false)}
+                aria-label="Close image preview"
+                className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white shadow-lg transition-colors hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <img
+                src={sourceUrl}
+                alt={filename ?? 'image preview'}
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
+      </>
     ) : (
       <div className="flex items-center gap-2 px-1 py-0.5 text-gray-500">
         <Image className="w-5 h-5 shrink-0" />
