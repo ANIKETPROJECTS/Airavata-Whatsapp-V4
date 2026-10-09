@@ -70,6 +70,8 @@ interface AttachmentFile {
   previewUrl: string | null; // only for images
 }
 
+const MAX_MEDIA_FILE_SIZE_BYTES = 16 * 1024 * 1024;
+
 interface ProfileTag {
   id: string;
   name: string;
@@ -1226,6 +1228,7 @@ export default function LiveChat() {
   const handleSend = useCallback(() => {
     if (isPending || !activeConvId) return;
     if (attachment) {
+      if (attachment.file.size > MAX_MEDIA_FILE_SIZE_BYTES) return;
       sendMediaMutation.mutate({ file: attachment.file, caption: messageInput.trim() });
     } else if (messageInput.trim()) {
       sendMutation.mutate(messageInput.trim());
@@ -1749,18 +1752,36 @@ export default function LiveChat() {
                       />
                     ) : (
                       <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-gray-400" />
+                        {attachment.file.type.toLowerCase().startsWith('video/') ? (
+                          <Film className="w-6 h-6 text-gray-400" />
+                        ) : (
+                          <FileText className="w-6 h-6 text-gray-400" />
+                        )}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{attachment.file.name}</p>
-                      <p className="text-xs text-gray-400">
-                        {(attachment.file.size / 1024).toFixed(0)} KB
+                      <p className={`text-xs ${
+                        attachment.file.size > MAX_MEDIA_FILE_SIZE_BYTES ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {attachment.file.size >= 1024 * 1024
+                          ? `${(attachment.file.size / (1024 * 1024)).toFixed(1)} MB`
+                          : `${(attachment.file.size / 1024).toFixed(0)} KB`}
+                        {attachment.file.type.toLowerCase().startsWith('video/')
+                          ? ' · Video limit: 16 MB'
+                          : ' · Upload limit: 16 MB'}
                       </p>
+                      {attachment.file.size > MAX_MEDIA_FILE_SIZE_BYTES && (
+                        <p className="mt-1 text-xs font-medium text-red-600">
+                          This file is over the 16 MB limit. Choose a smaller file before sending.
+                        </p>
+                      )}
                     </div>
                     <button
+                      type="button"
                       onClick={clearAttachment}
                       className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                      aria-label="Remove attachment"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1917,7 +1938,11 @@ export default function LiveChat() {
                   <div className="shrink-0">
                     <button
                       onClick={handleSend}
-                      disabled={(!messageInput.trim() && !attachment) || isPending}
+                      disabled={
+                        (!messageInput.trim() && !attachment) ||
+                        isPending ||
+                        Boolean(attachment && attachment.file.size > MAX_MEDIA_FILE_SIZE_BYTES)
+                      }
                       className="flex items-center justify-center bg-transparent p-1.5 text-[#25d366] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
                       title="Send message"
                       aria-label="Send message"
