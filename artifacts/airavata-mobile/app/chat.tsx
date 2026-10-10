@@ -57,12 +57,12 @@ export default function LiveChatScreen() {
   const conversationsQuery = useQuery({
     queryKey: ['mobile-live-chat-conversations'],
     queryFn: () => listTenantConversations({ cache: 'no-store' }),
-    refetchInterval: 15000,
+    refetchInterval: 10000,
   });
   const conversations = conversationsQuery.data?.conversations ?? [];
   const totalUnreadMessages = conversations.reduce((total, conversation) => total + Math.max(0, conversation.unread), 0);
   const visibleConversations = useMemo(
-    () => conversations.filter((conversation) => conversation.status === tab),
+    () => conversations.filter((conversation) => conversation.tabState === tab.toUpperCase()),
     [conversations, tab],
   );
   const messagesQuery = useQuery({
@@ -197,7 +197,7 @@ export default function LiveChatScreen() {
           </View>
           <View style={[styles.tabs, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             {STATUS_TABS.map((status) => {
-              const count = conversations.filter((conversation) => conversation.status === status).length;
+              const count = conversations.filter((conversation) => conversation.tabState === status.toUpperCase()).length;
               const active = tab === status;
               return (
                 <Pressable key={status} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={() => setTab(status)} style={[styles.tab, active && { borderBottomColor: colors.primary }]}>
