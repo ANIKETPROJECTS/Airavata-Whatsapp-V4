@@ -1,10 +1,10 @@
 ---
 name: Expo Go media saving
-description: Choose an attachment-save path that works when Expo Go lacks MediaLibraryNext.
+description: Save attachments in Expo Go without relying on the unavailable MediaLibraryNext native module.
 ---
 
-In this SDK setup, Expo Go may not include the `ExpoMediaLibraryNext` native module. Importing `expo-media-library` can crash the chat route, and Expo Router may then report a misleading missing default export.
+In this SDK setup, Expo Go may not include the `ExpoMediaLibraryNext` native module. Importing `expo-media-library` can crash the chat route, and Expo Router may then report a misleading missing default export. The product requirement is a real file save, not an Android app-recipient share sheet.
 
-**Why:** Expo Go's native runtime is fixed and does not contain every native module present in the JavaScript dependency tree.
+**Why:** Expo Go's native runtime is fixed and does not contain every native module present in the JavaScript dependency tree; Android's Storage Access Framework is available for a user-approved save location.
 
-**How to apply:** If the app must run in Expo Go, use `expo-sharing` to let the operating system save or share downloaded files instead of importing MediaLibrary. Direct photo-library writes require a compatible custom native build; do not make a shared route depend on the module at import time.
+**How to apply:** For Android downloads in Expo Go, use Storage Access Framework and remember the selected folder URI; for iOS/web use the system share/save sheet. Avoid statically importing MediaLibrary in a shared Expo route.

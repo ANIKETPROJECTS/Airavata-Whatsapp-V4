@@ -23,6 +23,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { saveToAndroidDownloads } from '@/lib/saveToAndroidDownloads';
 import {
   getTenantNotificationSummary,
   markTenantConversationRead,
@@ -316,6 +317,16 @@ function MessageMedia({ message, colors }: { message: Message; colors: ReturnTyp
       if (!safeName.includes('.')) safeName += extension;
       const target = `${FileSystem.cacheDirectory}${Date.now()}-${safeName}`;
       const result = await FileSystem.downloadAsync(uri, target, { headers });
+      if (Platform.OS === 'android') {
+        const saveType = type === 'image' || type === 'video' || type === 'audio' ? type : 'document';
+        const saveResult = await saveToAndroidDownloads(result.uri, safeName, saveType);
+        if (saveResult === 'saved') {
+          Alert.alert('Download complete', 'Saved to the folder you selected.');
+        } else {
+          Alert.alert('Download cancelled', 'Choose a folder, such as Downloads, to save this attachment.');
+        }
+        return;
+      }
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert('Sharing unavailable', 'This device cannot open the downloaded attachment.');
         return;

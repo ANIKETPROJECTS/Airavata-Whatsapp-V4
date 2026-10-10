@@ -50,4 +50,4 @@
 - [Direct artifact builds](direct-artifact-builds.md) — shell builds do not inherit managed workflow env; pass the artifact's required `PORT` and `BASE_PATH` explicitly.
 - [Outbound media history](live-chat-outbound-media.md) — template and chatbot image/video sends must persist per tenant and render in Live Chat.
 - [Inbound media history](inbound-media-history.md) — persist customer media IDs per tenant so Live Chat can fetch inbound files.
-- [Expo Go media saving](expo-media-library-platform-split.md) — Expo Go may lack MediaLibraryNext; use the system share/save sheet for reliable attachment downloads.
+- [Expo Go media saving](expo-media-library-platform-split.md) — avoid MediaLibraryNext; save Android attachments to a user-approved folder instead of opening app-sharing targets.
