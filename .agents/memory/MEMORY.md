@@ -42,6 +42,7 @@
 - [AutoGamma sender boundary](autogamma-sender-boundary.md) — Airavata records accepted AutoGamma sends only; it never becomes a second sender or triggers send side effects.
 - [Chatbot activity history](chatbot-activity-history.md) — keep runs metadata-only, link to Live Chat, and preserve the chatbot module’s flat list and typography.
 - [OpenAPI search request codegen](openapi-search-request-codegen.md) — use named JSON request schemas when generated query-parameter types collide.
+- [Orval email schema compatibility](orval-email-schema-compatibility.md) — keep OpenAPI email fields as plain strings unless Orval and the workspace Zod version are aligned.
 - [Customer integration direction](customer-integration-direction.md) — favor a tenant-scoped API and signed webhooks for any HTTP-capable system; never imply a native connector without OAuth support.
 - [Meta catalog permissions](meta-catalog-permissions.md) — catalog operations need business/catalog permissions in the Login for Business config and client reauthorization after approval.
 - [Router middleware scope](router-middleware-scope.md) — root-mounted routers must scope access guards to their route prefix or they can block unrelated endpoints.

@@ -9,6 +9,148 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Sign in to an Airavata tenant workspace
+ */
+
+
+
+export const LoginTenantUserBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string().min(1)
+})
+
+export const LoginTenantUserResponse = zod.object({
+  "token": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "businessName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "timezone": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "creditBalance": zod.number().nullish(),
+  "billingMode": zod.string().nullish(),
+  "metaWabaConnected": zod.boolean().optional(),
+  "isProtectedMasterAdmin": zod.boolean().optional(),
+  "active": zod.boolean().optional(),
+  "permissions": zod.array(zod.string()).optional()
+})
+})
+
+
+/**
+ * @summary Get the current tenant user
+ */
+export const GetAuthenticatedTenantUserResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "businessName": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "timezone": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "creditBalance": zod.number().nullish(),
+  "billingMode": zod.string().nullish(),
+  "metaWabaConnected": zod.boolean().optional(),
+  "isProtectedMasterAdmin": zod.boolean().optional(),
+  "active": zod.boolean().optional(),
+  "permissions": zod.array(zod.string()).optional()
+})
+})
+
+
+/**
+ * @summary List conversations for the authenticated tenant
+ */
+export const ListTenantConversationsResponse = zod.object({
+  "conversations": zod.array(zod.object({
+  "id": zod.string(),
+  "contactId": zod.string(),
+  "contactName": zod.string(),
+  "contactPhone": zod.string(),
+  "lastMessage": zod.string(),
+  "lastMessageAt": zod.coerce.date().nullish(),
+  "unread": zod.number(),
+  "status": zod.enum(['Sent', 'Open', 'Closed']),
+  "windowOpen": zod.boolean(),
+  "tabState": zod.enum(['SENT', 'OPEN', 'CLOSED'])
+}))
+})
+
+
+/**
+ * @summary Get the authenticated tenant's unread notification count
+ */
+export const getTenantNotificationSummaryResponseUnreadCountMin = 0;
+
+
+
+export const GetTenantNotificationSummaryResponse = zod.object({
+  "unreadCount": zod.number().min(getTenantNotificationSummaryResponseUnreadCountMin)
+})
+
+
+/**
+ * @summary List messages for one tenant contact
+ */
+export const ListTenantConversationMessagesParams = zod.object({
+  "contactId": zod.coerce.string()
+})
+
+export const ListTenantConversationMessagesResponse = zod.object({
+  "messages": zod.array(zod.object({
+  "id": zod.string(),
+  "direction": zod.enum(['INBOUND', 'OUTBOUND']),
+  "body": zod.string(),
+  "mediaType": zod.string().nullish(),
+  "mediaId": zod.string().nullish(),
+  "mediaUrl": zod.string().nullish(),
+  "mediaFilename": zod.string().nullish(),
+  "status": zod.string(),
+  "whatsappMessageId": zod.string().nullish(),
+  "sentAt": zod.coerce.date().nullish(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "readAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Send a text reply within the WhatsApp service window
+ */
+export const SendTenantConversationMessageParams = zod.object({
+  "contactId": zod.coerce.string()
+})
+
+export const sendTenantConversationMessageBodyBodyMax = 4096;
+
+
+
+export const SendTenantConversationMessageBody = zod.object({
+  "body": zod.string().min(1).max(sendTenantConversationMessageBodyBodyMax)
+})
+
+export const SendTenantConversationMessageResponse = zod.object({
+  "message": zod.object({
+  "id": zod.string(),
+  "direction": zod.enum(['INBOUND', 'OUTBOUND']),
+  "body": zod.string(),
+  "mediaType": zod.string().nullish(),
+  "mediaId": zod.string().nullish(),
+  "mediaUrl": zod.string().nullish(),
+  "mediaFilename": zod.string().nullish(),
+  "status": zod.string(),
+  "whatsappMessageId": zod.string().nullish(),
+  "sentAt": zod.coerce.date().nullish(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "readAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

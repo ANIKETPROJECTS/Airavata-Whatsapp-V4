@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './authLoginInput';
+export * from './authMeResponse';
+export * from './authSessionResponse';
+export * from './authUser';
 export * from './autoGammaOutboundMediaInput';
 export * from './autoGammaOutboundMediaInputType';
 export * from './autoGammaOutboundMessageInput';
@@ -18,10 +22,14 @@ export * from './chatbotExecutionQueryTriggerType';
 export * from './chatbotExecutionStats';
 export * from './chatbotExecutionStatus';
 export * from './chatbotExecutionTriggerType';
+export * from './conversationListResponse';
+export * from './conversationMessage';
+export * from './conversationMessageDirection';
 export * from './facebookWebhookSubscriptionStatus';
 export * from './healthStatus';
 export * from './listPublicWhatsAppTemplatesParams';
 export * from './listWhatsAppCatalogProductsParams';
+export * from './messageListResponse';
 export * from './publicWhatsAppMessageResult';
 export * from './publicWhatsAppMessageResultStatus';
 export * from './publicWhatsAppTemplate';
@@ -31,6 +39,12 @@ export * from './publicWhatsAppTemplateMessageInput';
 export * from './publicWhatsAppTemplateMessageInputComponentsItem';
 export * from './publicWhatsAppTemplatesResponse';
 export * from './publicWhatsAppTextMessageInput';
+export * from './sendConversationMessageInput';
+export * from './sendConversationMessageResponse';
+export * from './tenantConversation';
+export * from './tenantConversationStatus';
+export * from './tenantConversationTabState';
+export * from './tenantNotificationSummary';
 export * from './waPayBeneficiaryInput';
 export * from './waPayDashboard';
 export * from './waPayEligibleContact';

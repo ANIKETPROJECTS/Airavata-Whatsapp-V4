@@ -5,6 +5,130 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AuthLoginInput {
+  email: string;
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface AuthUser {
+  id: string;
+  businessName: string;
+  email: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  timezone?: string | null;
+  /** @nullable */
+  role?: string | null;
+  /** @nullable */
+  creditBalance?: number | null;
+  /** @nullable */
+  billingMode?: string | null;
+  metaWabaConnected?: boolean;
+  isProtectedMasterAdmin?: boolean;
+  active?: boolean;
+  permissions?: string[];
+}
+
+export interface AuthSessionResponse {
+  token: string;
+  user: AuthUser;
+}
+
+export interface AuthMeResponse {
+  user: AuthUser;
+}
+
+export type TenantConversationStatus = typeof TenantConversationStatus[keyof typeof TenantConversationStatus];
+
+
+export const TenantConversationStatus = {
+  Sent: 'Sent',
+  Open: 'Open',
+  Closed: 'Closed',
+} as const;
+
+export type TenantConversationTabState = typeof TenantConversationTabState[keyof typeof TenantConversationTabState];
+
+
+export const TenantConversationTabState = {
+  SENT: 'SENT',
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+} as const;
+
+export interface TenantConversation {
+  id: string;
+  contactId: string;
+  contactName: string;
+  contactPhone: string;
+  lastMessage: string;
+  /** @nullable */
+  lastMessageAt?: string | null;
+  unread: number;
+  status: TenantConversationStatus;
+  windowOpen: boolean;
+  tabState: TenantConversationTabState;
+}
+
+export interface ConversationListResponse {
+  conversations: TenantConversation[];
+}
+
+export interface TenantNotificationSummary {
+  /** @minimum 0 */
+  unreadCount: number;
+}
+
+export type ConversationMessageDirection = typeof ConversationMessageDirection[keyof typeof ConversationMessageDirection];
+
+
+export const ConversationMessageDirection = {
+  INBOUND: 'INBOUND',
+  OUTBOUND: 'OUTBOUND',
+} as const;
+
+export interface ConversationMessage {
+  id: string;
+  direction: ConversationMessageDirection;
+  body: string;
+  /** @nullable */
+  mediaType?: string | null;
+  /** @nullable */
+  mediaId?: string | null;
+  /** @nullable */
+  mediaUrl?: string | null;
+  /** @nullable */
+  mediaFilename?: string | null;
+  status: string;
+  /** @nullable */
+  whatsappMessageId?: string | null;
+  /** @nullable */
+  sentAt?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
+  /** @nullable */
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface MessageListResponse {
+  messages: ConversationMessage[];
+}
+
+export interface SendConversationMessageInput {
+  /**
+     * @minLength 1
+     * @maxLength 4096
+     */
+  body: string;
+}
+
+export interface SendConversationMessageResponse {
+  message: ConversationMessage;
+}
+
 export interface HealthStatus {
   status: string;
 }

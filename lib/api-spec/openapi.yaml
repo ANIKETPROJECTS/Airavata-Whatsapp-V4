@@ -17,6 +17,133 @@ tags:
   - name: waPay
     description: Native WhatsApp Payments for India
 paths:
+  /auth/login:
+    post:
+      operationId: loginTenantUser
+      tags: [auth]
+      summary: Sign in to an Airavata tenant workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginInput"
+      responses:
+        "200":
+          description: Authenticated tenant session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          description: Email and password are required
+        "401":
+          description: Invalid email or password
+        "403":
+          description: Account is inactive
+  /auth/me:
+    get:
+      operationId: getAuthenticatedTenantUser
+      tags: [auth]
+      summary: Get the current tenant user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current authenticated tenant user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMeResponse"
+        "401":
+          description: Authentication required
+        "404":
+          description: User not found
+  /conversations:
+    get:
+      operationId: listTenantConversations
+      tags: [liveChat]
+      summary: List conversations for the authenticated tenant
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Tenant-scoped conversations and current Live Chat states
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationListResponse"
+        "401":
+          description: Authentication required
+  /notifications:
+    get:
+      operationId: getTenantNotificationSummary
+      tags: [notifications]
+      summary: Get the authenticated tenant's unread notification count
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notification summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantNotificationSummary"
+        "401":
+          description: Authentication required
+  /conversations/{contactId}/messages:
+    get:
+      operationId: listTenantConversationMessages
+      tags: [liveChat]
+      summary: List messages for one tenant contact
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: contactId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversation history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageListResponse"
+        "401":
+          description: Authentication required
+    post:
+      operationId: sendTenantConversationMessage
+      tags: [liveChat]
+      summary: Send a text reply within the WhatsApp service window
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: contactId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendConversationMessageInput"
+      responses:
+        "201":
+          description: Message accepted by WhatsApp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendConversationMessageResponse"
+        "400":
+          description: Empty body or closed 24-hour service window
+        "401":
+          description: Authentication required
+        "404":
+          description: Contact not found
   /healthz:
     get:
       operationId: healthCheck
@@ -729,6 +856,158 @@ components:
       bearerFormat: Airavata API key
       description: Create an API key in Airavata's Integrations page and store it on your server.
   schemas:
+    AuthLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 1
+    AuthSessionResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUser"
+    AuthMeResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthUser"
+    AuthUser:
+      type: object
+      required: [id, businessName, email]
+      properties:
+        id:
+          type: string
+        businessName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        timezone:
+          type: ["string", "null"]
+        role:
+          type: ["string", "null"]
+        creditBalance:
+          type: ["number", "null"]
+        billingMode:
+          type: ["string", "null"]
+        metaWabaConnected:
+          type: boolean
+        isProtectedMasterAdmin:
+          type: boolean
+        active:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+    ConversationListResponse:
+      type: object
+      required: [conversations]
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantConversation"
+    TenantNotificationSummary:
+      type: object
+      required: [unreadCount]
+      properties:
+        unreadCount:
+          type: integer
+          minimum: 0
+    TenantConversation:
+      type: object
+      required: [id, contactId, contactName, contactPhone, lastMessage, unread, status, windowOpen, tabState]
+      properties:
+        id:
+          type: string
+        contactId:
+          type: string
+        contactName:
+          type: string
+        contactPhone:
+          type: string
+        lastMessage:
+          type: string
+        lastMessageAt:
+          type: ["string", "null"]
+          format: date-time
+        unread:
+          type: integer
+        status:
+          type: string
+          enum: [Sent, Open, Closed]
+        windowOpen:
+          type: boolean
+        tabState:
+          type: string
+          enum: [SENT, OPEN, CLOSED]
+    MessageListResponse:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationMessage"
+    ConversationMessage:
+      type: object
+      required: [id, direction, body, status, createdAt]
+      properties:
+        id:
+          type: string
+        direction:
+          type: string
+          enum: [INBOUND, OUTBOUND]
+        body:
+          type: string
+        mediaType:
+          type: ["string", "null"]
+        mediaId:
+          type: ["string", "null"]
+        mediaUrl:
+          type: ["string", "null"]
+        mediaFilename:
+          type: ["string", "null"]
+        status:
+          type: string
+        whatsappMessageId:
+          type: ["string", "null"]
+        sentAt:
+          type: ["string", "null"]
+          format: date-time
+        deliveredAt:
+          type: ["string", "null"]
+          format: date-time
+        readAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    SendConversationMessageInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4096
+    SendConversationMessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          $ref: "#/components/schemas/ConversationMessage"
     HealthStatus:
       type: object
       properties:

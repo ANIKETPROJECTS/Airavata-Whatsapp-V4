@@ -20,18 +20,26 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuthLoginInput,
+  AuthMeResponse,
+  AuthSessionResponse,
   AutoGammaOutboundMessageInput,
   AutoGammaOutboundMessageResult,
   ChatbotExecutionPage,
   ChatbotExecutionQuery,
+  ConversationListResponse,
   FacebookWebhookSubscriptionStatus,
   HealthStatus,
   ListPublicWhatsAppTemplatesParams,
   ListWhatsAppCatalogProductsParams,
+  MessageListResponse,
   PublicWhatsAppMessageResult,
   PublicWhatsAppTemplateMessageInput,
   PublicWhatsAppTemplatesResponse,
   PublicWhatsAppTextMessageInput,
+  SendConversationMessageInput,
+  SendConversationMessageResponse,
+  TenantNotificationSummary,
   WaPayDashboard,
   WaPayOrder,
   WaPayOrderInput,
@@ -78,6 +86,457 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getLoginTenantUserUrl = () => {
+
+
+
+
+  return `/api/auth/login`
+}
+
+/**
+ * @summary Sign in to an Airavata tenant workspace
+ */
+export const loginTenantUser = async (authLoginInput: AuthLoginInput, options?: RequestInit): Promise<AuthSessionResponse> => {
+
+  return customFetch<AuthSessionResponse>(getLoginTenantUserUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authLoginInput)
+  }
+);}
+
+
+
+
+
+export const getLoginTenantUserMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginTenantUser>>, TError,{data: BodyType<AuthLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof loginTenantUser>>, TError,{data: BodyType<AuthLoginInput>}, TContext> => {
+
+const mutationKey = ['loginTenantUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof loginTenantUser>>, {data: BodyType<AuthLoginInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  loginTenantUser(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginTenantUserMutationResult = NonNullable<Awaited<ReturnType<typeof loginTenantUser>>>
+    export type LoginTenantUserMutationBody = BodyType<AuthLoginInput>
+    export type LoginTenantUserMutationError = ErrorType<void>
+
+    /**
+ * @summary Sign in to an Airavata tenant workspace
+ */
+export const useLoginTenantUser = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginTenantUser>>, TError,{data: BodyType<AuthLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof loginTenantUser>>,
+        TError,
+        {data: BodyType<AuthLoginInput>},
+        TContext
+      > => {
+      return useMutation(getLoginTenantUserMutationOptions(options));
+    }
+
+export const getGetAuthenticatedTenantUserUrl = () => {
+
+
+
+
+  return `/api/auth/me`
+}
+
+/**
+ * @summary Get the current tenant user
+ */
+export const getAuthenticatedTenantUser = async ( options?: RequestInit): Promise<AuthMeResponse> => {
+
+  return customFetch<AuthMeResponse>(getGetAuthenticatedTenantUserUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAuthenticatedTenantUserQueryKey = () => {
+    return [
+    `/api/auth/me`
+    ] as const;
+    }
+
+
+export const getGetAuthenticatedTenantUserQueryOptions = <TData = Awaited<ReturnType<typeof getAuthenticatedTenantUser>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthenticatedTenantUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAuthenticatedTenantUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAuthenticatedTenantUser>>> = ({ signal }) => getAuthenticatedTenantUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthenticatedTenantUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAuthenticatedTenantUserQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthenticatedTenantUser>>>
+export type GetAuthenticatedTenantUserQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the current tenant user
+ */
+
+export function useGetAuthenticatedTenantUser<TData = Awaited<ReturnType<typeof getAuthenticatedTenantUser>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthenticatedTenantUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAuthenticatedTenantUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListTenantConversationsUrl = () => {
+
+
+
+
+  return `/api/conversations`
+}
+
+/**
+ * @summary List conversations for the authenticated tenant
+ */
+export const listTenantConversations = async ( options?: RequestInit): Promise<ConversationListResponse> => {
+
+  return customFetch<ConversationListResponse>(getListTenantConversationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTenantConversationsQueryKey = () => {
+    return [
+    `/api/conversations`
+    ] as const;
+    }
+
+
+export const getListTenantConversationsQueryOptions = <TData = Awaited<ReturnType<typeof listTenantConversations>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantConversations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTenantConversationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTenantConversations>>> = ({ signal }) => listTenantConversations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTenantConversations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTenantConversationsQueryResult = NonNullable<Awaited<ReturnType<typeof listTenantConversations>>>
+export type ListTenantConversationsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List conversations for the authenticated tenant
+ */
+
+export function useListTenantConversations<TData = Awaited<ReturnType<typeof listTenantConversations>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantConversations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTenantConversationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTenantNotificationSummaryUrl = () => {
+
+
+
+
+  return `/api/notifications`
+}
+
+/**
+ * @summary Get the authenticated tenant's unread notification count
+ */
+export const getTenantNotificationSummary = async ( options?: RequestInit): Promise<TenantNotificationSummary> => {
+
+  return customFetch<TenantNotificationSummary>(getGetTenantNotificationSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTenantNotificationSummaryQueryKey = () => {
+    return [
+    `/api/notifications`
+    ] as const;
+    }
+
+
+export const getGetTenantNotificationSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getTenantNotificationSummary>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantNotificationSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTenantNotificationSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTenantNotificationSummary>>> = ({ signal }) => getTenantNotificationSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTenantNotificationSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTenantNotificationSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getTenantNotificationSummary>>>
+export type GetTenantNotificationSummaryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the authenticated tenant's unread notification count
+ */
+
+export function useGetTenantNotificationSummary<TData = Awaited<ReturnType<typeof getTenantNotificationSummary>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantNotificationSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTenantNotificationSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListTenantConversationMessagesUrl = (contactId: string,) => {
+
+
+
+
+  return `/api/conversations/${contactId}/messages`
+}
+
+/**
+ * @summary List messages for one tenant contact
+ */
+export const listTenantConversationMessages = async (contactId: string, options?: RequestInit): Promise<MessageListResponse> => {
+
+  return customFetch<MessageListResponse>(getListTenantConversationMessagesUrl(contactId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTenantConversationMessagesQueryKey = (contactId: string,) => {
+    return [
+    `/api/conversations/${contactId}/messages`
+    ] as const;
+    }
+
+
+export const getListTenantConversationMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listTenantConversationMessages>>, TError = ErrorType<void>>(contactId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantConversationMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTenantConversationMessagesQueryKey(contactId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTenantConversationMessages>>> = ({ signal }) => listTenantConversationMessages(contactId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: contactId !== null && contactId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTenantConversationMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTenantConversationMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listTenantConversationMessages>>>
+export type ListTenantConversationMessagesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List messages for one tenant contact
+ */
+
+export function useListTenantConversationMessages<TData = Awaited<ReturnType<typeof listTenantConversationMessages>>, TError = ErrorType<void>>(
+ contactId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantConversationMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTenantConversationMessagesQueryOptions(contactId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendTenantConversationMessageUrl = (contactId: string,) => {
+
+
+
+
+  return `/api/conversations/${contactId}/messages`
+}
+
+/**
+ * @summary Send a text reply within the WhatsApp service window
+ */
+export const sendTenantConversationMessage = async (contactId: string,
+    sendConversationMessageInput: SendConversationMessageInput, options?: RequestInit): Promise<SendConversationMessageResponse> => {
+
+  return customFetch<SendConversationMessageResponse>(getSendTenantConversationMessageUrl(contactId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sendConversationMessageInput)
+  }
+);}
+
+
+
+
+
+export const getSendTenantConversationMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendTenantConversationMessage>>, TError,{contactId: string;data: BodyType<SendConversationMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendTenantConversationMessage>>, TError,{contactId: string;data: BodyType<SendConversationMessageInput>}, TContext> => {
+
+const mutationKey = ['sendTenantConversationMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendTenantConversationMessage>>, {contactId: string;data: BodyType<SendConversationMessageInput>}> = (props) => {
+          const {contactId,data} = props ?? {};
+
+          return  sendTenantConversationMessage(contactId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendTenantConversationMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendTenantConversationMessage>>>
+    export type SendTenantConversationMessageMutationBody = BodyType<SendConversationMessageInput>
+    export type SendTenantConversationMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a text reply within the WhatsApp service window
+ */
+export const useSendTenantConversationMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendTenantConversationMessage>>, TError,{contactId: string;data: BodyType<SendConversationMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendTenantConversationMessage>>,
+        TError,
+        {contactId: string;data: BodyType<SendConversationMessageInput>},
+        TContext
+      > => {
+      return useMutation(getSendTenantConversationMessageMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 
