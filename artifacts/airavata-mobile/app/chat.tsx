@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -34,7 +33,6 @@ import {
   sendTenantConversationMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
-import { saveMediaToGallery } from '../lib/saveMediaToGallery';
 import { clearAuthToken, getAuthToken } from '@/lib/tokenStorage';
 
 type StatusTab = 'Sent' | 'Open' | 'Closed';
@@ -318,24 +316,6 @@ function MessageMedia({ message, colors }: { message: Message; colors: ReturnTyp
       if (!safeName.includes('.')) safeName += extension;
       const target = `${FileSystem.cacheDirectory}${Date.now()}-${safeName}`;
       const result = await FileSystem.downloadAsync(uri, target, { headers });
-      if ((type === 'image' || type === 'video') && Platform.OS !== 'web') {
-        const galleryResult = await saveMediaToGallery(result.uri);
-        if (galleryResult.saved) {
-          Alert.alert('Download complete', `Saved to ${Platform.OS === 'ios' ? 'Photos' : 'Gallery'}.`);
-          return;
-        }
-        if (galleryResult.available) {
-          const settingsButton = !galleryResult.canAskAgain
-            ? [{ text: 'Open Settings', onPress: () => void Linking.openSettings() }]
-            : [];
-          Alert.alert(
-            'Allow photo access',
-            'Photo library access is needed to save this media to your device.',
-            [{ text: 'Not now', style: 'cancel' }, ...settingsButton],
-          );
-          return;
-        }
-      }
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert('Sharing unavailable', 'This device cannot open the downloaded attachment.');
         return;

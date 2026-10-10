@@ -1,10 +1,10 @@
 ---
-name: Expo media-library platform split
-description: Avoid importing Expo MediaLibrary's native module into the web bundle.
+name: Expo Go media saving
+description: Choose an attachment-save path that works when Expo Go lacks MediaLibraryNext.
 ---
 
-In this SDK setup, Expo Go can lack the `ExpoMediaLibraryNext` native module. A static `expo-media-library` import then crashes route evaluation (Expo Router may also report the route has no default export), even when calls are guarded by `Platform.OS`.
+In this SDK setup, Expo Go may not include the `ExpoMediaLibraryNext` native module. Importing `expo-media-library` can crash the chat route, and Expo Router may then report a misleading missing default export.
 
-**Why:** Module resolution/evaluation happens before a screen can catch the runtime failure, and Expo Go's native runtime may not include this module.
+**Why:** Expo Go's native runtime is fixed and does not contain every native module present in the JavaScript dependency tree.
 
-**How to apply:** Keep media-library access in a `.native.ts` helper and load the module dynamically inside `try/catch`; on failure, return an unsupported result and use Expo Sharing as a fallback. Provide a `.web.ts` helper and import the helper without a platform suffix. Verify web bundling and typecheck; test the fallback in Expo Go.
+**How to apply:** If the app must run in Expo Go, use `expo-sharing` to let the operating system save or share downloaded files instead of importing MediaLibrary. Direct photo-library writes require a compatible custom native build; do not make a shared route depend on the module at import time.
