@@ -324,15 +324,17 @@ function MessageMedia({ message, colors }: { message: Message; colors: ReturnTyp
           Alert.alert('Download complete', `Saved to ${Platform.OS === 'ios' ? 'Photos' : 'Gallery'}.`);
           return;
         }
-        const settingsButton = !galleryResult.canAskAgain
-          ? [{ text: 'Open Settings', onPress: () => void Linking.openSettings() }]
-          : [];
-        Alert.alert(
-          'Allow photo access',
-          'Photo library access is needed to save this media to your device.',
-          [{ text: 'Not now', style: 'cancel' }, ...settingsButton],
-        );
-        return;
+        if (galleryResult.available) {
+          const settingsButton = !galleryResult.canAskAgain
+            ? [{ text: 'Open Settings', onPress: () => void Linking.openSettings() }]
+            : [];
+          Alert.alert(
+            'Allow photo access',
+            'Photo library access is needed to save this media to your device.',
+            [{ text: 'Not now', style: 'cancel' }, ...settingsButton],
+          );
+          return;
+        }
       }
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert('Sharing unavailable', 'This device cannot open the downloaded attachment.');

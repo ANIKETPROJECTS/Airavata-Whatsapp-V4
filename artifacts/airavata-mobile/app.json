@@ -20,7 +20,8 @@
       "expo-router",
       "expo-video",
       "expo-sharing",
-      "expo-audio"
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
