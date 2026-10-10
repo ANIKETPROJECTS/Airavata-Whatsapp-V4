@@ -7,8 +7,6 @@
  */
 import type { TenantNotification } from './tenantNotification';
 
-export interface TenantNotificationSummary {
-  /** @minimum 0 */
-  unreadCount: number;
-  notifications: TenantNotification[];
+export interface TenantNotificationReadResponse {
+  notification: TenantNotification;
 }

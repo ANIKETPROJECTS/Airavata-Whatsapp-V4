@@ -76,9 +76,33 @@ export interface ConversationListResponse {
   conversations: TenantConversation[];
 }
 
+export interface TenantNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  createdAt: string;
+  read: boolean;
+}
+
 export interface TenantNotificationSummary {
   /** @minimum 0 */
   unreadCount: number;
+  notifications: TenantNotification[];
+}
+
+export interface TenantNotificationReadResponse {
+  notification: TenantNotification;
+}
+
+export interface MarkAllNotificationsResult {
+  ok: boolean;
+  updated: number;
+}
+
+export interface ConversationReadResult {
+  ok: boolean;
+  unread: number;
 }
 
 export type ConversationMessageDirection = typeof ConversationMessageDirection[keyof typeof ConversationMessageDirection];

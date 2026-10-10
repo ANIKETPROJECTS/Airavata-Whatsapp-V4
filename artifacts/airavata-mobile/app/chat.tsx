@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -12,6 +13,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,16 +26,21 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import {
   getTenantNotificationSummary,
+  markTenantConversationRead,
+  markAllTenantNotificationsRead,
+  markTenantNotificationRead,
   listTenantConversationMessages,
   listTenantConversations,
   sendTenantConversationMessage,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { saveMediaToGallery } from '../lib/saveMediaToGallery';
 import { clearAuthToken, getAuthToken } from '@/lib/tokenStorage';
 
 type StatusTab = 'Sent' | 'Open' | 'Closed';
 type Conversation = Awaited<ReturnType<typeof listTenantConversations>>['conversations'][number];
 type Message = Awaited<ReturnType<typeof listTenantConversationMessages>>['messages'][number];
+type TenantNotification = Awaited<ReturnType<typeof getTenantNotificationSummary>>['notifications'][number];
 const STATUS_TABS: StatusTab[] = ['Sent', 'Open', 'Closed'];
 
 export default function LiveChatScreen() {
@@ -44,6 +51,8 @@ export default function LiveChatScreen() {
   const [tab, setTab] = useState<StatusTab>('Open');
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [draft, setDraft] = useState('');
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { width: screenWidth } = useWindowDimensions();
 
   const conversationsQuery = useQuery({
     queryKey: ['mobile-live-chat-conversations'],
@@ -51,6 +60,7 @@ export default function LiveChatScreen() {
     refetchInterval: 15000,
   });
   const conversations = conversationsQuery.data?.conversations ?? [];
+  const totalUnreadMessages = conversations.reduce((total, conversation) => total + Math.max(0, conversation.unread), 0);
   const visibleConversations = useMemo(
     () => conversations.filter((conversation) => conversation.status === tab),
     [conversations, tab],
@@ -65,6 +75,24 @@ export default function LiveChatScreen() {
     queryKey: ['mobile-unread-notification-count'],
     queryFn: () => getTenantNotificationSummary({ cache: 'no-store' }),
     refetchInterval: 30000,
+  });
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => markTenantNotificationRead(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['mobile-unread-notification-count'] });
+    },
+  });
+  const markConversationReadMutation = useMutation({
+    mutationFn: (contactId: string) => markTenantConversationRead(contactId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['mobile-live-chat-conversations'] });
+    },
+  });
+  const markAllReadMutation = useMutation({
+    mutationFn: markAllTenantNotificationsRead,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['mobile-unread-notification-count'] });
+    },
   });
   const messages = messagesQuery.data?.messages ?? [];
   const sendMutation = useMutation({
@@ -87,6 +115,10 @@ export default function LiveChatScreen() {
     if (!selected || !body || sendMutation.isPending || !selected.windowOpen) return;
     sendMutation.mutate({ contactId: selected.contactId, body });
   };
+  const openConversation = (conversation: Conversation) => {
+    setSelected(conversation);
+    if (conversation.unread > 0) markConversationReadMutation.mutate(conversation.contactId);
+  };
   const webInsets = Platform.OS === 'web' ? { paddingTop: 67, paddingBottom: 34 } : null;
 
   return (
@@ -103,7 +135,7 @@ export default function LiveChatScreen() {
                 {selected.contactPhone} · {selected.windowOpen ? '24h window open' : '24h window closed'}
               </Text>
             </View>
-            <NotificationCount count={notificationQuery.data?.unreadCount ?? 0} colors={colors} />
+            <NotificationCount count={totalUnreadMessages} colors={colors} onPress={() => setNotificationsOpen(true)} />
           </View>
           {messagesQuery.isError ? (
             <ErrorPanel message="Could not load this conversation." onRetry={() => void messagesQuery.refetch()} colors={colors} />
@@ -157,7 +189,7 @@ export default function LiveChatScreen() {
               <Text style={[styles.smallText, { color: colors.mutedForeground }]}>WhatsApp conversations</Text>
             </View>
             <View style={styles.headerActions}>
-              <NotificationCount count={notificationQuery.data?.unreadCount ?? 0} colors={colors} />
+              <NotificationCount count={totalUnreadMessages} colors={colors} onPress={() => setNotificationsOpen(true)} />
               <Pressable accessibilityLabel="Sign out" onPress={() => void signOut()} style={styles.iconButton}>
                 <Feather name="log-out" size={20} color={colors.mutedForeground} />
               </Pressable>
@@ -190,7 +222,7 @@ export default function LiveChatScreen() {
               keyExtractor={(conversation) => conversation.contactId}
               refreshControl={<RefreshControl refreshing={conversationsQuery.isRefetching} onRefresh={() => void conversationsQuery.refetch()} tintColor={colors.primary} />}
               renderItem={({ item }) => (
-                <Pressable onPress={() => setSelected(item)} style={({ pressed }) => [styles.conversationRow, { backgroundColor: colors.background, borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 }]}>
+                <Pressable onPress={() => openConversation(item)} style={({ pressed }) => [styles.conversationRow, { backgroundColor: colors.background, borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 }]}>
                   <View style={[styles.avatar, { backgroundColor: colors.secondary }]}><Text style={[styles.avatarText, { color: colors.primary }]}>{item.contactName.trim().charAt(0).toUpperCase() || '?'}</Text></View>
                   <View style={styles.conversationDetails}>
                     <View style={styles.conversationTitleRow}>
@@ -208,6 +240,21 @@ export default function LiveChatScreen() {
           )}
         </View>
       )}
+      <NotificationSheet
+        visible={notificationsOpen}
+        notifications={notificationQuery.data?.notifications ?? []}
+        unreadCount={notificationQuery.data?.unreadCount ?? 0}
+        loading={notificationQuery.isLoading}
+        error={notificationQuery.isError}
+        markingAll={markAllReadMutation.isPending}
+        markingId={markReadMutation.variables}
+        width={screenWidth}
+        colors={colors}
+        onClose={() => setNotificationsOpen(false)}
+        onRetry={() => void notificationQuery.refetch()}
+        onMarkRead={(id) => markReadMutation.mutate(id)}
+        onMarkAllRead={() => markAllReadMutation.mutate(undefined)}
+      />
     </SafeAreaView>
   );
 }
@@ -228,6 +275,8 @@ function MessageBubble({ message, colors }: { message: Message; colors: ReturnTy
 
 function MessageMedia({ message, colors }: { message: Message; colors: ReturnType<typeof useColors> }) {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+  const attachmentWidth = Math.min(260, Math.max(180, screenWidth - 100));
   const [headers, setHeaders] = useState<Record<string, string>>({});
   const [imageOpen, setImageOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -264,14 +313,32 @@ function MessageMedia({ message, colors }: { message: Message; colors: ReturnTyp
     }
     setDownloading(true);
     try {
-      const safeName = (message.mediaFilename || `${type}-attachment`).replace(/[^\w.-]/g, '_');
+      const extension = type === 'image' ? '.jpg' : type === 'video' ? '.mp4' : type === 'audio' ? '.m4a' : '.bin';
+      let safeName = (message.mediaFilename || `${type}-attachment${extension}`).replace(/[^\w.-]/g, '_');
+      if (!safeName.includes('.')) safeName += extension;
       const target = `${FileSystem.cacheDirectory}${Date.now()}-${safeName}`;
       const result = await FileSystem.downloadAsync(uri, target, { headers });
+      if ((type === 'image' || type === 'video') && Platform.OS !== 'web') {
+        const galleryResult = await saveMediaToGallery(result.uri);
+        if (galleryResult.saved) {
+          Alert.alert('Download complete', `Saved to ${Platform.OS === 'ios' ? 'Photos' : 'Gallery'}.`);
+          return;
+        }
+        const settingsButton = !galleryResult.canAskAgain
+          ? [{ text: 'Open Settings', onPress: () => void Linking.openSettings() }]
+          : [];
+        Alert.alert(
+          'Allow photo access',
+          'Photo library access is needed to save this media to your device.',
+          [{ text: 'Not now', style: 'cancel' }, ...settingsButton],
+        );
+        return;
+      }
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert('Sharing unavailable', 'This device cannot open the downloaded attachment.');
         return;
       }
-      await Sharing.shareAsync(result.uri, { dialogTitle: message.mediaFilename || 'Open attachment' });
+      await Sharing.shareAsync(result.uri, { dialogTitle: message.mediaFilename || 'Save attachment' });
     } catch {
       Alert.alert('Could not open attachment', 'Please try again when your connection is available.');
     } finally {
@@ -285,10 +352,11 @@ function MessageMedia({ message, colors }: { message: Message; colors: ReturnTyp
 
   if (type === 'image') {
     return uri ? (
-      <>
+      <View style={styles.mediaAttachment}>
         <Pressable accessibilityLabel={`Open image ${message.mediaFilename ?? ''}`} onPress={() => setImageOpen(true)}>
-          <Image source={{ uri, headers }} resizeMode="contain" style={styles.mediaImage} />
+          <Image source={{ uri, headers }} resizeMode="contain" style={[styles.mediaImage, { width: attachmentWidth, height: Math.min(220, attachmentWidth * 0.85) }]} />
         </Pressable>
+        <DownloadButton loading={downloading} colors={colors} onPress={() => void downloadAndShare()} />
         <Modal visible={imageOpen} transparent animationType="fade" onRequestClose={() => setImageOpen(false)}>
           <View style={[styles.imageModal, { backgroundColor: colors.foreground }]}>
             <Pressable accessibilityLabel="Close image preview" onPress={() => setImageOpen(false)} style={[styles.modalClose, { top: insets.top + 8, right: insets.right + 12 }]}>
@@ -298,45 +366,53 @@ function MessageMedia({ message, colors }: { message: Message; colors: ReturnTyp
             {message.mediaFilename ? <Text numberOfLines={1} style={[styles.modalFilename, { color: colors.primaryForeground }]}>{message.mediaFilename}</Text> : null}
           </View>
         </Modal>
-      </>
+      </View>
     ) : <UnavailableAttachment label={message.mediaFilename || 'Image'} colors={colors} />;
   }
 
   if (type === 'video' && uri) {
-    return <VideoAttachment uri={uri} headers={headers} colors={colors} />;
+    return (
+      <View style={styles.mediaAttachment}>
+        <VideoAttachment uri={uri} headers={headers} width={attachmentWidth} />
+        <DownloadButton loading={downloading} colors={colors} onPress={() => void downloadAndShare()} />
+      </View>
+    );
   }
   if (type === 'audio' && uri) {
-    return <AudioAttachment uri={uri} headers={headers} filename={message.mediaFilename} colors={colors} />;
+    return <AudioAttachment uri={uri} headers={headers} filename={message.mediaFilename} colors={colors} maxWidth={Math.max(190, screenWidth - 96)} downloading={downloading} onDownload={() => void downloadAndShare()} />;
   }
 
   const title = message.mediaFilename || `${type} attachment`;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Open ${title}`} onPress={() => void downloadAndShare()} style={[styles.fileCard, { borderColor: colors.border }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Open ${title}`} onPress={() => void downloadAndShare()} style={[styles.fileCard, { borderColor: colors.border, maxWidth: Math.max(190, screenWidth - 96) }]}>
       <Feather name={type === 'video' ? 'video' : type === 'audio' ? 'volume-2' : 'file-text'} size={20} color={colors.primary} />
       <View style={styles.fileDetails}>
         <Text numberOfLines={1} style={[styles.fileName, { color: colors.foreground }]}>{title}</Text>
-        <Text style={[styles.smallText, { color: colors.mutedForeground }]}>{downloading ? 'Preparing file…' : uri ? 'Tap to open or share' : 'File unavailable'}</Text>
+        <Text style={[styles.smallText, { color: colors.mutedForeground }]}>{downloading ? 'Saving…' : uri ? 'Tap to download' : 'File unavailable'}</Text>
       </View>
       {downloading ? <ActivityIndicator size="small" color={colors.primary} /> : <Feather name="download" size={18} color={colors.primary} />}
     </Pressable>
   );
 }
 
-function VideoAttachment({ uri, headers, colors }: { uri: string; headers: Record<string, string>; colors: ReturnType<typeof useColors> }) {
+function VideoAttachment({ uri, headers, width }: { uri: string; headers: Record<string, string>; width: number }) {
   const player = useVideoPlayer({ uri, headers }, (instance) => { instance.loop = false; });
-  return <VideoView player={player} nativeControls contentFit="contain" style={styles.video} />;
+  return <VideoView player={player} nativeControls contentFit="contain" style={[styles.video, { width, height: width * 0.72 }]} />;
 }
 
-function AudioAttachment({ uri, headers, filename, colors }: {
+function AudioAttachment({ uri, headers, filename, colors, maxWidth, downloading, onDownload }: {
   uri: string;
   headers: Record<string, string>;
   filename?: string | null;
   colors: ReturnType<typeof useColors>;
+  maxWidth: number;
+  downloading: boolean;
+  onDownload: () => void;
 }) {
   const player = useAudioPlayer({ uri, headers }, { updateInterval: 500 });
   const status = useAudioPlayerStatus(player);
   return (
-    <View style={[styles.fileCard, { borderColor: colors.border }]}>
+    <View style={[styles.fileCard, { borderColor: colors.border, maxWidth }]}>
       <Pressable
         accessibilityLabel={status.playing ? 'Pause audio attachment' : 'Play audio attachment'}
         onPress={() => status.playing ? player.pause() : player.play()}
@@ -350,7 +426,16 @@ function AudioAttachment({ uri, headers, filename, colors }: {
           {status.isLoaded ? `${formatDuration(status.currentTime)} / ${formatDuration(status.duration)}` : 'Loading audio…'}
         </Text>
       </View>
+      <DownloadButton loading={downloading} colors={colors} onPress={onDownload} />
     </View>
+  );
+}
+
+function DownloadButton({ loading, colors, onPress }: { loading: boolean; colors: ReturnType<typeof useColors>; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Download attachment" disabled={loading} onPress={onPress} style={styles.downloadButton}>
+      {loading ? <ActivityIndicator size="small" color={colors.primary} /> : <Feather name="download" size={19} color={colors.primary} />}
+    </Pressable>
   );
 }
 
@@ -389,16 +474,116 @@ function ErrorPanel({ message, onRetry, colors }: { message: string; onRetry: ()
   );
 }
 
-function NotificationCount({ count, colors }: { count: number; colors: ReturnType<typeof useColors> }) {
+function NotificationCount({ count, colors, onPress }: { count: number; colors: ReturnType<typeof useColors>; onPress: () => void }) {
   return (
-    <View accessibilityLabel={`${count} unread notifications`} accessibilityRole="image" style={styles.notificationIcon}>
+    <Pressable accessibilityLabel={`Notifications, ${count} unread`} accessibilityRole="button" onPress={onPress} style={styles.notificationIcon}>
       <Feather name="bell" size={20} color={colors.foreground} />
       {count > 0 ? (
         <View style={[styles.notificationBadge, { backgroundColor: colors.destructive }]}>
           <Text style={[styles.notificationBadgeText, { color: colors.primaryForeground }]}>{count > 99 ? '99+' : count}</Text>
         </View>
       ) : null}
-    </View>
+    </Pressable>
+  );
+}
+
+function NotificationSheet({
+  visible,
+  notifications,
+  unreadCount,
+  loading,
+  error,
+  markingAll,
+  markingId,
+  width,
+  colors,
+  onClose,
+  onRetry,
+  onMarkRead,
+  onMarkAllRead,
+}: {
+  visible: boolean;
+  notifications: TenantNotification[];
+  unreadCount: number;
+  loading: boolean;
+  error: boolean;
+  markingAll: boolean;
+  markingId?: string;
+  width: number;
+  colors: ReturnType<typeof useColors>;
+  onClose: () => void;
+  onRetry: () => void;
+  onMarkRead: (id: string) => void;
+  onMarkAllRead: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.notificationOverlay}>
+        <Pressable accessibilityLabel="Close notifications" onPress={onClose} style={[StyleSheet.absoluteFill, styles.notificationScrim, { backgroundColor: colors.foreground }]} />
+        <View style={[styles.notificationSheet, {
+          width: Math.min(width - 24, 480),
+          maxHeight: '82%',
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          paddingBottom: Math.max(insets.bottom, 12),
+        }]}>
+          <View style={[styles.notificationHeader, { borderBottomColor: colors.border }]}>
+            <View style={styles.notificationHeading}>
+              <Text style={[styles.notificationTitle, { color: colors.foreground }]}>Notifications</Text>
+              <Text style={[styles.smallText, { color: colors.mutedForeground }]}>{unreadCount} unread</Text>
+            </View>
+            <Pressable accessibilityLabel="Close notifications" onPress={onClose} style={styles.iconButton}>
+              <Feather name="x" size={22} color={colors.mutedForeground} />
+            </Pressable>
+          </View>
+          {unreadCount > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={markingAll}
+              onPress={onMarkAllRead}
+              style={[styles.markAllButton, { borderBottomColor: colors.border }]}
+            >
+              {markingAll ? <ActivityIndicator size="small" color={colors.primary} /> : <Feather name="check-circle" size={17} color={colors.primary} />}
+              <Text style={[styles.markAllText, { color: colors.primary }]}>{markingAll ? 'Marking as read…' : 'Mark all as read'}</Text>
+            </Pressable>
+          ) : null}
+          {loading ? (
+            <View style={styles.notificationEmpty}><ActivityIndicator color={colors.primary} /></View>
+          ) : error ? (
+            <View style={styles.notificationEmpty}>
+              <Text style={[styles.mutedText, { color: colors.destructive }]}>Could not load notifications.</Text>
+              <Pressable onPress={onRetry}><Text style={[styles.markAllText, { color: colors.primary }]}>Retry</Text></Pressable>
+            </View>
+          ) : notifications.length === 0 ? (
+            <View style={styles.notificationEmpty}><Text style={[styles.mutedText, { color: colors.mutedForeground }]}>No notifications yet.</Text></View>
+          ) : (
+            <FlatList
+              data={notifications}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.read ? 'Read' : 'Unread'} notification: ${item.title}`}
+                  disabled={item.read || markingId === item.id}
+                  onPress={() => onMarkRead(item.id)}
+                  style={({ pressed }) => [styles.notificationRow, { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 }]}
+                >
+                  <View style={[styles.notificationDot, { backgroundColor: item.read ? 'transparent' : colors.primary, borderColor: colors.primary }]} />
+                  <View style={styles.notificationTextBlock}>
+                    <Text numberOfLines={1} style={[styles.notificationItemTitle, { color: colors.foreground }]}>{item.title}</Text>
+                    <Text numberOfLines={3} style={[styles.notificationMessage, { color: colors.mutedForeground }]}>{item.message}</Text>
+                    <Text style={[styles.smallText, { color: colors.mutedForeground }]}>{formatTime(item.createdAt)}</Text>
+                  </View>
+                  {markingId === item.id ? <ActivityIndicator size="small" color={colors.primary} /> : null}
+                </Pressable>
+              )}
+            />
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -451,6 +636,8 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '84%', borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9 },
   mediaImage: { width: 240, height: 220, borderRadius: 10 },
   video: { width: 250, height: 190, borderRadius: 10 },
+  mediaAttachment: { alignItems: 'flex-start', gap: 4 },
+  downloadButton: { minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   imageModal: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
   modalClose: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
   fullImage: { width: '100%', height: '82%' },
@@ -460,6 +647,20 @@ const styles = StyleSheet.create({
   fileName: { flex: 1, fontSize: 13, fontWeight: '600' },
   audioPlayButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   mediaLoading: { width: 220, height: 70, alignItems: 'center', justifyContent: 'center' },
+  notificationOverlay: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
+  notificationScrim: { opacity: 0.48 },
+  notificationSheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  notificationHeader: { minHeight: 64, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
+  notificationHeading: { gap: 3 },
+  notificationTitle: { fontSize: 18, fontWeight: '700' },
+  markAllButton: { minHeight: 48, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 9, borderBottomWidth: 1 },
+  markAllText: { fontSize: 13, fontWeight: '700' },
+  notificationEmpty: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
+  notificationRow: { minHeight: 84, paddingHorizontal: 18, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  notificationDot: { width: 9, height: 9, borderRadius: 5, borderWidth: 1 },
+  notificationTextBlock: { flex: 1, gap: 4 },
+  notificationItemTitle: { fontSize: 14, fontWeight: '700' },
+  notificationMessage: { fontSize: 13, lineHeight: 18 },
   messageText: { fontSize: 14, lineHeight: 20 },
   timeText: { textAlign: 'right', fontSize: 10, marginTop: 4 },
   composer: { paddingHorizontal: 12, paddingTop: 10, borderTopWidth: 1 },

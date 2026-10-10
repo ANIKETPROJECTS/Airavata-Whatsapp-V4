@@ -28,10 +28,12 @@ import type {
   ChatbotExecutionPage,
   ChatbotExecutionQuery,
   ConversationListResponse,
+  ConversationReadResult,
   FacebookWebhookSubscriptionStatus,
   HealthStatus,
   ListPublicWhatsAppTemplatesParams,
   ListWhatsAppCatalogProductsParams,
+  MarkAllNotificationsResult,
   MessageListResponse,
   PublicWhatsAppMessageResult,
   PublicWhatsAppTemplateMessageInput,
@@ -39,6 +41,7 @@ import type {
   PublicWhatsAppTextMessageInput,
   SendConversationMessageInput,
   SendConversationMessageResponse,
+  TenantNotificationReadResponse,
   TenantNotificationSummary,
   WaPayDashboard,
   WaPayOrder,
@@ -388,6 +391,219 @@ export function useGetTenantNotificationSummary<TData = Awaited<ReturnType<typeo
 
 
 
+
+export const getMarkTenantNotificationReadUrl = (id: string,) => {
+
+
+
+
+  return `/api/notifications/${id}/read`
+}
+
+/**
+ * @summary Mark one tenant notification as read
+ */
+export const markTenantNotificationRead = async (id: string, options?: RequestInit): Promise<TenantNotificationReadResponse> => {
+
+  return customFetch<TenantNotificationReadResponse>(getMarkTenantNotificationReadUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkTenantNotificationReadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markTenantNotificationRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markTenantNotificationRead>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['markTenantNotificationRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markTenantNotificationRead>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  markTenantNotificationRead(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkTenantNotificationReadMutationResult = NonNullable<Awaited<ReturnType<typeof markTenantNotificationRead>>>
+
+    export type MarkTenantNotificationReadMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark one tenant notification as read
+ */
+export const useMarkTenantNotificationRead = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markTenantNotificationRead>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markTenantNotificationRead>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getMarkTenantNotificationReadMutationOptions(options));
+    }
+
+export const getMarkAllTenantNotificationsReadUrl = () => {
+
+
+
+
+  return `/api/notifications/read-all`
+}
+
+/**
+ * @summary Mark all tenant notifications as read
+ */
+export const markAllTenantNotificationsRead = async ( options?: RequestInit): Promise<MarkAllNotificationsResult> => {
+
+  return customFetch<MarkAllNotificationsResult>(getMarkAllTenantNotificationsReadUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkAllTenantNotificationsReadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllTenantNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markAllTenantNotificationsRead>>, TError,void, TContext> => {
+
+const mutationKey = ['markAllTenantNotificationsRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAllTenantNotificationsRead>>, void> = () => {
+
+
+          return  markAllTenantNotificationsRead(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkAllTenantNotificationsReadMutationResult = NonNullable<Awaited<ReturnType<typeof markAllTenantNotificationsRead>>>
+
+    export type MarkAllTenantNotificationsReadMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark all tenant notifications as read
+ */
+export const useMarkAllTenantNotificationsRead = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAllTenantNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markAllTenantNotificationsRead>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getMarkAllTenantNotificationsReadMutationOptions(options));
+    }
+
+export const getMarkTenantConversationReadUrl = (contactId: string,) => {
+
+
+
+
+  return `/api/conversations/${contactId}/read`
+}
+
+/**
+ * @summary Mark inbound messages in a tenant conversation as read
+ */
+export const markTenantConversationRead = async (contactId: string, options?: RequestInit): Promise<ConversationReadResult> => {
+
+  return customFetch<ConversationReadResult>(getMarkTenantConversationReadUrl(contactId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkTenantConversationReadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markTenantConversationRead>>, TError,{contactId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markTenantConversationRead>>, TError,{contactId: string}, TContext> => {
+
+const mutationKey = ['markTenantConversationRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markTenantConversationRead>>, {contactId: string}> = (props) => {
+          const {contactId} = props ?? {};
+
+          return  markTenantConversationRead(contactId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkTenantConversationReadMutationResult = NonNullable<Awaited<ReturnType<typeof markTenantConversationRead>>>
+
+    export type MarkTenantConversationReadMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark inbound messages in a tenant conversation as read
+ */
+export const useMarkTenantConversationRead = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markTenantConversationRead>>, TError,{contactId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markTenantConversationRead>>,
+        TError,
+        {contactId: string},
+        TContext
+      > => {
+      return useMutation(getMarkTenantConversationReadMutationOptions(options));
+    }
 
 export const getListTenantConversationMessagesUrl = (contactId: string,) => {
 

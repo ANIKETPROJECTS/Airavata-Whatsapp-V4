@@ -86,7 +86,56 @@ export const getTenantNotificationSummaryResponseUnreadCountMin = 0;
 
 
 export const GetTenantNotificationSummaryResponse = zod.object({
-  "unreadCount": zod.number().min(getTenantNotificationSummaryResponseUnreadCountMin)
+  "unreadCount": zod.number().min(getTenantNotificationSummaryResponseUnreadCountMin),
+  "notifications": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "message": zod.string(),
+  "type": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Mark one tenant notification as read
+ */
+export const MarkTenantNotificationReadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const MarkTenantNotificationReadResponse = zod.object({
+  "notification": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "message": zod.string(),
+  "type": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+})
+})
+
+
+/**
+ * @summary Mark all tenant notifications as read
+ */
+export const MarkAllTenantNotificationsReadResponse = zod.object({
+  "ok": zod.boolean(),
+  "updated": zod.number()
+})
+
+
+/**
+ * @summary Mark inbound messages in a tenant conversation as read
+ */
+export const MarkTenantConversationReadParams = zod.object({
+  "contactId": zod.coerce.string()
+})
+
+export const MarkTenantConversationReadResponse = zod.object({
+  "ok": zod.boolean(),
+  "unread": zod.number()
 })
 
 
