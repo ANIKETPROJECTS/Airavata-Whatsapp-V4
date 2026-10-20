@@ -1433,6 +1433,8 @@ export default function LiveChat() {
             <div className="relative flex-1">
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
+                id="live-chat-conversation-search"
+                name="conversationSearch"
                 type="text"
                 placeholder="Search conversations..."
                 value={search}
@@ -1929,6 +1931,8 @@ export default function LiveChat() {
                   </div>
 
                   <textarea
+                    id="live-chat-message-composer"
+                    name="message"
                     ref={textareaRef}
                     value={messageInput}
                     onChange={e => setMessageInput(e.target.value)}
