@@ -5,6 +5,7 @@ import { CreditSettingModel } from "./models/CreditSetting";
 import { UserModel } from "./models/User";
 import { startCampaignWorker } from "./lib/campaignWorker";
 import { migrateAllExistingUsers } from "./lib/tenantMigration";
+import { runWhatsAppOnboardingSweep } from "./routes/integration";
 import {
   ensureEcosystemWebhookSubscription,
   ensureTenantWebhookSubscriptions,
@@ -82,6 +83,22 @@ connectToDatabase()
 
       logger.info({ port }, "Server listening");
       startCampaignWorker();
+      let onboardingSweepRunning = false;
+      const runOnboardingSweep = async () => {
+        if (onboardingSweepRunning) return;
+        onboardingSweepRunning = true;
+        try {
+          const count = await runWhatsAppOnboardingSweep();
+          if (count > 0) logger.info({ tenantCount: count }, "WhatsApp onboarding retry sweep completed");
+        } catch (err) {
+          logger.warn({ err: err instanceof Error ? err.message : String(err) }, "WhatsApp onboarding retry sweep failed");
+        } finally {
+          onboardingSweepRunning = false;
+        }
+      };
+      const onboardingTimer = setInterval(() => void runOnboardingSweep(), 15 * 60_000);
+      onboardingTimer.unref?.();
+      void runOnboardingSweep();
        void ensureEcosystemWebhookSubscription()
          .then(() => logger.info("Ecosystem WhatsApp webhook subscription confirmed"))
          .catch((err: unknown) =>

@@ -39,6 +39,7 @@ import type {
   PublicWhatsAppTemplateMessageInput,
   PublicWhatsAppTemplatesResponse,
   PublicWhatsAppTextMessageInput,
+  PushDeviceRegistrationInput,
   SendConversationMessageInput,
   SendConversationMessageResponse,
   TenantNotificationReadResponse,
@@ -391,6 +392,148 @@ export function useGetTenantNotificationSummary<TData = Awaited<ReturnType<typeo
 
 
 
+
+export const getRegisterTenantPushDeviceUrl = () => {
+
+
+
+
+  return `/api/notifications/device-token`
+}
+
+/**
+ * @summary Register a push token for the authenticated tenant user
+ */
+export const registerTenantPushDevice = async (pushDeviceRegistrationInput: PushDeviceRegistrationInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRegisterTenantPushDeviceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushDeviceRegistrationInput)
+  }
+);}
+
+
+
+
+
+export const getRegisterTenantPushDeviceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerTenantPushDevice>>, TError,{data: BodyType<PushDeviceRegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerTenantPushDevice>>, TError,{data: BodyType<PushDeviceRegistrationInput>}, TContext> => {
+
+const mutationKey = ['registerTenantPushDevice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerTenantPushDevice>>, {data: BodyType<PushDeviceRegistrationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerTenantPushDevice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterTenantPushDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof registerTenantPushDevice>>>
+    export type RegisterTenantPushDeviceMutationBody = BodyType<PushDeviceRegistrationInput>
+    export type RegisterTenantPushDeviceMutationError = ErrorType<void>
+
+    /**
+ * @summary Register a push token for the authenticated tenant user
+ */
+export const useRegisterTenantPushDevice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerTenantPushDevice>>, TError,{data: BodyType<PushDeviceRegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerTenantPushDevice>>,
+        TError,
+        {data: BodyType<PushDeviceRegistrationInput>},
+        TContext
+      > => {
+      return useMutation(getRegisterTenantPushDeviceMutationOptions(options));
+    }
+
+export const getUnregisterTenantPushDeviceUrl = () => {
+
+
+
+
+  return `/api/notifications/device-token`
+}
+
+/**
+ * @summary Remove a push token for the authenticated tenant user
+ */
+export const unregisterTenantPushDevice = async (pushDeviceRegistrationInput: PushDeviceRegistrationInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUnregisterTenantPushDeviceUrl(),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushDeviceRegistrationInput)
+  }
+);}
+
+
+
+
+
+export const getUnregisterTenantPushDeviceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unregisterTenantPushDevice>>, TError,{data: BodyType<PushDeviceRegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unregisterTenantPushDevice>>, TError,{data: BodyType<PushDeviceRegistrationInput>}, TContext> => {
+
+const mutationKey = ['unregisterTenantPushDevice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unregisterTenantPushDevice>>, {data: BodyType<PushDeviceRegistrationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  unregisterTenantPushDevice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnregisterTenantPushDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof unregisterTenantPushDevice>>>
+    export type UnregisterTenantPushDeviceMutationBody = BodyType<PushDeviceRegistrationInput>
+    export type UnregisterTenantPushDeviceMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a push token for the authenticated tenant user
+ */
+export const useUnregisterTenantPushDevice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unregisterTenantPushDevice>>, TError,{data: BodyType<PushDeviceRegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unregisterTenantPushDevice>>,
+        TError,
+        {data: BodyType<PushDeviceRegistrationInput>},
+        TContext
+      > => {
+      return useMutation(getUnregisterTenantPushDeviceMutationOptions(options));
+    }
 
 export const getMarkTenantNotificationReadUrl = (id: string,) => {
 

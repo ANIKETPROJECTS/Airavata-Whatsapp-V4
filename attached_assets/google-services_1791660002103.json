@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "58753850336",
+    "firebase_url": "https://social-a2441-default-rtdb.firebaseio.com",
+    "project_id": "social-a2441",
+    "storage_bucket": "social-a2441.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58753850336:android:181848e98fd6f78fe2e985",
+        "android_client_info": {
+          "package_name": "com.atwassup.livechat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeT3fOgT_PlpfbrjfWzN0vk2mff8Pyfyk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58753850336:android:abb6594fd087227fe2e985",
+        "android_client_info": {
+          "package_name": "com.example.social"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeT3fOgT_PlpfbrjfWzN0vk2mff8Pyfyk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

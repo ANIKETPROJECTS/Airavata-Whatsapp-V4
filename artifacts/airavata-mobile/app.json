@@ -11,7 +11,8 @@
       "supportsTablet": false
     },
     "android": {
-      "package": "com.atwassup.livechat"
+      "package": "com.atwassup.livechat",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -21,7 +22,8 @@
       "expo-video",
       "expo-sharing",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,0 +1,62 @@
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-worklets@0.10._c9eb1e4927edc788aac95fc264de2e61/node_modules/react-native-worklets/android/.cxx/RelWithDebInfo/3a4y4x60/arm64-v8a/CMakeFiles/worklets.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-worklets@0.10._c9eb1e4927edc788aac95fc264de2e61/node_modules/react-native-worklets/Common/cpp/worklets/NativeModules/WorkletsModuleProxy.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-worklets@0.10._c9eb1e4927edc788aac95fc264de2e61/node_modules/react-native-worklets/android/.cxx/RelWithDebInfo/3a4y4x60/arm64-v8a/CMakeFiles/worklets.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-worklets@0.10._c9eb1e4927edc788aac95fc264de2e61/node_modules/react-native-worklets/Common/cpp/worklets/NativeModules/WorkletsModuleProxy.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-worklets@0.10._c9eb1e4927edc788aac95fc264de2e61/node_modules/react-native-worklets/android/.cxx/RelWithDebInfo/3a4y4x60/arm64-v8a/CMakeFiles/worklets.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-worklets@0.10._c9eb1e4927edc788aac95fc264de2e61/node_modules/react-native-worklets/Common/cpp/worklets/Registries/EventHandlerRegistry.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  ninja: error: manifest 'build.ninja' still dirty after 100 tries
+
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 3m 49s
+414 actionable tasks: 403 executed, 11 up-to-date
+PS C:\b\artifacts\airavata-mobile\android>

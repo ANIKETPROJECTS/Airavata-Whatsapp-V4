@@ -1,0 +1,49 @@
+PS C:\b\artifacts\airavata-mobile\android> cd C:\b\artifacts\airavata-mobile\android
+PS C:\b\artifacts\airavata-mobile\android> .\gradlew.bat --stop
+Stopping Daemon(s)
+1 Daemon stopped
+PS C:\b\artifacts\airavata-mobile\android>
+PS C:\b\artifacts\airavata-mobile\android> cd C:\b
+PS C:\b> Remove-Item -Recurse -Force .\node_modules
+PS C:\b> pnpm install --force --node-linker=hoisted
+[WARN] using --force I sure hope you know what you are doing
+Scope: all 10 workspace projects
+✓ Lockfile passes supply-chain policies (verified 21m ago)
+Lockfile is up to date, resolution step is skipped
+Packages: +1070
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 0, reused 1007, downloaded 0, added 1070, done
+Done in 53.4s using pnpm v11.7.0
+PS C:\b> pnpm config get node-linker
+hoisted
+PS C:\b> cd C:\b
+PS C:\b> $env:EXPO_PUBLIC_DOMAIN = "app.atwassup.com"
+PS C:\b> $env:ANDROID_HOME = "C:\Users\anike\AppData\Local\Android\Sdk"
+PS C:\b> $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+PS C:\b>
+PS C:\b> cd .\artifacts\airavata-mobile\android
+PS C:\b\artifacts\airavata-mobile\android> "sdk.dir=$($env:ANDROID_HOME -replace '\\','/')" | Set-Content -Encoding ASCII .\local.properties
+PS C:\b\artifacts\airavata-mobile\android> .\gradlew.bat clean assembleRelease
+Starting a Gradle Daemon, 1 stopped Daemon could not be reused, use --status for details
+
+[Incubating] Problems report is available at: file:///C:/b/artifacts/airavata-mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Configuring project ':react-native-worklets' without an existing directory is not allowed. The configured projectDirectory 'C:\b\node_modules\.pnpm\react-native-worklets@0.10._c9eb1e4927edc788aac95fc264de2e61\node_modules\react-native-worklets\android' does not exist, can't be written to or is not a directory.
+
+* Try:
+> Make sure the project directory exists and is writable.
+> For more information, see https://docs.gradle.org/9.3.1/userguide/multi_project_builds.html#include_existing_projects_only
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 20s
+12 actionable tasks: 12 executed
+PS C:\b\artifacts\airavata-mobile\android>

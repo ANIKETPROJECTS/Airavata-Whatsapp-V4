@@ -1,0 +1,107 @@
+PS C:\ATWASSUPAPK> git clone https://github.com/ANIKETPROJECTS/Airavata-Whatsapp-V4.git
+Cloning into 'Airavata-Whatsapp-V4'...
+remote: Enumerating objects: 8588, done.
+remote: Counting objects: 100% (1061/1061), done.
+remote: Compressing objects: 100% (479/479), done.
+remote: Total 8588 (delta 608), reused 991 (delta 571), pack-reused 7527 (from 2)
+Receiving objects: 100% (8588/8588), 237.03 MiB | 6.39 MiB/s, done.
+Resolving deltas: 100% (5201/5201), done.
+Updating files: 100% (895/895), done.
+PS C:\ATWASSUPAPK> ls
+
+
+    Directory: C:\ATWASSUPAPK
+
+
+Mode                 LastWriteTime         Length Name                                                                                                         
+----                 -------------         ------ ----                                                                                                         
+d-----        10-10-2026     13:31                Airavata-Whatsapp-V4                                                                                         
+
+
+PS C:\ATWASSUPAPK> cd .\Airavata-Whatsapp-V4\        
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> Test-Path .\pnpm-workspace.yaml
+True
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> Test-Path .\artifacts\airavata-mobile\package.json
+True
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> Test-Path .\artifacts\airavata-mobile\lib\saveToAndroidDownloads.ts
+True
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> pnpm install
+Scope: all 10 workspace projects
+? Verifying lockfile against supply-chain policies (1007 entries)...
+Lockfile is up to date, resolution step is skipped
+Packages: +1028
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Downloading @emoji-mart/data@1.2.1: 5.38 MB/5.38 MB, done
+[WARN] Tarball download average speed 44 KiB/s (size 55 KiB) is below 50 KiB/s: https://registry.npmjs.org/hermes-estree/-/hermes-estree-0.35.0.tgz (GET)
+[WARN] Tarball download average speed 27 KiB/s (size 30 KiB) is below 50 KiB/s: https://registry.npmjs.org/metro-resolver/-/metro-resolver-0.84.6.tgz (GET)
+
+   ╭──────────────────────────────────────────╮
+   │                                          │
+   │   Update available! 11.7.0 → 12.10.1.    │
+   │   Changelog: https://pnpm.io/v/12.10.1   │
+   │     To update, run: pnpm add -g pnpm     │
+   │                                          │
+   ╰──────────────────────────────────────────╯
+
+Progress: resolved 1028, reused 379, downloaded 466, added 197
+✓ Lockfile passes supply-chain policies (1007 entries in 34.3s)
+Downloading @expo-google-fonts/material-symbols@0.4.49: 8.87 MB/8.87 MB, done
+[WARN] Request took 10452ms: https://registry.npmjs.org/@tailwindcss%2Foxide
+[WARN] Request took 11020ms: https://registry.npmjs.org/@expo%2Fcli
+[WARN] 1 other warnings
+Downloading expo-file-system@57.0.7: 7.23 MB/7.23 MB, done
+Downloading expo-video@57.0.5: 10.16 MB/10.16 MB, done
+Progress: resolved 1028, reused 379, downloaded 617, added 429
+Downloading react-icons@5.7.0: 14.89 MB/22.76 MB
+Downloading hermes-compiler@250829098.0.17: 18.00 MB/19.18 MB
+Downloading expo-modules-core@57.0.21: 13.09 MB/30.79 MB
+Downloading expo-image@57.0.5: 9.12 MB/49.09 MB
+
+
+
+
+
+
+
+
+
+
+
+Downloading hermes-compiler@250829098.0.17: 19.18 MB/19.18 MB, done
+Downloading expo-modules-core@57.0.21: 30.79 MB/30.79 MB, done
+Downloading react-icons@5.7.0: 22.76 MB/22.76 MB, done
+Downloading expo-image@57.0.5: 49.09 MB/49.09 MB, done
+Progress: resolved 1028, reused 379, downloaded 622, added 1028, done
+
+dependencies:
++ @replit/connectors-sdk 0.4.1
+
+devDependencies:
++ prettier 3.9.5
++ typescript 5.9.3
+
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.3
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> pnpm --filter @workspace/airavata-mobile typecheck
+Scope: all 10 workspace projects
+✓ Lockfile passes supply-chain policies (verified 57s ago)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.3
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+[ERROR] Command failed with exit code 1: "C:\Program Files\nodejs\node.exe" "C:\Users\anike\AppData\Roaming\npm\node_modules\pnpm\bin\pnpm.mjs" install
+
+pnpm: Command failed with exit code 1: "C:\Program Files\nodejs\node.exe" "C:\Users\anike\AppData\Roaming\npm\node_modules\pnpm\bin\pnpm.mjs" install
+    at getFinalError (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:34109:14)
+    at makeError (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:36416:21)
+    at getSyncResult (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:38260:10)
+    at spawnSubprocessSync (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:38220:14)
+    at execaCoreSync (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:38150:23)
+    at callBoundExeca (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:40678:23)
+    at boundExeca (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:40655:49)
+    at sync (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:40814:10)
+    at runPnpmCli (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:245099:5)
+    at runDepsStatusCheck (file:///C:/Users/anike/AppData/Roaming/npm/node_modules/pnpm/dist/pnpm.mjs:246833:7)
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> 

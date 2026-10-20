@@ -41,6 +41,8 @@ export * from './publicWhatsAppTemplateMessageInput';
 export * from './publicWhatsAppTemplateMessageInputComponentsItem';
 export * from './publicWhatsAppTemplatesResponse';
 export * from './publicWhatsAppTextMessageInput';
+export * from './pushDeviceRegistrationInput';
+export * from './pushDeviceRegistrationInputPlatform';
 export * from './sendConversationMessageInput';
 export * from './sendConversationMessageResponse';
 export * from './tenantConversation';

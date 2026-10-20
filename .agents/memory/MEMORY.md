@@ -51,3 +51,4 @@
 - [Outbound media history](live-chat-outbound-media.md) — template and chatbot image/video sends must persist per tenant and render in Live Chat.
 - [Inbound media history](inbound-media-history.md) — persist customer media IDs per tenant so Live Chat can fetch inbound files.
 - [Expo Go media saving](expo-media-library-platform-split.md) — avoid MediaLibraryNext; save Android attachments to a user-approved folder instead of opening app-sharing targets.
+- [Meta tech-provider onboarding](meta-tech-provider-onboarding.md) — AtWassup is an approved Tech Provider using the Airavata_Solution app for client Embedded Signup.

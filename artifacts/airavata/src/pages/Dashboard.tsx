@@ -57,6 +57,18 @@ interface PhoneNumber {
   status: string;
 }
 
+interface WhatsAppOnboardingStatus {
+  connected: boolean;
+  state: string;
+  status: string | null;
+  quality: string | null;
+  tier: string | null;
+  platformType: string | null;
+  message?: string;
+  errorCode?: number;
+  phoneNumberId?: string | null;
+}
+
 interface TemplateRecord {
   id: string;
   name: string;
@@ -242,6 +254,7 @@ export default function Dashboard() {
   }, [refreshUser]);
   const { launch: launchFbSignup, isConnecting: fbConnecting } = useFacebookEmbeddedSignup(refreshAfterFacebookSignup);
   const [restoringFacebookConnection, setRestoringFacebookConnection] = useState(false);
+  const [retryingWhatsAppSetup, setRetryingWhatsAppSetup] = useState(false);
   const { data: recoveryStatus } = useQuery<FacebookRecoveryStatus>({
     queryKey: ['facebook-recovery-status', user?.id],
     queryFn: () => api.get('/integration/facebook/recovery-status'),
@@ -251,8 +264,14 @@ export default function Dashboard() {
   const { data: facebookStatus } = useQuery<FacebookConnectionStatus>({
     queryKey: ['facebook-connection-status', user?.id],
     queryFn: () => api.get('/integration/facebook/status'),
-    enabled: Boolean(user && !user.isProtectedMasterAdmin),
+    enabled: Boolean(user && user.metaWabaConnected && !user.isProtectedMasterAdmin),
     refetchOnWindowFocus: true,
+  });
+  const { data: waSetupStatus, refetch: refetchWaSetupStatus } = useQuery<WhatsAppOnboardingStatus>({
+    queryKey: ['whatsapp-onboarding-status', user?.id],
+    queryFn: () => api.get('/whatsapp/status'),
+    enabled: Boolean(user && !user.isProtectedMasterAdmin),
+    refetchInterval: (query) => query.state.data?.connected ? 60_000 : 15_000,
   });
   const webhookRepairAttempted = useRef<string | null>(null);
 
@@ -289,6 +308,20 @@ export default function Dashboard() {
       toast.error(error instanceof Error ? error.message : 'Unable to restore the saved Facebook connection');
     } finally {
       setRestoringFacebookConnection(false);
+    }
+  };
+
+  const retryWhatsAppSetup = async () => {
+    setRetryingWhatsAppSetup(true);
+    try {
+      const result = await api.post<{ ok: boolean; message?: string }>('/whatsapp/retry-onboarding', {});
+      if (result.ok) toast.success('WhatsApp setup completed.');
+      else toast.message(result.message || 'WhatsApp setup is still processing.');
+      await refetchWaSetupStatus();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to retry WhatsApp setup');
+    } finally {
+      setRetryingWhatsAppSetup(false);
     }
   };
 
@@ -455,19 +488,25 @@ export default function Dashboard() {
             </div>
           )}
 
-        {isWhatsAppConnected && (
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-none border border-green-200 bg-white px-5 py-4 shadow-sm">
+        {(isWhatsAppConnected || waSetupStatus) && (
+          <div className={`flex flex-wrap items-center justify-between gap-4 rounded-none border bg-white px-5 py-4 shadow-sm ${waSetupStatus?.state === 'action_required' || waSetupStatus?.state === 'failed' ? 'border-red-200' : waSetupStatus?.connected ? 'border-green-200' : 'border-amber-200'}`}>
             <div className="flex items-center gap-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500 ring-4 ring-green-100" />
+              <span className={`h-2.5 w-2.5 rounded-full ring-4 ${waSetupStatus?.connected ? 'bg-green-500 ring-green-100' : waSetupStatus?.state === 'action_required' || waSetupStatus?.state === 'failed' ? 'bg-red-500 ring-red-100' : 'animate-pulse bg-amber-500 ring-amber-100'}`} />
               <div>
                 <p className="text-xs text-gray-800">WhatsApp connection</p>
-                <p className="text-sm font-bold text-black">{user?.isProtectedMasterAdmin ? 'Connected' : phoneLoading ? 'Checking status…' : connectedPhone?.status || 'Connected'}</p>
+                <p className="text-sm font-bold text-black">{user?.isProtectedMasterAdmin ? 'Connected' : waSetupStatus?.connected ? 'Connected' : waSetupStatus?.state === 'action_required' ? 'Action required' : waSetupStatus?.state === 'failed' ? 'Setup failed' : waSetupStatus?.state === 'signup_complete' ? 'Registration pending' : waSetupStatus?.state === 'registering' ? 'Registering number…' : waSetupStatus?.state === 'subscribing' ? 'Subscribing app…' : phoneLoading ? 'Checking status…' : connectedPhone?.status || 'Setup pending'}</p>
+                {!waSetupStatus?.connected && waSetupStatus?.message ? <p className="mt-1 max-w-xl text-xs text-gray-600">{waSetupStatus.message}</p> : null}
               </div>
             </div>
             <div className="flex gap-6 text-xs">
-              <div><p className="text-gray-800">Quality</p><p className="mt-1 font-semibold text-black">{connectedPhone?.quality || '—'}</p></div>
-              <div><p className="text-gray-800">Messaging tier</p><p className="mt-1 font-semibold text-black">{formatMessagingTier(connectedPhone?.messagingTier || '—')}</p></div>
-              <div><p className="text-gray-800">Number</p><p className="mt-1 font-semibold text-black">{connectedPhone?.number || '—'}</p></div>
+              <div><p className="text-gray-800">Quality</p><p className="mt-1 font-semibold text-black">{waSetupStatus?.quality || connectedPhone?.quality || '—'}</p></div>
+              <div><p className="text-gray-800">Messaging tier</p><p className="mt-1 font-semibold text-black">{formatMessagingTier(waSetupStatus?.tier || connectedPhone?.messagingTier || '—')}</p></div>
+              <div><p className="text-gray-800">Number</p><p className="mt-1 font-semibold text-black">{connectedPhone?.number || waSetupStatus?.phoneNumberId || '—'}</p></div>
+              {!waSetupStatus?.connected && !user?.isProtectedMasterAdmin && (
+                waSetupStatus?.errorCode === 190 || waSetupStatus?.errorCode === 102
+                  ? <button onClick={() => launchFbSignup()} disabled={fbConnecting} className="rounded-md bg-red-600 px-3 py-2 font-semibold text-white disabled:opacity-60">{fbConnecting ? 'Connecting…' : 'Reconnect Facebook'}</button>
+                  : <button onClick={() => void retryWhatsAppSetup()} disabled={retryingWhatsAppSetup || fbConnecting} className="rounded-md bg-amber-500 px-3 py-2 font-semibold text-white disabled:opacity-60">{retryingWhatsAppSetup ? 'Retrying…' : 'Retry setup'}</button>
+              )}
             </div>
           </div>
         )}

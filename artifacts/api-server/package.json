@@ -10,6 +10,7 @@
     "test:ingestion": "node ./scripts/test-autogamma-ingestion.mjs",
     "test:conversation-tab-state": "node ./scripts/test-conversation-tab-state.mjs",
     "test:inbound-media": "node ./scripts/test-inbound-media.mjs",
+    "test:whatsapp-onboarding": "node ./scripts/test-whatsapp-onboarding.mjs",
     "report:contact-duplicates": "node ./scripts/report-contact-duplicates.mjs",
     "merge:duplicate-contacts": "node ./scripts/merge-duplicate-contacts.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -24,6 +25,7 @@
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",
     "express": "^5.2.1",
+    "firebase-admin": "^14.5.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.4",
     "multer": "^2.2.0",

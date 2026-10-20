@@ -17,6 +17,7 @@ import { FlowModel } from "../models/Flow";
 import { TemplateModel } from "../models/Template";
 import { ChatbotFlowModel } from "../models/ChatbotFlow";
 import { runWithTenant } from "../lib/tenantDatabase";
+import { sendIncomingReplyPush } from "../lib/pushNotifications";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger";
 import {
@@ -30,6 +31,8 @@ import { emitClientWebhookEvent, emitContactCreatedEvent } from "../lib/clientWe
 import { normalizeContactPhone } from "../lib/contactPhone";
 import { extractInboundMedia } from "../lib/inboundMedia";
 import { lookupWhatsAppPayment } from "../lib/whatsapp";
+import { finalizeOnboarding } from "../lib/whatsappOnboarding";
+import { verifyMetaWebhookSignature } from "../lib/metaWebhookSignature";
 import { reconcileMetaPaymentLookup } from "../lib/whatsappPayments";
 import {
   getEcosystemWhatsAppCredentialIds,
@@ -109,7 +112,18 @@ router.get("/webhook", (req, res) => {
 // ── POST /api/webhook — receive events from Meta ──────────────────────────────
 
 router.post("/webhook", async (req, res) => {
-  // Must acknowledge immediately; Meta will retry if we don't respond within 5s
+  const appSecret = process.env.META_APP_SECRET;
+  const signature = req.header("x-hub-signature-256");
+  const rawBody = (req as typeof req & { rawBody?: Buffer }).rawBody;
+  if (!appSecret) {
+    res.status(503).send("Webhook signature validation is not configured");
+    return;
+  }
+  if (!rawBody || !verifyMetaWebhookSignature(rawBody, signature, appSecret)) {
+    res.status(401).send("Invalid webhook signature");
+    return;
+  }
+  // Acknowledge only authenticated callbacks; Meta retries if this exceeds 5s.
   res.status(200).send("EVENT_RECEIVED");
 
   try {
@@ -124,7 +138,22 @@ router.post("/webhook", async (req, res) => {
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
         const value = change.value;
-        if (!value || change.field !== "messages") continue;
+        if (!value) continue;
+        if (["account_update", "phone_number_quality_update", "phone_number_name_update"].includes(change.field)) {
+          const user = await UserModel.findOne({ metaWabaId: entry.id })
+            .select("_id waOnboarding waQuality waStatus")
+            .lean();
+          if (user) {
+            const set: Record<string, unknown> = {};
+            if (change.field === "phone_number_quality_update") set.waQuality = value.quality_rating ?? value.current_quality ?? value.new_quality;
+            if (change.field === "phone_number_name_update" && value.name_status) set.waNameStatus = value.name_status;
+            if (change.field === "account_update") set.waAccountStatus = value.event ?? value.account_status ?? "updated";
+            if (Object.keys(set).length) await UserModel.updateOne({ _id: user._id }, { $set: set });
+            if (user.waOnboarding?.state !== "connected") void finalizeOnboarding(String(user._id));
+          }
+          continue;
+        }
+        if (change.field !== "messages") continue;
 
         // Debug: log what we received
         logger.info(
@@ -450,6 +479,16 @@ async function handleIncomingMessage(
       },
     },
   );
+
+  void sendIncomingReplyPush({
+    tenantUserId: String(userId),
+    messageId: String(createdMessage._id),
+    contactId: String(contactId),
+    contactName: contact?.name ?? fromRaw,
+    preview: body?.slice(0, 160) ?? "A customer sent a new WhatsApp message.",
+  }).catch((error) => {
+    logger.warn({ err: error, tenantUserId: String(userId) }, "Unable to send inbound-message push notification");
+  });
 
   logger.info({ from: fromRaw, body }, "Stored incoming message");
   if (isOptOut) {
@@ -819,8 +858,15 @@ interface WebhookBody {
 }
 
 interface WebhookValue {
-  messaging_product: string;
+  messaging_product?: string;
   metadata?: { display_phone_number: string; phone_number_id?: string };
+  phone_number_id?: string;
+  quality_rating?: string;
+  current_quality?: string;
+  new_quality?: string;
+  name_status?: string;
+  event?: string;
+  account_status?: string;
   messages?: WebhookMessage[];
   statuses?: WebhookStatus[];
   contacts?: WebhookContact[];

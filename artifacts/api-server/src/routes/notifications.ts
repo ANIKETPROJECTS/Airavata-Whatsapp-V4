@@ -2,11 +2,51 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { authenticate, type AuthRequest } from "../middlewares/authenticate";
 import { NotificationModel } from "../models/Notification";
+import { PushDeviceModel } from "../models/PushDevice";
 import { TemplateModel } from "../models/Template";
 import { CampaignModel } from "../models/Campaign";
 import { MessageModel } from "../models/Message";
 
 const router = Router();
+
+router.post("/notifications/device-token", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const token = typeof req.body?.token === "string" ? req.body.token.trim() : "";
+    const platform = String(req.body?.platform ?? "").toUpperCase();
+    if (!token || token.length > 4096 || !["ANDROID", "IOS"].includes(platform)) {
+      res.status(400).json({ error: "A valid device token and platform are required" });
+      return;
+    }
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    await PushDeviceModel.updateOne(
+      { token },
+      { $set: { userId, token, platform, lastSeenAt: new Date() } },
+      { upsert: true },
+    );
+    res.json({ ok: true });
+  } catch (error) {
+    req.log?.error?.(error, "Unable to register push notification device");
+    res.status(500).json({ error: "Unable to register this device" });
+  }
+});
+
+router.delete("/notifications/device-token", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const token = typeof req.body?.token === "string" ? req.body.token.trim() : "";
+    if (!token) {
+      res.status(400).json({ error: "A device token is required" });
+      return;
+    }
+    await PushDeviceModel.deleteOne({
+      userId: new mongoose.Types.ObjectId(req.user!.userId),
+      token,
+    });
+    res.json({ ok: true });
+  } catch (error) {
+    req.log?.error?.(error, "Unable to unregister push notification device");
+    res.status(500).json({ error: "Unable to unregister this device" });
+  }
+});
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

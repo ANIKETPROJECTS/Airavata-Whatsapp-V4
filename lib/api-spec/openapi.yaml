@@ -91,6 +91,43 @@ paths:
                 $ref: "#/components/schemas/TenantNotificationSummary"
         "401":
           description: Authentication required
+  /notifications/device-token:
+    post:
+      operationId: registerTenantPushDevice
+      tags: [notifications]
+      summary: Register a push token for the authenticated tenant user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushDeviceRegistrationInput"
+      responses:
+        "200":
+          description: Device registered
+        "400":
+          description: Invalid device token or platform
+        "401":
+          description: Authentication required
+    delete:
+      operationId: unregisterTenantPushDevice
+      tags: [notifications]
+      summary: Remove a push token for the authenticated tenant user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushDeviceRegistrationInput"
+      responses:
+        "200":
+          description: Device unregistered
+        "401":
+          description: Authentication required
   /notifications/{id}/read:
     patch:
       operationId: markTenantNotificationRead
@@ -992,6 +1029,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TenantNotification"
+    PushDeviceRegistrationInput:
+      type: object
+      required: [token, platform]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        platform:
+          type: string
+          enum: [ANDROID, IOS]
     TenantNotification:
       type: object
       required: [id, title, message, type, createdAt, read]

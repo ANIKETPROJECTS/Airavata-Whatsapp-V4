@@ -13,8 +13,18 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { getAuthToken } from '@/lib/tokenStorage';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 const apiDomain = process.env.EXPO_PUBLIC_DOMAIN;
 if (apiDomain) setBaseUrl(`https://${apiDomain}`);

@@ -1,0 +1,213 @@
+PS C:\b\artifacts\airavata-mobile\android> cd C:\b
+PS C:\b> $env:EXPO_PUBLIC_DOMAIN = "app.atwassup.com"
+PS C:\b> pnpm --filter @workspace/airavata-mobile exec expo prebuild --clean --platform android
+√ Cleared android code
+√ Created native directory
+√ Updated package.json | no changes
+√ Finished prebuild
+PS C:\b> $env:ANDROID_HOME = "C:\Users\anike\AppData\Local\Android\Sdk"
+PS C:\b> $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+PS C:\b> cd C:\b\artifacts\airavata-mobile\android
+PS C:\b\artifacts\airavata-mobile\android> "sdk.dir=$($env:ANDROID_HOME -replace '\\','/')" | Set-Content -Encoding ASCII .\local.properties
+PS C:\b\artifacts\airavata-mobile\android> .\gradlew.bat clean assembleRelease
+
+> Task :expo-module-gradle-plugin:compileKotlin
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt:9:24 'var targetSdk: Int?' is deprecated. Will be removed from library DSL in v9.0. Use testOptions.targetSdk or/and lint.targetSdk instead.
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  36.0.0
+  - minSdk:      24
+  - compileSdk:  36
+  - targetSdk:   36
+  - ndk:         27.1.12297006
+  - kotlin:      2.1.20
+  - ksp:         2.1.20-2.0.1
+
+> Configure project :app
+ ??  Applying gradle plugin 'expo-max-sdk-override-plugin'
+  [expo-max-sdk-override-plugin] This plugin will find all permissions declared with `android:maxSdkVersion`. If there exists a declaration with the `android:maxSdkVersion` annotation and another one without, the plugin will remove the annotation from the final merged manifest. In order to see a log with the changes run a clean build of the app.
+
+> Configure project :expo-modules-core
+Linking react-native-worklets native libs into expo-modules-core build tasks
+task ':react-native-worklets:mergeDebugNativeLibs'
+task ':react-native-worklets:mergeReleaseNativeLibs'
+
+> Configure project :expo
+
+Using expo modules
+  - expo-log-box (57.0.4)
+  - expo-constants (57.0.21)
+  - expo-modules-core (57.0.21)
+  - [?] expo-dom-webview (57.0.1)
+  - [?] expo-ui (57.0.22)
+  - [?] expo-asset (57.0.19)
+  - [?] expo-audio (57.0.5)
+  - [?] expo-blur (57.0.3)
+  - [?] expo-file-system (57.0.7)
+  - [?] expo-font (57.0.4)
+  - [?] expo-haptics (57.0.3)
+  - [?] expo-image (57.0.5)
+  - [?] expo-image-loader (57.0.1)
+  - [?] expo-image-picker (57.0.20)
+  - [?] expo-keep-awake (57.0.2)
+  - [?] expo-linear-gradient (57.0.2)
+  - [?] expo-linking (57.0.12)
+  - [?] expo-location (57.0.20)
+  - [?] expo-router (57.0.25)
+  - [?] expo-secure-store (57.0.4)
+  - [?] expo-sharing (57.0.22)
+  - [?] expo-splash-screen (57.0.9)
+  - [?] expo-status-bar (57.0.1)
+  - [?] expo-system-ui (57.0.4)
+  - [?] expo-video (57.0.5)
+  - [?] expo-web-browser (57.0.3)
+
+
+> Task :expo-constants:createExpoConfig
+The NODE_ENV environment variable is required but was not specified. Ensure the project is bundled with Expo CLI or NODE_ENV is set. Using only .env.local and .env
+
+> Task :expo-modules-core:processReleaseManifest
+C:\b\artifacts\airavata-mobile\node_modules\expo-modules-core\android\src\main\AndroidManifest.xml:8:9-11:45 Warning:
+        meta-data#com.facebook.soloader.enabled@android:value was tagged at AndroidManifest.xml:8 to replace other declarations but no other declaration present
+
+> Task :react-native-async-storage_async-storage:processReleaseManifest
+package="com.reactnativecommunity.asyncstorage" found in source AndroidManifest.xml: C:\b\artifacts\airavata-mobile\node_modules\@react-native-async-storage\async-storage\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.reactnativecommunity.asyncstorage" from the source AndroidManifest.xml: C:\b\artifacts\airavata-mobile\node_modules\@react-native-async-storage\async-storage\android\src\main\AndroidManifest.xml.
+
+> Task :react-native-keyboard-controller:processReleaseManifest
+package="com.reactnativekeyboardcontroller" found in source AndroidManifest.xml: C:\b\artifacts\airavata-mobile\node_modules\react-native-keyboard-controller\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.reactnativekeyboardcontroller" from the source AndroidManifest.xml: C:\b\artifacts\airavata-mobile\node_modules\react-native-keyboard-controller\android\src\main\AndroidManifest.xml.
+
+> Task :app:createBundleReleaseJsAndAssets FAILED
+Error: Cannot find module 'expo/package.json'
+Require stack:
+- C:\b\node_modules\@expo\metro-config\build\transform-worker\utils\moduleMapper.js
+- C:\b\node_modules\@expo\metro-config\build\transform-worker\utils\getMinifier.js
+- C:\b\node_modules\@expo\metro-config\build\transform-worker\metro-transform-worker.js
+- C:\b\node_modules\@expo\metro-config\build\serializer\reconcileTransformSerializerPlugin.js
+- C:\b\node_modules\@expo\metro-config\build\serializer\treeShakeSerializerPlugin.js
+- C:\b\node_modules\@expo\metro-config\build\serializer\withExpoSerializers.js
+- C:\b\node_modules\@expo\metro-config\build\ExpoMetroConfig.js
+- C:\b\node_modules\@expo\metro-config\build\config\loadUserConfig.js
+- C:\b\node_modules\@expo\metro-config\build\index.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\start\server\metro\instantiateMetro.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\start\server\metro\MetroBundlerDevServer.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\export\embed\exportEmbedAsync.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\export\embed\index.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\bin\cli
+Error: Cannot find module 'expo/package.json'
+Require stack:
+- C:\b\node_modules\@expo\metro-config\build\transform-worker\utils\moduleMapper.js
+- C:\b\node_modules\@expo\metro-config\build\transform-worker\utils\getMinifier.js
+- C:\b\node_modules\@expo\metro-config\build\transform-worker\metro-transform-worker.js
+- C:\b\node_modules\@expo\metro-config\build\serializer\reconcileTransformSerializerPlugin.js
+- C:\b\node_modules\@expo\metro-config\build\serializer\treeShakeSerializerPlugin.js
+- C:\b\node_modules\@expo\metro-config\build\serializer\withExpoSerializers.js
+- C:\b\node_modules\@expo\metro-config\build\ExpoMetroConfig.js
+- C:\b\node_modules\@expo\metro-config\build\config\loadUserConfig.js
+- C:\b\node_modules\@expo\metro-config\build\index.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\start\server\metro\instantiateMetro.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\start\server\metro\MetroBundlerDevServer.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\export\embed\exportEmbedAsync.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\src\export\embed\index.js
+- C:\b\artifacts\airavata-mobile\node_modules\@expo\cli\build\bin\cli
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at Function.resolve (node:internal/modules/helpers:145:19)
+    at requireResolveBasepath (C:\b\node_modules\@expo\metro-config\build\transform-worker\utils\moduleMapper.js:10:84)
+    at Object.<anonymous> (C:\b\node_modules\@expo\metro-config\build\transform-worker\utils\moduleMapper.js:38:27)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)
+    at Function._load (node:internal/modules/cjs/loader:1282:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+
+> Task :react-native-masked-view_masked-view:compileReleaseJavaWithJavac
+Note: C:\b\artifacts\airavata-mobile\node_modules\@react-native-masked-view\masked-view\android\src\main\java\org\reactnative\maskedview\RNCMaskedViewPackage.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :react-native-async-storage_async-storage:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: C:\b\artifacts\airavata-mobile\node_modules\@react-native-async-storage\async-storage\android\src\javaPackage\java\com\reactnativecommunity\asyncstorage\AsyncStoragePackage.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-safe-area-context:compileReleaseKotlin
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaProviderManager.kt:39:19 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:9:8 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:50:54 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:59:23 'val uiImplementation: UIImplementation!' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewShadowNode.kt:9:32 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewShadowNode.kt:110:61 'class NativeViewHierarchyOptimizer : Any' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+
+> Task :react-native-svg:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-keyboard-controller:compileReleaseKotlin
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/fabric/java/com/reactnativekeyboardcontroller/OverKeyboardViewManager.kt:3:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/fabric/java/com/reactnativekeyboardcontroller/OverKeyboardViewManager.kt:29:44 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/fabric/java/com/reactnativekeyboardcontroller/OverKeyboardViewManager.kt:31:48 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/extensions/EditText.kt:69:42 Unchecked cast of 'ArrayList<*>' to 'ArrayList<TextWatcher>'.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/extensions/ReactContext.kt:12:109 'val DEFAULT: Int' is deprecated. UIManagerType.DEFAULT will be deleted in the next release of React Native. Use [LEGACY] instead.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/extensions/ReactContext.kt:18:27 'fun getEventDispatcher(context: ReactContext, uiManagerType: Int): EventDispatcher?' is deprecated. UIManagerType is no longer needed.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/extensions/ThemedReactContext.kt:18:21 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/interactive/KeyboardAnimationController.kt:89:16 'static fun getWindowInsetsController(p0: View): WindowInsetsControllerCompat?' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:4:8 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:73:7 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:75:9 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:77:9 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:79:9 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:81:9 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:83:9 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:85:9 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/managers/KeyboardControllerViewManagerImpl.kt:87:9 'object MapBuilder : Any' is deprecated. Use Kotlin's built-in collections extensions.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/modules/statusbar/StatusBarManagerCompatModuleImpl.kt:70:38 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/modules/statusbar/StatusBarManagerCompatModuleImpl.kt:73:20 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/modules/statusbar/StatusBarManagerCompatModuleImpl.kt:78:18 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/EdgeToEdgeReactViewGroup.kt:115:58 'static field SOFT_INPUT_ADJUST_RESIZE: Int' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/EdgeToEdgeReactViewGroup.kt:150:81 'static field FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardHostShadowNode.kt:3:8 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardHostShadowNode.kt:4:8 'class ReactShadowNodeImpl : Any, ReactShadowNode<ReactShadowNodeImpl!>' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardHostShadowNode.kt:15:45 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardHostShadowNode.kt:22:12 'class ReactShadowNodeImpl : Any, ReactShadowNode<ReactShadowNodeImpl!>' is deprecated. Deprecated in Java.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:13:8 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:30:44 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:79:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'left'. This may cause problems when calling this function with named arguments.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:80:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'top'. This may cause problems when calling this function with named arguments.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:81:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'right'. This may cause problems when calling this function with named arguments.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:82:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'bottom'. This may cause problems when calling this function with named arguments.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:132:9 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:152:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'w'. This may cause problems when calling this function with named arguments.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:153:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'h'. This may cause problems when calling this function with named arguments.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:154:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'oldw'. This may cause problems when calling this function with named arguments.
+w: file:///C:/b/artifacts/airavata-mobile/node_modules/react-native-keyboard-controller/android/src/main/java/com/reactnativekeyboardcontroller/views/overlay/OverKeyboardViewGroup.kt:155:5 The corresponding parameter in the supertype 'ReactViewGroup' is named 'oldh'. This may cause problems when calling this function with named arguments.
+
+[Incubating] Problems report is available at: file:///C:/b/artifacts/airavata-mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:createBundleReleaseJsAndAssets'.
+> Process 'command 'cmd'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 38s
+263 actionable tasks: 240 executed, 23 up-to-date
+PS C:\b\artifacts\airavata-mobile\android>

@@ -28,6 +28,7 @@ module.exports = {
         META_APP_ID: "1324395306544610",
         META_APP_SECRET: "a8ab2b68450eda7d16c4be8462597e88",
         META_REDIRECT_URI: "https://app.atwassup.com/",
+        WA_PIN_ENCRYPTION_KEY: "fb1bdb35507a9b304f1f3a87b981952b60dcb73ef2ddd9a37386d8ee8ad08a7f",
 
         // ── AutoGamma integration ──────────────────────────────────────────────
         AIRAVATA_INTEGRATION_URL:

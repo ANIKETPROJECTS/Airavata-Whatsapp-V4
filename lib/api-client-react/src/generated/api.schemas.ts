@@ -91,6 +91,23 @@ export interface TenantNotificationSummary {
   notifications: TenantNotification[];
 }
 
+export type PushDeviceRegistrationInputPlatform = typeof PushDeviceRegistrationInputPlatform[keyof typeof PushDeviceRegistrationInputPlatform];
+
+
+export const PushDeviceRegistrationInputPlatform = {
+  ANDROID: 'ANDROID',
+  IOS: 'IOS',
+} as const;
+
+export interface PushDeviceRegistrationInput {
+  /**
+     * @minLength 1
+     * @maxLength 4096
+     */
+  token: string;
+  platform: PushDeviceRegistrationInputPlatform;
+}
+
 export interface TenantNotificationReadResponse {
   notification: TenantNotification;
 }

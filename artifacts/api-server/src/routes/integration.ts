@@ -10,7 +10,7 @@
 
 import { Router, type Response } from "express";
 import mongoose from "mongoose";
-import { authenticate, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
+import { authenticate, requireAdmin, requireMasterAdmin, type AuthRequest } from "../middlewares/authenticate";
 import { UserModel } from "../models/User";
 import { WhatsAppCredentialModel } from "../models/WhatsAppCredential";
 import { runWithTenant } from "../lib/tenantDatabase";
@@ -21,12 +21,13 @@ import {
   isProtectedMasterAdminUser,
 } from "../lib/protectedMasterAdmin";
 import { ensureWhatsAppWebhookSubscription, getCredentials } from "../lib/whatsapp";
+import { finalizeOnboarding, getLiveWaStatus, retryEligibleOnboarding } from "../lib/whatsappOnboarding";
 
 const router = Router();
 
 const META_APP_ID = process.env.META_APP_ID ?? "1324395306544610";
 const META_APP_SECRET = process.env.META_APP_SECRET;
-const GRAPH_API_VERSION = "v21.0";
+const GRAPH_API_VERSION = process.env.GRAPH_API_VERSION || "v23.0";
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 const CATALOG_GRAPH_BASE = "https://graph.facebook.com/v26.0";
 
@@ -713,34 +714,6 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
     }
 
     /**
-     * Subscribe this tenant WABA to the app webhook before marking the
-     * connection as active. Outbound sends can work without this subscription,
-     * but inbound customer replies would never reach Live Chat.
-     */
-    try {
-      await ensureWhatsAppWebhookSubscription(wabaId, accessToken);
-      logger.info(
-        { userId: ownerUserId, wabaId, phoneNumberId },
-        "WhatsApp WABA subscribed to application webhooks",
-      );
-    } catch (subscriptionError) {
-      logger.error(
-        {
-          err: subscriptionError,
-          userId: ownerUserId,
-          wabaId,
-          phoneNumberId,
-        },
-        "WhatsApp WABA webhook subscription failed",
-      );
-      res.status(502).json({
-        error:
-          "WhatsApp connected, but Meta webhook subscription failed. Please reconnect the Facebook account.",
-      });
-      return;
-    }
-
-    /**
      * Also upsert encrypted credentials into whatsappcredentials collection.
      * This is the source of truth used by all outbound message sending.
      */
@@ -815,15 +788,24 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
      * succeeds, so the UI cannot show connected without usable credentials.
      */
     await UserModel.findByIdAndUpdate(ownerUserId, {
-      metaWabaConnected: true,
-      metaWabaId: wabaId,
-      metaPhoneNumberId: phoneNumberId,
+      $set: {
+        metaWabaConnected: true,
+        metaWabaId: wabaId,
+        metaPhoneNumberId: phoneNumberId,
+        "waOnboarding.state": "signup_complete",
+        "waOnboarding.attempts": 0,
+      },
       $unset: {
+        "waOnboarding.pinEncrypted": 1,
+        "waOnboarding.lastError": 1,
+        "waOnboarding.nextRetryAt": 1,
+        "waOnboarding.registeredAt": 1,
+        "waOnboarding.subscribedAt": 1,
+        "waOnboarding.lastCheckedAt": 1,
         metaEmbeddedSignupCode: 1,
         metaWabaAccessToken: 1,
       },
     });
-
     logger.info(
       {
         userId: ownerUserId,
@@ -837,6 +819,9 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
       ok: true,
       wabaId,
       phoneNumberId,
+    });
+    void finalizeOnboarding(ownerUserId).then((result) => {
+      if (!result.ok) logger.warn({ userId: ownerUserId, state: result.state, message: result.message }, "WhatsApp post-signup finalization needs attention");
     });
   } catch (err) {
     logger.error(
@@ -854,6 +839,34 @@ async function onboardWhatsApp(req: AuthRequest, res: Response): Promise<void> {
  * POST /api/whatsapp/onboard
  */
 router.post("/whatsapp/onboard", authenticate, onboardWhatsApp);
+
+router.get("/whatsapp/status", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const status = await getLiveWaStatus(req.user!.userId);
+    res.json(status);
+  } catch {
+    res.status(500).json({ error: "Unable to read WhatsApp status" });
+  }
+});
+
+router.post("/whatsapp/retry-onboarding", authenticate, async (req: AuthRequest, res) => {
+  const result = await finalizeOnboarding(req.user!.userId);
+  res.status(result.ok || result.state !== "failed" ? 200 : 502).json(result);
+});
+
+router.post("/admin/tenants/:id/finalize-whatsapp", authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  const tenantId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  if (!mongoose.isValidObjectId(tenantId)) {
+    res.status(400).json({ error: "Invalid tenant ID" });
+    return;
+  }
+  const result = await finalizeOnboarding(tenantId);
+  res.status(result.ok || result.state !== "failed" ? 200 : 502).json(result);
+});
+
+export async function runWhatsAppOnboardingSweep() {
+  return retryEligibleOnboarding();
+}
 
 /**
  * Keep the old route working.

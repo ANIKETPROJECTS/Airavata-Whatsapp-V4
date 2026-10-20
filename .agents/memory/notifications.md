@@ -8,3 +8,9 @@ Never seed the notification UI with placeholder records. The notification feed i
 **Why:** A static dropdown creates false activity and cannot support reliable unread counts, filtering, or cross-session read state.
 
 **How to apply:** Add new notification sources through a stable dedupe key and action URL, then keep the bell preview and `/notifications` page backed by the same query cache.
+
+Inbound customer replies must also reach tenant-registered mobile devices through push delivery; in-app unread polling alone cannot alert users while Android has suspended the app.
+
+**Why:** Clients need to notice replies even when Live Chat is backgrounded or closed.
+
+**How to apply:** Keep push tokens tenant-scoped, trigger sends only after deduplicated inbound message persistence, and treat the server-side push credential as deployment configuration.

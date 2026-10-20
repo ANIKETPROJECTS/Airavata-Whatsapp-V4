@@ -40,7 +40,12 @@ app.use((req, res, next) => {
 });
 // Imported chatbot graphs commonly exceed Express's 100 KB JSON default.
 // 512 KB accommodates imported graphs while keeping individual writes bounded.
-app.use(express.json({ limit: "512kb" }));
+app.use(express.json({
+  limit: "512kb",
+  verify(req, _res, buffer) {
+    (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 const bodyParserErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   if (err?.type === "entity.too.large") {

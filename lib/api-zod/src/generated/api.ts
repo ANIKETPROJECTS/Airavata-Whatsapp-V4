@@ -99,6 +99,36 @@ export const GetTenantNotificationSummaryResponse = zod.object({
 
 
 /**
+ * @summary Register a push token for the authenticated tenant user
+ */
+export const registerTenantPushDeviceBodyTokenMax = 4096;
+
+
+
+export const RegisterTenantPushDeviceBody = zod.object({
+  "token": zod.string().min(1).max(registerTenantPushDeviceBodyTokenMax),
+  "platform": zod.enum(['ANDROID', 'IOS'])
+})
+
+export const RegisterTenantPushDeviceResponse = zod.unknown()
+
+
+/**
+ * @summary Remove a push token for the authenticated tenant user
+ */
+export const unregisterTenantPushDeviceBodyTokenMax = 4096;
+
+
+
+export const UnregisterTenantPushDeviceBody = zod.object({
+  "token": zod.string().min(1).max(unregisterTenantPushDeviceBodyTokenMax),
+  "platform": zod.enum(['ANDROID', 'IOS'])
+})
+
+export const UnregisterTenantPushDeviceResponse = zod.unknown()
+
+
+/**
  * @summary Mark one tenant notification as read
  */
 export const MarkTenantNotificationReadParams = zod.object({

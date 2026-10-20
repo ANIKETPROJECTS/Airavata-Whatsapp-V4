@@ -1,0 +1,53 @@
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> pnpm --filter @workspace/airavata-mobile typecheck
+$ tsc -p tsconfig.json --noEmit
+app/_layout.tsx:16:48 - error TS6305: Output file 'C:/ATWASSUPAPK/Airavata-Whatsapp-V4/lib/api-client-react/dist/index.d.ts' has not been built from source file 'C:/ATWASSUPAPK/Airavata-Whatsapp-V4/lib/api-client-react/src/index.ts'.
+
+16 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+app/chat.tsx:35:8 - error TS6305: Output file 'C:/ATWASSUPAPK/Airavata-Whatsapp-V4/lib/api-client-react/dist/index.d.ts' has not been built from source file 'C:/ATWASSUPAPK/Airavata-Whatsapp-V4/lib/api-client-react/src/index.ts'.
+
+35 } from '@workspace/api-client-react';
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+app/chat.tsx:62:53 - error TS7006: Parameter 'total' implicitly has an 'any' type.
+
+62   const totalUnreadMessages = conversations.reduce((total, conversation) => total + Math.max(0, conversation.unread), 0);
+                                                       ~~~~~
+
+app/chat.tsx:62:60 - error TS7006: Parameter 'conversation' implicitly has an 'any' type.
+
+62   const totalUnreadMessages = conversations.reduce((total, conversation) => total + Math.max(0, conversation.unread), 0);
+                                                              ~~~~~~~~~~~~
+
+app/chat.tsx:64:33 - error TS7006: Parameter 'conversation' implicitly has an 'any' type.
+
+64     () => conversations.filter((conversation) => conversation.tabState === tab.toUpperCase()),
+                                   ~~~~~~~~~~~~
+
+app/chat.tsx:199:51 - error TS7006: Parameter 'conversation' implicitly has an 'any' type.
+
+199               const count = conversations.filter((conversation) => conversation.tabState === status.toUpperCase()).length;
+                                                      ~~~~~~~~~~~~
+
+app/index.tsx:16:61 - error TS6305: Output file 'C:/ATWASSUPAPK/Airavata-Whatsapp-V4/lib/api-client-react/dist/index.d.ts' has not been built from source file 'C:/ATWASSUPAPK/Airavata-Whatsapp-V4/lib/api-client-react/src/index.ts'.
+
+16 import { getAuthenticatedTenantUser, loginTenantUser } from '@workspace/api-client-react';
+                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+app/index.tsx:48:27 - error TS18046: 'session' is of type 'unknown'.
+
+48       await saveAuthToken(session.token);
+                             ~~~~~~~
+
+
+Found 8 errors in 3 files.
+
+Errors  Files
+     1  app/_layout.tsx:16
+     5  app/chat.tsx:35
+     2  app/index.tsx:16
+C:\ATWASSUPAPK\Airavata-Whatsapp-V4\artifacts\airavata-mobile:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/airavata-mobile@0.0.0 typecheck: `tsc -p tsconfig.json --noEmit`
+Exit status 2
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> 

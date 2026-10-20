@@ -1,0 +1,77 @@
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> $env:EXPO_PUBLIC_DOMAIN = "app.atwassup.com"
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> pnpm --filter @workspace/airavata-mobile exec expo prebuild --platform android
+√ Created native directory
+√ Updated package.json
+Dependencies in the package.json changed:
+  expo, react, react-native
+√ Install the updated dependencies? ... yes
+› Installing using pnpm
+> pnpm install
+√ Finished prebuild
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> 
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> pnpm --filter @workspace/airavata-mobile exec expo prebuild --platform android
+√ Cleared android code
+√ Created native directory
+√ Updated package.json | no changes
+√ Finished prebuild
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4> cd .\artifacts\airavata-mobile\android
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4\artifacts\airavata-mobile\android> .\gradlew.bat assembleRelease
+Downloading https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
+.............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+
+Welcome to Gradle 9.3.1!
+
+Here are the highlights of this release:
+ - Test reporting improvements
+ - Error and warning improvements
+ - Build authoring improvements
+
+For more details see https://docs.gradle.org/9.3.1/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Task :expo-module-gradle-plugin:compileKotlin
+w: file:///C:/ATWASSUPAPK/Airavata-Whatsapp-V4/node_modules/.pnpm/expo-modules-core@57.0.21_r_857d916945c9b4172a571dfc12f20e3c/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt:9:24 'var targetSdk: Int?' is deprecated. Will be removed from library DSL in v9.0. Use testOptions.targetSdk or/and lint.targetSdk instead.
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  36.0.0
+  - minSdk:      24
+  - compileSdk:  36
+  - targetSdk:   36
+  - ndk:         27.1.12297006
+  - kotlin:      2.1.20
+  - ksp:         2.1.20-2.0.1
+
+> Configure project :app
+ ??  Applying gradle plugin 'expo-max-sdk-override-plugin'
+  [expo-max-sdk-override-plugin] This plugin will find all permissions declared with `android:maxSdkVersion`. If there exists a declaration with the `android:maxSdkVersion` annotation and another one without, the plugin will remove the annotation from the final merged manifest. In order to see a log with the changes run a clean build of the app.
+
+[Incubating] Problems report is available at: file:///C:/ATWASSUPAPK/Airavata-Whatsapp-V4/artifacts/airavata-mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'C:\ATWASSUPAPK\Airavata-Whatsapp-V4\artifacts\airavata-mobile\android\build.gradle' line: 24
+
+* What went wrong:
+A problem occurred evaluating root project 'Airavata Live Chat Mobile'.
+> Failed to apply plugin 'com.facebook.react.rootproject'.
+   > A problem occurred configuring project ':app'.
+      > SDK location not found. Define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file at 'C:\ATWASSUPAPK\Airavata-Whatsapp-V4\artifacts\airavata-mobile\android\local.properties'.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 4m 10s
+28 actionable tasks: 28 executed
+PS C:\ATWASSUPAPK\Airavata-Whatsapp-V4\artifacts\airavata-mobile\android> 

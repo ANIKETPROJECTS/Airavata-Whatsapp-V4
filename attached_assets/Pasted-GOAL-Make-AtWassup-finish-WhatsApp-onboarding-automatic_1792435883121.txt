@@ -1,0 +1,73 @@
+GOAL
+Make AtWassup finish WhatsApp onboarding automatically for every new client the moment Embedded Signup completes. Do the whole job end to end in one go: audit the code, implement, write tests, run them, fix failures, and report. Do not stop to ask me questions or wait for approval. If something is ambiguous, pick the safest option, note it in the final report, and continue.
+
+CONTEXT
+AtWassup is a multi-tenant WhatsApp Cloud API SaaS (Node/Express, MongoDB, React/TypeScript). We are an approved Meta Tech Provider using Embedded Signup with the Meta app "Airavata_Solution". After a client finishes Embedded Signup, Meta creates the WABA and phone number, but the number stays PENDING ("register this phone number using the registration API"). Our code never finishes onboarding, so clients get stuck. I fixed one client by hand with exactly these Graph API calls, and the code must now do the same automatically:
+1. GET  /{phoneNumberId}?fields=status,code_verification_status,name_status,quality_rating,platform_type  (was PENDING, VERIFIED, APPROVED, UNKNOWN, NOT_APPLICABLE)
+2. POST /{phoneNumberId}/register  body {"messaging_product":"whatsapp","pin":"<6 digits>"}  returns {"success":true}
+3. GET  /{phoneNumberId}?fields=status,platform_type  (became CONNECTED, CLOUD_API)
+4. POST /{wabaId}/subscribed_apps  returns {"success":true}
+5. GET  /{wabaId}/subscribed_apps  lists our app
+
+STEP 1: AUDIT (do it yourself, then continue straight to implementation)
+Find: the Embedded Signup frontend and message listener; the backend callback that exchanges the code for a token and gets wabaId and phoneNumberId; the tenant model and how tokens are encrypted; the existing Graph helper and hardcoded API version; the webhook routes; the dashboard endpoint and component for "WhatsApp connection / Quality / Messaging tier / Number"; any existing calls to /register, /subscribed_apps, /request_code, /verify_code. Reuse existing patterns and files wherever possible. Do not refactor unrelated code.
+
+STEP 2: IMPLEMENT
+
+A. GRAPH HELPER
+- One helper graphRequest(method, path, token, body). API version from env GRAPH_API_VERSION (default v23.0). Bearer token in the Authorization header, never in the URL.
+- On a Meta error, throw an error that keeps code, error_subcode, message, fbtrace_id and HTTP status. Retry only network errors and 5xx (max 3, exponential backoff). Never retry 4xx.
+
+B. TENANT SCHEMA ADDITIONS (non-breaking, all optional)
+waOnboarding: { state: "signup_complete" | "registering" | "subscribing" | "connected" | "action_required" | "failed", pinEncrypted, registeredAt, subscribedAt, lastError {code, subcode, message, at}, attempts, nextRetryAt, lastCheckedAt }
+Plus waStatus, waQuality, waTier, waPlatformType.
+PIN encryption: AES-256-GCM, key from env WA_PIN_ENCRYPTION_KEY, random IV per value, store iv + tag + ciphertext. If the env var is missing, fail safely with a clear log message and do not crash the server.
+
+C. SERVICE finalizeOnboarding(tenantId): IDEMPOTENT, SAFE TO RUN REPEATEDLY, NEVER THROWS TO CALLERS
+1. Load the tenant, decrypt its own token (never a shared token).
+2. GET the phone number fields: status, code_verification_status, name_status, quality_rating, platform_type.
+3. If code_verification_status is not VERIFIED: state "action_required" with "Number not verified", stop. Do not auto-send SMS.
+4. If status is not CONNECTED or platform_type is not CLOUD_API:
+   - If the tenant has no pinEncrypted, generate a random 6-digit PIN with crypto.randomInt, encrypt it and SAVE IT TO THE DB BEFORE calling Meta.
+   - POST /{phoneNumberId}/register with that PIN. {"success":true} means success.
+5. If the number is already CONNECTED and the tenant has no stored PIN (for example registered manually before this feature), NEVER call register and never generate a PIN. Just continue to subscription.
+6. POST /{wabaId}/subscribed_apps, then GET it and confirm our app is listed. If missing, record an error.
+7. Re-GET the phone number. If CONNECTED, set state "connected" and save waStatus, waQuality, waPlatformType, registeredAt, subscribedAt. If still PENDING, re-check after 60 seconds, up to 5 times.
+8. On any failure: save lastError, increment attempts, set the state per the error mapping, return a sanitized result.
+9. Use a per-tenant in-process lock (or a DB flag with expiry) so two parallel calls cannot run at once.
+
+D. TRIGGERS
+1. Call finalizeOnboarding automatically, asynchronously, right after the Embedded Signup callback saves wabaId, phoneNumberId and token. The signup response must not wait for it and must succeed even if it fails.
+2. Cron every 15 minutes: pick tenants with a wabaId and phoneNumberId whose waOnboarding.state is not "connected" (include tenants with no waOnboarding record yet, as a backfill), attempts < 5, nextRetryAt in the past or empty, and last attempt over 10 minutes ago. Run finalizeOnboarding on each, one at a time.
+3. POST /api/whatsapp/retry-onboarding (authenticated, tenant resolved from the session, never from the request body) runs finalizeOnboarding and returns the sanitized result.
+4. POST /api/admin/tenants/:id/finalize-whatsapp (admin only) for support.
+
+E. ERROR MAPPING (store the raw code, show friendly text)
+- 133005 wrong PIN: action_required, "Two-step PIN mismatch. Reset the PIN in WhatsApp Manager > Phone numbers, then retry." No auto-retry.
+- 133016 too many register attempts: action_required, set nextRetryAt = now + 72 hours, cron must respect it.
+- 190 / 102 token invalid or expired: action_required, "Reconnect Facebook", and show the Reconnect Facebook button.
+- 100 / 200 / 10 permissions or parameter problems: action_required, show the message, log fbtrace_id.
+- 5xx or network errors: keep the current state, cron retries.
+
+F. DASHBOARD
+1. GET /api/whatsapp/status reads LIVE from Graph (status, quality_rating, platform_type, messaging limit tier where available), cached 60 seconds per tenant, falling back to stored values if Graph fails.
+2. The "WhatsApp connection" card shows CONNECTED (green), PENDING/registering (amber with spinner), or ACTION REQUIRED (red with the friendly message and a "Retry setup" button that calls the retry endpoint). Hide the button when connected. Prefer live data over stored data.
+
+G. WEBHOOKS
+- Handle and persist account_update, phone_number_quality_update and phone_number_name_update to the tenant.
+- If a webhook arrives for a tenant that is not CONNECTED in our DB, trigger finalizeOnboarding for it.
+- Verify X-Hub-Signature-256 on every POST using the app secret and reject invalid signatures. Keep the GET verify-token handshake. If this is already implemented, leave it as is.
+
+H. SECURITY
+- Never log, return in API responses, or put in error messages: access tokens, PINs, app secret, API keys. Mask in logs (first 4 characters at most). The PIN never goes to the frontend.
+- No hardcoded secrets. Read everything from env.
+
+STEP 3: TESTS (YOU WRITE AND RUN THEM, WITH A MOCKED GRAPH API, NO REAL CREDENTIALS)
+Cover: PENDING to register to subscribe to CONNECTED; already CONNECTED with no stored PIN makes no register call but still checks the subscription; 133005 gives action_required with no auto-retry; 133016 sets nextRetryAt 72 hours ahead; 190 gives the reconnect message; parallel calls are idempotent; a signup request still succeeds when finalizeOnboarding fails; cron picks up a tenant with no waOnboarding record; the PIN is encrypted at rest and never appears in logs or API responses. Run the tests, fix any failure, and re-run until all pass. Also run a type check and lint, and make sure the app still starts.
+
+STEP 4: FINAL REPORT (short)
+1. Every file changed or added.
+2. New env vars I must add to Replit Secrets (expected: WA_PIN_ENCRYPTION_KEY, GRAPH_API_VERSION, META_APP_SECRET if missing) and any I should generate, with the command.
+3. Test results.
+4. Any assumptions you made.
+5. One line on how I confirm it works on the next real client signup.

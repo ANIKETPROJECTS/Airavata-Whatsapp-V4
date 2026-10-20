@@ -23,6 +23,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import * as Notifications from 'expo-notifications';
 import { saveToAndroidDownloads } from '@/lib/saveToAndroidDownloads';
 import {
   getTenantNotificationSummary,
@@ -31,7 +32,9 @@ import {
   markTenantNotificationRead,
   listTenantConversationMessages,
   listTenantConversations,
+  registerTenantPushDevice,
   sendTenantConversationMessage,
+  unregisterTenantPushDevice,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { clearAuthToken, getAuthToken } from '@/lib/tokenStorage';
@@ -52,6 +55,47 @@ export default function LiveChatScreen() {
   const [draft, setDraft] = useState('');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    let active = true;
+
+    const registerCurrentDevice = async (token: string) => {
+      if (!token || !active) return;
+      try {
+        await registerTenantPushDevice({ token, platform: 'ANDROID' });
+      } catch {
+        // Push registration can retry the next time the signed-in chat opens.
+      }
+    };
+
+    void (async () => {
+      try {
+        await Notifications.setNotificationChannelAsync('customer-replies', {
+          name: 'Customer replies',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          sound: 'default',
+        });
+        let permission = await Notifications.getPermissionsAsync();
+        if (!permission.granted) permission = await Notifications.requestPermissionsAsync();
+        if (!permission.granted) return;
+        const deviceToken = await Notifications.getDevicePushTokenAsync();
+        await registerCurrentDevice(String(deviceToken.data));
+      } catch {
+        // Permission denial or unavailable device push services must not block chat.
+      }
+    })();
+
+    const tokenSubscription = Notifications.addPushTokenListener((token) => {
+      void registerCurrentDevice(String(token.data));
+    });
+
+    return () => {
+      active = false;
+      tokenSubscription.remove();
+    };
+  }, []);
 
   const conversationsQuery = useQuery({
     queryKey: ['mobile-live-chat-conversations'],
@@ -106,6 +150,14 @@ export default function LiveChatScreen() {
     },
   });
   const signOut = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const token = await Notifications.getDevicePushTokenAsync();
+        await unregisterTenantPushDevice({ token: String(token.data), platform: 'ANDROID' });
+      } catch {
+        // Sign-out must still complete if push-token removal is unavailable.
+      }
+    }
     await clearAuthToken();
     router.replace('/');
   };

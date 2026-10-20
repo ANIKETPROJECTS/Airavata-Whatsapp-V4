@@ -1,0 +1,2696 @@
+PS C:\b> $env:EXPO_PUBLIC_DOMAIN = "app.atwassup.com"
+PS C:\b> $env:ANDROID_HOME = "C:\Users\anike\AppData\Local\Android\Sdk"
+PS C:\b> $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+PS C:\b> cd C:\b\artifacts\airavata-mobile\android
+PS C:\b\artifacts\airavata-mobile\android> "sdk.dir=$($env:ANDROID_HOME -replace '\\','/')" | Set-Content -Encoding ASCII .\local.properties
+PS C:\b\artifacts\airavata-mobile\android> .\gradlew.bat clean assembleRelease
+
+> Configure project :app
+ ??  Applying gradle plugin 'expo-max-sdk-override-plugin'
+  [expo-max-sdk-override-plugin] This plugin will find all permissions declared with `android:maxSdkVersion`. If there exists a declaration with the `android:maxSdkVersion` annotation and another one without, the plugin will remove the annotation from the final merged manifest. In order to see a log with the changes run a clean build of the app.
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  36.0.0
+  - minSdk:      24
+  - compileSdk:  36
+  - targetSdk:   36
+  - ndk:         27.1.12297006
+  - kotlin:      2.1.20
+  - ksp:         2.1.20-2.0.1
+
+> Configure project :expo-modules-core
+Linking react-native-worklets native libs into expo-modules-core build tasks
+task ':react-native-worklets:mergeDebugNativeLibs'
+task ':react-native-worklets:mergeReleaseNativeLibs'
+
+> Configure project :expo
+
+Using expo modules
+  - expo-log-box (57.0.4)
+  - expo-constants (57.0.21)
+  - expo-modules-core (57.0.21)
+  - [?] expo-dom-webview (57.0.1)
+  - [?] expo-ui (57.0.22)
+  - [?] expo-asset (57.0.19)
+  - [?] expo-audio (57.0.5)
+  - [?] expo-blur (57.0.3)
+  - [?] expo-file-system (57.0.7)
+  - [?] expo-font (57.0.4)
+  - [?] expo-haptics (57.0.3)
+  - [?] expo-image (57.0.5)
+  - [?] expo-image-loader (57.0.1)
+  - [?] expo-image-picker (57.0.20)
+  - [?] expo-keep-awake (57.0.2)
+  - [?] expo-linear-gradient (57.0.2)
+  - [?] expo-linking (57.0.12)
+  - [?] expo-location (57.0.20)
+  - [?] expo-router (57.0.25)
+  - [?] expo-secure-store (57.0.4)
+  - [?] expo-sharing (57.0.22)
+  - [?] expo-splash-screen (57.0.9)
+  - [?] expo-status-bar (57.0.1)
+  - [?] expo-system-ui (57.0.4)
+  - [?] expo-video (57.0.5)
+  - [?] expo-web-browser (57.0.3)
+
+
+> Task :react-native-screens:externalNativeBuildCleanRelease
+Clean rnscreens-arm64-v8a
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: CMake Warning in CMakeLists.txt:
+C/C++:   The object file directory
+C/C++:     C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+C/C++:   has 193 characters.  The maximum full path to an object file is 250
+C/C++:   characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+C/C++:     C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+C/C++:   cannot be safely placed under this directory.  The build may not work
+C/C++:   correctly.
+C/C++: ninja: error: manifest 'build.ninja' still dirty after 100 tries
+
+> Task :react-native-screens:externalNativeBuildCleanRelease FAILED
+
+[Incubating] Problems report is available at: file:///C:/b/artifacts/airavata-mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':react-native-screens:externalNativeBuildCleanRelease'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `C:\b\node_modules\.pnpm\react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2\node_modules\react-native-screens\android\.cxx\RelWithDebInfo\212y471n\arm64-v8a'
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+  [0/1] Re-running CMake...
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a
+
+  C++ build system [clean] failed while executing:
+      @echo off
+      "C:\\Users\\anike\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+        -C ^
+        "C:\\b\\node_modules\\.pnpm\\react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2\\node_modules\\react-native-screens\\android\\.cxx\\RelWithDebInfo\\212y471n\\arm64-v8a" ^
+        clean
+    from C:\b\node_modules\.pnpm\react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2\node_modules\react-native-screens\android
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNScreensTurboModule.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  CMake Warning in CMakeLists.txt:
+    The object file directory
+
+      C:/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/android/.cxx/RelWithDebInfo/212y471n/arm64-v8a/CMakeFiles/rnscreens.dir/./
+
+    has 193 characters.  The maximum full path to an object file is 250
+    characters (see CMAKE_OBJECT_PATH_MAX).  Object file
+
+      C_/b/node_modules/.pnpm/react-native-screens@4.26.2_2fb97eb7335a3b7333d65655868c0dd2/node_modules/react-native-screens/cpp/RNSScreenRemovalListener.cpp.o
+
+    cannot be safely placed under this directory.  The build may not work
+    correctly.
+
+
+  ninja: error: manifest 'build.ninja' still dirty after 100 tries
+
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 44s
+59 actionable tasks: 21 executed, 38 up-to-date
+PS C:\b\artifacts\airavata-mobile\android>
