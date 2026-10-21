@@ -108,7 +108,7 @@ function SendTestDialog({
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Send Template Message</h2>
