@@ -35,6 +35,8 @@ server {
 
     # ── API + Webhook → Express on port 3014 ─────────────────────────────────
     location /api/ {
+        # Allows the API's 100 MiB document upload limit plus multipart overhead.
+        client_max_body_size 105m;
         proxy_pass         http://127.0.0.1:3014;
         proxy_http_version 1.1;
         proxy_set_header   Upgrade $http_upgrade;
