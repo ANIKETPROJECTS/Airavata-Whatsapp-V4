@@ -28,6 +28,7 @@ import {
 import { withCreditCharge } from "../lib/creditDeduction";
 import { normalizeContactPhone } from "../lib/contactPhone";
 import { findOrCreateContactForPhone } from "../lib/liveChatPersistence";
+import { runWithTenant } from "../lib/tenantDatabase";
 
 const router = Router();
 const headerMediaUpload = multer({
@@ -276,7 +277,9 @@ router.delete("/templates/:id", authenticate, async (req: AuthRequest, res) => {
  * Body: { templateId, to }
  */
 router.post("/templates/send-test", authenticate, headerMediaUpload.single("file"), async (req: AuthRequest, res): Promise<void> => {
+  const tenantUserId = req.user!.userId;
   try {
+    await runWithTenant(tenantUserId, async () => {
     const { templateId, to } = req.body as {
       templateId: string;
       to: string;
@@ -377,7 +380,7 @@ router.post("/templates/send-test", authenticate, headerMediaUpload.single("file
             uploadedDocument.buffer,
             uploadedDocument.mimetype,
             uploadedDocument.originalname,
-            req.user!.userId,
+            tenantUserId,
           );
           headerValues.mediaFilename = uploadedDocument.originalname;
         } else {
@@ -394,7 +397,7 @@ router.post("/templates/send-test", authenticate, headerMediaUpload.single("file
           headerValues.media = await uploadTemplateSampleForMessage(
             sampleUrl,
             structure.headerFormat as "IMAGE" | "VIDEO" | "DOCUMENT",
-            req.user!.userId,
+            tenantUserId,
           );
           if (structure.headerFormat === "DOCUMENT") {
             headerValues.mediaFilename = `${template.name}.pdf`;
@@ -462,7 +465,7 @@ router.post("/templates/send-test", authenticate, headerMediaUpload.single("file
           template.name,
           template.language ?? "en_US",
           components,
-          req.user!.userId,
+          tenantUserId,
         ),
     });
     const whatsappMessageId = result.messages?.[0]?.id ?? null;
@@ -506,6 +509,7 @@ router.post("/templates/send-test", authenticate, headerMediaUpload.single("file
     );
 
     res.json({ ok: true, messageId: whatsappMessageId });
+    });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
   }
