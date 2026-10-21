@@ -58,6 +58,7 @@ function SendTestDialog({
   const [otpCode, setOtpCode] = useState(() =>
     isAuth ? String(Math.floor(100000 + Math.random() * 900000)) : ''
   );
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -75,14 +76,21 @@ function SendTestDialog({
     }
     setSending(true);
     try {
-      const res = await api.post<{ ok: boolean; messageId: string | null }>(
-        '/templates/send-test',
-        {
-          templateId: template.id,
-          to: to.trim(),
-          variables: isAuth ? [otpCode.trim()] : varValues.map(v => v.trim()),
-        },
-      );
+      const variables = isAuth ? [otpCode.trim()] : varValues.map(v => v.trim());
+      const hasDocumentHeader = template.headerType.toUpperCase() === 'DOCUMENT';
+      const res = hasDocumentHeader
+        ? await (() => {
+            const formData = new FormData();
+            formData.append('templateId', template.id);
+            formData.append('to', to.trim());
+            formData.append('variables', JSON.stringify(variables));
+            if (documentFile) formData.append('file', documentFile);
+            return api.upload<{ ok: boolean; messageId: string | null }>('/templates/send-test', formData);
+          })()
+        : await api.post<{ ok: boolean; messageId: string | null }>(
+            '/templates/send-test',
+            { templateId: template.id, to: to.trim(), variables },
+          );
       if (res.ok) {
         toast.success('Template message sent!');
         onClose();
@@ -153,6 +161,28 @@ function SendTestDialog({
                   />
                 </div>
               ))}
+            </div>
+          )}
+
+          {template.headerType.toUpperCase() === 'DOCUMENT' && (
+            <div className="space-y-1.5">
+              <label htmlFor="template-send-document" className="text-sm font-medium text-gray-700">
+                Document attachment <span className="font-normal text-gray-500">(optional)</span>
+              </label>
+              <input
+                id="template-send-document"
+                name="document"
+                data-testid="input-template-send-document"
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                onChange={e => setDocumentFile(e.target.files?.[0] ?? null)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium"
+              />
+              <p className="text-xs text-gray-500">
+                {documentFile
+                  ? `${documentFile.name} will replace the template’s saved document for this send.`
+                  : 'Leave empty to send the document saved with this template.'}
+              </p>
             </div>
           )}
 

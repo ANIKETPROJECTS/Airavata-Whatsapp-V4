@@ -11,6 +11,7 @@ import {
   deleteMetaTemplate,
   getMetaTemplates,
   sendTemplateMessage,
+  uploadMedia,
   uploadTemplateSampleForMessage,
   uploadTemplateHeaderMedia,
   type TemplateCategory,
@@ -274,25 +275,41 @@ router.delete("/templates/:id", authenticate, async (req: AuthRequest, res) => {
  * Sends an APPROVED template as a test message.
  * Body: { templateId, to }
  */
-router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) => {
+router.post("/templates/send-test", authenticate, headerMediaUpload.single("file"), async (req: AuthRequest, res): Promise<void> => {
   try {
-    const { templateId, to, variables } = req.body as {
+    const { templateId, to } = req.body as {
       templateId: string;
       to: string;
-      variables?: string[];
     };
+    let variables: string[] | undefined;
+    if (typeof req.body?.variables === "string") {
+      try {
+        const parsedVariables: unknown = JSON.parse(req.body.variables);
+        if (Array.isArray(parsedVariables)) variables = parsedVariables.map(String);
+      } catch {
+        res.status(400).json({ error: "variables must be a valid JSON array" });
+        return;
+      }
+    } else if (Array.isArray(req.body?.variables)) {
+      variables = req.body.variables.map(String);
+    }
 
     if (!templateId || !to) {
-      return res.status(400).json({ error: "templateId and to are required" });
+      res.status(400).json({ error: "templateId and to are required" });
+      return;
     }
 
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
 
     const template = await TemplateModel.findOne({ _id: templateId, userId });
-    if (!template) return res.status(404).json({ error: "Template not found" });
+    if (!template) {
+      res.status(404).json({ error: "Template not found" });
+      return;
+    }
 
     if (String(template.status).toUpperCase() !== "APPROVED") {
-      return res.status(400).json({ error: "Only APPROVED templates can be sent" });
+      res.status(400).json({ error: "Only APPROVED templates can be sent" });
+      return;
     }
 
     const phone = normalizeContactPhone(to);
@@ -301,12 +318,34 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
     // Meta error #132000 occurs when you send no components (or body components) for auth templates.
     const isAuth = String(template.category).toUpperCase() === "AUTHENTICATION";
     let components: Array<Record<string, unknown>> | undefined;
+    const uploadedDocument = req.file;
+    if (uploadedDocument && (isAuth || String(template.headerType).toUpperCase() !== "DOCUMENT")) {
+      res.status(400).json({ error: "A replacement document can only be uploaded for a document-header template" });
+      return;
+    }
+    if (uploadedDocument) {
+      const documentMimeTypes = new Set([
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/plain",
+      ]);
+      if (!documentMimeTypes.has(uploadedDocument.mimetype)) {
+        res.status(400).json({ error: "Choose a supported document file (PDF, Word, Excel, PowerPoint, or TXT)" });
+        return;
+      }
+    }
 
     if (isAuth) {
       // The OTP code is the first element of variables[] when sent from the frontend.
       const otpCode = variables?.[0]?.trim();
       if (!otpCode) {
-        return res.status(400).json({ error: "otpCode is required for authentication templates" });
+        res.status(400).json({ error: "otpCode is required for authentication templates" });
+        return;
       }
       // Authentication templates require the OTP in BOTH the body component ({{1}})
       // AND the button component. Sending only the button causes Meta error #132000:
@@ -333,22 +372,33 @@ router.post("/templates/send-test", authenticate, async (req: AuthRequest, res) 
 
       const headerValues: TemplateParameterValues = {};
       if (structure.requiresMediaHeader) {
-        // headerContent is Meta's resumable template-upload handle and cannot
-        // be sent as a WhatsApp message media ID. Re-upload the live approved
-        // sample and send the fresh phone-number media ID instead.
-        const sampleUrl = getTemplateMediaExample(template);
-        if (!sampleUrl) {
-          return res.status(400).json({
-            error: "This template's media header sample is unavailable. Refresh templates from Meta and try again.",
-          });
-        }
-        headerValues.media = await uploadTemplateSampleForMessage(
-          sampleUrl,
-          structure.headerFormat as "IMAGE" | "VIDEO" | "DOCUMENT",
-          req.user!.userId,
-        );
-        if (structure.headerFormat === "DOCUMENT") {
-          headerValues.mediaFilename = `${template.name}.pdf`;
+        if (uploadedDocument) {
+          headerValues.media = await uploadMedia(
+            uploadedDocument.buffer,
+            uploadedDocument.mimetype,
+            uploadedDocument.originalname,
+            req.user!.userId,
+          );
+          headerValues.mediaFilename = uploadedDocument.originalname;
+        } else {
+          // headerContent is Meta's resumable template-upload handle and cannot
+          // be sent as a WhatsApp message media ID. Re-upload the live approved
+          // sample and send the fresh phone-number media ID instead.
+          const sampleUrl = getTemplateMediaExample(template);
+          if (!sampleUrl) {
+            res.status(400).json({
+              error: "This template's media header sample is unavailable. Refresh templates from Meta and try again.",
+            });
+            return;
+          }
+          headerValues.media = await uploadTemplateSampleForMessage(
+            sampleUrl,
+            structure.headerFormat as "IMAGE" | "VIDEO" | "DOCUMENT",
+            req.user!.userId,
+          );
+          if (structure.headerFormat === "DOCUMENT") {
+            headerValues.mediaFilename = `${template.name}.pdf`;
+          }
         }
       }
 
