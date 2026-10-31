@@ -17,6 +17,8 @@ const COOKIE_OPTIONS = {
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   path: "/",
 };
+const PASSWORD_HASH_ROUNDS = 12;
+const MAX_LOGIN_HASH_ROUNDS = 14;
 
 // POST /api/auth/signup
 router.post("/auth/signup", async (req, res) => {
@@ -56,7 +58,7 @@ router.post("/auth/signup", async (req, res) => {
       return;
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, PASSWORD_HASH_ROUNDS);
 
     const user = await UserModel.create({
       businessName: businessName.trim(),
@@ -122,25 +124,35 @@ router.post("/auth/login", async (req, res) => {
         },
       });
     }
-    logger.info(
-      {
-        emailPresent: true,
-        emailLength: normalizedEmail.length,
-        userFound: Boolean(user),
-        passwordLength: password.length,
-        passwordHashPresent: Boolean(user?.passwordHash),
-        passwordHashAlgorithm: user?.passwordHash?.split("$")[1] ?? null,
-      },
-      "Password login lookup",
-    );
+    logger.info({ userFound: Boolean(user) }, "Password login lookup");
     if (!user) {
       logger.warn({ emailLength: normalizedEmail.length }, "Password login rejected: user not found");
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
 
+    const passwordHashRounds = bcrypt.getRounds(user.passwordHash);
+    if (passwordHashRounds > MAX_LOGIN_HASH_ROUNDS) {
+      logger.error(
+        { passwordHashRounds, maxLoginHashRounds: MAX_LOGIN_HASH_ROUNDS },
+        "Password hash exceeds the supported login work factor",
+      );
+      res.status(503).json({
+        error: "This account's password hash is too expensive to verify. Ask an administrator to reset the account password.",
+      });
+      return;
+    }
+
+    const compareStartedAt = Date.now();
     const valid = await bcrypt.compare(password, user.passwordHash);
-    logger.info({ valid }, "Password login comparison completed");
+    logger.info(
+      {
+        valid,
+        passwordHashRounds,
+        comparisonDurationMs: Date.now() - compareStartedAt,
+      },
+      "Password login comparison completed",
+    );
     if (!valid) {
       logger.warn("Password login rejected: bcrypt comparison failed");
       res.status(401).json({ error: "Invalid email or password" });
