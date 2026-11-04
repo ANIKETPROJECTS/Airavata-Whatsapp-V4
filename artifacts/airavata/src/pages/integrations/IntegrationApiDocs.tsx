@@ -33,6 +33,17 @@ const listTemplatesExample = `curl -G "${integrationApiBase}/templates" \\
   -H "Authorization: Bearer YOUR_AIRAVATA_API_KEY" \\
   --data-urlencode "phoneNumberId=YOUR_PHONE_NUMBER_ID"`;
 
+const listConversationsExample = `curl -G "${integrationApiBase}/conversations" \\
+  -H "Authorization: Bearer YOUR_AIRAVATA_API_KEY" \\
+  --data-urlencode "phoneNumberId=YOUR_PHONE_NUMBER_ID" \\
+  --data-urlencode "status=OPEN" \\
+  --data-urlencode "limit=50"`;
+
+const conversationMessagesExample = `curl -G "${integrationApiBase}/conversations/YOUR_CONTACT_ID/messages" \\
+  -H "Authorization: Bearer YOUR_AIRAVATA_API_KEY" \\
+  --data-urlencode "phoneNumberId=YOUR_PHONE_NUMBER_ID" \\
+  --data-urlencode "limit=50"`;
+
 const signatureExample = `import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Preserve the exact raw request body before JSON parsing.
@@ -145,6 +156,16 @@ export default function IntegrationApiDocs() {
           title="List approved templates"
           description="Use this endpoint to discover valid template names, languages, categories, and component structure."
           code={listTemplatesExample}
+        />
+        <CodeCard
+          title="Load Live Chat conversations"
+          description="Read tenant-scoped conversations. Filter with SENT, OPEN, or CLOSED; use nextBefore for older pages."
+          code={listConversationsExample}
+        />
+        <CodeCard
+          title="Load conversation messages"
+          description="Load a contact's message history. Keep API requests on your server and pass the returned nextBefore cursor for older messages."
+          code={conversationMessagesExample}
         />
       </div>
 

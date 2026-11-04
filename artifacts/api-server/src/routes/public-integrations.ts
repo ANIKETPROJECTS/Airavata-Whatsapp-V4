@@ -23,6 +23,8 @@ import { getTemplateMessageMediaFields } from "../lib/templateComponents";
 import { normalizeContactPhone } from "../lib/contactPhone";
 import { runWithTenant } from "../lib/tenantDatabase";
 import { logger } from "../lib/logger";
+import { deriveConversationTabState } from "../lib/conversationTabState";
+import { buildConversationActivityMatch } from "../lib/conversationActivityQuery";
 
 const router = Router();
 
@@ -176,6 +178,284 @@ function messageResult(
     status: message.status,
   };
 }
+
+function parseListLimit(value: unknown, fallback = 50): number | null {
+  if (value === undefined) return fallback;
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return parsed >= 1 && parsed <= 100 ? parsed : null;
+}
+
+function parseCursorDate(value: unknown): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+router.get("/integrations/v1/whatsapp/conversations", async (req, res): Promise<void> => {
+  const phoneNumberId = typeof req.query.phoneNumberId === "string" ? req.query.phoneNumberId : "";
+  if (!/^\d+$/.test(phoneNumberId)) {
+    res.status(400).json({ error: "A valid phoneNumberId query parameter is required" });
+    return;
+  }
+  const limit = parseListLimit(req.query.limit);
+  const before = parseCursorDate(req.query.before);
+  const rawStatus = typeof req.query.status === "string" ? req.query.status.toUpperCase() : undefined;
+  const status = rawStatus === "SENT" || rawStatus === "OPEN" || rawStatus === "CLOSED"
+    ? rawStatus
+    : rawStatus === undefined || rawStatus === "ALL"
+      ? undefined
+      : null;
+  const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 100) : "";
+  if (limit === null || before === null || status === null) {
+    res.status(400).json({ error: "Invalid limit, before cursor, or status filter" });
+    return;
+  }
+
+  const userId = await authenticatePublicRequest(req, res, phoneNumberId);
+  if (!userId) return;
+
+  try {
+    const result = await runWithTenant(userId, async () => {
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const convs = await MessageModel.aggregate([
+        { $match: { userId: userObjectId } },
+        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: "$contactId",
+            lastMessage: { $first: "$body" },
+            lastMessageAt: { $first: "$createdAt" },
+            lastDirection: { $first: "$direction" },
+          },
+        },
+        {
+          $lookup: {
+            from: "contacts",
+            localField: "_id",
+            foreignField: "_id",
+            as: "contact",
+          },
+        },
+        { $unwind: "$contact" },
+        { $sort: { lastMessageAt: -1, _id: -1 } },
+      ]);
+
+      const unreadRows = await MessageModel.aggregate([
+        { $match: { userId: userObjectId, direction: "INBOUND" } },
+        {
+          $lookup: {
+            from: "contacts",
+            localField: "contactId",
+            foreignField: "_id",
+            as: "contact",
+          },
+        },
+        { $unwind: "$contact" },
+        {
+          $match: {
+            $expr: {
+              $gt: ["$createdAt", { $ifNull: ["$contact.lastReadAt", new Date(0)] }],
+            },
+          },
+        },
+        { $group: { _id: "$contactId", unread: { $sum: 1 } } },
+      ]);
+      const unreadByContact = new Map(
+        unreadRows.map((row) => [String(row._id), Number(row.unread ?? 0)]),
+      );
+
+      const activityRows = await MessageModel.aggregate([
+        { $match: buildConversationActivityMatch(userObjectId) },
+        {
+          $group: {
+            _id: "$contactId",
+            lastInboundAt: {
+              $max: {
+                $cond: [{ $eq: ["$direction", "INBOUND"] }, "$createdAt", null],
+              },
+            },
+            lastTemplateSentAt: {
+              $max: {
+                $cond: [
+                  { $eq: ["$direction", "OUTBOUND"] },
+                  { $ifNull: ["$sentAt", "$createdAt"] },
+                  null,
+                ],
+              },
+            },
+          },
+        },
+      ]);
+      const activityByContact = new Map(
+        activityRows.map((row) => [
+          String(row._id),
+          {
+            lastInboundAt: row.lastInboundAt as Date | null,
+            lastTemplateSentAt: row.lastTemplateSentAt as Date | null,
+          },
+        ]),
+      );
+
+      const now = Date.now();
+      const searchPattern = search ? new RegExp(escapeRegExp(search), "i") : null;
+      const shaped = convs.map((conversation) => {
+        const contact = conversation.contact;
+        const activity = activityByContact.get(String(conversation._id));
+        const lastInboundAt = activity?.lastInboundAt ?? null;
+        const lastTemplateSentAt = activity?.lastTemplateSentAt ?? null;
+        const tabState = deriveConversationTabState(
+          lastInboundAt ? new Date(lastInboundAt).getTime() : null,
+          lastTemplateSentAt ? new Date(lastTemplateSentAt).getTime() : null,
+          now,
+          contact.chatState === "CLOSED",
+        );
+        const conversationStatus =
+          tabState === "SENT"
+            ? "Sent"
+            : tabState === "OPEN"
+              ? "Open"
+              : tabState === "CLOSED"
+                ? "Closed"
+                : contact.chatState === "CLOSED"
+                  ? "Closed"
+                  : "Open";
+        const contactName =
+          contact.name && contact.name !== contact.phone ? contact.name : "Unnamed contact";
+        return {
+          id: String(conversation._id),
+          contactId: String(conversation._id),
+          contactName,
+          contactPhone: contact.phone ?? "",
+          lastMessage: conversation.lastMessage ?? "",
+          lastMessageDirection: conversation.lastDirection ?? null,
+          lastMessageAt: conversation.lastMessageAt,
+          lastInboundAt,
+          unread: unreadByContact.get(String(conversation._id)) ?? 0,
+          status: conversationStatus,
+          windowOpen: lastInboundAt
+            ? now - new Date(lastInboundAt).getTime() < 24 * 60 * 60 * 1000
+            : false,
+        };
+      }).filter((conversation) => {
+        if (status && conversation.status.toUpperCase() !== status) return false;
+        if (before && new Date(conversation.lastMessageAt).getTime() >= before.getTime()) return false;
+        if (
+          searchPattern &&
+          !searchPattern.test(conversation.contactName) &&
+          !searchPattern.test(conversation.contactPhone) &&
+          !searchPattern.test(conversation.lastMessage)
+        ) return false;
+        return true;
+      });
+
+      const page = shaped.slice(0, limit);
+      return {
+        conversations: page,
+        nextBefore:
+          shaped.length > limit && page.length > 0
+            ? new Date(page[page.length - 1]!.lastMessageAt).toISOString()
+            : null,
+      };
+    });
+    res.setHeader("Cache-Control", "no-store");
+    res.json(result);
+  } catch (error) {
+    logger.error({ err: error, phoneNumberId }, "Unable to list public WhatsApp conversations");
+    res.status(500).json({ error: "Unable to load conversations" });
+  }
+});
+
+router.get(
+  "/integrations/v1/whatsapp/conversations/:contactId/messages",
+  async (req, res): Promise<void> => {
+    const phoneNumberId = typeof req.query.phoneNumberId === "string" ? req.query.phoneNumberId : "";
+    if (!/^\d+$/.test(phoneNumberId)) {
+      res.status(400).json({ error: "A valid phoneNumberId query parameter is required" });
+      return;
+    }
+    if (!mongoose.isValidObjectId(req.params.contactId)) {
+      res.status(400).json({ error: "A valid contactId path parameter is required" });
+      return;
+    }
+    const limit = parseListLimit(req.query.limit);
+    const before = parseCursorDate(req.query.before);
+    if (limit === null || before === null) {
+      res.status(400).json({ error: "Invalid limit or before cursor" });
+      return;
+    }
+
+    const userId = await authenticatePublicRequest(req, res, phoneNumberId);
+    if (!userId) return;
+
+    try {
+      const result = await runWithTenant(userId, async () => {
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const contactId = new mongoose.Types.ObjectId(req.params.contactId);
+        const contact = await ContactModel.findOne({ _id: contactId, userId: userObjectId })
+          .select("_id name phone")
+          .lean();
+        if (!contact) return null;
+
+        const filter: Record<string, unknown> = { userId: userObjectId, contactId };
+        if (before) filter.createdAt = { $lt: before };
+        const rows = await MessageModel.find(filter)
+          .sort({ createdAt: -1 })
+          .limit(limit + 1)
+          .lean();
+        const hasMore = rows.length > limit;
+        const page = rows.slice(0, limit).reverse();
+        return {
+          contact: {
+            id: String(contact._id),
+            name: contact.name && contact.name !== contact.phone ? contact.name : "Unnamed contact",
+            phone: contact.phone,
+          },
+          messages: page.map((message) => ({
+            id: String(message._id),
+            direction: message.direction,
+            body: message.body ?? "",
+            type: message.mediaType ? "media" : "text",
+            mediaType: message.mediaType ?? null,
+            mediaId: message.mediaId ?? null,
+            mediaUrl: message.mediaUrl ?? null,
+            mediaFilename: message.mediaFilename ?? null,
+            flowData: message.flowData ?? null,
+            flowId: message.flowId ? String(message.flowId) : null,
+            status: message.status,
+            failureReason: message.failureReason ?? null,
+            whatsappMessageId: message.whatsappMessageId ?? null,
+            sentAt: message.sentAt ?? null,
+            deliveredAt: message.deliveredAt ?? null,
+            readAt: message.readAt ?? null,
+            createdAt: message.createdAt,
+          })),
+          nextBefore:
+            hasMore && page.length > 0
+              ? new Date(page[0]!.createdAt).toISOString()
+              : null,
+        };
+      });
+      if (!result) {
+        res.status(404).json({ error: "Conversation not found" });
+        return;
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json(result);
+    } catch (error) {
+      logger.error(
+        { err: error, phoneNumberId, contactId: req.params.contactId },
+        "Unable to load public WhatsApp conversation messages",
+      );
+      res.status(500).json({ error: "Unable to load conversation messages" });
+    }
+  },
+);
 
 async function markMessageFailed(
   userId: mongoose.Types.ObjectId,
