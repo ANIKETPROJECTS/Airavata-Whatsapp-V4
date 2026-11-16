@@ -143,7 +143,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <img
                 src={collapsed ? logoIcon : fullLogo}
                 alt="AtWassup"
-                className={collapsed ? 'h-full w-full scale-110 object-contain' : 'h-14 w-full scale-110 object-cover object-center'}
+                className={collapsed ? 'h-full w-full scale-150 object-contain' : 'h-14 w-full -translate-y-1 scale-110 object-cover object-center'}
               />
             </div>
             <div className="absolute bottom-[-5px] left-2 right-2 h-px bg-white" aria-hidden="true" />
