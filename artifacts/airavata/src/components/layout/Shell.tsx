@@ -22,8 +22,8 @@ import skillDevelopmentIcon from '@assets/link_1784832510109.png';
 import catalogIcon from '@assets/catalog_1784815184631.png';
 import creditCardIcon from '@assets/credit-card_(1)_1784832045706.png';
 import settingsIcon from '@assets/settings_(1)_1784831863555.png';
-import logoIcon from '@assets/ICON_NOBG.svg';
-import fullLogo from '@assets/HFULL_NOBGSVG.svg';
+import logoIcon from '@assets/AIRAVATA_TECHNOLOGIES_LOGO_(5)_1794808757851.svg';
+import fullLogo from '@assets/airavata-technologies-logo_1794808735325.svg';
 import supportIcon from '@assets/support_1787151920696.png';
 import indiaIcon from '@assets/world_1787152034254.png';
 import bellIcon from '@assets/bell_1787153116428.png';
@@ -142,7 +142,7 @@ export function Shell({ children }: { children: ReactNode }) {
             >
               <img
                 src={collapsed ? logoIcon : fullLogo}
-                alt="Airavata"
+                alt="AtWassup"
                 className={collapsed ? 'w-12 h-12 object-contain' : 'w-full h-14 object-cover object-center'}
               />
             </div>

@@ -3,9 +3,10 @@ import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
+import fullLogo from '@assets/airavata-technologies-logo_1794808735325.svg';
 
 const schema = z.object({
   businessName: z.string().min(2, 'Business name must be at least 2 characters'),
@@ -52,11 +53,8 @@ export default function Signup() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow">
-            <MessageCircle className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-gray-900">Airavata</span>
+        <div className="flex items-center justify-center mb-8">
+          <img src={fullLogo} alt="AtWassup" className="h-[64px] w-[220px] object-cover object-center" />
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border p-8">

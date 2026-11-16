@@ -41,7 +41,7 @@
 .login-panel { display: flex; min-height: 100dvh; flex-direction: column; justify-content: center; padding: 30px clamp(20px, 2vw, 32px) 22px; background: #fbfcfa; }
 .login-panel-content { display: grid; width: 100%; max-width: 560px; flex: 1; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 0; margin: 0 auto; }
 .login-form-wrap { width: 100%; max-width: 520px; margin: 0 auto; padding: 36px 0 28px; }
-.login-brand-logo { display: block; width: clamp(220px, 20vw, 280px); height: auto; margin: 0 auto 22px; object-fit: contain; }
+.login-brand-logo { display: block; width: clamp(220px, 20vw, 280px); height: 72px; margin: 0 auto 22px; object-fit: cover; object-position: center; }
 .login-journey { position: relative; z-index: 1; width: 100%; max-width: 320px; margin: 0 auto; color: #111; font-family: 'Poppins', sans-serif; }
 .login-journey-intro { margin-bottom: 24px; }
 .login-journey-eyebrow { display: block; color: #518266; font-size: 10px; font-weight: 700; letter-spacing: .15em; }
