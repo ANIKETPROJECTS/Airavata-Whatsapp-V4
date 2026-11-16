@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
-import fullLogo from '@assets/airavata-technologies-logo_1794808735325.svg';
+import fullLogo from '../assets/airavata-full-logo.svg';
 
 const schema = z.object({
   businessName: z.string().min(2, 'Business name must be at least 2 characters'),

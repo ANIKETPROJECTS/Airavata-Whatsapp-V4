@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import CommerceDemo from '../components/login/CommerceDemo';
 import { LoginJourney } from '../components/login/LoginValueProps';
-import fullLogo from '@assets/airavata-technologies-logo_1794808735325.svg';
+import fullLogo from '../assets/airavata-full-logo.svg';
 import './login.css';
 
 const schema = z.object({
