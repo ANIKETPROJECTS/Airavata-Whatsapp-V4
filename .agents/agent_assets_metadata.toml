@@ -168,3 +168,17 @@ mtime_ms = 1790921286505
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/c9280021-f6d5-4b4b-875c-42337e6b49a3/5c8674b1-a3e6-49f1-9ee5-faecdf19fa00"
 storage_version_token = "1790921870508591"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "l--Xnlb8OAhx_TDSsAPF7"
+uri = "file://Airavata-WhatsApp-System-Features.pdf"
+type = "pdf"
+title = "Airavata WhatsApp Solution — Feature Guide"
+description = "A four-page PDF overview of the system’s features, workflows, integrations, and setup requirements."
+logical_id = "7def058b-f6a1-4533-8f03-779af5fd0d5b"
+content_hash = "sha256:05a0bbc8e6ea6b52e2d88933cc80a5b6f778d5bf16b258adca2099489cdc4198"
+size = 99371
+mtime_ms = 1794819638918
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2e9d506d-e58c-44c9-8edb-7289b57cf7eb/7def058b-f6a1-4533-8f03-779af5fd0d5b/f218af90-54ba-4ea5-9b88-3fc77a73bbcc"
+storage_version_token = "1794819675752971"
+content_type = "application/pdf"
