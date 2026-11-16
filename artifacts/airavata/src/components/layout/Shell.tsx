@@ -129,21 +129,21 @@ export function Shell({ children }: { children: ReactNode }) {
           onMouseEnter={handleSidebarMouseEnter}
           onMouseLeave={handleSidebarMouseLeave}
           className={`
-            airavata-sidebar relative flex flex-col bg-[#25d366] text-black
+            airavata-sidebar relative flex flex-col bg-[#3acd32] text-black
             transition-all duration-200 ease-in-out shrink-0 z-20
             ${collapsed ? 'w-20' : 'w-[260px]'}
           `}
         >
           {/* Logo */}
-          <div className="relative flex items-center justify-center bg-[#25d366] shrink-0 h-16 px-2">
+          <div className="relative flex items-center justify-center bg-[#3acd32] shrink-0 h-16 px-2">
             <div
-              className={`!bg-white flex items-center justify-center shadow-sm overflow-hidden rounded-none ${collapsed ? 'w-full h-14 p-1.5' : 'w-full h-14 px-2'}`}
+              className={`!bg-white flex items-center justify-center shadow-sm overflow-hidden rounded-none ${collapsed ? 'w-full h-14' : 'w-full h-14 px-2'}`}
               style={{ backgroundColor: '#ffffff' }}
             >
               <img
                 src={collapsed ? logoIcon : fullLogo}
                 alt="AtWassup"
-                className={collapsed ? 'w-12 h-12 object-contain' : 'w-full h-14 object-cover object-center'}
+                className={collapsed ? 'h-full w-full scale-110 object-contain' : 'h-14 w-full scale-110 object-cover object-center'}
               />
             </div>
             <div className="absolute bottom-[-5px] left-2 right-2 h-px bg-white" aria-hidden="true" />

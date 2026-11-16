@@ -110,7 +110,7 @@ export default function Credits() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl bg-[#25d366] p-5 text-black shadow-sm">
+        <div className="rounded-xl bg-[#3acd32] p-5 text-black shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-semibold opacity-75">Current balance</p>

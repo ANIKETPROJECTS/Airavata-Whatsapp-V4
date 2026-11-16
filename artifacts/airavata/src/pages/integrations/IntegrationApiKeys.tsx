@@ -89,7 +89,7 @@ export default function IntegrationApiKeys() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-[#176b46]" />
+            <KeyRound className="h-5 w-5 text-[#267f20]" />
             <h2 className="text-lg font-semibold tracking-tight text-[#193c2d]">Developer API access</h2>
           </div>
           <p className="mt-1 text-sm leading-5 text-[#68786c]">
@@ -102,7 +102,7 @@ export default function IntegrationApiKeys() {
             keysQuery.isLoading
               ? 'bg-[#f3f5f2] text-[#68766b]'
               : whatsapp?.connected
-                ? 'bg-[#e7f4eb] text-[#176b46]'
+                ? 'bg-[#e7f4eb] text-[#267f20]'
                 : 'bg-amber-50 text-amber-800'
           }`}
         >
@@ -167,7 +167,7 @@ export default function IntegrationApiKeys() {
           <button
             type="submit"
             disabled={createKey.isPending}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#176b46] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#105839] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#3acd32] px-4 py-2.5 text-sm font-semibold text-[#102710] shadow-sm transition hover:bg-[#2fa728] disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="button-create-api-key"
           >
             {createKey.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -223,7 +223,7 @@ export default function IntegrationApiKeys() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#12251b]/45 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="created-api-key-title" data-testid="dialog-created-api-key">
           <div className="w-full max-w-lg space-y-5 rounded-2xl border border-[#dce7de] bg-[#fbfcfb] p-5 shadow-[0_24px_80px_rgba(15,43,27,0.2)] sm:p-6">
             <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e4f2e8] text-[#176b46]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e4f2e8] text-[#267f20]">
                 <Check className="w-5 h-5" />
               </span>
               <div>
@@ -247,7 +247,7 @@ export default function IntegrationApiKeys() {
               <button
                 type="button"
                 onClick={() => setCreatedKey(null)}
-                className="rounded-lg bg-[#176b46] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#105839]"
+                className="rounded-lg bg-[#3acd32] px-4 py-2 text-sm font-semibold text-[#102710] transition hover:bg-[#2fa728]"
                 data-testid="button-close-created-api-key"
               >
                 I saved it

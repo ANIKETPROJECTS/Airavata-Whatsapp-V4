@@ -73,7 +73,7 @@ export default function AutomationGuides() {
   return (
     <section className="space-y-5" data-testid="section-automation-guides">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e7f2e9] text-[#176b46]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e7f2e9] text-[#267f20]">
           <Workflow className="w-5 h-5" />
         </div>
         <div>
@@ -95,14 +95,14 @@ export default function AutomationGuides() {
                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tool.background}`}>
                     <BrandIcon size={27} color={tool.color} aria-hidden="true" />
                   </div>
-                  <span className="rounded-full bg-[#e7f4eb] px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[#176b46]">HTTP SETUP</span>
+                  <span className="rounded-full bg-[#e7f4eb] px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[#267f20]">HTTP SETUP</span>
                 </div>
                 <h3 className="mt-4 text-base font-semibold text-[#294635]">{tool.name}</h3>
                 <p className="mt-1 min-h-10 text-sm leading-5 text-[#718076]">{tool.description}</p>
                 <button
                   type="button"
                   onClick={() => setExpandedTool(expanded ? null : tool.id)}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#dce5dd] bg-white px-3 py-2.5 text-sm font-semibold text-[#435c49] transition hover:bg-[#f3f7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#176b46]/30"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#dce5dd] bg-white px-3 py-2.5 text-sm font-semibold text-[#435c49] transition hover:bg-[#f3f7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3acd32]/50"
                   aria-expanded={expanded}
                   aria-controls={`guide-content-${tool.id}`}
                   data-testid={`button-toggle-guide-${tool.id}`}
@@ -128,7 +128,7 @@ export default function AutomationGuides() {
                       <button
                         type="button"
                         onClick={copyEndpoint}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#176b46] hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#267f20] hover:underline"
                         data-testid={`button-copy-endpoint-${tool.id}`}
                       >
                         <Copy className="w-3.5 h-3.5" /> Copy
@@ -137,7 +137,7 @@ export default function AutomationGuides() {
                     <code className="mt-2 block break-all font-mono text-[11px] leading-5 text-[#586b5c]" data-testid={`text-endpoint-${tool.id}`}>{sendEndpoint}</code>
                     <a
                       href="#api-quick-start"
-                      className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#176b46] hover:underline"
+                      className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#267f20] hover:underline"
                       data-testid={`link-examples-${tool.id}`}
                     >
                       See request examples <ArrowUpRight className="w-3.5 h-3.5" />

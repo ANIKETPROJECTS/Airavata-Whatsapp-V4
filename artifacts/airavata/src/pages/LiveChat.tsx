@@ -139,8 +139,8 @@ function fillTemplatePreview(body: string, values: string[]): string {
 
 function ContactAvatar({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex shrink-0 items-center justify-center rounded-full border-2 border-[#25d366] bg-white ${className}`}>
-      <svg viewBox="0 0 24 24" className="h-[80%] w-[80%] fill-[#25d366]" aria-hidden="true">
+    <div className={`flex shrink-0 items-center justify-center rounded-full border-2 border-[#3acd32] bg-white ${className}`}>
+      <svg viewBox="0 0 24 24" className="h-[80%] w-[80%] fill-[#3acd32]" aria-hidden="true">
         <circle cx="12" cy="7" r="4.2" />
         <path d="M3.5 20.5c.4-4.5 3.7-7.4 8.5-7.4s8.1 2.9 8.5 7.4c-2.3 1.8-5.2 2.7-8.5 2.7s-6.2-.9-8.5-2.7Z" />
       </svg>
@@ -1535,7 +1535,7 @@ export default function LiveChat() {
                 aria-pressed={activeTab === tab}
                 className={`flex w-full min-w-0 items-center justify-center gap-2 border-b-2 px-2 py-1.5 font-sans text-sm leading-5 text-black whitespace-nowrap transition-colors ${
                   activeTab === tab
-                    ? 'border-[#25d366] font-semibold'
+                    ? 'border-[#3acd32] font-semibold'
                     : 'border-transparent font-medium'
                 }`}
               >
@@ -1800,7 +1800,7 @@ export default function LiveChat() {
                     <div className="relative" ref={emojiPickerRef}>
                       <button
                         onClick={() => setShowEmojiPicker(p => !p)}
-                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3acd32]"
                         title="Emoji"
                         aria-label="Open emoji picker"
                       >
@@ -1827,7 +1827,7 @@ export default function LiveChat() {
                           setShowEmojiPicker(false);
                           setShowAttachMenu(false);
                         }}
-                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3acd32]"
                         title="Canned messages"
                         aria-label="Open quick replies"
                       >
@@ -1882,7 +1882,7 @@ export default function LiveChat() {
                         setShowEmojiPicker(false);
                         setShowAttachMenu(false);
                       }}
-                      className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                      className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3acd32]"
                       title="Send template"
                       aria-label="Send template"
                     >
@@ -1893,7 +1893,7 @@ export default function LiveChat() {
                     <div className="relative" ref={attachMenuRef}>
                       <button
                         onClick={() => setShowAttachMenu(p => !p)}
-                        className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                    className="rounded-md bg-transparent p-1.5 text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3acd32]"
                         title="Attach"
                         aria-label="Attach a file"
                       >
@@ -1938,7 +1938,7 @@ export default function LiveChat() {
                     onChange={e => setMessageInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={attachment ? 'Add a caption (optional)...' : 'Type a message...'}
-                    className="min-h-[40px] min-w-0 max-h-32 flex-1 resize-none rounded-none border-x-0 border-t-0 border-b border-gray-300 bg-transparent px-2 py-2 text-base outline-none focus:border-[#25d366] focus:ring-0"
+                    className="min-h-[40px] min-w-0 max-h-32 flex-1 resize-none rounded-none border-x-0 border-t-0 border-b border-gray-300 bg-transparent px-2 py-2 text-base outline-none focus:border-[#3acd32] focus:ring-0"
                     rows={1}
                   />
 
@@ -1950,7 +1950,7 @@ export default function LiveChat() {
                         isPending ||
                         Boolean(attachment && attachment.file.size > MAX_MEDIA_FILE_SIZE_BYTES)
                       }
-                      className="flex items-center justify-center bg-transparent p-1.5 text-[#25d366] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25d366]"
+                      className="flex items-center justify-center bg-transparent p-1.5 text-[#3acd32] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3acd32]"
                       title="Send message"
                       aria-label="Send message"
                     >

@@ -119,7 +119,7 @@ export default function Integration() {
             Bring customer conversations into your CRM, ERP, website, or automation tool with server-side API access and signed event delivery.
           </p>
           <nav aria-label="Integration setup sections" className="mt-6 flex flex-wrap gap-2">
-            <a href="#developer-access" className="rounded-lg bg-[#176b46] px-3.5 py-2 text-sm font-medium text-white transition hover:bg-[#105839]" data-testid="link-integration-api-keys">API access</a>
+            <a href="#developer-access" className="rounded-lg bg-[#3acd32] px-3.5 py-2 text-sm font-semibold text-[#102710] transition hover:bg-[#2fa728]" data-testid="link-integration-api-keys">API access</a>
             <a href="#api-quick-start" className="rounded-lg border border-emerald-900/15 bg-white/70 px-3.5 py-2 text-sm font-medium text-[#285541] transition hover:bg-white" data-testid="link-integration-api-docs">API examples</a>
             <a href="#automation-guides" className="rounded-lg border border-emerald-900/15 bg-white/70 px-3.5 py-2 text-sm font-medium text-[#285541] transition hover:bg-white" data-testid="link-integration-guides">HTTP guides</a>
             <a href="#webhooks" className="rounded-lg border border-emerald-900/15 bg-white/70 px-3.5 py-2 text-sm font-medium text-[#285541] transition hover:bg-white" data-testid="link-integration-webhooks">Webhooks</a>
@@ -142,7 +142,7 @@ export default function Integration() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e3f1e8] text-[#176b46]"><LinkIcon className="h-4 w-4" /></div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e3f1e8] text-[#267f20]"><LinkIcon className="h-4 w-4" /></div>
               <h2 className="text-xl font-semibold tracking-tight text-[#193c2d]">Webhooks</h2>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#63736a]">
@@ -151,7 +151,7 @@ export default function Integration() {
           </div>
           <button
             onClick={() => setShowWebhookForm(true)}
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#176b46] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#105839] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#176b46] focus-visible:ring-offset-2"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#3acd32] px-4 py-2.5 text-sm font-semibold text-[#102710] shadow-sm transition hover:bg-[#2fa728] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3acd32] focus-visible:ring-offset-2"
             data-testid="button-add-webhook"
           >
             <Plus className="w-4 h-4" /> Add Webhook
@@ -171,7 +171,7 @@ export default function Integration() {
           <div className="space-y-3">
             {webhooksQuery.data.webhooks.map((webhook) => (
               <div key={webhook.id} className="flex flex-col gap-4 rounded-xl border border-[#e0e8e1] bg-white p-4 shadow-[0_2px_8px_rgba(29,63,43,0.03)] transition hover:border-[#c6d9cb] sm:flex-row sm:items-center" data-testid={`row-webhook-${webhook.id}`}>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf4ee] text-[#176b46]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf4ee] text-[#267f20]">
                   <LinkIcon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -182,7 +182,7 @@ export default function Integration() {
                         {WEBHOOK_EVENTS.find((option) => option.value === event)?.label ?? event}
                       </span>
                     ))}
-                    <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${webhook.isActive ? 'bg-[#e7f4eb] text-[#176b46]' : 'bg-[#f0f1ef] text-[#667168]'}`} data-testid={`status-webhook-${webhook.id}`}>
+                    <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${webhook.isActive ? 'bg-[#e7f4eb] text-[#267f20]' : 'bg-[#f0f1ef] text-[#667168]'}`} data-testid={`status-webhook-${webhook.id}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${webhook.isActive ? 'bg-[#25865a]' : 'bg-[#929a93]'}`} />
                       {webhook.isActive ? 'Active' : 'Inactive'}
                     </span>
@@ -202,9 +202,9 @@ export default function Integration() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[#cddbd0] bg-[#f8faf8] px-5 py-10 text-center" data-testid="empty-webhooks">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf4ee] text-[#176b46]"><LinkIcon className="h-5 w-5" /></span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf4ee] text-[#267f20]"><LinkIcon className="h-5 w-5" /></span>
             <div><p className="text-sm font-semibold text-[#294635]">No webhooks configured</p><p className="mt-1 text-sm text-[#6b7c70]">Add a webhook URL to receive real-time event notifications.</p></div>
-            <button type="button" onClick={() => setShowWebhookForm(true)} className="mt-1 rounded-lg border border-[#bfd2c3] bg-white px-3.5 py-2 text-sm font-semibold text-[#176b46] transition hover:bg-[#eef6f0]" data-testid="button-add-first-webhook">Add your first webhook</button>
+            <button type="button" onClick={() => setShowWebhookForm(true)} className="mt-1 rounded-lg border border-[#bfd2c3] bg-white px-3.5 py-2 text-sm font-semibold text-[#267f20] transition hover:bg-[#eef6f0]" data-testid="button-add-first-webhook">Add your first webhook</button>
           </div>
         )}
       </section>
@@ -251,7 +251,7 @@ export default function Integration() {
                     type="checkbox"
                     checked={events.includes(option.value)}
                     onChange={() => toggleEvent(option.value)}
-                    className="h-4 w-4 rounded border-[#bdc9bf] accent-[#176b46] focus:ring-[#176b46]"
+                    className="h-4 w-4 rounded border-[#bdc9bf] accent-[#3acd32] focus:ring-[#3acd32]"
                     data-testid={`input-webhook-event-${option.value}`}
                   />
                   <span className="text-sm text-[#3c5142]">{option.label}</span>
@@ -263,7 +263,7 @@ export default function Integration() {
               <button type="button" onClick={() => setShowWebhookForm(false)} className="rounded-lg border border-[#d8e2da] bg-white px-4 py-2 text-sm font-medium text-[#526457] transition hover:bg-[#f2f6f2]" data-testid="button-cancel-webhook">
                 Cancel
               </button>
-              <button type="submit" disabled={createWebhook.isPending} className="flex items-center gap-2 rounded-lg bg-[#176b46] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#105839] disabled:cursor-not-allowed disabled:opacity-50" data-testid="button-submit-webhook">
+              <button type="submit" disabled={createWebhook.isPending} className="flex items-center gap-2 rounded-lg bg-[#3acd32] px-4 py-2 text-sm font-semibold text-[#102710] transition hover:bg-[#2fa728] disabled:cursor-not-allowed disabled:opacity-50" data-testid="button-submit-webhook">
                 {createWebhook.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Create webhook
               </button>
@@ -276,7 +276,7 @@ export default function Integration() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#12251b]/45 p-4 backdrop-blur-[2px]">
           <div className="w-full max-w-lg space-y-5 rounded-2xl border border-[#dce7de] bg-[#fbfcfb] p-5 shadow-[0_24px_80px_rgba(15,43,27,0.2)] sm:p-6" role="dialog" aria-modal="true" aria-labelledby="webhook-created-title" data-testid="dialog-created-webhook-secret">
             <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e4f2e8] text-[#176b46]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e4f2e8] text-[#267f20]">
                 <Check className="w-5 h-5" />
               </div>
               <div>
@@ -291,7 +291,7 @@ export default function Integration() {
               </button>
             </div>
             <div className="flex justify-end">
-              <button type="button" onClick={() => setCreatedSecret(null)} className="rounded-lg bg-[#176b46] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#105839]" data-testid="button-close-created-webhook-secret">
+              <button type="button" onClick={() => setCreatedSecret(null)} className="rounded-lg bg-[#3acd32] px-4 py-2 text-sm font-semibold text-[#102710] transition hover:bg-[#2fa728]" data-testid="button-close-created-webhook-secret">
                 Done
               </button>
             </div>

@@ -110,7 +110,7 @@ export default function IntegrationApiDocs() {
     <section id="api-quick-start" className="space-y-5 scroll-mt-6" data-testid="section-api-documentation">
       <div>
         <div className="flex items-center gap-2">
-          <FileCode2 className="h-5 w-5 text-[#176b46]" />
+          <FileCode2 className="h-5 w-5 text-[#267f20]" />
           <h2 className="text-lg font-semibold tracking-tight text-[#193c2d]">API quick start</h2>
         </div>
         <p className="mt-1 text-sm leading-5 text-[#68786c]">
@@ -126,7 +126,7 @@ export default function IntegrationApiDocs() {
         ].map((step) => (
           <div key={step.number} className="rounded-xl border border-[#dfe8e0] bg-white p-4 shadow-[0_2px_10px_rgba(29,63,43,0.025)]">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e7f2e9] text-xs font-semibold text-[#176b46]">{step.number}</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e7f2e9] text-xs font-semibold text-[#267f20]">{step.number}</span>
               <h3 className="text-sm font-semibold text-[#294635]">{step.title}</h3>
             </div>
           <p className="mt-2 text-sm leading-5 text-[#68786c]">{step.text}</p>
